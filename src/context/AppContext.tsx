@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Meditation, Soundscape, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
 
 // Sample data
-import { meditations } from "@/data/meditations";
+import { meditations as sampleMeditations } from "@/data/meditations";
 import { soundscapes } from "@/data/soundscapes";
 import { quotes } from "@/data/quotes";
 
@@ -55,7 +55,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   // State
-  const [meditationsData, setMeditations] = useState<Meditation[]>(meditations);
+  const [meditationsData, setMeditations] = useState<Meditation[]>(sampleMeditations);
   const [soundscapesData, setSoundscapes] = useState<Soundscape[]>(soundscapes);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [dailyQuotes, setDailyQuotes] = useState<DailyQuote[]>(quotes);
@@ -65,14 +65,77 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentSoundscape, setCurrentSoundscape] = useState<Soundscape | null>(null);
   const [currentQuote, setCurrentQuote] = useState<DailyQuote | null>(null);
   
+  // Process Supabase URLs for meditations on initial load
+  useEffect(() => {
+    const processMediaUrls = async () => {
+      try {
+        console.log("Processing meditation URLs in AppContext...");
+        
+        // Check if we have processed URLs in localStorage
+        const cachedMeditations = localStorage.getItem('processedMeditations');
+        if (cachedMeditations) {
+          console.log("Using cached meditation URLs");
+          setMeditations(JSON.parse(cachedMeditations));
+          return;
+        }
+        
+        // Process URLs for all meditations
+        const processed = await Promise.all(
+          meditationsData.map(async (meditation) => {
+            let audioUrl = meditation.audioUrl;
+            let coverImageUrl = meditation.coverImageUrl;
+            
+            // Process audio URL
+            if (!audioUrl.startsWith('http')) {
+              try {
+                const { data: audioData } = await supabase.storage
+                  .from('meditations')
+                  .getPublicUrl(audioUrl);
+                audioUrl = audioData.publicUrl;
+                console.log(`Processed audio URL for ${meditation.title}:`, audioUrl);
+              } catch (error) {
+                console.error(`Error processing audio URL for ${meditation.title}:`, error);
+              }
+            }
+            
+            // Process cover image URL
+            if (!coverImageUrl.startsWith('http')) {
+              try {
+                const { data: imageData } = await supabase.storage
+                  .from('meditations')
+                  .getPublicUrl(coverImageUrl);
+                coverImageUrl = imageData.publicUrl;
+                console.log(`Processed image URL for ${meditation.title}:`, coverImageUrl);
+              } catch (error) {
+                console.error(`Error processing cover image URL for ${meditation.title}:`, error);
+              }
+            }
+            
+            return {
+              ...meditation,
+              audioUrl,
+              coverImageUrl
+            };
+          })
+        );
+        
+        console.log("Finished processing meditation URLs:", processed);
+        setMeditations(processed);
+        
+        // Cache the processed meditations
+        localStorage.setItem('processedMeditations', JSON.stringify(processed));
+      } catch (error) {
+        console.error("Error processing media URLs:", error);
+      }
+    };
+    
+    processMediaUrls();
+  }, []);
+  
   // Load data from localStorage on initial render
   useEffect(() => {
     try {
-      const storedMeditations = localStorage.getItem('meditations');
-      if (storedMeditations) {
-        setMeditations(JSON.parse(storedMeditations));
-      }
-      
+      // Load data from localStorage on initial render
       const storedSoundscapes = localStorage.getItem('soundscapes');
       if (storedSoundscapes) {
         setSoundscapes(JSON.parse(storedSoundscapes));
@@ -116,14 +179,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
   
   // Save data to localStorage whenever it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('meditations', JSON.stringify(meditationsData));
-    } catch (error) {
-      console.error('Error saving meditations to localStorage:', error);
-    }
-  }, [meditationsData]);
-  
   useEffect(() => {
     try {
       localStorage.setItem('soundscapes', JSON.stringify(soundscapesData));
@@ -173,17 +228,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       id: generateId(),
       createdAt: new Date().toISOString(),
     };
-    setMeditations([...meditationsData, newMeditation]);
+    
+    const updatedMeditations = [...meditationsData, newMeditation];
+    setMeditations(updatedMeditations);
+    
+    // Update the cached processed meditations
+    localStorage.setItem('processedMeditations', JSON.stringify(updatedMeditations));
   }
   
   function updateMeditation(id: string, meditation: Partial<Meditation>) {
-    setMeditations(
-      meditationsData.map((m) => (m.id === id ? { ...m, ...meditation } : m))
+    const updatedMeditations = meditationsData.map((m) => 
+      (m.id === id ? { ...m, ...meditation } : m)
     );
+    
+    setMeditations(updatedMeditations);
+    
+    // Update the cached processed meditations
+    localStorage.setItem('processedMeditations', JSON.stringify(updatedMeditations));
   }
   
   function deleteMeditation(id: string) {
-    setMeditations(meditationsData.filter((m) => m.id !== id));
+    const updatedMeditations = meditationsData.filter((m) => m.id !== id);
+    setMeditations(updatedMeditations);
+    
+    // Update the cached processed meditations
+    localStorage.setItem('processedMeditations', JSON.stringify(updatedMeditations));
   }
   
   // CRUD functions for soundscapes
