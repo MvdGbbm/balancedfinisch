@@ -1,9 +1,10 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -17,6 +18,7 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.8);
+  const [isLooping, setIsLooping] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -36,8 +38,10 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     };
     
     const handleEnded = () => {
-      setIsPlaying(false);
-      if (onEnded) onEnded();
+      if (!isLooping) {
+        setIsPlaying(false);
+        if (onEnded) onEnded();
+      }
     };
     
     // Events
@@ -47,6 +51,7 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     
     // Set initial volume
     audio.volume = volume;
+    audio.loop = isLooping;
     
     // Clean up
     return () => {
@@ -54,7 +59,37 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [onEnded, volume]);
+  }, [onEnded, volume, isLooping]);
+  
+  // Handle seamless looping
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    // Set loop property on audio element
+    audio.loop = isLooping;
+    
+    // Experimental seamless loop handling
+    if (isLooping) {
+      // Listen for time updates to handle precise loop point
+      const handleTimeUpdate = () => {
+        // When we're 0.2 seconds away from the end, seamlessly loop
+        // This prevents the tiny gap between loop iterations
+        if (audio.duration > 0 && audio.currentTime > audio.duration - 0.2) {
+          // Small adjustment to prevent audible gap
+          const currentPlaybackRate = audio.playbackRate;
+          audio.currentTime = 0;
+          audio.playbackRate = currentPlaybackRate;
+        }
+      };
+      
+      audio.addEventListener("timeupdate", handleTimeUpdate);
+      
+      return () => {
+        audio.removeEventListener("timeupdate", handleTimeUpdate);
+      };
+    }
+  }, [isLooping]);
   
   // Play/Pause
   const togglePlay = () => {
@@ -71,6 +106,11 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     }
     
     setIsPlaying(!isPlaying);
+  };
+  
+  // Toggle loop
+  const toggleLoop = () => {
+    setIsLooping(!isLooping);
   };
   
   // Seek
@@ -165,6 +205,20 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
               >
                 <SkipForward className="h-4 w-4" />
               </Button>
+              
+              <div className="flex items-center ml-2 space-x-1">
+                <Button
+                  onClick={toggleLoop}
+                  size="icon"
+                  variant={isLooping ? "default" : "ghost"}
+                  className={cn(
+                    "h-8 w-8 rounded-full transition-colors",
+                    isLooping && "bg-primary text-primary-foreground"
+                  )}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
             {/* Volume control */}
