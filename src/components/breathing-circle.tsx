@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { Pause, Play, Timer } from "lucide-react";
 
 interface BreathingCircleProps {
   duration?: number;
@@ -12,7 +14,6 @@ interface BreathingCircleProps {
 }
 
 export function BreathingCircle({
-  duration = 5000,
   inhaleDuration = 4000,
   holdDuration = 2000,
   exhaleDuration = 6000,
@@ -21,51 +22,99 @@ export function BreathingCircle({
 }: BreathingCircleProps) {
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
   const [isActive, setIsActive] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
   
   // Breathing cycle
   useEffect(() => {
     if (!isActive) return;
     
-    const totalCycleDuration = inhaleDuration + holdDuration + exhaleDuration;
+    let startTime = Date.now();
+    let currentPhase = phase;
+    let phaseDuration = currentPhase === "inhale" 
+      ? inhaleDuration 
+      : currentPhase === "hold" 
+        ? holdDuration 
+        : exhaleDuration;
+        
+    const calculateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, phaseDuration - elapsed);
+      const phaseProgress = (elapsed / phaseDuration) * 100;
+      
+      setPhaseTimeLeft(Math.ceil(remaining / 1000));
+      setProgress(Math.min(phaseProgress, 100));
+      
+      return elapsed >= phaseDuration;
+    };
     
-    // Start with inhale
-    setPhase("inhale");
+    // Initial progress calculation
+    calculateProgress();
     
     // Set up the interval for cycling through phases
-    const inhaleTimeout = setTimeout(() => {
-      setPhase("hold");
-      
-      const holdTimeout = setTimeout(() => {
-        setPhase("exhale");
-        
-        const exhaleTimeout = setTimeout(() => {
+    const interval = setInterval(() => {
+      if (calculateProgress()) {
+        // Move to the next phase
+        if (currentPhase === "inhale") {
+          currentPhase = "hold";
+          phaseDuration = holdDuration;
+        } else if (currentPhase === "hold") {
+          currentPhase = "exhale";
+          phaseDuration = exhaleDuration;
+        } else {
           if (onBreathComplete) onBreathComplete();
-          setPhase("inhale");
-        }, exhaleDuration);
-        
-        return () => clearTimeout(exhaleTimeout);
-      }, holdDuration);
-      
-      return () => clearTimeout(holdTimeout);
-    }, inhaleDuration);
+          currentPhase = "inhale";
+          phaseDuration = inhaleDuration;
+        }
+        setPhase(currentPhase);
+        startTime = Date.now();
+        setProgress(0);
+      }
+    }, 16); // 60fps approx
     
-    return () => clearTimeout(inhaleTimeout);
+    return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
   
   const toggleActive = () => {
     setIsActive(!isActive);
     if (!isActive) {
       setPhase("inhale");
+      setProgress(0);
+      setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
     } else {
       setPhase("rest");
     }
   };
   
+  const getPhaseColor = () => {
+    switch (phase) {
+      case "inhale": return "from-blue-500 to-cyan-400";
+      case "hold": return "from-amber-400 to-yellow-300";
+      case "exhale": return "from-indigo-500 to-blue-400";
+      default: return "from-slate-500 to-gray-400";
+    }
+  };
+  
+  const getPhaseText = () => {
+    switch (phase) {
+      case "inhale": return "Adem in";
+      case "hold": return "Houd vast";
+      case "exhale": return "Adem uit";
+      default: return "Start";
+    }
+  };
+  
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center space-y-6">
+      <div className="relative w-full max-w-xs">
+        {phase !== "rest" && (
+          <Progress value={progress} className="h-2 mb-6" />
+        )}
+      </div>
+      
       <div
         className={cn(
-          "relative flex items-center justify-center rounded-full transition-all duration-500",
+          "relative flex items-center justify-center rounded-full transition-all",
           {
             "scale-100 opacity-100": phase === "rest" || phase === "exhale",
             "scale-110 opacity-100": phase === "inhale" || phase === "hold",
@@ -84,23 +133,18 @@ export function BreathingCircle({
       >
         <div
           className={cn(
-            "absolute inset-0 rounded-full blur-md opacity-30",
-            {
-              "bg-primary": phase === "inhale",
-              "bg-amber-400": phase === "hold",
-              "bg-blue-400": phase === "exhale",
-              "bg-muted": phase === "rest",
-            }
+            "absolute inset-0 rounded-full blur-md opacity-50 bg-gradient-to-r",
+            getPhaseColor()
           )}
         />
         <div
           className={cn(
-            "h-40 w-40 rounded-full flex items-center justify-center transition-all glass-morphism backdrop-blur-lg border-2",
+            "h-52 w-52 rounded-full flex items-center justify-center transition-all backdrop-blur-lg border-4",
             {
-              "border-primary": phase === "inhale",
-              "border-amber-400": phase === "hold",
-              "border-blue-400": phase === "exhale",
-              "border-muted": phase === "rest",
+              "border-blue-500 shadow-lg shadow-blue-500/20": phase === "inhale",
+              "border-amber-400 shadow-lg shadow-amber-400/20": phase === "hold",
+              "border-indigo-500 shadow-lg shadow-indigo-500/20": phase === "exhale",
+              "border-slate-500": phase === "rest",
             }
           )}
         >
@@ -108,33 +152,36 @@ export function BreathingCircle({
             {phase === "rest" ? (
               <button
                 onClick={toggleActive}
-                className="px-4 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-primary-foreground hover:from-blue-600 hover:to-cyan-600 transition-colors"
               >
-                Start
+                <Play className="h-8 w-8" />
+                <span className="text-lg font-medium">Start</span>
               </button>
             ) : (
-              <>
-                <div className="text-sm mb-1 font-medium">
-                  {phase === "inhale"
-                    ? "Adem in"
-                    : phase === "hold"
-                    ? "Houd vast"
-                    : "Adem uit"}
+              <div className="flex flex-col items-center space-y-2">
+                <div className="text-2xl font-semibold mb-1">
+                  {getPhaseText()}
+                </div>
+                <div className="flex items-center justify-center text-3xl font-bold">
+                  {phaseTimeLeft}
+                  <span className="text-sm ml-1 mt-1">s</span>
                 </div>
                 <button
                   onClick={toggleActive}
-                  className="text-xs px-2 py-1 rounded-full bg-foreground/10 hover:bg-foreground/20 transition-colors"
+                  className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-foreground/10 hover:bg-foreground/20 transition-colors"
                 >
-                  Pauzeren
+                  <Pause className="h-4 w-4" />
+                  <span>Pauzeren</span>
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
       </div>
       
       {isActive && (
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className="mt-4 text-center flex items-center gap-2 text-sm text-muted-foreground">
+          <Timer className="h-4 w-4" />
           <p>
             Adem in ({inhaleDuration / 1000}s) → Houd vast ({holdDuration / 1000}s) →
             Adem uit ({exhaleDuration / 1000}s)

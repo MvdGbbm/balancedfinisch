@@ -16,15 +16,25 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { 
+  Droplet, 
+  Heart, 
+  Brain, 
+  Moon, 
+  Zap,
+  Info
+} from "lucide-react";
 
 const breathingPatterns = [
   {
     id: "calm",
-    name: "Kalmerende Ademhaling",
+    name: "Ontspannende Ademhaling",
     description: "Ontspannende ademhaling om stress te verminderen",
     inhaleDuration: 4000,
     holdDuration: 2000,
     exhaleDuration: 6000,
+    icon: Heart,
+    color: "text-rose-500"
   },
   {
     id: "focus",
@@ -33,6 +43,8 @@ const breathingPatterns = [
     inhaleDuration: 5000,
     holdDuration: 2000,
     exhaleDuration: 5000,
+    icon: Brain,
+    color: "text-blue-500"
   },
   {
     id: "energy",
@@ -41,6 +53,8 @@ const breathingPatterns = [
     inhaleDuration: 3000,
     holdDuration: 1000,
     exhaleDuration: 4000,
+    icon: Zap,
+    color: "text-amber-500"
   },
   {
     id: "sleep",
@@ -49,7 +63,17 @@ const breathingPatterns = [
     inhaleDuration: 6000,
     holdDuration: 3000,
     exhaleDuration: 7000,
+    icon: Moon,
+    color: "text-indigo-500"
   },
+];
+
+const benefitsList = [
+  "Vermindert stress en angst",
+  "Verbetert concentratie en focus",
+  "Verlaagt de bloeddruk",
+  "Bevordert beter slapen",
+  "Verhoogt energieniveaus"
 ];
 
 const Breathing = () => {
@@ -64,22 +88,29 @@ const Breathing = () => {
     setBreathCount((prevCount) => prevCount + 1);
   };
   
+  const PatternIcon = selectedPattern.icon;
+  
   return (
     <MobileLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold mb-1">Ademhalingsoefeningen</h1>
+          <h1 className="text-2xl font-bold mb-1">Ademhalingspatroon</h1>
           <p className="text-muted-foreground">
-            Volg het ritme om je ademhaling te verbeteren
+            Kies een patroon dat bij je stemming past
           </p>
         </div>
         
-        <Card className="glass-morphism">
+        <Card className="glass-morphism border-t border-t-blue-500/30">
           <CardHeader className="pb-2">
-            <CardTitle>Ademhalingspatroon</CardTitle>
-            <CardDescription>
-              Kies een patroon dat bij je stemming past
-            </CardDescription>
+            <div className="flex items-center gap-2">
+              <PatternIcon className={selectedPattern.color} />
+              <div>
+                <CardTitle>{selectedPattern.name}</CardTitle>
+                <CardDescription>
+                  {selectedPattern.description}
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Select 
@@ -91,25 +122,34 @@ const Breathing = () => {
               </SelectTrigger>
               <SelectContent>
                 {breathingPatterns.map((pattern) => (
-                  <SelectItem key={pattern.id} value={pattern.id}>
-                    {pattern.name}
+                  <SelectItem key={pattern.id} value={pattern.id} className="flex items-center">
+                    <div className="flex items-center gap-2">
+                      <pattern.icon className={`h-4 w-4 ${pattern.color}`} />
+                      <span>{pattern.name}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             
-            <div className="mt-4 text-sm">
-              <p>{selectedPattern.description}</p>
-              <div className="mt-2 text-muted-foreground">
-                <p>Inademen: {selectedPattern.inhaleDuration / 1000}s</p>
-                <p>Vasthouden: {selectedPattern.holdDuration / 1000}s</p>
-                <p>Uitademen: {selectedPattern.exhaleDuration / 1000}s</p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
+              <div className="rounded-lg bg-blue-500/10 p-2">
+                <p className="text-xs text-muted-foreground">Inademen</p>
+                <p className="text-xl font-semibold text-blue-500">{selectedPattern.inhaleDuration / 1000}s</p>
+              </div>
+              <div className="rounded-lg bg-amber-500/10 p-2">
+                <p className="text-xs text-muted-foreground">Vasthouden</p>
+                <p className="text-xl font-semibold text-amber-500">{selectedPattern.holdDuration / 1000}s</p>
+              </div>
+              <div className="rounded-lg bg-indigo-500/10 p-2">
+                <p className="text-xs text-muted-foreground">Uitademen</p>
+                <p className="text-xl font-semibold text-indigo-500">{selectedPattern.exhaleDuration / 1000}s</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <div className="flex justify-center py-4">
+        <div className="flex justify-center py-6">
           <BreathingCircle
             inhaleDuration={selectedPattern.inhaleDuration}
             holdDuration={selectedPattern.holdDuration}
@@ -119,23 +159,27 @@ const Breathing = () => {
         </div>
         
         <div className="text-center">
-          <div className="text-4xl font-bold text-primary animate-pulse-gentle">
+          <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent animate-pulse-gentle mb-1">
             {breathCount}
           </div>
           <p className="text-muted-foreground">Volledige ademhalingen</p>
         </div>
         
-        <Card className="neo-morphism mt-8">
+        <Card className="neo-morphism mt-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Voordelen van Ademhalingsoefeningen</CardTitle>
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-primary" />
+              <CardTitle className="text-base">Voordelen van Ademhalingsoefeningen</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="text-sm">
-            <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>Vermindert stress en angst</li>
-              <li>Verbetert concentratie en focus</li>
-              <li>Verlaagt de bloeddruk</li>
-              <li>Bevordert beter slapen</li>
-              <li>Verhoogt energieniveaus</li>
+            <ul className="space-y-2">
+              {benefitsList.map((benefit, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <Droplet className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{benefit}</span>
+                </li>
+              ))}
             </ul>
           </CardContent>
         </Card>
