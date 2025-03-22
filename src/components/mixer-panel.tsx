@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Volume2, Volume, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,15 +35,11 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
         } else {
           try {
             // Assume it's a path in the Supabase storage
-            const { data, error } = await supabase.storage
+            const { data } = await supabase.storage
               .from('meditations')
               .getPublicUrl(soundscape.audioUrl);
             
-            if (error) {
-              console.error("Error getting public URL:", error);
-            } else {
-              urls[soundscape.id] = data.publicUrl;
-            }
+            urls[soundscape.id] = data.publicUrl;
           } catch (error) {
             console.error("Error processing audio URL:", error);
             // Fallback to the original URL if there's an error
