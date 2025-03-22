@@ -112,69 +112,70 @@ export function BreathingCircle({
         )}
       </div>
       
-      <div
-        className={cn(
-          "relative flex items-center justify-center rounded-full transition-all",
-          {
-            "scale-100 opacity-100": phase === "rest" || phase === "exhale",
-            "scale-110 opacity-100": phase === "inhale" || phase === "hold",
-          },
-          className
-        )}
-        style={{
-          transition: `all ${
-            phase === "inhale"
-              ? inhaleDuration
-              : phase === "exhale"
-              ? exhaleDuration
-              : holdDuration
-          }ms ease-in-out`,
-        }}
-      >
+      <div className="relative">
+        {/* Outer ring - always visible */}
+        <div className="absolute inset-0 rounded-full border border-gray-500/30 blur-[2px]" />
+        
+        {/* Main circle container with scaling effect */}
         <div
           className={cn(
-            "absolute inset-0 rounded-full blur-md opacity-50 bg-gradient-to-r",
-            getPhaseColor()
-          )}
-        />
-        <div
-          className={cn(
-            "h-52 w-52 rounded-full flex items-center justify-center transition-all backdrop-blur-lg border-4",
+            "relative flex items-center justify-center transition-all",
             {
-              "border-blue-500 shadow-lg shadow-blue-500/20": phase === "inhale",
-              "border-amber-400 shadow-lg shadow-amber-400/20": phase === "hold",
-              "border-indigo-500 shadow-lg shadow-indigo-500/20": phase === "exhale",
-              "border-slate-500": phase === "rest",
-            }
+              "scale-100 opacity-100": phase === "rest" || phase === "exhale",
+              "scale-110 opacity-100": phase === "inhale" || phase === "hold",
+            },
+            className
           )}
+          style={{
+            transition: `all ${
+              phase === "inhale"
+                ? inhaleDuration
+                : phase === "exhale"
+                ? exhaleDuration
+                : holdDuration
+            }ms ease-in-out`,
+          }}
         >
-          <div className="text-center">
-            {phase === "rest" ? (
-              <button
-                onClick={toggleActive}
-                className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-primary-foreground hover:from-blue-600 hover:to-cyan-600 transition-colors"
-              >
-                <Play className="h-8 w-8" />
-                <span className="text-lg font-medium">Start</span>
-              </button>
-            ) : (
-              <div className="flex flex-col items-center space-y-2">
-                <div className="text-2xl font-semibold mb-1">
-                  {getPhaseText()}
-                </div>
-                <div className="flex items-center justify-center text-3xl font-bold">
-                  {phaseTimeLeft}
-                  <span className="text-sm ml-1 mt-1">s</span>
-                </div>
+          {/* Main circle with perfect roundness */}
+          <div
+            className={cn(
+              "h-64 w-64 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,0,0,0.3)]",
+              {
+                "bg-gradient-to-r from-blue-500 to-blue-400 border-2 border-blue-300/30": phase === "rest",
+                "bg-gradient-to-r from-blue-500 to-cyan-400 border-2 border-blue-300/30": phase === "inhale",
+                "bg-gradient-to-r from-amber-400 to-yellow-300 border-2 border-amber-300/30": phase === "hold",
+                "bg-gradient-to-r from-indigo-500 to-blue-400 border-2 border-indigo-300/30": phase === "exhale",
+              }
+            )}
+          >
+            <div className="text-center text-white">
+              {phase === "rest" ? (
                 <button
                   onClick={toggleActive}
-                  className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-foreground/10 hover:bg-foreground/20 transition-colors"
+                  className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors"
                 >
-                  <Pause className="h-4 w-4" />
-                  <span>Pauzeren</span>
+                  <Play className="h-8 w-8" />
+                  <span className="text-lg font-medium">Start</span>
                 </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="text-2xl font-semibold mb-1">
+                    {getPhaseText()}
+                  </div>
+                  <div className="flex items-center justify-center text-3xl font-bold">
+                    {phaseTimeLeft}
+                    <span className="text-sm ml-1 mt-1">s</span>
+                  </div>
+                  <button
+                    onClick={toggleActive}
+                    className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    <Pause className="h-4 w-4" />
+                    <span>Pauzeren</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
