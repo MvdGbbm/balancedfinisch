@@ -26,7 +26,7 @@ import {
   Smile,
   Meh,
   Frown,
-  FrownOpen
+  Angry // Replaced FrownOpen with Angry which is available in Lucide
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -37,7 +37,7 @@ const moodOptions = [
   { value: "calm", label: "Rustig", icon: Smile, color: "text-blue-500" },
   { value: "neutral", label: "Neutraal", icon: Meh, color: "text-gray-500" },
   { value: "sad", label: "Verdrietig", icon: Frown, color: "text-yellow-500" },
-  { value: "anxious", label: "Angstig", icon: FrownOpen, color: "text-red-500" },
+  { value: "anxious", label: "Angstig", icon: Angry, color: "text-red-500" }, // Changed to use Angry icon
 ];
 
 const Journal = () => {
