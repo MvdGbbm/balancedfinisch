@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Volume2, Volume, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -5,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Soundscape } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface MixerPanelProps {
   soundscapes: Soundscape[];
@@ -26,30 +28,39 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
   // Fetch public URLs for audio files
   useEffect(() => {
     const fetchAudioUrls = async () => {
-      const urls: { [key: string]: string } = {};
-      
-      for (const soundscape of soundscapes) {
-        // Check if the URL is already a full URL or a Supabase storage path
-        if (soundscape.audioUrl.startsWith('http')) {
-          urls[soundscape.id] = soundscape.audioUrl;
-        } else {
-          try {
-            // Assume it's a path in the Supabase storage
-            const { data } = await supabase.storage
-              .from('meditations')
-              .getPublicUrl(soundscape.audioUrl);
-            
-            urls[soundscape.id] = data.publicUrl;
-          } catch (error) {
-            console.error("Error processing audio URL:", error);
-            // Fallback to the original URL if there's an error
+      try {
+        setLoading(true);
+        const urls: { [key: string]: string } = {};
+        
+        for (const soundscape of soundscapes) {
+          // Check if the URL is already a full URL or a Supabase storage path
+          if (soundscape.audioUrl.startsWith('http')) {
             urls[soundscape.id] = soundscape.audioUrl;
+          } else {
+            try {
+              // Assume it's a path in the Supabase storage
+              const { data } = await supabase.storage
+                .from('meditations')
+                .getPublicUrl(soundscape.audioUrl);
+              
+              urls[soundscape.id] = data.publicUrl;
+              console.log(`Loaded audio URL for ${soundscape.title}:`, data.publicUrl);
+            } catch (error) {
+              console.error(`Error loading audio for ${soundscape.title}:`, error);
+              toast.error(`Kon geluid niet laden voor ${soundscape.title}`);
+              // Fallback to the original URL if there's an error
+              urls[soundscape.id] = soundscape.audioUrl;
+            }
           }
         }
+        
+        setAudioUrls(urls);
+      } catch (error) {
+        console.error("Error in fetchAudioUrls:", error);
+        toast.error("Er is een fout opgetreden bij het laden van geluiden");
+      } finally {
+        setLoading(false);
       }
-      
-      setAudioUrls(urls);
-      setLoading(false);
     };
     
     fetchAudioUrls();
@@ -59,16 +70,38 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
   useEffect(() => {
     if (loading) return;
     
-    soundscapes.forEach((soundscape) => {
-      if (!audioRefs.current[soundscape.id] && audioUrls[soundscape.id]) {
-        const audio = new Audio(audioUrls[soundscape.id]);
-        audio.loop = true;
-        audio.volume = 0;
-        audioRefs.current[soundscape.id] = audio;
+    // Clear previous audio elements
+    Object.values(audioRefs.current).forEach((audio) => {
+      if (audio) {
+        audio.pause();
+        audio.src = "";
       }
     });
     
-    // Clean up
+    audioRefs.current = {};
+    
+    // Initialize new audio elements
+    soundscapes.forEach((soundscape) => {
+      if (audioUrls[soundscape.id]) {
+        const audio = new Audio(audioUrls[soundscape.id]);
+        audio.loop = true;
+        audio.volume = 0;
+        audio.preload = "auto";
+        
+        // Add error handling
+        audio.onerror = (e) => {
+          console.error(`Error loading audio for ${soundscape.title}:`, e);
+          toast.error(`Kon geluid niet laden voor ${soundscape.title}`);
+        };
+        
+        audioRefs.current[soundscape.id] = audio;
+        console.log(`Initialized audio for ${soundscape.title}`);
+      } else {
+        console.warn(`No URL found for soundscape: ${soundscape.title}`);
+      }
+    });
+    
+    // Clean up function
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
@@ -113,7 +146,8 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
         audio.volume = volume;
         if (volume > 0 && audio.paused) {
           audio.play().catch(error => {
-            console.error("Error playing audio:", error);
+            console.error(`Error playing audio for soundscape ${id}:`, error);
+            toast.error("Fout bij afspelen van geluid");
           });
         } else if (volume === 0 && !audio.paused) {
           audio.pause();

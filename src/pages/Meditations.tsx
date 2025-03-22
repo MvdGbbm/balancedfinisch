@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Meditation } from "@/lib/types";
+import { toast } from "sonner";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
@@ -31,45 +32,59 @@ const Meditations = () => {
   // Process Supabase URLs
   useEffect(() => {
     const processUrls = async () => {
-      const processed = await Promise.all(
-        meditations.map(async (meditation) => {
-          let audioUrl = meditation.audioUrl;
-          let coverImageUrl = meditation.coverImageUrl;
-          
-          // Process audio URL
-          if (!audioUrl.startsWith('http')) {
-            try {
-              const { data: audioData } = await supabase.storage
-                .from('meditations')
-                .getPublicUrl(audioUrl);
-              audioUrl = audioData.publicUrl;
-            } catch (error) {
-              console.error("Error processing audio URL:", error);
+      try {
+        setLoading(true);
+        console.log("Processing meditation URLs...");
+        
+        const processed = await Promise.all(
+          meditations.map(async (meditation) => {
+            let audioUrl = meditation.audioUrl;
+            let coverImageUrl = meditation.coverImageUrl;
+            
+            // Process audio URL
+            if (!audioUrl.startsWith('http')) {
+              try {
+                const { data: audioData } = await supabase.storage
+                  .from('meditations')
+                  .getPublicUrl(audioUrl);
+                audioUrl = audioData.publicUrl;
+                console.log(`Loaded audio URL for ${meditation.title}:`, audioUrl);
+              } catch (error) {
+                console.error(`Error processing audio URL for ${meditation.title}:`, error);
+                toast.error(`Kon audio niet laden voor ${meditation.title}`);
+              }
             }
-          }
-          
-          // Process cover image URL
-          if (!coverImageUrl.startsWith('http')) {
-            try {
-              const { data: imageData } = await supabase.storage
-                .from('meditations')
-                .getPublicUrl(coverImageUrl);
-              coverImageUrl = imageData.publicUrl;
-            } catch (error) {
-              console.error("Error processing cover image URL:", error);
+            
+            // Process cover image URL
+            if (!coverImageUrl.startsWith('http')) {
+              try {
+                const { data: imageData } = await supabase.storage
+                  .from('meditations')
+                  .getPublicUrl(coverImageUrl);
+                coverImageUrl = imageData.publicUrl;
+                console.log(`Loaded image URL for ${meditation.title}:`, coverImageUrl);
+              } catch (error) {
+                console.error(`Error processing cover image URL for ${meditation.title}:`, error);
+                toast.error(`Kon afbeelding niet laden voor ${meditation.title}`);
+              }
             }
-          }
-          
-          return {
-            ...meditation,
-            audioUrl,
-            coverImageUrl
-          };
-        })
-      );
-      
-      setProcessedMeditations(processed);
-      setLoading(false);
+            
+            return {
+              ...meditation,
+              audioUrl,
+              coverImageUrl
+            };
+          })
+        );
+        
+        console.log("Processed meditations:", processed);
+        setProcessedMeditations(processed);
+      } catch (error) {
+        console.error("Error in processUrls:", error);
+        toast.error("Er is een fout opgetreden bij het laden van meditaties");
+      } finally {
+        setLoading(false);
+      }
     };
     
     processUrls();
