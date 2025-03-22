@@ -43,6 +43,32 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
     };
   }, [soundscapes]);
   
+  // Implement seamless looping for each audio element
+  useEffect(() => {
+    const handleSeamlessLoops = () => {
+      Object.entries(audioRefs.current).forEach(([id, audio]) => {
+        if (!audio) return;
+        
+        // Only set up seamless looping for playing audio
+        if (!audio.paused && audio.duration > 0) {
+          // When we're 0.2 seconds away from the end, seamlessly loop
+          if (audio.currentTime > audio.duration - 0.2) {
+            const currentPlaybackRate = audio.playbackRate;
+            audio.currentTime = 0;
+            audio.playbackRate = currentPlaybackRate;
+          }
+        }
+      });
+    };
+    
+    // Set up interval to check audio positions
+    const intervalId = setInterval(handleSeamlessLoops, 100);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+  
   // Update volumes when changed
   useEffect(() => {
     Object.entries(volumes).forEach(([id, volume]) => {

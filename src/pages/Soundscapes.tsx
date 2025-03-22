@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -115,6 +114,32 @@ const Soundscapes = () => {
       });
     };
   }, [soundscapes]);
+  
+  // Implement seamless looping for all audio elements
+  useEffect(() => {
+    const handleSeamlessLoops = () => {
+      Object.entries(audioRefs.current).forEach(([id, audio]) => {
+        if (!audio) return;
+        
+        // Only set up seamless looping for playing audio
+        if (!audio.paused && audio.duration > 0) {
+          // When we're 0.2 seconds away from the end, seamlessly loop
+          if (audio.currentTime > audio.duration - 0.2) {
+            const currentPlaybackRate = audio.playbackRate;
+            audio.currentTime = 0;
+            audio.playbackRate = currentPlaybackRate;
+          }
+        }
+      });
+    };
+    
+    // Set up interval to check audio positions
+    const intervalId = setInterval(handleSeamlessLoops, 100);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
   
   // Update audio elements when volumes change
   useEffect(() => {
