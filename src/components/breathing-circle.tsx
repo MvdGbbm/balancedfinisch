@@ -86,40 +86,22 @@ export function BreathingCircle({
     }
   };
   
-  const getPhaseColor = () => {
-    switch (phase) {
-      case "inhale": return "from-blue-500 to-cyan-400";
-      case "hold": return "from-amber-400 to-yellow-300";
-      case "exhale": return "from-indigo-500 to-blue-400";
-      default: return "from-slate-500 to-gray-400";
-    }
-  };
-  
-  const getPhaseText = () => {
-    switch (phase) {
-      case "inhale": return "Adem in";
-      case "hold": return "Houd vast";
-      case "exhale": return "Adem uit";
-      default: return "Start";
-    }
-  };
-  
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative w-full max-w-xs">
         {phase !== "rest" && (
-          <Progress value={progress} className="h-2 mb-6" />
+          <Progress value={progress} className="h-2 mb-6 bg-gray-800" />
         )}
       </div>
       
       <div className="relative">
-        {/* Outer ring - always visible */}
-        <div className="absolute inset-0 rounded-full border border-gray-500/30 blur-[2px]" />
+        {/* Dark outer ring */}
+        <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" style={{ width: '280px', height: '280px', transform: 'translate(-10px, -10px)' }} />
         
         {/* Main circle container with scaling effect */}
         <div
           className={cn(
-            "relative flex items-center justify-center transition-all",
+            "relative flex items-center justify-center rounded-full transition-all",
             {
               "scale-100 opacity-100": phase === "rest" || phase === "exhale",
               "scale-110 opacity-100": phase === "inhale" || phase === "hold",
@@ -127,6 +109,8 @@ export function BreathingCircle({
             className
           )}
           style={{
+            width: '260px',
+            height: '260px',
             transition: `all ${
               phase === "inhale"
                 ? inhaleDuration
@@ -139,14 +123,18 @@ export function BreathingCircle({
           {/* Main circle with perfect roundness */}
           <div
             className={cn(
-              "h-64 w-64 rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,0,0,0.3)]",
+              "rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]",
               {
-                "bg-gradient-to-r from-blue-500 to-blue-400 border-2 border-blue-300/30": phase === "rest",
-                "bg-gradient-to-r from-blue-500 to-cyan-400 border-2 border-blue-300/30": phase === "inhale",
-                "bg-gradient-to-r from-amber-400 to-yellow-300 border-2 border-amber-300/30": phase === "hold",
-                "bg-gradient-to-r from-indigo-500 to-blue-400 border-2 border-indigo-300/30": phase === "exhale",
+                "bg-gradient-to-r from-blue-600 to-blue-500": phase === "rest",
+                "bg-gradient-to-r from-blue-600 to-cyan-500": phase === "inhale",
+                "bg-gradient-to-r from-amber-500 to-yellow-400": phase === "hold",
+                "bg-gradient-to-r from-indigo-600 to-blue-500": phase === "exhale",
               }
             )}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
           >
             <div className="text-center text-white">
               {phase === "rest" ? (
@@ -160,15 +148,16 @@ export function BreathingCircle({
               ) : (
                 <div className="flex flex-col items-center space-y-2">
                   <div className="text-2xl font-semibold mb-1">
-                    {getPhaseText()}
+                    {phase === "inhale" ? "Adem in" : 
+                     phase === "hold" ? "Houd vast" : "Adem uit"}
                   </div>
-                  <div className="flex items-center justify-center text-3xl font-bold">
+                  <div className="flex items-center justify-center text-4xl font-bold">
                     {phaseTimeLeft}
                     <span className="text-sm ml-1 mt-1">s</span>
                   </div>
                   <button
                     onClick={toggleActive}
-                    className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors"
                   >
                     <Pause className="h-4 w-4" />
                     <span>Pauzeren</span>

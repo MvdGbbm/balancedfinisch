@@ -132,16 +132,16 @@ const Breathing = () => {
               </SelectContent>
             </Select>
             
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm">
-              <div className="rounded-lg bg-blue-500/10 p-2">
+            <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+              <div className="rounded-lg bg-blue-500/10 p-3 backdrop-blur-sm">
                 <p className="text-xs text-muted-foreground">Inademen</p>
                 <p className="text-xl font-semibold text-blue-500">{selectedPattern.inhaleDuration / 1000}s</p>
               </div>
-              <div className="rounded-lg bg-amber-500/10 p-2">
+              <div className="rounded-lg bg-amber-500/10 p-3 backdrop-blur-sm">
                 <p className="text-xs text-muted-foreground">Vasthouden</p>
                 <p className="text-xl font-semibold text-amber-500">{selectedPattern.holdDuration / 1000}s</p>
               </div>
-              <div className="rounded-lg bg-indigo-500/10 p-2">
+              <div className="rounded-lg bg-indigo-500/10 p-3 backdrop-blur-sm">
                 <p className="text-xs text-muted-foreground">Uitademen</p>
                 <p className="text-xl font-semibold text-indigo-500">{selectedPattern.exhaleDuration / 1000}s</p>
               </div>
@@ -149,7 +149,7 @@ const Breathing = () => {
           </CardContent>
         </Card>
         
-        <div className="flex justify-center py-6">
+        <div className="flex justify-center py-8">
           <BreathingCircle
             inhaleDuration={selectedPattern.inhaleDuration}
             holdDuration={selectedPattern.holdDuration}
@@ -158,25 +158,25 @@ const Breathing = () => {
           />
         </div>
         
-        <div className="text-center">
+        <div className="text-center bg-gray-900/40 py-4 rounded-xl backdrop-blur-sm">
           <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent animate-pulse-gentle mb-1">
             {breathCount}
           </div>
           <p className="text-muted-foreground">Volledige ademhalingen</p>
         </div>
         
-        <Card className="neo-morphism mt-6">
+        <Card className="neo-morphism mt-6 bg-gray-900/40 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-primary" />
+              <Info className="h-4 w-4 text-blue-400" />
               <CardTitle className="text-base">Voordelen van Ademhalingsoefeningen</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="text-sm">
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {benefitsList.map((benefit, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <Droplet className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <Droplet className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
                   <span className="text-muted-foreground">{benefit}</span>
                 </li>
               ))}
