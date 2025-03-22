@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,20 +17,71 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { Meditation } from "@/lib/types";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Process Supabase URLs
+  useEffect(() => {
+    const processUrls = async () => {
+      const processed = await Promise.all(
+        meditations.map(async (meditation) => {
+          let audioUrl = meditation.audioUrl;
+          let coverImageUrl = meditation.coverImageUrl;
+          
+          // Process audio URL
+          if (!audioUrl.startsWith('http')) {
+            try {
+              const { data: audioData } = await supabase.storage
+                .from('meditations')
+                .getPublicUrl(audioUrl);
+              audioUrl = audioData.publicUrl;
+            } catch (error) {
+              console.error("Error processing audio URL:", error);
+            }
+          }
+          
+          // Process cover image URL
+          if (!coverImageUrl.startsWith('http')) {
+            try {
+              const { data: imageData } = await supabase.storage
+                .from('meditations')
+                .getPublicUrl(coverImageUrl);
+              coverImageUrl = imageData.publicUrl;
+            } catch (error) {
+              console.error("Error processing cover image URL:", error);
+            }
+          }
+          
+          return {
+            ...meditation,
+            audioUrl,
+            coverImageUrl
+          };
+        })
+      );
+      
+      setProcessedMeditations(processed);
+      setLoading(false);
+    };
+    
+    processUrls();
+  }, [meditations]);
   
   // Get unique categories
   const categories = Array.from(
-    new Set(meditations.map((meditation) => meditation.category))
+    new Set(processedMeditations.map((meditation) => meditation.category))
   );
   
   // Filter meditations based on search and category
-  const filteredMeditations = meditations.filter((meditation) => {
+  const filteredMeditations = processedMeditations.filter((meditation) => {
     const matchesSearch = meditation.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase()) || 
@@ -49,6 +100,23 @@ const Meditations = () => {
     setSelectedCategory(null);
     setSearchQuery("");
   };
+  
+  // Get current meditation with processed URLs
+  const currentMeditationWithUrls = currentMeditation
+    ? processedMeditations.find(m => m.id === currentMeditation.id) || currentMeditation
+    : null;
+  
+  if (loading) {
+    return (
+      <MobileLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-2">Meditaties laden...</p>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
   
   return (
     <MobileLayout>
@@ -158,28 +226,28 @@ const Meditations = () => {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{currentMeditation?.title}</DialogTitle>
+            <DialogTitle>{currentMeditationWithUrls?.title}</DialogTitle>
             <DialogDescription>
-              {currentMeditation?.description}
+              {currentMeditationWithUrls?.description}
             </DialogDescription>
           </DialogHeader>
           
-          {currentMeditation && (
+          {currentMeditationWithUrls && (
             <div className="space-y-4">
               <div 
                 className="w-full h-40 bg-cover bg-center rounded-md"
-                style={{ backgroundImage: `url(${currentMeditation?.coverImageUrl})` }}
+                style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})` }}
               />
               
               <AudioPlayer 
-                audioUrl={currentMeditation.audioUrl} 
+                audioUrl={currentMeditationWithUrls.audioUrl} 
                 className="w-full"
               />
               
               <div className="space-y-2">
                 <h3 className="text-sm font-medium">Tags</h3>
                 <div className="flex flex-wrap gap-1">
-                  {currentMeditation.tags.map((tag) => (
+                  {currentMeditationWithUrls.tags.map((tag) => (
                     <Badge key={tag} variant="secondary">
                       {tag}
                     </Badge>

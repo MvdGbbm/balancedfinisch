@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Soundscape } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MixerPanelProps {
   soundscapes: Soundscape[];
@@ -20,12 +21,52 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
   );
   
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({});
+  const [audioUrls, setAudioUrls] = useState<{ [key: string]: string }>({});
+  const [loading, setLoading] = useState(true);
   
-  // Initialize audio elements
+  // Fetch public URLs for audio files
   useEffect(() => {
+    const fetchAudioUrls = async () => {
+      const urls: { [key: string]: string } = {};
+      
+      for (const soundscape of soundscapes) {
+        // Check if the URL is already a full URL or a Supabase storage path
+        if (soundscape.audioUrl.startsWith('http')) {
+          urls[soundscape.id] = soundscape.audioUrl;
+        } else {
+          try {
+            // Assume it's a path in the Supabase storage
+            const { data, error } = await supabase.storage
+              .from('meditations')
+              .getPublicUrl(soundscape.audioUrl);
+            
+            if (error) {
+              console.error("Error getting public URL:", error);
+            } else {
+              urls[soundscape.id] = data.publicUrl;
+            }
+          } catch (error) {
+            console.error("Error processing audio URL:", error);
+            // Fallback to the original URL if there's an error
+            urls[soundscape.id] = soundscape.audioUrl;
+          }
+        }
+      }
+      
+      setAudioUrls(urls);
+      setLoading(false);
+    };
+    
+    fetchAudioUrls();
+  }, [soundscapes]);
+  
+  // Initialize audio elements once we have the URLs
+  useEffect(() => {
+    if (loading) return;
+    
     soundscapes.forEach((soundscape) => {
-      if (!audioRefs.current[soundscape.id]) {
-        const audio = new Audio(soundscape.audioUrl);
+      if (!audioRefs.current[soundscape.id] && audioUrls[soundscape.id]) {
+        const audio = new Audio(audioUrls[soundscape.id]);
         audio.loop = true;
         audio.volume = 0;
         audioRefs.current[soundscape.id] = audio;
@@ -41,7 +82,7 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
         }
       });
     };
-  }, [soundscapes]);
+  }, [soundscapes, audioUrls, loading]);
   
   // Implement seamless looping for each audio element
   useEffect(() => {
@@ -101,6 +142,10 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
       [id]: prev[id] > 0 ? 0 : 0.5,
     }));
   };
+  
+  if (loading) {
+    return <div className="text-center p-4">Geluid laden...</div>;
+  }
   
   return (
     <div className={cn("w-full space-y-3", className)}>
