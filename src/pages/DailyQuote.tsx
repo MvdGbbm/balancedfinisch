@@ -40,7 +40,7 @@ const DailyQuote = () => {
   return <MobileLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold mb-1">Mijn Quote van de Dag</h1>
+          <h1 className="text-2xl font-bold mb-1">Selecteer jouw Quote van de Dag</h1>
           <p className="text-muted-foreground">
             Laat je inspireren door wijze woorden
           </p>
