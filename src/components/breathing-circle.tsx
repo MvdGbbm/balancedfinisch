@@ -68,8 +68,7 @@ export function BreathingCircle({
           "relative flex items-center justify-center rounded-full transition-all duration-500",
           {
             "scale-100 opacity-100": phase === "rest",
-            "scale-110 opacity-100": phase === "inhale",
-            "scale-110 opacity-100": phase === "hold",
+            "scale-110 opacity-100": phase === "inhale" || phase === "hold",
             "scale-100 opacity-100": phase === "exhale",
           },
           className
