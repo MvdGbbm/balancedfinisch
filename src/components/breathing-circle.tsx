@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Pause, Play, Timer } from "lucide-react";
+
 interface BreathingCircleProps {
   duration?: number;
   inhaleDuration?: number;
@@ -10,6 +11,7 @@ interface BreathingCircleProps {
   className?: string;
   onBreathComplete?: () => void;
 }
+
 export function BreathingCircle({
   inhaleDuration = 4000,
   holdDuration = 2000,
@@ -22,7 +24,6 @@ export function BreathingCircle({
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
 
-  // Breathing cycle
   useEffect(() => {
     if (!isActive) return;
     let startTime = Date.now();
@@ -37,13 +38,10 @@ export function BreathingCircle({
       return elapsed >= phaseDuration;
     };
 
-    // Initial progress calculation
     calculateProgress();
 
-    // Set up the interval for cycling through phases
     const interval = setInterval(() => {
       if (calculateProgress()) {
-        // Move to the next phase
         if (currentPhase === "inhale") {
           currentPhase = "hold";
           phaseDuration = holdDuration;
@@ -59,10 +57,11 @@ export function BreathingCircle({
         startTime = Date.now();
         setProgress(0);
       }
-    }, 16); // 60fps approx
+    }, 16);
 
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
+
   const toggleActive = () => {
     setIsActive(!isActive);
     if (!isActive) {
@@ -73,20 +72,19 @@ export function BreathingCircle({
       setPhase("rest");
     }
   };
+
   return <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative w-full max-w-xs">
         {phase !== "rest" && <Progress value={progress} className="h-2 mb-6 bg-gray-800" />}
       </div>
       
       <div className="relative">
-        {/* Dark outer ring */}
         <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" style={{
         width: '280px',
         height: '280px',
         transform: 'translate(-10px, -10px)'
       }} />
         
-        {/* Main circle container with scaling effect */}
         <div className={cn("relative flex items-center justify-center rounded-full transition-all", {
         "scale-100 opacity-100": phase === "rest" || phase === "exhale",
         "scale-125 opacity-100": phase === "inhale" || phase === "hold"
@@ -95,11 +93,10 @@ export function BreathingCircle({
         height: '260px',
         transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
       }}>
-          {/* Main circle with perfect roundness */}
           <div className={cn("rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", {
           "bg-gradient-to-r from-blue-600 to-blue-500": phase === "rest",
           "bg-gradient-to-r from-blue-600 to-cyan-500": phase === "inhale",
-          "bg-gradient-to-r from-amber-500 to-yellow-400": phase === "hold",
+          "bg-gradient-to-r from-purple-500 to-amber-400": phase === "hold",
           "bg-gradient-to-r from-indigo-600 to-blue-500": phase === "exhale"
         })} style={{
           width: '100%',
