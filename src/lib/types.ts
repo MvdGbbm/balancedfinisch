@@ -1,3 +1,4 @@
+
 export interface Meditation {
   id: string;
   title: string;
@@ -9,6 +10,7 @@ export interface Meditation {
   tags: string[];
   veraLink?: string;
   marcoLink?: string;
+  createdAt?: string; // Adding the createdAt property
 }
 
 export interface Soundscape {
