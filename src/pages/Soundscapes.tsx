@@ -44,11 +44,6 @@ const SoundscapeCard = ({
         <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
           <div>
             <h3 className="text-white font-medium">{soundscape.title}</h3>
-            <div className="flex gap-1 mt-1 flex-wrap">
-              <Badge variant="outline" className="bg-white/10 text-white text-[10px] h-4">
-                {soundscape.category}
-              </Badge>
-            </div>
           </div>
           <Button
             onClick={onTogglePlay}
@@ -100,6 +95,12 @@ const Soundscapes = () => {
   const [audioProcessor, setAudioProcessor] = useState<AudioProcessor | null>(null);
   
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
+  
+  useEffect(() => {
+    if (soundscapes.length > 0 && !selectedSoundscape) {
+      setSelectedSoundscape(soundscapes[0]);
+    }
+  }, [soundscapes, selectedSoundscape]);
   
   useEffect(() => {
     const initialVolumes: Record<string, number> = {};
@@ -182,10 +183,6 @@ const Soundscapes = () => {
       audio.pause();
       setPlayingSoundscapes((prev) => ({ ...prev, [id]: false }));
       setVolumes((prev) => ({ ...prev, [id]: 0 }));
-      
-      if (selectedSoundscape?.id === id) {
-        setSelectedSoundscape(null);
-      }
     } else {
       audio.volume = volumes[id] > 0 ? volumes[id] : 0.5;
       setVolumes((prev) => ({ ...prev, [id]: prev[id] > 0 ? prev[id] : 0.5 }));
@@ -247,7 +244,7 @@ const Soundscapes = () => {
                 <Search className="h-4 w-4 mr-2" />
                 Ontdek
               </TabsTrigger>
-              <TabsTrigger value="player" className="flex-1" disabled={!selectedSoundscape}>
+              <TabsTrigger value="player" className="flex-1">
                 <Music className="h-4 w-4 mr-2" />
                 Speler
               </TabsTrigger>
@@ -288,29 +285,19 @@ const Soundscapes = () => {
                 </div>
               )}
               
-              <div>
-                {Object.entries(categorizedSoundscapes).map(([category, soundscapesList]) => (
-                  <div key={category} className="mb-6">
-                    <h2 className="text-lg font-medium mb-3 flex items-center">
-                      <FileAudio className="h-4 w-4 mr-2 text-primary" />
-                      {category}
-                    </h2>
-                    <div className="grid grid-cols-1 gap-3">
-                      {soundscapesList.map((soundscape) => (
-                        <SoundscapeCard
-                          key={soundscape.id}
-                          soundscape={soundscape}
-                          isPlaying={!!playingSoundscapes[soundscape.id]}
-                          volume={volumes[soundscape.id] || 0}
-                          onTogglePlay={() => togglePlay(soundscape.id)}
-                          onVolumeChange={(value) => handleVolumeChange(soundscape.id, value)}
-                        />
-                      ))}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 gap-3">
+                {filteredSoundscapes.map((soundscape) => (
+                  <SoundscapeCard
+                    key={soundscape.id}
+                    soundscape={soundscape}
+                    isPlaying={!!playingSoundscapes[soundscape.id]}
+                    volume={volumes[soundscape.id] || 0}
+                    onTogglePlay={() => togglePlay(soundscape.id)}
+                    onVolumeChange={(value) => handleVolumeChange(soundscape.id, value)}
+                  />
                 ))}
                 
-                {Object.keys(categorizedSoundscapes).length === 0 && (
+                {filteredSoundscapes.length === 0 && (
                   <div className="text-center py-10 text-muted-foreground">
                     <p>Geen soundscapes gevonden die aan je zoekopdracht voldoen.</p>
                     {searchQuery && (
@@ -340,9 +327,6 @@ const Soundscapes = () => {
                     <h2 className="text-xl font-bold text-white">{selectedSoundscape.title}</h2>
                     <p className="text-white/80 text-sm mt-1">{selectedSoundscape.description}</p>
                     <div className="flex gap-1 mt-2 flex-wrap">
-                      <Badge variant="outline" className="bg-white/10 text-white">
-                        {selectedSoundscape.category}
-                      </Badge>
                       {selectedSoundscape.tags.map(tag => (
                         <Badge key={tag} variant="outline" className="bg-white/10 text-white">
                           {tag}
@@ -361,10 +345,10 @@ const Soundscapes = () => {
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <Equalizer 
                     audioProcessor={audioProcessor} 
-                    className="glass-morphism p-4 rounded-lg shadow-lg md:col-span-3"
+                    className="glass-morphism p-4 rounded-lg shadow-lg"
                   />
                 </div>
               </div>
