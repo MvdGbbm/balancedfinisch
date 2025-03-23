@@ -12,6 +12,7 @@ interface AudioPlayerProps {
   title?: string;
   className?: string;
   onEnded?: () => void;
+  customSoundscapeSelector?: React.ReactNode;
 }
 
 export function AudioPlayer({ 
@@ -20,7 +21,8 @@ export function AudioPlayer({
   showTitle = false,
   title,
   className, 
-  onEnded 
+  onEnded,
+  customSoundscapeSelector
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -159,6 +161,10 @@ export function AudioPlayer({
       
       {showTitle && title && (
         <h3 className="text-lg font-medium">{title}</h3>
+      )}
+      
+      {customSoundscapeSelector && (
+        <div className="mb-2">{customSoundscapeSelector}</div>
       )}
       
       <div className="w-full flex items-center space-x-2">
