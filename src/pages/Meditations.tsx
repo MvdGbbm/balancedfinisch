@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -7,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, Filter, X, ChevronDown, Headphones, Music } from "lucide-react";
+import { Clock, Play, Filter, X, ChevronDown, Music } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -37,7 +36,7 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
-  const [selectedAudioSource, setSelectedAudioSource] = useState<'default' | 'vera' | 'marco'>('default');
+  const [selectedAudioSource, setSelectedAudioSource] = useState<'vera' | 'marco'>('vera');
   
   useEffect(() => {
     const processUrls = async () => {
@@ -133,9 +132,9 @@ const Meditations = () => {
     setCurrentSoundscapeId(soundscapeId);
   };
   
-  const handleAudioSourceChange = (source: 'default' | 'vera' | 'marco') => {
+  const handleAudioSourceChange = (source: 'vera' | 'marco') => {
     setSelectedAudioSource(source);
-    toast.success(`${source === 'vera' ? 'Vera' : source === 'marco' ? 'Marco' : 'Standaard'} audio geselecteerd`);
+    toast.success(`${source === 'vera' ? 'Vera' : 'Marco'} audio geselecteerd`);
   };
   
   const getActiveAudioUrl = () => {
@@ -306,21 +305,6 @@ const Meditations = () => {
               <div className="grid grid-cols-1 gap-3">
                 {/* Audio source selection buttons */}
                 <div className="flex gap-2 items-center justify-between mt-2">
-                  <Button 
-                    variant={selectedAudioSource === 'default' ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 rounded-full",
-                      selectedAudioSource === 'default' 
-                        ? "bg-blue-500 hover:bg-blue-600 text-white" 
-                        : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
-                    )}
-                    onClick={() => handleAudioSourceChange('default')}
-                  >
-                    <Headphones className="h-4 w-4 mr-2" />
-                    Standaard
-                  </Button>
-                  
                   <Button 
                     variant={selectedAudioSource === 'vera' ? "default" : "outline"}
                     size="sm"
