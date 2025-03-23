@@ -61,13 +61,15 @@ const Meditations = () => {
   const getActiveAudioUrl = () => {
     if (!currentMeditationWithUrls) return '';
     
+    // The actual URL resolution is now handled in the meditation-detail-dialog component
+    // This function will be called by the dialog component when needed
     if (selectedAudioSource === 'vera' && currentMeditationWithUrls.veraLink) {
       return currentMeditationWithUrls.veraLink;
     } else if (selectedAudioSource === 'marco' && currentMeditationWithUrls.marcoLink) {
       return currentMeditationWithUrls.marcoLink;
     }
     
-    return currentMeditationWithUrls.audioUrl;
+    return currentMeditationWithUrls.audioUrl || '';
   };
   
   if (loading) {
