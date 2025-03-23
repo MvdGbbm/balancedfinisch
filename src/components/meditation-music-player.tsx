@@ -33,7 +33,7 @@ export function MeditationMusicPlayer() {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Music className="text-primary h-4 w-4" />
-          <h3 className="text-sm font-medium">Meditatie Muziek</h3>
+          <h3 className="text-sm font-medium">Persoonlijke Meditatie Muziek</h3>
         </div>
         
         <DropdownMenu>
@@ -45,7 +45,7 @@ export function MeditationMusicPlayer() {
               <ChevronDown className="h-4 w-4 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[220px]">
+          <DropdownMenuContent align="end" className="w-[220px] bg-background/95 backdrop-blur-sm">
             <DropdownMenuGroup>
               {meditationMusic.map((meditation) => (
                 <DropdownMenuItem 
