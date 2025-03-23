@@ -487,7 +487,7 @@ export function MixerPanel({
                 max={1}
                 step={0.01}
                 onValueChange={handleMasterVolumeChange}
-                className="w-20"
+                className="w-[90px]"
               />
             </div>
             
