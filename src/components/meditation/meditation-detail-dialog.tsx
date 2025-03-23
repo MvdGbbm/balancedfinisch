@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -49,14 +49,12 @@ export const MeditationDetailDialog = ({
   const [selectedVeraMeditationId, setSelectedVeraMeditationId] = useState<string | null>(null);
   const [selectedMarcoMeditationId, setSelectedMarcoMeditationId] = useState<string | null>(null);
   
-  if (!meditation) return null;
-  
-  // Filter meditations that have vera or marco links
+  // Always initialize these values, even if meditation is null
   const veraMeditations = meditations.filter(m => m.veraLink);
   const marcoMeditations = meditations.filter(m => m.marcoLink);
   
-  // Set current meditation as selected by default if it has the appropriate links
-  React.useEffect(() => {
+  // Move useEffect outside of conditional rendering
+  useEffect(() => {
     if (meditation) {
       if (meditation.veraLink) {
         setSelectedVeraMeditationId(meditation.id);
@@ -66,6 +64,8 @@ export const MeditationDetailDialog = ({
       }
     }
   }, [meditation]);
+  
+  if (!meditation) return null;
   
   const handleVeraMeditationChange = (meditationId: string) => {
     setSelectedVeraMeditationId(meditationId);
