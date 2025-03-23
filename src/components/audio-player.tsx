@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { quotes } from "@/data/quotes";
+import { AudioProcessor } from "@/lib/audio-processor";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -15,6 +16,7 @@ interface AudioPlayerProps {
   onEnded?: () => void;
   customSoundscapeSelector?: React.ReactNode;
   showQuote?: boolean;
+  getAudioProcessor?: (processor: AudioProcessor) => void;
 }
 
 export function AudioPlayer({ 
@@ -25,7 +27,8 @@ export function AudioPlayer({
   className, 
   onEnded,
   customSoundscapeSelector,
-  showQuote = false
+  showQuote = false,
+  getAudioProcessor
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -40,10 +43,20 @@ export function AudioPlayer({
   });
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioProcessorRef = useRef<AudioProcessor | null>(null);
   
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    
+    // Initialize audio processor
+    if (!audioProcessorRef.current) {
+      audioProcessorRef.current = new AudioProcessor(audio);
+      
+      if (getAudioProcessor && audioProcessorRef.current) {
+        getAudioProcessor(audioProcessorRef.current);
+      }
+    }
     
     const setAudioData = () => {
       setDuration(audio.duration);
@@ -71,8 +84,14 @@ export function AudioPlayer({
       audio.removeEventListener("loadeddata", setAudioData);
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
+      
+      // Clean up audio processor
+      if (audioProcessorRef.current) {
+        audioProcessorRef.current.cleanup();
+        audioProcessorRef.current = null;
+      }
     };
-  }, [onEnded, volume, isLooping]);
+  }, [onEnded, volume, isLooping, getAudioProcessor]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -111,6 +130,12 @@ export function AudioPlayer({
     }
   }, [isLooping]);
   
+  useEffect(() => {
+    if (audioProcessorRef.current) {
+      audioProcessorRef.current.setMasterVolume(volume);
+    }
+  }, [volume]);
+  
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -141,12 +166,13 @@ export function AudioPlayer({
   };
   
   const handleVolumeChange = (newValue: number[]) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
     const newVolume = newValue[0];
-    audio.volume = newVolume;
     setVolume(newVolume);
+    
+    // Volume is now handled by the audio processor
+    if (audioProcessorRef.current) {
+      audioProcessorRef.current.setMasterVolume(newVolume);
+    }
   };
   
   const formatTime = (time: number) => {
