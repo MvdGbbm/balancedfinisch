@@ -6,6 +6,7 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { MeditationSubcategory } from "./meditation-subcategory";
+import { MeditationItem } from "./meditation-item";
 import { Meditation } from "@/lib/types";
 
 interface MeditationCategoryTabsProps {
