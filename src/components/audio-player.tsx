@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { quotes } from "@/data/quotes";
-import { useToast } from "@/hooks/use-toast";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -33,9 +32,6 @@ export function AudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isLooping, setIsLooping] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const { toast } = useToast();
   
   // Random quote for display
   const [randomQuote] = useState(() => {
@@ -51,12 +47,6 @@ export function AudioPlayer({
     
     const setAudioData = () => {
       setDuration(audio.duration);
-      setIsLoaded(true);
-      setLoadError(false);
-      toast({
-        title: "Audio geladen",
-        description: "De meditatie is klaar om af te spelen."
-      });
     };
     
     const setAudioTime = () => {
@@ -69,22 +59,10 @@ export function AudioPlayer({
         if (onEnded) onEnded();
       }
     };
-
-    const handleError = (e) => {
-      console.error("Error loading audio:", e);
-      setLoadError(true);
-      setIsLoaded(false);
-      toast({
-        variant: "destructive",
-        title: "Fout bij laden",
-        description: "Kon de audio niet laden. Controleer of het bestand bestaat."
-      });
-    };
     
     audio.addEventListener("loadeddata", setAudioData);
     audio.addEventListener("timeupdate", setAudioTime);
     audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
     
     audio.volume = volume;
     audio.loop = isLooping;
@@ -93,20 +71,21 @@ export function AudioPlayer({
       audio.removeEventListener("loadeddata", setAudioData);
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
     };
-  }, [onEnded, volume, isLooping, toast]);
+  }, [onEnded, volume, isLooping]);
   
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
     setCurrentTime(0);
-    setIsLoaded(false);
-    setLoadError(false);
     
-    // Reset the audio element when the URL changes
-    audio.load();
+    if (isPlaying) {
+      audio.play().catch(error => {
+        console.error("Error playing audio:", error);
+        setIsPlaying(false);
+      });
+    }
   }, [audioUrl]);
   
   useEffect(() => {
@@ -138,25 +117,10 @@ export function AudioPlayer({
     
     if (isPlaying) {
       audio.pause();
-      toast({
-        title: "Gepauzeerd",
-        description: "De meditatie is gepauzeerd."
-      });
     } else {
       audio.play()
-        .then(() => {
-          toast({
-            title: "Speelt nu",
-            description: title ? `"${title}" speelt nu` : "De meditatie speelt nu"
-          });
-        })
         .catch(error => {
           console.error("Error playing audio:", error);
-          toast({
-            variant: "destructive",
-            title: "Fout bij afspelen",
-            description: "Kon de audio niet afspelen. Probeer het later opnieuw."
-          });
         });
     }
     
@@ -165,10 +129,6 @@ export function AudioPlayer({
   
   const toggleLoop = () => {
     setIsLooping(!isLooping);
-    toast({
-      title: !isLooping ? "Herhalen aan" : "Herhalen uit",
-      description: !isLooping ? "De meditatie zal blijven herhalen" : "De meditatie zal stoppen na afloop"
-    });
   };
   
   const handleProgressChange = (newValue: number[]) => {
@@ -206,16 +166,10 @@ export function AudioPlayer({
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-      <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />
+      <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
       {showTitle && title && (
         <h3 className="text-lg font-medium">{title}</h3>
-      )}
-      
-      {loadError && (
-        <div className="p-2 rounded-md bg-destructive/10 text-destructive text-center">
-          <p className="text-sm">Er is een probleem met het laden van de audio. Controleer of de URL correct is.</p>
-        </div>
       )}
       
       {showQuote && (
@@ -239,7 +193,6 @@ export function AudioPlayer({
             step={0.01}
             onValueChange={handleProgressChange}
             className="audio-player-slider"
-            disabled={!isLoaded}
           />
         </div>
         <div className="text-xs w-10">{formatTime(duration)}</div>
@@ -253,7 +206,6 @@ export function AudioPlayer({
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-full"
-              disabled={!isLoaded}
             >
               <SkipBack className="h-4 w-4" />
             </Button>
@@ -263,7 +215,6 @@ export function AudioPlayer({
               size="icon"
               variant="outline"
               className="h-10 w-10 rounded-full"
-              disabled={!isLoaded && !loadError}
             >
               {isPlaying ? (
                 <Pause className="h-5 w-5" />
@@ -277,7 +228,6 @@ export function AudioPlayer({
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-full"
-              disabled={!isLoaded}
             >
               <SkipForward className="h-4 w-4" />
             </Button>
@@ -291,7 +241,6 @@ export function AudioPlayer({
                   "h-8 w-8 rounded-full transition-colors",
                   isLooping && "bg-primary text-primary-foreground"
                 )}
-                disabled={!isLoaded}
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
