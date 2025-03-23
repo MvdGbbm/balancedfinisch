@@ -53,23 +53,33 @@ export function MeditationMusicPlayer() {
     });
   };
 
-  // Group meditations by subcategory if they have tags
+  // Group meditations by their tags for subcategories
   const getSubcategories = (meditationsInCategory) => {
-    const subcategoriesMap = {};
+    const tagGroups = {};
     
-    // Group by first tag as subcategory
     meditationsInCategory.forEach(meditation => {
-      const subcategory = meditation.tags && meditation.tags.length > 0 
-        ? meditation.tags[0] 
-        : "Overig"; // Default subcategory if no tags
-        
-      if (!subcategoriesMap[subcategory]) {
-        subcategoriesMap[subcategory] = [];
+      if (meditation.tags && meditation.tags.length > 0) {
+        meditation.tags.forEach(tag => {
+          if (!tagGroups[tag]) {
+            tagGroups[tag] = [];
+          }
+          // Check if meditation is already in this tag group
+          if (!tagGroups[tag].some(m => m.id === meditation.id)) {
+            tagGroups[tag].push(meditation);
+          }
+        });
+      } else {
+        // For meditations without tags, add to "Overig"
+        if (!tagGroups["Overig"]) {
+          tagGroups["Overig"] = [];
+        }
+        if (!tagGroups["Overig"].some(m => m.id === meditation.id)) {
+          tagGroups["Overig"].push(meditation);
+        }
       }
-      subcategoriesMap[subcategory].push(meditation);
     });
     
-    return subcategoriesMap;
+    return tagGroups;
   };
 
   return (
@@ -94,25 +104,26 @@ export function MeditationMusicPlayer() {
 
         {categories.map((category) => {
           const meditationsInCategory = meditationsByCategory[category];
-          const subcategories = getSubcategories(meditationsInCategory);
-          const subcategoryNames = Object.keys(subcategories);
+          const tagGroups = getSubcategories(meditationsInCategory);
+          const subcategoryNames = Object.keys(tagGroups);
           
           return (
             <TabsContent key={category} value={category} className="space-y-4">
-              {subcategoryNames.length > 1 ? (
-                // If we have subcategories, display as collapsible sections
-                subcategoryNames.map((subcategory) => (
+              {subcategoryNames.length > 0 ? (
+                // Display subcategories as collapsible sections
+                subcategoryNames.map((tag) => (
                   <Collapsible 
-                    key={subcategory}
+                    key={tag}
                     className="border rounded-lg overflow-hidden"
+                    defaultOpen={true}
                   >
                     <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50">
-                      <span className="font-medium">{subcategory}</span>
+                      <span className="font-medium capitalize">{tag}</span>
                       <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                       <div className="divide-y">
-                        {subcategories[subcategory].map((meditation) => (
+                        {tagGroups[tag].map((meditation) => (
                           <MeditationItem
                             key={meditation.id}
                             meditation={meditation}

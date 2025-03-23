@@ -10,7 +10,7 @@ export const meditations: Meditation[] = [
     duration: 10,
     category: "Ochtend",
     coverImageUrl: "/images/morning-meditation.jpg",
-    tags: ["ochtend", "beginners", "focus"],
+    tags: ["beginners", "focus", "ochtend"],
     createdAt: "2023-01-01T08:00:00Z",
   },
   {
@@ -20,8 +20,8 @@ export const meditations: Meditation[] = [
     audioUrl: "/audio/breathing.mp3",
     duration: 15,
     category: "Geleide Meditaties",
-    coverImageUrl: "/images/breathing.jpg",
     tags: ["ademhaling", "stress", "ontspanning"],
+    coverImageUrl: "/images/breathing.jpg",
     createdAt: "2023-01-02T10:30:00Z",
   },
   {
