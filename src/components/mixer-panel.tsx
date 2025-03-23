@@ -65,7 +65,6 @@ export function MixerPanel({
   ]);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   
-  // Try to load saved mixes from localStorage on mount
   useEffect(() => {
     const savedMixesData = localStorage.getItem('savedSoundscapeMixes');
     if (savedMixesData) {
@@ -77,12 +76,10 @@ export function MixerPanel({
     }
   }, []);
   
-  // Save mixes to localStorage when they change
   useEffect(() => {
     localStorage.setItem('savedSoundscapeMixes', JSON.stringify(savedMixes));
   }, [savedMixes]);
 
-  // Save current mix to a slot
   const saveMixToSlot = (slotId: number) => {
     const currentMix = selectedSoundscapeIds
       .filter(id => volumes[id] > 0)
@@ -108,10 +105,8 @@ export function MixerPanel({
     toast.success(`Mix opgeslagen in ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
   };
   
-  // Load a saved mix
   const loadMix = (slotId: number) => {
     if (activeSlot === slotId) {
-      // Don't reload if it's already the active slot
       return;
     }
     
@@ -122,17 +117,14 @@ export function MixerPanel({
       return;
     }
     
-    // First fade out all current sounds
     Object.keys(volumes).forEach(id => {
       if (volumes[id] > 0) {
-        fadeOutAudio(id, true); // Use quick fade
+        fadeOutAudio(id, true);
       }
     });
     
-    // Set up new soundscape IDs
     const newSelectedIds = [...selectedSoundscapeIds];
     
-    // For each saved soundscape
     mixToLoad.soundscapes.forEach((savedSound, index) => {
       if (index < maxDisplayed) {
         newSelectedIds[index] = savedSound.id;
@@ -141,13 +133,10 @@ export function MixerPanel({
     
     setSelectedSoundscapeIds(newSelectedIds);
     
-    // Set new volumes immediately to start the sounds
     const newVolumes = { ...volumes };
-    // First reset all volumes
     Object.keys(newVolumes).forEach(id => {
       newVolumes[id] = 0;
     });
-    // Then set the volumes from the saved mix
     mixToLoad.soundscapes.forEach(savedSound => {
       newVolumes[savedSound.id] = savedSound.volume;
     });
@@ -286,8 +275,8 @@ export function MixerPanel({
     }
     
     const startVolume = audio.volume;
-    const fadeSteps = quick ? 3 : 10; // Fewer steps for quick fade
-    const fadeInterval = quick ? 30 : 50; // Faster interval for quick fade
+    const fadeSteps = quick ? 3 : 10;
+    const fadeInterval = quick ? 30 : 50;
     let step = 0;
     
     const intervalId = window.setInterval(() => {
@@ -359,7 +348,6 @@ export function MixerPanel({
     return <div className="text-center p-4">Geluid laden...</div>;
   }
   
-  // Filter out already selected soundscapes for each dropdown
   const getAvailableSoundscapes = (currentPosition: number) => {
     return soundscapes.filter(soundscape => 
       !selectedSoundscapeIds.includes(soundscape.id) || 
@@ -413,7 +401,7 @@ export function MixerPanel({
                   <Button
                     key={`load-${mix.id}`}
                     size="sm"
-                    variant={activeSlot === mix.id ? "primary" : "outline"}
+                    variant={activeSlot === mix.id ? "default" : "outline"}
                     className="h-8 text-xs w-full flex items-center gap-1"
                     onClick={() => loadMix(mix.id)}
                   >
