@@ -13,15 +13,22 @@ import { Music, ChevronDown } from "lucide-react";
 import { meditations } from "@/data/meditations";
 
 export function MeditationMusicPlayer() {
-  // Filter meditations for morning meditations only
-  const morningMeditations = meditations.filter(item => item.category === "Ochtend");
-  
-  const [selectedMusic, setSelectedMusic] = useState(
-    morningMeditations.length > 0 ? morningMeditations[0] : null
-  );
+  const [selectedMusic, setSelectedMusic] = useState(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
 
-  const handleMusicSelect = (meditation: typeof meditations[0]) => {
+  // Filter meditations for personal meditation music (only category "Persoonlijke meditatie muziek")
+  const meditationMusic = meditations.filter(item => 
+    item.category === "Persoonlijke meditatie muziek"
+  );
+
+  // If we have meditation music available, set the first one as default
+  React.useEffect(() => {
+    if (meditationMusic.length > 0 && !selectedMusic) {
+      setSelectedMusic(meditationMusic[0]);
+    }
+  }, [meditationMusic, selectedMusic]);
+
+  const handleMusicSelect = (meditation) => {
     setSelectedMusic(meditation);
     setIsPlayerVisible(true);
   };
@@ -31,7 +38,7 @@ export function MeditationMusicPlayer() {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Music className="text-primary h-4 w-4" />
-          <h3 className="text-sm font-medium">Ochtend Meditatie</h3>
+          <h3 className="text-sm font-medium">Meditatie Muziek</h3>
         </div>
         
         <DropdownMenu>
@@ -43,10 +50,10 @@ export function MeditationMusicPlayer() {
               <ChevronDown className="h-4 w-4 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[220px] bg-background/95 backdrop-blur-sm">
+          <DropdownMenuContent align="end" className="w-[220px] bg-popover/95 backdrop-blur-sm">
             <DropdownMenuGroup>
-              {morningMeditations.length > 0 ? (
-                morningMeditations.map((meditation) => (
+              {meditationMusic.length > 0 ? (
+                meditationMusic.map((meditation) => (
                   <DropdownMenuItem 
                     key={meditation.id}
                     onClick={() => handleMusicSelect(meditation)}
@@ -60,7 +67,7 @@ export function MeditationMusicPlayer() {
                 ))
               ) : (
                 <DropdownMenuItem disabled>
-                  Geen ochtend meditaties beschikbaar
+                  Geen persoonlijke meditatie muziek beschikbaar
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>
