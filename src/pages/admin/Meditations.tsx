@@ -504,7 +504,7 @@ const AdminMeditations = () => {
               )}
               
               <div className="space-y-4 border-t pt-4 mt-4">
-                <h3 className="font-medium">Extra Knoppen</h3>
+                
                 
                 <div className="space-y-2">
                   <Label htmlFor="veraLink">Vera Link (optioneel)</Label>
