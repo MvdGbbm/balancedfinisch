@@ -247,8 +247,8 @@ const Meditations = () => {
           {currentMeditationWithUrls && (
             <div className="space-y-4">
               <div 
-                className="w-full h-80 bg-cover bg-center rounded-md"
-                style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})`, objectFit: "cover" }}
+                className="w-full h-72 bg-cover bg-center rounded-md"
+                style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})` }}
               />
               
               <div className="grid grid-cols-1 gap-3">
