@@ -9,18 +9,19 @@ export type Quote = {
 };
 
 export function useQuote() {
-  const { quotes } = useApp();
+  const { dailyQuotes } = useApp();
   const [quote, setQuote] = useState<Quote | null>(null);
   
   useEffect(() => {
-    if (quotes.length > 0) {
+    // Make sure dailyQuotes is defined and has items before trying to access its length
+    if (dailyQuotes && dailyQuotes.length > 0) {
       // Get a random quote or a daily quote based on the date
       const today = new Date();
       const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-      const index = dayOfYear % quotes.length;
-      setQuote(quotes[index]);
+      const index = dayOfYear % dailyQuotes.length;
+      setQuote(dailyQuotes[index]);
     }
-  }, [quotes]);
+  }, [dailyQuotes]);
   
   return { quote };
 }
