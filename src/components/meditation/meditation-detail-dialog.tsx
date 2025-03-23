@@ -50,6 +50,25 @@ export const MeditationDetailDialog = ({
 }: MeditationDetailDialogProps) => {
   if (!meditation) return null;
   
+  // Get the currently selected guided meditation ID
+  const getCurrentGuidedMeditationId = () => {
+    // If we're playing a guided meditation, we need to exclude it from the dropdown
+    const currentAudioUrl = getActiveAudioUrl();
+    const currentGuidedMeditation = guidedMeditations.find(
+      med => med.audioUrl === currentAudioUrl || 
+             med.veraLink === currentAudioUrl || 
+             med.marcoLink === currentAudioUrl
+    );
+    return currentGuidedMeditation?.id || '';
+  };
+  
+  const currentGuidedMeditationId = getCurrentGuidedMeditationId();
+  
+  // Filter out the currently playing meditation from the list
+  const filteredGuidedMeditations = guidedMeditations.filter(
+    med => med.id !== currentGuidedMeditationId
+  );
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-black text-white border-gray-800">
@@ -89,8 +108,8 @@ export const MeditationDetailDialog = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
-                  {guidedMeditations.length > 0 ? (
-                    guidedMeditations.map((guidedMeditation) => (
+                  {filteredGuidedMeditations.length > 0 ? (
+                    filteredGuidedMeditations.map((guidedMeditation) => (
                       <DropdownMenuItem 
                         key={guidedMeditation.id}
                         className="hover:bg-gray-800 focus:bg-gray-800"
@@ -130,8 +149,8 @@ export const MeditationDetailDialog = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
-                  {guidedMeditations.length > 0 ? (
-                    guidedMeditations.map((guidedMeditation) => (
+                  {filteredGuidedMeditations.length > 0 ? (
+                    filteredGuidedMeditations.map((guidedMeditation) => (
                       <DropdownMenuItem 
                         key={guidedMeditation.id}
                         className="hover:bg-gray-800 focus:bg-gray-800"
