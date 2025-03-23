@@ -12,6 +12,9 @@ export class AudioProcessor {
   private compressorNode: DynamicsCompressorNode;
   private destinationNode: AudioNode;
   
+  // Static map to track which audio elements have already been connected
+  private static connectedElements = new WeakMap<HTMLMediaElement, AudioContext>();
+  
   // Standard EQ frequencies
   private readonly EQ_FREQUENCIES = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 16000];
   
@@ -49,16 +52,68 @@ export class AudioProcessor {
   }
   
   public connectSource(audioElement: HTMLAudioElement): void {
+    // Check if this element is already connected to another context
+    if (AudioProcessor.connectedElements.has(audioElement)) {
+      const existingContext = AudioProcessor.connectedElements.get(audioElement);
+      if (existingContext !== this.context) {
+        console.warn('Audio element already connected to a different context. Skipping connection.');
+        return;
+      }
+    }
+    
     // Disconnect previous source if it exists
     if (this.sourceNode) {
       this.sourceNode.disconnect();
     }
     
-    // Create and connect new source
-    this.sourceNode = this.context.createMediaElementSource(audioElement);
+    try {
+      // Create and connect new source
+      this.sourceNode = this.context.createMediaElementSource(audioElement);
+      
+      // Mark this element as connected to our context
+      AudioProcessor.connectedElements.set(audioElement, this.context);
+      
+      // Connect the audio graph
+      this.connectAudioGraph();
+    } catch (error) {
+      console.error('Failed to connect audio source:', error);
+      // If we couldn't connect, at least create a placeholder sourceNode
+      // so the rest of the audio graph can still function without processing this element
+      this.sourceNode = null;
+      this.connectAudioGraphWithoutSource();
+    }
+  }
+  
+  private connectAudioGraphWithoutSource(): void {
+    // This is a fallback connection when we can't connect the source
+    // Just connect the default audio path for monitoring and effects
+    this.compressorNode.connect(this.analyserNode);
     
-    // Connect the audio graph
-    this.connectAudioGraph();
+    // Connect EQ bands in series
+    let previousNode: AudioNode = this.analyserNode;
+    this.equalizerBands.forEach(band => {
+      previousNode.connect(band);
+      previousNode = band;
+    });
+    
+    // Split to dry path
+    previousNode.connect(this.dryGain);
+    
+    // Create wet path with reverb
+    previousNode.connect(this.reverbGain);
+    if (this.reverbNode) {
+      this.reverbGain.connect(this.reverbNode);
+      this.reverbNode.connect(this.wetGain);
+    } else {
+      this.reverbGain.connect(this.wetGain);
+    }
+    
+    // Combine dry and wet
+    this.dryGain.connect(this.gainNode);
+    this.wetGain.connect(this.gainNode);
+    
+    // Output
+    this.gainNode.connect(this.destinationNode);
   }
   
   public getAnalyserNode(): AnalyserNode {
