@@ -24,6 +24,7 @@ export function BreathingCircle({
   const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
+  const [phaseTransition, setPhaseTransition] = useState(false);
 
   // Reset state when durations change
   useEffect(() => {
@@ -50,6 +51,12 @@ export function BreathingCircle({
       const phaseProgress = elapsed / phaseDuration * 100;
       setPhaseTimeLeft(Math.ceil(remaining / 1000));
       setProgress(Math.min(phaseProgress, 100));
+      
+      // Trigger phase transition animation when getting close to phase change
+      if (phaseProgress > 85 && !phaseTransition) {
+        setPhaseTransition(true);
+      }
+      
       return elapsed >= phaseDuration;
     };
 
@@ -69,13 +76,14 @@ export function BreathingCircle({
           phaseDuration = inhaleDuration;
         }
         setPhase(currentPhase);
+        setPhaseTransition(false);
         startTime = Date.now();
         setProgress(0);
       }
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
+  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, phaseTransition]);
 
   const toggleActive = () => {
     setIsActive(!isActive);
@@ -86,6 +94,22 @@ export function BreathingCircle({
     } else {
       setPhase("rest");
     }
+  };
+
+  // Get text color based on phase with smooth transitions
+  const getPhaseTextColorClass = () => {
+    if (phase === "inhale") return "text-blue-400";
+    if (phase === "hold") return "text-amber-400";
+    if (phase === "exhale") return "text-indigo-400";
+    return "text-white";
+  };
+
+  // Get phase text with transition effect
+  const getPhaseText = () => {
+    if (phase === "inhale") return "Adem in";
+    if (phase === "hold") return "Houd vast";
+    if (phase === "exhale") return "Adem uit";
+    return "";
   };
 
   return <div className="flex flex-col items-center justify-center space-y-6">
@@ -122,8 +146,11 @@ export function BreathingCircle({
                   <Play className="h-8 w-8" />
                   <span className="text-lg font-medium">Start</span>
                 </button> : <div className="flex flex-col items-center space-y-2">
-                  <div className="text-2xl font-semibold mb-1">
-                    {phase === "inhale" ? "Adem in" : phase === "hold" ? "Houd vast" : "Adem uit"}
+                  <div className={cn(
+                    "text-2xl font-semibold mb-1 transition-colors duration-1000",
+                    getPhaseTextColorClass()
+                  )}>
+                    {getPhaseText()}
                   </div>
                   <div className="flex items-center justify-center text-4xl font-bold">
                     {phaseTimeLeft}
