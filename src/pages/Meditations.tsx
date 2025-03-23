@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -247,9 +248,15 @@ const Meditations = () => {
           {currentMeditationWithUrls && (
             <div className="space-y-4">
               <div 
-                className="w-full h-80 bg-cover bg-center rounded-md"
-                style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})`, objectFit: "cover" }}
-              />
+                className="w-full aspect-video bg-cover bg-center rounded-md overflow-hidden"
+                style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})` }}
+              >
+                <img 
+                  src={currentMeditationWithUrls.coverImageUrl} 
+                  alt={currentMeditationWithUrls.title} 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
               
               <div className="grid grid-cols-1 gap-3">
                 <AudioPlayer 
@@ -259,20 +266,13 @@ const Meditations = () => {
                   customSoundscapeSelector={
                     <MixerPanel 
                       soundscapes={soundscapes}
-                      maxDisplayed={1}
-                      compactMode={true}
+                      maxDisplayed={4}
+                      compactMode={false}
                       externalSoundscapeId={currentSoundscapeId || soundscapes[0]?.id}
                       onSoundscapeChange={handleSoundscapeChange}
+                      className="bg-[#0F1623] border-blue-950 rounded-lg"
                     />
                   }
-                />
-                
-                <MixerPanel 
-                  soundscapes={soundscapes} 
-                  maxDisplayed={4}
-                  resetVolumesOnChange={true}
-                  externalSoundscapeId={currentSoundscapeId}
-                  onSoundscapeChange={handleSoundscapeChange}
                 />
               </div>
             </div>
