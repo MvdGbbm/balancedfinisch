@@ -84,7 +84,7 @@ const AdminMeditations = () => {
     setCurrentMeditation(meditation);
     setTitle(meditation.title);
     setDescription(meditation.description);
-    setAudioUrl(meditation.audioUrl);
+    setAudioUrl(meditation.audioUrl || "");
     setDuration(meditation.duration);
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
@@ -149,7 +149,7 @@ const AdminMeditations = () => {
   
   const categories = Array.from(
     new Set(meditations.map((meditation) => meditation.category))
-  );
+  ).sort();
   
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
@@ -362,16 +362,29 @@ const AdminMeditations = () => {
                       <SelectValue placeholder="Selecteer categorie" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                      {category && !categories.includes(category) && (
-                        <SelectItem value={category}>
-                          {category} (Nieuw)
+                      {categories.length > 0 ? (
+                        categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="nieuwe-categorie" disabled>
+                          Geen categorieën beschikbaar
                         </SelectItem>
                       )}
+                      <SelectItem value="nieuwe-categorie">
+                        <Input 
+                          placeholder="Nieuwe categorie" 
+                          value={category}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setCategory(e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
