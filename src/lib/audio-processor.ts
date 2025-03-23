@@ -11,7 +11,6 @@ export class AudioProcessor {
   private wetGain: GainNode;
   private compressorNode: DynamicsCompressorNode;
   private destinationNode: AudioNode;
-  private connectedElement: HTMLAudioElement | null = null;
   
   // Standard EQ frequencies
   private readonly EQ_FREQUENCIES = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 16000];
@@ -50,33 +49,16 @@ export class AudioProcessor {
   }
   
   public connectSource(audioElement: HTMLAudioElement): void {
-    // Check if already connected to this element
-    if (this.connectedElement === audioElement && this.sourceNode) {
-      return; // Already connected to this element, no need to reconnect
-    }
-    
     // Disconnect previous source if it exists
     if (this.sourceNode) {
       this.sourceNode.disconnect();
-      this.sourceNode = null;
     }
     
-    try {
-      // Create and connect new source
-      this.sourceNode = this.context.createMediaElementSource(audioElement);
-      this.connectedElement = audioElement;
-      
-      // Connect the audio graph
-      this.connectAudioGraph();
-    } catch (error) {
-      console.error("Error connecting audio source:", error);
-      
-      // If we failed to create a source node, try to resume any audio processing
-      // without a source node connected
-      if (!this.sourceNode && this.context.state === 'suspended') {
-        this.context.resume().catch(e => console.error("Failed to resume audio context:", e));
-      }
-    }
+    // Create and connect new source
+    this.sourceNode = this.context.createMediaElementSource(audioElement);
+    
+    // Connect the audio graph
+    this.connectAudioGraph();
   }
   
   public getAnalyserNode(): AnalyserNode {
@@ -225,9 +207,7 @@ export class AudioProcessor {
   public cleanup(): void {
     if (this.sourceNode) {
       this.sourceNode.disconnect();
-      this.sourceNode = null;
     }
-    this.connectedElement = null;
     this.gainNode.disconnect();
     this.analyserNode.disconnect();
     this.equalizerBands.forEach(band => band.disconnect());

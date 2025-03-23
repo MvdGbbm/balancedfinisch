@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ export function AudioPlayer({
   const [volume, setVolume] = useState(0.8);
   const [isLooping, setIsLooping] = useState(false);
   
+  // Random quote for display
   const [randomQuote] = useState(() => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     return quotes[randomIndex];
@@ -47,14 +49,13 @@ export function AudioPlayer({
     const audio = audioRef.current;
     if (!audio) return;
     
+    // Initialize audio processor
     if (!audioProcessorRef.current) {
       audioProcessorRef.current = new AudioProcessor(audio);
       
       if (getAudioProcessor && audioProcessorRef.current) {
         getAudioProcessor(audioProcessorRef.current);
       }
-    } else {
-      audioProcessorRef.current.connectSource(audio);
     }
     
     const setAudioData = () => {
@@ -84,6 +85,7 @@ export function AudioPlayer({
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
       
+      // Clean up audio processor
       if (audioProcessorRef.current) {
         audioProcessorRef.current.cleanup();
         audioProcessorRef.current = null;
@@ -167,6 +169,7 @@ export function AudioPlayer({
     const newVolume = newValue[0];
     setVolume(newVolume);
     
+    // Volume is now handled by the audio processor
     if (audioProcessorRef.current) {
       audioProcessorRef.current.setMasterVolume(newVolume);
     }
