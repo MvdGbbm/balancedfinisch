@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Volume2, Volume, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,9 +18,15 @@ interface MixerPanelProps {
   soundscapes: Soundscape[];
   className?: string;
   maxDisplayed?: number;
+  resetVolumesOnChange?: boolean;
 }
 
-export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPanelProps) {
+export function MixerPanel({ 
+  soundscapes, 
+  className, 
+  maxDisplayed = 4, 
+  resetVolumesOnChange = false 
+}: MixerPanelProps) {
   const [selectedSoundscapeIds, setSelectedSoundscapeIds] = useState<string[]>(
     soundscapes.slice(0, maxDisplayed).map(s => s.id)
   );
@@ -36,8 +41,8 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({});
   const [audioUrls, setAudioUrls] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
+  const [fadeIntervals, setFadeIntervals] = useState<{ [key: string]: number | null }>({});
   
-  // Fetch public URLs for audio files
   useEffect(() => {
     const fetchAudioUrls = async () => {
       try {
@@ -45,12 +50,10 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
         const urls: { [key: string]: string } = {};
         
         for (const soundscape of soundscapes) {
-          // Check if the URL is already a full URL or a Supabase storage path
           if (soundscape.audioUrl.startsWith('http')) {
             urls[soundscape.id] = soundscape.audioUrl;
           } else {
             try {
-              // Assume it's a path in the Supabase storage
               const { data } = await supabase.storage
                 .from('meditations')
                 .getPublicUrl(soundscape.audioUrl);
@@ -60,7 +63,6 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
             } catch (error) {
               console.error(`Error loading audio for ${soundscape.title}:`, error);
               toast.error(`Kon geluid niet laden voor ${soundscape.title}`);
-              // Fallback to the original URL if there's an error
               urls[soundscape.id] = soundscape.audioUrl;
             }
           }
@@ -78,11 +80,9 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
     fetchAudioUrls();
   }, [soundscapes]);
   
-  // Initialize audio elements once we have the URLs
   useEffect(() => {
     if (loading) return;
     
-    // Clear previous audio elements
     Object.values(audioRefs.current).forEach((audio) => {
       if (audio) {
         audio.pause();
@@ -92,7 +92,6 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
     
     audioRefs.current = {};
     
-    // Initialize new audio elements
     soundscapes.forEach((soundscape) => {
       if (audioUrls[soundscape.id]) {
         const audio = new Audio(audioUrls[soundscape.id]);
@@ -100,7 +99,6 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
         audio.volume = 0;
         audio.preload = "auto";
         
-        // Add error handling
         audio.onerror = (e) => {
           console.error(`Error loading audio for ${soundscape.title}:`, e);
           toast.error(`Kon geluid niet laden voor ${soundscape.title}`);
@@ -113,7 +111,6 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
       }
     });
     
-    // Clean up function
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
@@ -124,15 +121,12 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
     };
   }, [soundscapes, audioUrls, loading]);
   
-  // Implement seamless looping for each audio element
   useEffect(() => {
     const handleSeamlessLoops = () => {
       Object.entries(audioRefs.current).forEach(([id, audio]) => {
         if (!audio) return;
         
-        // Only set up seamless looping for playing audio
         if (!audio.paused && audio.duration > 0) {
-          // When we're 0.2 seconds away from the end, seamlessly loop
           if (audio.currentTime > audio.duration - 0.2) {
             const currentPlaybackRate = audio.playbackRate;
             audio.currentTime = 0;
@@ -142,7 +136,6 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
       });
     };
     
-    // Set up interval to check audio positions
     const intervalId = setInterval(handleSeamlessLoops, 100);
     
     return () => {
@@ -150,7 +143,6 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
     };
   }, []);
   
-  // Update volumes when changed
   useEffect(() => {
     Object.entries(volumes).forEach(([id, volume]) => {
       const audio = audioRefs.current[id];
@@ -168,15 +160,50 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
     });
   }, [volumes]);
   
-  // Handle volume change
+  const fadeOutAudio = (soundscapeId: string) => {
+    if (fadeIntervals[soundscapeId]) {
+      clearInterval(fadeIntervals[soundscapeId] as number);
+    }
+    
+    const audio = audioRefs.current[soundscapeId];
+    if (!audio || audio.paused || audio.volume === 0) {
+      setVolumes(prev => ({ ...prev, [soundscapeId]: 0 }));
+      return;
+    }
+    
+    const startVolume = audio.volume;
+    const fadeSteps = 10;
+    const fadeInterval = 50;
+    let step = 0;
+    
+    const intervalId = window.setInterval(() => {
+      step++;
+      const newVolume = startVolume * (1 - step / fadeSteps);
+      
+      if (step >= fadeSteps || newVolume <= 0.01) {
+        setVolumes(prev => ({ ...prev, [soundscapeId]: 0 }));
+        clearInterval(intervalId);
+        setFadeIntervals(prev => ({ ...prev, [soundscapeId]: null }));
+      } else {
+        setVolumes(prev => ({ ...prev, [soundscapeId]: newVolume }));
+      }
+    }, fadeInterval);
+    
+    setFadeIntervals(prev => ({ ...prev, [soundscapeId]: intervalId }));
+  };
+  
   const handleVolumeChange = (id: string, value: number[]) => {
+    if (fadeIntervals[id]) {
+      clearInterval(fadeIntervals[id] as number);
+      setFadeIntervals(prev => ({ ...prev, [id]: null }));
+    }
+    
     setVolumes((prev) => ({
       ...prev,
       [id]: value[0],
     }));
   };
   
-  // Toggle mute
   const toggleMute = (id: string) => {
     setVolumes((prev) => ({
       ...prev,
@@ -184,26 +211,40 @@ export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPa
     }));
   };
   
-  // Handle soundscape selection change
   const handleSoundscapeChange = (position: number, soundscapeId: string) => {
+    if (resetVolumesOnChange) {
+      const previousId = selectedSoundscapeIds[position];
+      if (previousId && volumes[previousId] > 0) {
+        fadeOutAudio(previousId);
+      }
+    }
+    
     setSelectedSoundscapeIds(prev => {
       const newSelection = [...prev];
       newSelection[position] = soundscapeId;
       return newSelection;
     });
     
-    // Reset volume for this new selection
     setVolumes(prev => ({
       ...prev,
       [soundscapeId]: 0
     }));
   };
   
+  useEffect(() => {
+    return () => {
+      Object.values(fadeIntervals).forEach(intervalId => {
+        if (intervalId !== null) {
+          clearInterval(intervalId);
+        }
+      });
+    };
+  }, [fadeIntervals]);
+  
   if (loading) {
     return <div className="text-center p-4">Geluid laden...</div>;
   }
   
-  // Get the selected soundscapes based on their IDs
   const selectedSoundscapes = selectedSoundscapeIds
     .map(id => soundscapes.find(s => s.id === id))
     .filter(s => s !== undefined) as Soundscape[];

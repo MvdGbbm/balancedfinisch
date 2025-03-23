@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,11 +8,20 @@ import { Switch } from "@/components/ui/switch";
 interface AudioPlayerProps {
   audioUrl: string;
   showControls?: boolean;
+  showTitle?: boolean;
+  title?: string;
   className?: string;
   onEnded?: () => void;
 }
 
-export function AudioPlayer({ audioUrl, showControls = true, className, onEnded }: AudioPlayerProps) {
+export function AudioPlayer({ 
+  audioUrl, 
+  showControls = true, 
+  showTitle = true,
+  title,
+  className, 
+  onEnded 
+}: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -23,12 +31,10 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
   const audioRef = useRef<HTMLAudioElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   
-  // Set up audio element
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
-    // Set up event listeners
     const setAudioData = () => {
       setDuration(audio.duration);
     };
@@ -44,16 +50,13 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
       }
     };
     
-    // Events
     audio.addEventListener("loadeddata", setAudioData);
     audio.addEventListener("timeupdate", setAudioTime);
     audio.addEventListener("ended", handleEnded);
     
-    // Set initial volume
     audio.volume = volume;
     audio.loop = isLooping;
     
-    // Clean up
     return () => {
       audio.removeEventListener("loadeddata", setAudioData);
       audio.removeEventListener("timeupdate", setAudioTime);
@@ -61,22 +64,15 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     };
   }, [onEnded, volume, isLooping]);
   
-  // Handle seamless looping
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
-    // Set loop property on audio element
     audio.loop = isLooping;
     
-    // Experimental seamless loop handling
     if (isLooping) {
-      // Listen for time updates to handle precise loop point
       const handleTimeUpdate = () => {
-        // When we're 0.2 seconds away from the end, seamlessly loop
-        // This prevents the tiny gap between loop iterations
         if (audio.duration > 0 && audio.currentTime > audio.duration - 0.2) {
-          // Small adjustment to prevent audible gap
           const currentPlaybackRate = audio.playbackRate;
           audio.currentTime = 0;
           audio.playbackRate = currentPlaybackRate;
@@ -91,7 +87,6 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     }
   }, [isLooping]);
   
-  // Play/Pause
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -108,12 +103,10 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     setIsPlaying(!isPlaying);
   };
   
-  // Toggle loop
   const toggleLoop = () => {
     setIsLooping(!isLooping);
   };
   
-  // Seek
   const handleProgressChange = (newValue: number[]) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -123,7 +116,6 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     setCurrentTime(newTime);
   };
   
-  // Volume change
   const handleVolumeChange = (newValue: number[]) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -133,7 +125,6 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     setVolume(newVolume);
   };
   
-  // Format time
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
     
@@ -142,7 +133,6 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
   
-  // Skip forward/backward
   const skipTime = (amount: number) => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -155,7 +145,10 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
       <div className="flex flex-col space-y-2">
-        {/* Progress bar */}
+        {showTitle && title && (
+          <h3 className="text-sm font-medium mb-2">{title}</h3>
+        )}
+        
         <div className="w-full flex items-center space-x-2">
           <div className="text-xs w-10 text-right">{formatTime(currentTime)}</div>
           <div className="flex-grow">
@@ -171,7 +164,6 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
           <div className="text-xs w-10">{formatTime(duration)}</div>
         </div>
         
-        {/* Controls */}
         {showControls && (
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -221,7 +213,6 @@ export function AudioPlayer({ audioUrl, showControls = true, className, onEnded 
               </div>
             </div>
             
-            {/* Volume control */}
             <div className="flex items-center space-x-2">
               <Volume2 className="h-4 w-4 text-muted-foreground" />
               <Slider

@@ -246,12 +246,19 @@ const Meditations = () => {
                 style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})` }}
               />
               
-              <AudioPlayer 
-                audioUrl={currentMeditationWithUrls.audioUrl} 
-                className="w-full"
-              />
-              
-              <MixerPanel soundscapes={soundscapes} maxDisplayed={4} />
+              <div className="grid grid-cols-1 gap-4">
+                <AudioPlayer 
+                  audioUrl={currentMeditationWithUrls.audioUrl} 
+                  className="w-full"
+                  showTitle={false}
+                />
+                
+                <MixerPanel 
+                  soundscapes={soundscapes} 
+                  maxDisplayed={4} 
+                  resetVolumesOnChange={true}
+                />
+              </div>
             </div>
           )}
         </DialogContent>
