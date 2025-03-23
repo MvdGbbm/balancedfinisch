@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,7 +36,6 @@ export function AudioPlayer({
   const [loadError, setLoadError] = useState(false);
   const { toast } = useToast();
   
-  // Random quote for display
   const [randomQuote] = useState(() => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     return quotes[randomIndex];
@@ -105,7 +103,6 @@ export function AudioPlayer({
     setIsLoaded(false);
     setLoadError(false);
     
-    // Reset the audio element when the URL changes
     audio.load();
   }, [audioUrl]);
   
@@ -116,18 +113,21 @@ export function AudioPlayer({
     audio.loop = isLooping;
     
     if (isLooping) {
-      const handleTimeUpdate = () => {
-        if (audio.duration > 0 && audio.currentTime > audio.duration - 0.2) {
+      const handleSeamlessLoop = () => {
+        if (audio.duration > 0 && audio.currentTime >= audio.duration - 0.2) {
+          const currentVolume = audio.volume;
           const currentPlaybackRate = audio.playbackRate;
+          
           audio.currentTime = 0;
           audio.playbackRate = currentPlaybackRate;
+          audio.volume = currentVolume;
         }
       };
       
-      audio.addEventListener("timeupdate", handleTimeUpdate);
+      const intervalId = setInterval(handleSeamlessLoop, 10);
       
       return () => {
-        audio.removeEventListener("timeupdate", handleTimeUpdate);
+        clearInterval(intervalId);
       };
     }
   }, [isLooping]);
