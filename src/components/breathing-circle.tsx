@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -101,8 +102,6 @@ export function BreathingCircle({
   };
 
   const getGradientStyle = () => {
-    let style = {};
-    
     if (phase === "rest") {
       return {
         background: "linear-gradient(to right, #2563eb, #3b82f6)"
@@ -136,7 +135,7 @@ export function BreathingCircle({
       };
     }
     
-    return style;
+    return {};
   };
 
   const getPhaseText = () => {
@@ -146,24 +145,24 @@ export function BreathingCircle({
     return "";
   };
 
-  return <div className="flex flex-col items-center justify-center space-y-6">
+  return <div className="flex flex-col items-center justify-center space-y-4">
       <div className="relative w-full max-w-xs">
-        {phase !== "rest" && <Progress value={progress} className="h-2 mb-6 bg-gray-800" />}
+        {phase !== "rest" && <Progress value={progress} className="h-1.5 mb-4 bg-gray-800" />}
       </div>
       
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" style={{
-        width: '280px',
-        height: '280px',
-        transform: 'translate(-10px, -10px)'
+        width: '240px',
+        height: '240px',
+        transform: 'translate(-8px, -8px)'
       }} />
         
         <div className={cn("relative flex items-center justify-center rounded-full transition-all", {
         "scale-100 opacity-100": phase === "rest" || phase === "exhale",
         "scale-125 opacity-100": phase === "inhale" || phase === "hold"
       }, className)} style={{
-        width: '260px',
-        height: '260px',
+        width: '220px',
+        height: '220px',
         transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
       }}>
           <div className="rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]" 
@@ -174,22 +173,22 @@ export function BreathingCircle({
                   ...getGradientStyle()
                }}>
             <div className="text-center text-white">
-              {phase === "rest" ? <button onClick={toggleActive} className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors">
-                  <Play className="h-8 w-8" />
+              {phase === "rest" ? <button onClick={toggleActive} className="flex flex-col items-center justify-center space-y-1 px-6 py-3 rounded-full transition-colors">
+                  <Play className="h-7 w-7" />
                   <span className="text-lg font-medium">Start</span>
-                </button> : <div className="flex flex-col items-center space-y-2">
+                </button> : <div className="flex flex-col items-center space-y-1">
                   <div 
-                    className="text-2xl font-semibold mb-1 transition-opacity duration-500" 
+                    className="text-xl font-semibold transition-opacity duration-500" 
                     style={{ opacity: textFade }}
                   >
                     {getPhaseText()}
                   </div>
-                  <div className="flex items-center justify-center text-4xl font-bold">
+                  <div className="flex items-center justify-center text-3xl font-bold">
                     {phaseTimeLeft}
-                    <span className="text-sm ml-1 mt-1">s</span>
+                    <span className="text-xs ml-1 mt-1">s</span>
                   </div>
-                  <button onClick={toggleActive} className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors">
-                    <Pause className="h-4 w-4" />
+                  <button onClick={toggleActive} className="mt-2 flex items-center justify-center space-x-1 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors text-sm">
+                    <Pause className="h-3 w-3" />
                     <span>Pauzeren</span>
                   </button>
                 </div>}
@@ -198,11 +197,11 @@ export function BreathingCircle({
         </div>
       </div>
       
-      {isActive && <div className="mt-4 text-center flex items-center gap-2 text-sm text-muted-foreground">
-          <Timer className="h-4 w-4" />
-          <p className="py-[25px]">
-            Adem in ({inhaleDuration / 1000}s) → Houd vast ({holdDuration / 1000}s) →
-            Adem uit ({exhaleDuration / 1000}s)
+      {isActive && <div className="mt-1 text-center flex items-center gap-1 text-xs text-muted-foreground">
+          <Timer className="h-3 w-3" />
+          <p>
+            In ({inhaleDuration / 1000}s) → Vast ({holdDuration / 1000}s) →
+            Uit ({exhaleDuration / 1000}s)
           </p>
         </div>}
     </div>;
