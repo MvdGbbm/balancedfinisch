@@ -91,24 +91,48 @@ export function BreathingCircle({
     }
   };
 
-  // Dynamic gradient colors based on phases with smooth transitions
+  // Dynamic gradient colors based on phase with fluid transitions
   const getGradientStyle = () => {
-    let gradientColors = "";
+    // Using CSS custom properties to dynamically update the gradient
+    let style = {};
     
     if (phase === "rest") {
-      gradientColors = "bg-gradient-to-r from-blue-600 to-blue-500";
-    } else if (phase === "inhale") {
-      // Transition from blue to purple
-      gradientColors = `bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500`;
-    } else if (phase === "hold") {
-      // Transition from purple to amber
-      gradientColors = `bg-gradient-to-r from-violet-500 via-purple-500 to-amber-400`;
-    } else if (phase === "exhale") {
-      // Transition from amber to blue
-      gradientColors = `bg-gradient-to-r from-amber-400 via-cyan-500 to-blue-600`;
+      return {
+        background: "linear-gradient(to right, #2563eb, #3b82f6)"
+      };
     }
     
-    return gradientColors;
+    if (phase === "inhale") {
+      // Smooth transition from blue to purple based on progress
+      return {
+        background: `linear-gradient(to right, 
+          #2563eb, 
+          hsl(${230 + transitionProgress * 30}, ${60 + transitionProgress * 10}%, ${50 - transitionProgress * 5}%),
+          hsl(${260 + transitionProgress * 20}, ${70 + transitionProgress * 10}%, ${50}%))`
+      };
+    }
+    
+    if (phase === "hold") {
+      // Transition from purple to amber
+      return {
+        background: `linear-gradient(to right, 
+          hsl(${280 - transitionProgress * 20}, ${70}%, ${50}%), 
+          hsl(${260 - transitionProgress * 70}, ${80 - transitionProgress * 20}%, ${60 + transitionProgress * 20}%),
+          hsl(${190 - transitionProgress * 50}, ${90 - transitionProgress * 10}%, ${70 + transitionProgress * 10}%))`
+      };
+    }
+    
+    if (phase === "exhale") {
+      // Transition from amber back to blue
+      return {
+        background: `linear-gradient(to right, 
+          hsl(${45 - transitionProgress * 15}, ${80 - transitionProgress * 20}%, ${70 - transitionProgress * 10}%), 
+          hsl(${30 + transitionProgress * 180}, ${70 + transitionProgress * 10}%, ${60 - transitionProgress * 10}%),
+          hsl(${210 + transitionProgress * 30}, ${80}%, ${50}%))`
+      };
+    }
+    
+    return style;
   };
 
   return <div className="flex flex-col items-center justify-center space-y-6">
@@ -131,11 +155,13 @@ export function BreathingCircle({
         height: '260px',
         transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
       }}>
-          <div className={cn("rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", getGradientStyle())} style={{
-          width: '100%',
-          height: '100%',
-          transition: 'background 1s ease-in-out'
-        }}>
+          <div className="rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]" 
+               style={{
+                  width: '100%',
+                  height: '100%',
+                  transition: 'background 500ms linear',
+                  ...getGradientStyle()
+               }}>
             <div className="text-center text-white">
               {phase === "rest" ? <button onClick={toggleActive} className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors">
                   <Play className="h-8 w-8" />
