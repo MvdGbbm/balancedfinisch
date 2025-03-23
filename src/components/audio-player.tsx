@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ export function AudioPlayer({
   const [volume, setVolume] = useState(0.8);
   const [isLooping, setIsLooping] = useState(false);
   
+  // Random quote for display
   const [randomQuote] = useState(() => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     return quotes[randomIndex];
@@ -245,15 +247,15 @@ export function AudioPlayer({
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Volume2 className="h-4 w-4" />
+          <div className="flex items-center space-x-2">
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
             <Slider
               value={[volume]}
               min={0}
               max={1}
               step={0.01}
               onValueChange={handleVolumeChange}
-              className="w-[90px]"
+              className="w-24"
             />
           </div>
         </div>
