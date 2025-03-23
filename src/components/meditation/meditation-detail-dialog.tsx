@@ -1,12 +1,12 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Music, ChevronDown } from "lucide-react";
+import { Music } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,13 +14,6 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { useApp } from "@/context/AppContext";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -45,55 +38,7 @@ export const MeditationDetailDialog = ({
   onSoundscapeChange,
   getActiveAudioUrl
 }: MeditationDetailDialogProps) => {
-  const { meditations } = useApp();
-  const [selectedVeraMeditationId, setSelectedVeraMeditationId] = useState<string | null>(null);
-  const [selectedMarcoMeditationId, setSelectedMarcoMeditationId] = useState<string | null>(null);
-  
   if (!meditation) return null;
-  
-  // Filter meditations that have vera or marco links
-  const veraMeditations = meditations.filter(m => m.veraLink);
-  const marcoMeditations = meditations.filter(m => m.marcoLink);
-  
-  // Set current meditation as selected by default if it has the appropriate links
-  React.useEffect(() => {
-    if (meditation) {
-      if (meditation.veraLink) {
-        setSelectedVeraMeditationId(meditation.id);
-      }
-      if (meditation.marcoLink) {
-        setSelectedMarcoMeditationId(meditation.id);
-      }
-    }
-  }, [meditation]);
-  
-  const handleVeraMeditationChange = (meditationId: string) => {
-    setSelectedVeraMeditationId(meditationId);
-    if (selectedAudioSource === 'vera') {
-      onAudioSourceChange('vera');
-    }
-  };
-  
-  const handleMarcoMeditationChange = (meditationId: string) => {
-    setSelectedMarcoMeditationId(meditationId);
-    if (selectedAudioSource === 'marco') {
-      onAudioSourceChange('marco');
-    }
-  };
-  
-  // Get the actual meditation objects
-  const selectedVeraMeditation = veraMeditations.find(m => m.id === selectedVeraMeditationId) || meditation;
-  const selectedMarcoMeditation = marcoMeditations.find(m => m.id === selectedMarcoMeditationId) || meditation;
-  
-  // Get active audio based on selected source and meditation
-  const getCurrentAudioUrl = () => {
-    if (selectedAudioSource === 'vera' && selectedVeraMeditation?.veraLink) {
-      return selectedVeraMeditation.veraLink;
-    } else if (selectedAudioSource === 'marco' && selectedMarcoMeditation?.marcoLink) {
-      return selectedMarcoMeditation.marcoLink;
-    }
-    return meditation.audioUrl || '';
-  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -112,98 +57,41 @@ export const MeditationDetailDialog = ({
           />
           
           <div className="grid grid-cols-1 gap-3">
-            {/* Audio source selection with dropdowns */}
-            <div className="space-y-2">
-              <div className="flex gap-2 items-center justify-between mt-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant={selectedAudioSource === 'vera' ? "default" : "outline"}
-                      size="sm"
-                      className={cn(
-                        "flex-1 rounded-full",
-                        selectedAudioSource === 'vera' 
-                          ? "bg-blue-500 hover:bg-blue-600 text-white" 
-                          : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
-                      )}
-                    >
-                      <Music className="h-4 w-4 mr-2" />
-                      Vera
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
-                    {veraMeditations.length > 0 ? (
-                      veraMeditations.map((med) => (
-                        <DropdownMenuItem 
-                          key={med.id}
-                          className={cn(
-                            "cursor-pointer hover:bg-gray-800",
-                            selectedVeraMeditationId === med.id && "bg-blue-900"
-                          )}
-                          onClick={() => handleVeraMeditationChange(med.id)}
-                        >
-                          {med.title}
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <DropdownMenuItem disabled>
-                        Geen Vera meditaties beschikbaar
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant={selectedAudioSource === 'marco' ? "default" : "outline"}
-                      size="sm"
-                      className={cn(
-                        "flex-1 rounded-full",
-                        selectedAudioSource === 'marco' 
-                          ? "bg-purple-500 hover:bg-purple-600 text-white" 
-                          : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
-                      )}
-                    >
-                      <Music className="h-4 w-4 mr-2" />
-                      Marco
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
-                    {marcoMeditations.length > 0 ? (
-                      marcoMeditations.map((med) => (
-                        <DropdownMenuItem 
-                          key={med.id}
-                          className={cn(
-                            "cursor-pointer hover:bg-gray-800",
-                            selectedMarcoMeditationId === med.id && "bg-purple-900"
-                          )}
-                          onClick={() => handleMarcoMeditationChange(med.id)}
-                        >
-                          {med.title}
-                        </DropdownMenuItem>
-                      ))
-                    ) : (
-                      <DropdownMenuItem disabled>
-                        Geen Marco meditaties beschikbaar
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+            {/* Audio source selection buttons */}
+            <div className="flex gap-2 items-center justify-between mt-2">
+              <Button 
+                variant={selectedAudioSource === 'vera' ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "flex-1 rounded-full",
+                  selectedAudioSource === 'vera' 
+                    ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                    : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
+                )}
+                onClick={() => onAudioSourceChange('vera')}
+              >
+                <Music className="h-4 w-4 mr-2" />
+                Vera
+              </Button>
               
-              {/* Display active meditation title */}
-              <div className="text-center text-sm text-gray-400 mt-1">
-                {selectedAudioSource === 'vera' 
-                  ? `Vera: ${selectedVeraMeditation.title}` 
-                  : `Marco: ${selectedMarcoMeditation.title}`}
-              </div>
+              <Button 
+                variant={selectedAudioSource === 'marco' ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "flex-1 rounded-full",
+                  selectedAudioSource === 'marco' 
+                    ? "bg-purple-500 hover:bg-purple-600 text-white" 
+                    : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
+                )}
+                onClick={() => onAudioSourceChange('marco')}
+              >
+                <Music className="h-4 w-4 mr-2" />
+                Marco
+              </Button>
             </div>
           
             <AudioPlayer 
-              audioUrl={getCurrentAudioUrl()}
+              audioUrl={getActiveAudioUrl()}
               className="w-full bg-transparent border-none"
               showTitle={false}
               showQuote={true}
