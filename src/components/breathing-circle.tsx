@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -25,14 +24,11 @@ export function BreathingCircle({
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
   const [transitionProgress, setTransitionProgress] = useState(0);
+  const [textFade, setTextFade] = useState(1);
 
-  // Reset state when durations change
   useEffect(() => {
     if (isActive) {
-      // If active, just let the current cycle complete
-      // The new durations will be used in the next cycle
     } else {
-      // If not active, reset the phase
       setPhase("rest");
       setProgress(0);
     }
@@ -49,6 +45,12 @@ export function BreathingCircle({
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, phaseDuration - elapsed);
       const phaseProgress = elapsed / phaseDuration * 100;
+      
+      if (phaseProgress > 80 && textFade > 0) {
+        const fadeOutProgress = (phaseProgress - 80) * 5;
+        setTextFade(Math.max(0, 1 - fadeOutProgress / 100));
+      }
+      
       setPhaseTimeLeft(Math.ceil(remaining / 1000));
       setProgress(Math.min(phaseProgress, 100));
       setTransitionProgress(Math.min(phaseProgress / 100, 1));
@@ -70,7 +72,13 @@ export function BreathingCircle({
           currentPhase = "inhale";
           phaseDuration = inhaleDuration;
         }
+        
+        setTextFade(0);
         setPhase(currentPhase);
+        setTimeout(() => {
+          setTextFade(1);
+        }, 200);
+        
         startTime = Date.now();
         setProgress(0);
         setTransitionProgress(0);
@@ -78,7 +86,7 @@ export function BreathingCircle({
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
+  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, textFade]);
 
   const toggleActive = () => {
     setIsActive(!isActive);
@@ -86,14 +94,13 @@ export function BreathingCircle({
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
+      setTextFade(1);
     } else {
       setPhase("rest");
     }
   };
 
-  // Dynamic gradient colors based on phase with fluid transitions
   const getGradientStyle = () => {
-    // Using CSS custom properties to dynamically update the gradient
     let style = {};
     
     if (phase === "rest") {
@@ -103,7 +110,6 @@ export function BreathingCircle({
     }
     
     if (phase === "inhale") {
-      // Smooth transition from blue to purple based on progress
       return {
         background: `linear-gradient(to right, 
           #2563eb, 
@@ -113,7 +119,6 @@ export function BreathingCircle({
     }
     
     if (phase === "hold") {
-      // Transition from purple to amber
       return {
         background: `linear-gradient(to right, 
           hsl(${280 - transitionProgress * 20}, ${70}%, ${50}%), 
@@ -123,7 +128,6 @@ export function BreathingCircle({
     }
     
     if (phase === "exhale") {
-      // Transition from amber back to blue
       return {
         background: `linear-gradient(to right, 
           hsl(${45 - transitionProgress * 15}, ${80 - transitionProgress * 20}%, ${70 - transitionProgress * 10}%), 
@@ -133,6 +137,13 @@ export function BreathingCircle({
     }
     
     return style;
+  };
+
+  const getPhaseText = () => {
+    if (phase === "inhale") return "Adem in";
+    if (phase === "hold") return "Houd vast";
+    if (phase === "exhale") return "Adem uit";
+    return "";
   };
 
   return <div className="flex flex-col items-center justify-center space-y-6">
@@ -167,8 +178,11 @@ export function BreathingCircle({
                   <Play className="h-8 w-8" />
                   <span className="text-lg font-medium">Start</span>
                 </button> : <div className="flex flex-col items-center space-y-2">
-                  <div className="text-2xl font-semibold mb-1">
-                    {phase === "inhale" ? "Adem in" : phase === "hold" ? "Houd vast" : "Adem uit"}
+                  <div 
+                    className="text-2xl font-semibold mb-1 transition-opacity duration-500" 
+                    style={{ opacity: textFade }}
+                  >
+                    {getPhaseText()}
                   </div>
                   <div className="flex items-center justify-center text-4xl font-bold">
                     {phaseTimeLeft}
