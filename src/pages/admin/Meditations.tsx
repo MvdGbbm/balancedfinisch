@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -34,7 +35,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical, Link } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, ListMusic, MoreVertical, Link } from "lucide-react";
 
 import { Meditation } from "@/lib/types";
 
@@ -88,7 +90,8 @@ const AdminMeditations = () => {
     setDuration(meditation.duration);
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
-    setTags([...meditation.tags]);
+    // Only set tags if the meditation is not in the "Geleide Meditaties" category
+    setTags(meditation.category === "Geleide Meditaties" ? [] : [...meditation.tags]);
     setVeraLink(meditation.veraLink || "");
     setMarcoLink(meditation.marcoLink || "");
     setIsDialogOpen(true);
@@ -101,6 +104,9 @@ const AdminMeditations = () => {
   };
   
   const handleAddTag = () => {
+    // Don't add tags for guided meditations
+    if (category === "Geleide Meditaties") return;
+    
     if (tagInput && !tags.includes(tagInput)) {
       setTags([...tags, tagInput]);
       setTagInput("");
@@ -117,6 +123,9 @@ const AdminMeditations = () => {
       return;
     }
     
+    // For guided meditations, we don't use tags
+    const meditationTags = category === "Geleide Meditaties" ? [] : tags;
+    
     if (currentMeditation) {
       updateMeditation(currentMeditation.id, {
         title,
@@ -125,7 +134,7 @@ const AdminMeditations = () => {
         duration,
         category,
         coverImageUrl,
-        tags,
+        tags: meditationTags,
         veraLink: veraLink || undefined,
         marcoLink: marcoLink || undefined,
       });
@@ -137,7 +146,7 @@ const AdminMeditations = () => {
         duration,
         category,
         coverImageUrl,
-        tags,
+        tags: meditationTags,
         veraLink: veraLink || undefined,
         marcoLink: marcoLink || undefined,
       });
@@ -161,7 +170,7 @@ const AdminMeditations = () => {
       duration: 10,
       category: newCategory,
       coverImageUrl: "images/sample.jpg",
-      tags: [newCategory.toLowerCase()],
+      tags: newCategory === "Geleide Meditaties" ? [] : [newCategory.toLowerCase()],
     });
     
     setNewCategory("");
@@ -174,10 +183,21 @@ const AdminMeditations = () => {
     meditations
       .filter(m => m.category === editingCategory)
       .forEach(m => {
+        // If we're changing to or from "Geleide Meditaties", adjust tags accordingly
+        let updatedTags = [...m.tags];
+        if (updatedCategoryName === "Geleide Meditaties") {
+          updatedTags = []; // Remove all tags when changing to guided meditations
+        } else if (editingCategory === "Geleide Meditaties") {
+          updatedTags = [updatedCategoryName.toLowerCase()]; // Add new category as tag when changing from guided
+        } else {
+          // For other category changes, replace the old category tag with the new one
+          updatedTags = [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()];
+        }
+        
         updateMeditation(m.id, {
           ...m,
           category: updatedCategoryName,
-          tags: [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()]
+          tags: updatedTags
         });
       });
     
@@ -356,7 +376,13 @@ const AdminMeditations = () => {
                   <Label htmlFor="category">Categorie</Label>
                   <Select 
                     value={category} 
-                    onValueChange={setCategory}
+                    onValueChange={(val) => {
+                      setCategory(val);
+                      // Clear tags if switching to guided meditations
+                      if (val === "Geleide Meditaties") {
+                        setTags([]);
+                      }
+                    }}
                   >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Selecteer categorie" />
@@ -402,46 +428,50 @@ const AdminMeditations = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="tags"
-                    placeholder="Voeg een tag toe"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button 
-                    type="button" 
-                    onClick={handleAddTag}
-                  >
-                    <Tag className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground"
+              {/* Only show tags section for non-guided meditations */}
+              {category !== "Geleide Meditaties" && (
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="tags"
+                      placeholder="Voeg een tag toe"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      onClick={handleAddTag}
                     >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="flex items-center gap-1"
                       >
-                        ×
-                      </button>
-                    </span>
-                  ))}
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             
             <div className="space-y-4">

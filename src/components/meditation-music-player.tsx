@@ -31,7 +31,7 @@ export function MeditationMusicPlayer() {
     acc[meditation.category].push(meditation);
     return acc;
   }, {});
-
+  
   // Get unique categories
   const categories = Object.keys(meditationsByCategory);
 
@@ -53,8 +53,13 @@ export function MeditationMusicPlayer() {
     });
   };
 
-  // Group meditations by their tags for subcategories
+  // Group meditations by their titles for subcategories, removing dependence on tags
   const getSubcategories = (meditationsInCategory) => {
+    // For guided meditations, we won't use tags anymore
+    if (meditationsInCategory.some(m => m.category === "Geleide Meditaties")) {
+      return { "Alle meditaties": meditationsInCategory };
+    }
+    
     const tagGroups = {};
     
     meditationsInCategory.forEach(meditation => {
