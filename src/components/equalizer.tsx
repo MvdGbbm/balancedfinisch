@@ -4,7 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { AudioProcessor } from "@/lib/audio-processor";
-import { Sliders, Waveform } from "lucide-react";
+import { Sliders, Wave } from "lucide-react";
 
 interface EqualizerProps {
   audioProcessor: AudioProcessor | null;
@@ -168,7 +168,7 @@ export function Equalizer({ audioProcessor, className }: EqualizerProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Waveform className="h-4 w-4 text-primary" />
+              <Wave className="h-4 w-4 text-primary" />
               <span className="text-sm">Reverb</span>
             </div>
             <span className="text-xs text-muted-foreground">
