@@ -13,7 +13,7 @@ import {
   CollapsibleTrigger
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { Music, ChevronDown, ChevronRight, Play } from "lucide-react";
+import { Music, ChevronDown, Play } from "lucide-react";
 import { meditations } from "@/data/meditations";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -53,13 +53,14 @@ export function MeditationMusicPlayer() {
     });
   };
 
-  // Group meditations by their titles for subcategories, removing dependence on tags
+  // Group meditations for display, without depending on tags
   const getSubcategories = (meditationsInCategory) => {
-    // For guided meditations, we won't use tags anymore
+    // For guided meditations, just display all of them without subcategories
     if (meditationsInCategory.some(m => m.category === "Geleide Meditaties")) {
-      return { "Alle meditaties": meditationsInCategory };
+      return { "Alle geleide meditaties": meditationsInCategory };
     }
     
+    // For other categories, if they have tags, use those for subcategories
     const tagGroups = {};
     
     meditationsInCategory.forEach(meditation => {
@@ -83,6 +84,11 @@ export function MeditationMusicPlayer() {
         }
       }
     });
+    
+    // If no tags were used at all, just show all meditations
+    if (Object.keys(tagGroups).length === 0) {
+      return { "Alle meditaties": meditationsInCategory };
+    }
     
     return tagGroups;
   };

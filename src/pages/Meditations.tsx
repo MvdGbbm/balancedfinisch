@@ -37,7 +37,7 @@ const Meditations = () => {
   
   const filteredMeditations = filterMeditations(processedMeditations, searchQuery, selectedCategory);
   
-  // Remove tags from guided meditations
+  // Get guided meditations - no tag filtering needed
   const guidedMeditations = processedMeditations.filter(
     meditation => meditation.category === "Geleide Meditaties"
   );
