@@ -1,10 +1,9 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { AudioProcessor } from "@/lib/audio-processor";
-import { Sliders, Waveform } from "lucide-react";
+import { Sliders, Volume2 } from "lucide-react";
 
 interface EqualizerProps {
   audioProcessor: AudioProcessor | null;
@@ -24,11 +23,9 @@ export function Equalizer({ audioProcessor, className }: EqualizerProps) {
     const frequencies = audioProcessor.getEqualizerFrequencies();
     const bands = audioProcessor.getEqualizerBands();
     
-    // Set initial EQ values from processor
     const initialValues = bands.map(band => band.gain.value);
     setEqValues(initialValues);
     
-    // Apply initial bypass state
     setBypass(audioProcessor.getBypassedState());
     
     return () => {
@@ -55,14 +52,11 @@ export function Equalizer({ audioProcessor, className }: EqualizerProps) {
       
       analyser.getByteFrequencyData(dataArray);
       
-      // Clear canvas
       ctx.clearRect(0, 0, width, height);
       
-      // Dark background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(0, 0, width, height);
       
-      // Draw spectrum
       const barWidth = (width / dataArray.length) * 2.5;
       let x = 0;
       
@@ -130,7 +124,6 @@ export function Equalizer({ audioProcessor, className }: EqualizerProps) {
           <Switch 
             checked={!bypass} 
             onCheckedChange={handleBypassChange}
-            size="sm"
           />
         </div>
       </div>
@@ -168,7 +161,7 @@ export function Equalizer({ audioProcessor, className }: EqualizerProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <Waveform className="h-4 w-4 text-primary" />
+              <Volume2 className="h-4 w-4 text-primary" />
               <span className="text-sm">Reverb</span>
             </div>
             <span className="text-xs text-muted-foreground">
