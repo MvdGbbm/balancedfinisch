@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingCircle } from "@/components/breathing-circle";
+import { MeditationMusicPlayer } from "@/components/meditation-music-player";
 import { 
   Card, 
   CardContent, 
@@ -22,8 +23,10 @@ import {
   Brain, 
   Moon, 
   Zap,
-  Info
+  Info,
+  RefreshCw
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const breathingPatterns = [
   {
@@ -98,11 +101,17 @@ const Breathing = () => {
     // The breathCount will be reset in the useEffect
   };
   
+  const resetBreathCount = () => {
+    setBreathCount(0);
+  };
+  
   const PatternIcon = selectedPattern.icon;
   
   return (
     <MobileLayout>
       <div className="space-y-6 animate-fade-in">
+        <MeditationMusicPlayer />
+        
         <div className="text-center mb-4">
           <h1 className="text-2xl font-bold mb-1">Ademhalingspatroon</h1>
           <p className="text-muted-foreground">
@@ -159,7 +168,7 @@ const Breathing = () => {
           </CardContent>
         </Card>
         
-        <div className="flex justify-center py-8">
+        <div className="flex justify-center py-6">
           <BreathingCircle
             inhaleDuration={selectedPattern.inhaleDuration}
             holdDuration={selectedPattern.holdDuration}
@@ -168,9 +177,20 @@ const Breathing = () => {
           />
         </div>
         
-        <div className="text-center bg-gray-900/40 py-4 rounded-xl backdrop-blur-sm">
-          <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent animate-pulse-gentle mb-1">
-            {breathCount}
+        <div className="text-center bg-gray-900/40 py-4 rounded-xl backdrop-blur-sm flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent animate-pulse-gentle">
+              {breathCount}
+            </div>
+            <Button 
+              onClick={resetBreathCount} 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 rounded-full hover:bg-gray-800/50"
+              title="Reset teller"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
           <p className="text-muted-foreground">Volledige ademhalingen</p>
         </div>
