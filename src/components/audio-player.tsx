@@ -4,6 +4,7 @@ import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-r
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { quotes } from "@/data/quotes";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -13,6 +14,7 @@ interface AudioPlayerProps {
   className?: string;
   onEnded?: () => void;
   customSoundscapeSelector?: React.ReactNode;
+  showQuote?: boolean;
 }
 
 export function AudioPlayer({ 
@@ -22,13 +24,20 @@ export function AudioPlayer({
   title,
   className, 
   onEnded,
-  customSoundscapeSelector
+  customSoundscapeSelector,
+  showQuote = false
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.8);
   const [isLooping, setIsLooping] = useState(false);
+  
+  // Random quote for display
+  const [randomQuote] = useState(() => {
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    return quotes[randomIndex];
+  });
   
   const audioRef = useRef<HTMLAudioElement>(null);
   
@@ -163,7 +172,14 @@ export function AudioPlayer({
         <h3 className="text-lg font-medium">{title}</h3>
       )}
       
-      {customSoundscapeSelector && (
+      {showQuote && (
+        <div className="mb-2 p-2 rounded-md bg-primary/10 text-center">
+          <p className="text-sm italic">"{randomQuote.text}"</p>
+          <p className="text-xs text-muted-foreground mt-1">- {randomQuote.author}</p>
+        </div>
+      )}
+      
+      {customSoundscapeSelector && !showQuote && (
         <div className="mb-2">{customSoundscapeSelector}</div>
       )}
       

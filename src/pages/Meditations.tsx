@@ -256,15 +256,7 @@ const Meditations = () => {
                   audioUrl={currentMeditationWithUrls.audioUrl} 
                   className="w-full"
                   showTitle={false}
-                  customSoundscapeSelector={
-                    <MixerPanel 
-                      soundscapes={soundscapes}
-                      maxDisplayed={1}
-                      compactMode={true}
-                      externalSoundscapeId={currentSoundscapeId || soundscapes[0]?.id}
-                      onSoundscapeChange={handleSoundscapeChange}
-                    />
-                  }
+                  showQuote={true}
                 />
                 
                 <MixerPanel 
