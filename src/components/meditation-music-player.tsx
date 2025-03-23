@@ -13,15 +13,13 @@ import { Music, ChevronDown } from "lucide-react";
 import { meditations } from "@/data/meditations";
 
 export function MeditationMusicPlayer() {
-  const [selectedMusic, setSelectedMusic] = useState(meditations[0]);
-  const [isPlayerVisible, setIsPlayerVisible] = useState(false);
-
-  // Filter meditations for personal meditation music
-  const meditationMusic = meditations.filter(item => 
-    item.category === "Positiviteit" || 
-    item.tags.includes("meditatie") || 
-    item.tags.includes("ontspanning")
+  // Filter meditations for morning meditations only
+  const morningMeditations = meditations.filter(item => item.category === "Ochtend");
+  
+  const [selectedMusic, setSelectedMusic] = useState(
+    morningMeditations.length > 0 ? morningMeditations[0] : null
   );
+  const [isPlayerVisible, setIsPlayerVisible] = useState(false);
 
   const handleMusicSelect = (meditation: typeof meditations[0]) => {
     setSelectedMusic(meditation);
@@ -33,38 +31,44 @@ export function MeditationMusicPlayer() {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Music className="text-primary h-4 w-4" />
-          <h3 className="text-sm font-medium">Persoonlijke Meditatie Muziek</h3>
+          <h3 className="text-sm font-medium">Ochtend Meditatie</h3>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1">
               <span className="truncate max-w-[160px]">
-                {isPlayerVisible ? selectedMusic.title : "Kies muziek"}
+                {isPlayerVisible && selectedMusic ? selectedMusic.title : "Kies muziek"}
               </span>
               <ChevronDown className="h-4 w-4 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[220px] bg-background/95 backdrop-blur-sm">
             <DropdownMenuGroup>
-              {meditationMusic.map((meditation) => (
-                <DropdownMenuItem 
-                  key={meditation.id}
-                  onClick={() => handleMusicSelect(meditation)}
-                  className="cursor-pointer"
-                >
-                  <div>
-                    <p className="font-medium">{meditation.title}</p>
-                    <p className="text-xs text-muted-foreground">{meditation.duration} min</p>
-                  </div>
+              {morningMeditations.length > 0 ? (
+                morningMeditations.map((meditation) => (
+                  <DropdownMenuItem 
+                    key={meditation.id}
+                    onClick={() => handleMusicSelect(meditation)}
+                    className="cursor-pointer"
+                  >
+                    <div>
+                      <p className="font-medium">{meditation.title}</p>
+                      <p className="text-xs text-muted-foreground">{meditation.duration} min</p>
+                    </div>
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                <DropdownMenuItem disabled>
+                  Geen ochtend meditaties beschikbaar
                 </DropdownMenuItem>
-              ))}
+              )}
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       
-      {isPlayerVisible && (
+      {isPlayerVisible && selectedMusic && (
         <AudioPlayer 
           audioUrl={selectedMusic.audioUrl}
           title={selectedMusic.title}
