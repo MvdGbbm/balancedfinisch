@@ -156,7 +156,10 @@ export function MeditationMusicPlayer() {
                           <div className="flex items-center gap-2">
                             <PlayCircle className="h-4 w-4 text-primary" />
                             <h4 className="font-medium capitalize">{tag}</h4>
-                            <Badge variant="outline" size="sm" className="text-xs">
+                            <Badge
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {tagMeditations.length}
                             </Badge>
                           </div>
@@ -222,40 +225,34 @@ export function MeditationMusicPlayer() {
                           <div className="flex items-center text-xs text-muted-foreground">
                             <Clock className="h-3 w-3 mr-1" />
                             {meditation.duration} min
+                                </div>
+                                <Button 
+                                  size="icon" 
+                                  variant="ghost" 
+                                  className="h-6 w-6"
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            className="h-6 w-6"
-                          >
-                            <Play className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
+                        </Card>
+                      ))}
                     </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+                  )}
+                </TabsContent>
+              ))}
+            </Tabs>
             
-            {filteredMeditations.length === 0 && (
-              <div className="text-center py-10 text-muted-foreground">
-                <p>Geen meditaties gevonden in deze categorie.</p>
-              </div>
+            {isPlayerVisible && selectedMusic && (
+              <AudioPlayer 
+                audioUrl={selectedMusic.audioUrl}
+                title={selectedMusic.title}
+                showTitle
+                showControls
+                className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm mt-4"
+              />
             )}
-          </TabsContent>
-        ))}
-      </Tabs>
-      
-      {isPlayerVisible && selectedMusic && (
-        <AudioPlayer 
-          audioUrl={selectedMusic.audioUrl}
-          title={selectedMusic.title}
-          showTitle
-          showControls
-          className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm mt-4"
-        />
-      )}
-    </div>
-  );
-}
+          </div>
+        );
+      }
