@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Music, ChevronDown } from "lucide-react";
+import { Music, ChevronDown, ExternalLink } from "lucide-react";
 import { meditations } from "@/data/meditations";
 
 export function MeditationMusicPlayer() {
@@ -76,13 +76,36 @@ export function MeditationMusicPlayer() {
       </div>
       
       {isPlayerVisible && selectedMusic && (
-        <AudioPlayer 
-          audioUrl={selectedMusic.audioUrl}
-          title={selectedMusic.title}
-          showTitle
-          showControls
-          className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
-        />
+        <div className="space-y-4">
+          <AudioPlayer 
+            audioUrl={selectedMusic.audioUrl}
+            title={selectedMusic.title}
+            showTitle
+            showControls
+            className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
+          />
+          
+          <div className="flex justify-center gap-4 mt-4">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => window.open(selectedMusic.veraLink || "#", "_blank")}
+              disabled={!selectedMusic.veraLink}
+            >
+              Vera
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => window.open(selectedMusic.marcoLink || "#", "_blank")}
+              disabled={!selectedMusic.marcoLink}
+            >
+              Marco
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
