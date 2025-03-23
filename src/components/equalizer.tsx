@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -128,11 +129,11 @@ export function Equalizer({ audioProcessor, className }: EqualizerProps) {
         </div>
       </div>
       
-      <div className="w-full h-20 mb-3 overflow-hidden rounded-md bg-black/20 backdrop-blur-sm">
+      <div className="w-full h-28 mb-4 overflow-hidden rounded-md bg-black/20 backdrop-blur-sm">
         <canvas 
           ref={canvasRef} 
           width={300} 
-          height={80} 
+          height={112} 
           className="w-full h-full"
         />
       </div>

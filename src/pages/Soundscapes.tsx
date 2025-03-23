@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -7,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Volume2, VolumeX, Play, Pause, FileAudio, Search, X, Music, Tag, Disc } from "lucide-react";
+import { Volume2, VolumeX, Play, Pause, FileAudio, Search, X, Music, Disc } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { Soundscape } from "@/lib/types";
@@ -20,11 +19,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 const SoundscapeCard = ({ 
   soundscape, 
@@ -54,11 +48,6 @@ const SoundscapeCard = ({
               <Badge variant="outline" className="bg-white/10 text-white text-[10px] h-4">
                 {soundscape.category}
               </Badge>
-              {soundscape.tags.slice(0, 2).map(tag => (
-                <Badge key={tag} variant="outline" className="bg-white/10 text-white text-[10px] h-4">
-                  {tag}
-                </Badge>
-              ))}
             </div>
           </div>
           <Button
@@ -112,7 +101,6 @@ const Soundscapes = () => {
   
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   
-  // Initialize audio elements and volumes
   useEffect(() => {
     const initialVolumes: Record<string, number> = {};
     
@@ -129,7 +117,6 @@ const Soundscapes = () => {
     
     setVolumes(initialVolumes);
     
-    // Clean up
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
@@ -140,15 +127,12 @@ const Soundscapes = () => {
     };
   }, [soundscapes]);
   
-  // Implement seamless looping for all audio elements
   useEffect(() => {
     const handleSeamlessLoops = () => {
       Object.entries(audioRefs.current).forEach(([id, audio]) => {
         if (!audio) return;
         
-        // Only set up seamless looping for playing audio
         if (!audio.paused && audio.duration > 0) {
-          // When we're 0.2 seconds away from the end, seamlessly loop
           if (audio.currentTime > audio.duration - 0.2) {
             const currentPlaybackRate = audio.playbackRate;
             audio.currentTime = 0;
@@ -158,7 +142,6 @@ const Soundscapes = () => {
       });
     };
     
-    // Set up interval to check audio positions
     const intervalId = setInterval(handleSeamlessLoops, 100);
     
     return () => {
@@ -166,7 +149,6 @@ const Soundscapes = () => {
     };
   }, []);
   
-  // Update audio elements when volumes change
   useEffect(() => {
     Object.entries(volumes).forEach(([id, volume]) => {
       const audio = audioRefs.current[id];
@@ -189,7 +171,6 @@ const Soundscapes = () => {
     });
   }, [volumes, playingSoundscapes]);
   
-  // Toggle play/pause
   const togglePlay = (id: string) => {
     const audio = audioRefs.current[id];
     if (!audio) return;
@@ -221,17 +202,14 @@ const Soundscapes = () => {
     }
   };
   
-  // Handle volume change
   const handleVolumeChange = (id: string, value: number[]) => {
     setVolumes((prev) => ({ ...prev, [id]: value[0] }));
   };
   
-  // Clear search
   const clearSearch = () => {
     setSearchQuery("");
   };
   
-  // Filter soundscapes based on search
   const filteredSoundscapes = soundscapes.filter((soundscape) => {
     return (
       soundscape.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -243,7 +221,6 @@ const Soundscapes = () => {
     );
   });
   
-  // Group soundscapes by category
   const categorizedSoundscapes = filteredSoundscapes.reduce((acc, soundscape) => {
     if (!acc[soundscape.category]) {
       acc[soundscape.category] = [];
@@ -252,19 +229,10 @@ const Soundscapes = () => {
     return acc;
   }, {} as Record<string, Soundscape[]>);
   
-  // Get all unique tags
-  const allTags = Array.from(
-    new Set(
-      soundscapes.flatMap((soundscape) => soundscape.tags)
-    )
-  );
-  
-  // Tab change handler
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
   
-  // Get audio processor
   const handleGetAudioProcessor = (processor: AudioProcessor) => {
     setAudioProcessor(processor);
   };
@@ -320,22 +288,6 @@ const Soundscapes = () => {
                 </div>
               )}
               
-              {!searchQuery && (
-                <div className="flex flex-wrap gap-1 py-2 overflow-x-auto pb-2 no-scrollbar">
-                  {allTags.slice(0, 8).map(tag => (
-                    <Badge 
-                      key={tag} 
-                      variant="outline" 
-                      className="cursor-pointer hover:bg-primary/10"
-                      onClick={() => setSearchQuery(tag)}
-                    >
-                      <Tag className="h-3 w-3 mr-1" />
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              
               <div>
                 {Object.entries(categorizedSoundscapes).map(([category, soundscapesList]) => (
                   <div key={category} className="mb-6">
@@ -378,12 +330,12 @@ const Soundscapes = () => {
           <TabsContent value="player" className="mt-0 space-y-4 animate-fade-in">
             {selectedSoundscape ? (
               <div className="space-y-4">
-                <div className="relative overflow-hidden rounded-lg h-48">
+                <div className="relative overflow-hidden rounded-lg h-64">
                   <div 
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: `url(${selectedSoundscape.coverImageUrl})` }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10 backdrop-blur-[1px]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10 backdrop-blur-sm" />
                   <div className="absolute bottom-4 left-4 right-4">
                     <h2 className="text-xl font-bold text-white">{selectedSoundscape.title}</h2>
                     <p className="text-white/80 text-sm mt-1">{selectedSoundscape.description}</p>
@@ -400,15 +352,21 @@ const Soundscapes = () => {
                   </div>
                 </div>
                 
-                <AudioPlayer 
-                  audioUrl={selectedSoundscape.audioUrl}
-                  title={selectedSoundscape.title}
-                  showTitle={false}
-                  className="glass-morphism"
-                  getAudioProcessor={handleGetAudioProcessor}
-                />
+                <div className="glass-morphism rounded-lg p-4 shadow-lg">
+                  <AudioPlayer 
+                    audioUrl={selectedSoundscape.audioUrl}
+                    title={selectedSoundscape.title}
+                    showTitle={false}
+                    getAudioProcessor={handleGetAudioProcessor}
+                  />
+                </div>
                 
-                <Equalizer audioProcessor={audioProcessor} className="p-4 glass-morphism rounded-lg" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Equalizer 
+                    audioProcessor={audioProcessor} 
+                    className="glass-morphism p-4 rounded-lg shadow-lg md:col-span-3"
+                  />
+                </div>
               </div>
             ) : (
               <div className="text-center py-20">
@@ -436,7 +394,6 @@ const Soundscapes = () => {
         </div>
       </Tabs>
       
-      {/* Mixer panel at the bottom (only if playing something) */}
       {Object.values(playingSoundscapes).some(Boolean) && activeTab !== "mixer" && (
         <div className="fixed bottom-16 left-0 right-0 px-4 pb-2">
           <div className="glass-morphism rounded-lg p-3 shadow-lg animate-slide-in">
