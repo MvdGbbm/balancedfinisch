@@ -459,9 +459,6 @@ export function MixerPanel({
                   className="w-full"
                 />
               </div>
-              <span className="text-xs text-muted-foreground w-8 text-right">
-                {Math.round(volumes[currentSoundscape.id] * 100)}%
-              </span>
             </div>
           )}
         </div>
@@ -489,9 +486,6 @@ export function MixerPanel({
                 onValueChange={handleMasterVolumeChange}
                 className="w-20"
               />
-              <span className="text-xs text-muted-foreground min-w-8">
-                {Math.round(masterVolume * 100)}%
-              </span>
             </div>
             
             <CollapsibleTrigger asChild>
@@ -585,9 +579,6 @@ export function MixerPanel({
                           <div className="flex justify-between mb-1">
                             <span className="text-sm font-medium truncate">
                               {currentSoundscape.title}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {Math.round(volumes[currentSoundscape.id] * 100)}%
                             </span>
                           </div>
                           
