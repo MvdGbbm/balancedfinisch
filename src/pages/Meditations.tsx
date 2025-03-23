@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, Filter, X } from "lucide-react";
+import { Clock, Play, Filter, X, ChevronDown } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -19,6 +20,14 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Meditation } from "@/lib/types";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
@@ -111,6 +120,10 @@ const Meditations = () => {
     setSearchQuery("");
   };
   
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category === "all" ? null : category);
+  };
+  
   const currentMeditationWithUrls = currentMeditation
     ? processedMeditations.find(m => m.id === currentMeditation.id) || currentMeditation
     : null;
@@ -143,6 +156,27 @@ const Meditations = () => {
           >
             <Filter className="h-4 w-4" />
           </Button>
+        </div>
+        
+        <div className="w-full">
+          <Select
+            value={selectedCategory || "all"}
+            onValueChange={handleCategoryChange}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Kies een categorie" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">Alle Meditaties</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         
         {showFilters && (

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
@@ -22,7 +22,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical } from "lucide-react";
 
 import { Meditation } from "@/lib/types";
 
@@ -30,6 +36,7 @@ const AdminMeditations = () => {
   const { meditations, addMeditation, updateMeditation, deleteMeditation } = useApp();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [currentMeditation, setCurrentMeditation] = useState<Meditation | null>(null);
   
   // Form state
@@ -41,6 +48,11 @@ const AdminMeditations = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  
+  // Category management
+  const [newCategory, setNewCategory] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [updatedCategoryName, setUpdatedCategoryName] = useState("");
   
   const resetForm = () => {
     setTitle("");
@@ -120,6 +132,63 @@ const AdminMeditations = () => {
     resetForm();
   };
   
+  // Get unique categories
+  const categories = Array.from(
+    new Set(meditations.map((meditation) => meditation.category))
+  );
+  
+  // Handle adding a new category
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return;
+    
+    // Add a meditation with this category to demonstrate the category exists
+    addMeditation({
+      title: `${newCategory} Meditatie`,
+      description: `Een nieuwe meditatie in de ${newCategory} categorie.`,
+      audioUrl: "audio/sample.mp3",
+      duration: 10,
+      category: newCategory,
+      coverImageUrl: "images/sample.jpg",
+      tags: [newCategory.toLowerCase()],
+    });
+    
+    setNewCategory("");
+    setIsCategoryDialogOpen(false);
+  };
+  
+  // Handle updating a category
+  const handleUpdateCategory = () => {
+    if (!editingCategory || !updatedCategoryName.trim()) return;
+    
+    // Update all meditations in this category
+    meditations
+      .filter(m => m.category === editingCategory)
+      .forEach(m => {
+        updateMeditation(m.id, {
+          ...m,
+          category: updatedCategoryName,
+          tags: [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()]
+        });
+      });
+    
+    setEditingCategory(null);
+    setUpdatedCategoryName("");
+    setIsCategoryDialogOpen(false);
+  };
+  
+  // Handle deleting a category
+  const handleDeleteCategory = (categoryName: string) => {
+    if (window.confirm(`Weet je zeker dat je de categorie "${categoryName}" wilt verwijderen? Alle meditaties in deze categorie worden ook verwijderd.`)) {
+      // Delete all meditations in this category
+      meditations
+        .filter(m => m.category === categoryName)
+        .forEach(m => {
+          deleteMeditation(m.id);
+        });
+    }
+  };
+  
+  // Group meditations by category for display
   const groupedMeditations = meditations.reduce((acc, meditation) => {
     const category = meditation.category;
     if (!acc[category]) {
@@ -134,10 +203,16 @@ const AdminMeditations = () => {
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Meditaties Beheren</h1>
-          <Button onClick={handleOpenNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe Meditatie
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
+              <ListMusic className="h-4 w-4 mr-2" />
+              Categorieën
+            </Button>
+            <Button onClick={handleOpenNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nieuwe Meditatie
+            </Button>
+          </div>
         </div>
         
         <p className="text-muted-foreground">
@@ -147,7 +222,35 @@ const AdminMeditations = () => {
         <div className="space-y-8 pb-20">
           {Object.entries(groupedMeditations).map(([category, meditationsList]) => (
             <div key={category} className="space-y-3">
-              <h2 className="text-lg font-medium">{category}</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-medium">{category}</h2>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setEditingCategory(category);
+                        setUpdatedCategoryName(category);
+                        setIsCategoryDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Bewerk categorie
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => handleDeleteCategory(category)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Verwijder categorie
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {meditationsList.map((meditation) => (
                   <Card key={meditation.id} className="overflow-hidden">
@@ -245,12 +348,20 @@ const AdminMeditations = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Categorie</Label>
-                  <Input
-                    id="category"
-                    placeholder="Categorie"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="category"
+                      placeholder="Categorie"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      list="categories"
+                    />
+                    <datalist id="categories">
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat} />
+                      ))}
+                    </datalist>
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
@@ -377,6 +488,114 @@ const AdminMeditations = () => {
               Opslaan
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Category Management Dialog */}
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory ? "Categorie Bewerken" : "Categorieën Beheren"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCategory 
+                ? "Wijzig de naam van de categorie" 
+                : "Voeg nieuwe categorieën toe of beheer bestaande categorieën"}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingCategory ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="updatedCategoryName">Nieuwe categorienaam</Label>
+                <Input
+                  id="updatedCategoryName"
+                  placeholder="Voer een nieuwe naam in"
+                  value={updatedCategoryName}
+                  onChange={(e) => setUpdatedCategoryName(e.target.value)}
+                />
+              </div>
+              
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setUpdatedCategoryName("");
+                  }}
+                >
+                  Annuleren
+                </Button>
+                <Button onClick={handleUpdateCategory}>
+                  Bijwerken
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newCategory">Nieuwe categorie</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="newCategory"
+                    placeholder="Voer een categorienaam in"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                  />
+                  <Button onClick={handleAddCategory}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Bestaande categorieën</Label>
+                <div className="max-h-60 overflow-y-auto border rounded-md p-2">
+                  {categories.length > 0 ? (
+                    <ul className="space-y-2">
+                      {categories.map((cat) => (
+                        <li key={cat} className="flex justify-between items-center p-2 hover:bg-secondary rounded-md">
+                          {cat}
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                setEditingCategory(cat);
+                                setUpdatedCategoryName(cat);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-7 w-7 text-destructive"
+                              onClick={() => handleDeleteCategory(cat)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">
+                      Geen categorieën gevonden
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
+                  Sluiten
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </AdminLayout>
