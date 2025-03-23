@@ -1,0 +1,25 @@
+
+/* Custom blue slider styles */
+.slider-blue [data-orientation="horizontal"] {
+  height: 8px;
+}
+
+.slider-blue [role="slider"] {
+  background-color: white;
+  border: 2px solid #0066ff;
+  width: 16px;
+  height: 16px;
+}
+
+.slider-blue [data-orientation="horizontal"] > span {
+  background-color: #0066ff;
+  height: 100%;
+}
+
+.slider-blue [data-orientation="horizontal"] > span:first-child {
+  background-color: #0066ff;
+}
+
+.slider-blue [data-orientation="horizontal"] > span:last-child {
+  background-color: #131d2c;
+}
