@@ -16,9 +16,9 @@ export function MeditationMusicPlayer() {
   const [selectedMusic, setSelectedMusic] = useState(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
 
-  // Filter meditations for personal meditation music (only category "Persoonlijke meditatie muziek")
+  // Filter meditations for personal meditation music (only category "Ochtend")
   const meditationMusic = meditations.filter(item => 
-    item.category === "Persoonlijke meditatie muziek"
+    item.category === "Ochtend"
   );
 
   // If we have meditation music available, set the first one as default
@@ -38,7 +38,7 @@ export function MeditationMusicPlayer() {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Music className="text-primary h-4 w-4" />
-          <h3 className="text-sm font-medium">Meditatie Muziek</h3>
+          <h3 className="text-sm font-medium">Ochtend Meditatie</h3>
         </div>
         
         <DropdownMenu>
@@ -67,7 +67,7 @@ export function MeditationMusicPlayer() {
                 ))
               ) : (
                 <DropdownMenuItem disabled>
-                  Geen persoonlijke meditatie muziek beschikbaar
+                  Geen ochtend meditatie muziek beschikbaar
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>

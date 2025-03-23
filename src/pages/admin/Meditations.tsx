@@ -14,6 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AudioPlayer } from "@/components/audio-player";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Dialog,
   DialogContent,
@@ -348,20 +355,27 @@ const AdminMeditations = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Categorie</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="category"
-                      placeholder="Categorie"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      list="categories"
-                    />
-                    <datalist id="categories">
+                  <Select 
+                    value={category} 
+                    onValueChange={setCategory}
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Selecteer categorie" />
+                    </SelectTrigger>
+                    <SelectContent>
                       {categories.map((cat) => (
-                        <option key={cat} value={cat} />
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
                       ))}
-                    </datalist>
-                  </div>
+                      {/* Allow creating a new category if they type something not in the list */}
+                      {category && !categories.includes(category) && (
+                        <SelectItem value={category}>
+                          {category} (Nieuw)
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="space-y-2">
