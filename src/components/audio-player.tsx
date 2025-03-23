@@ -3,7 +3,6 @@ import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-r
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -17,7 +16,7 @@ interface AudioPlayerProps {
 export function AudioPlayer({ 
   audioUrl, 
   showControls = true, 
-  showTitle = true,
+  showTitle = false,
   title,
   className, 
   onEnded 

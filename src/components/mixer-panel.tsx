@@ -1,5 +1,6 @@
+
 import React, { useState, useRef, useEffect } from "react";
-import { Volume2, Volume, VolumeX } from "lucide-react";
+import { Volume2, Volume, VolumeX, ChevronDown, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Soundscape } from "@/lib/types";
@@ -13,6 +14,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+
+interface SavedMix {
+  id: number;
+  name: string;
+  soundscapes: {
+    id: string;
+    volume: number;
+  }[];
+}
 
 interface MixerPanelProps {
   soundscapes: Soundscape[];
@@ -42,6 +64,94 @@ export function MixerPanel({
   const [audioUrls, setAudioUrls] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [fadeIntervals, setFadeIntervals] = useState<{ [key: string]: number | null }>({});
+  const [isOpen, setIsOpen] = useState(true);
+  const [savedMixes, setSavedMixes] = useState<SavedMix[]>([
+    { id: 1, name: "Slot 1", soundscapes: [] },
+    { id: 2, name: "Slot 2", soundscapes: [] },
+    { id: 3, name: "Slot 3", soundscapes: [] }
+  ]);
+  
+  // Try to load saved mixes from localStorage on mount
+  useEffect(() => {
+    const savedMixesData = localStorage.getItem('savedSoundscapeMixes');
+    if (savedMixesData) {
+      try {
+        setSavedMixes(JSON.parse(savedMixesData));
+      } catch (e) {
+        console.error("Error parsing saved mixes:", e);
+      }
+    }
+  }, []);
+  
+  // Save mixes to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('savedSoundscapeMixes', JSON.stringify(savedMixes));
+  }, [savedMixes]);
+
+  // Save current mix to a slot
+  const saveMixToSlot = (slotId: number) => {
+    const currentMix = selectedSoundscapeIds
+      .filter(id => volumes[id] > 0)
+      .map(id => ({
+        id,
+        volume: volumes[id]
+      }));
+    
+    if (currentMix.length === 0) {
+      toast.error("Geen actieve geluiden om op te slaan");
+      return;
+    }
+    
+    setSavedMixes(prev => 
+      prev.map(mix => 
+        mix.id === slotId 
+          ? { ...mix, soundscapes: currentMix } 
+          : mix
+      )
+    );
+    
+    toast.success(`Mix opgeslagen in ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
+  };
+  
+  // Load a saved mix
+  const loadMix = (slotId: number) => {
+    const mixToLoad = savedMixes.find(mix => mix.id === slotId);
+    
+    if (!mixToLoad || mixToLoad.soundscapes.length === 0) {
+      toast.error("Geen opgeslagen mix gevonden in dit slot");
+      return;
+    }
+    
+    // First fade out all current sounds
+    Object.keys(volumes).forEach(id => {
+      if (volumes[id] > 0) {
+        fadeOutAudio(id);
+      }
+    });
+    
+    // Set up new soundscape IDs
+    const newSelectedIds = [...selectedSoundscapeIds];
+    
+    // For each saved soundscape
+    mixToLoad.soundscapes.forEach((savedSound, index) => {
+      if (index < maxDisplayed) {
+        newSelectedIds[index] = savedSound.id;
+      }
+    });
+    
+    setSelectedSoundscapeIds(newSelectedIds);
+    
+    // Wait a bit for the fade out to complete before setting new volumes
+    setTimeout(() => {
+      const newVolumes = { ...volumes };
+      mixToLoad.soundscapes.forEach(savedSound => {
+        newVolumes[savedSound.id] = savedSound.volume;
+      });
+      setVolumes(newVolumes);
+    }, 300);
+    
+    toast.success(`Mix geladen uit ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
+  };
   
   useEffect(() => {
     const fetchAudioUrls = async () => {
@@ -245,80 +355,138 @@ export function MixerPanel({
     return <div className="text-center p-4">Geluid laden...</div>;
   }
   
+  // Filter out already selected soundscapes for each dropdown
+  const getAvailableSoundscapes = (currentPosition: number) => {
+    return soundscapes.filter(soundscape => 
+      !selectedSoundscapeIds.includes(soundscape.id) || 
+      selectedSoundscapeIds[currentPosition] === soundscape.id
+    );
+  };
+  
   const selectedSoundscapes = selectedSoundscapeIds
     .map(id => soundscapes.find(s => s.id === id))
     .filter(s => s !== undefined) as Soundscape[];
   
   return (
     <div className={cn("w-full space-y-3", className)}>
-      <h3 className="text-lg font-medium">Mix Soundscapes</h3>
-      
-      <div className="space-y-4">
-        {Array.from({ length: maxDisplayed }).map((_, index) => {
-          const currentId = selectedSoundscapeIds[index] || "";
-          const currentSoundscape = soundscapes.find(s => s.id === currentId);
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Mix Soundscapes</h3>
+        <div className="flex gap-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-8 px-2">
+                <Save className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
+              <DropdownMenuItem onClick={() => saveMixToSlot(1)}>
+                Opslaan in slot 1
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => saveMixToSlot(2)}>
+                Opslaan in slot 2
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => saveMixToSlot(3)}>
+                Opslaan in slot 3
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          return (
-            <div key={index} className="space-y-2">
-              <Select 
-                value={currentId} 
-                onValueChange={(value) => handleSoundscapeChange(index, value)}
-              >
-                <SelectTrigger className="w-full bg-background">
-                  <SelectValue placeholder="Kies een soundscape..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {soundscapes.map((soundscape) => (
-                    <SelectItem key={soundscape.id} value={soundscape.id}>
-                      {soundscape.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              {currentSoundscape && (
-                <Card className="overflow-hidden">
-                  <CardContent className="p-3">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => toggleMute(currentSoundscape.id)}
-                        className="p-1.5 rounded-full hover:bg-muted transition-colors"
-                      >
-                        {volumes[currentSoundscape.id] === 0 ? (
-                          <VolumeX className="h-4 w-4 text-muted-foreground" />
-                        ) : volumes[currentSoundscape.id] < 0.5 ? (
-                          <Volume className="h-4 w-4" />
-                        ) : (
-                          <Volume2 className="h-4 w-4" />
-                        )}
-                      </button>
-                      
-                      <div className="flex-grow">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm font-medium truncate">
-                            {currentSoundscape.title}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {Math.round(volumes[currentSoundscape.id] * 100)}%
-                          </span>
-                        </div>
-                        
-                        <Slider
-                          value={[volumes[currentSoundscape.id]]}
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          onValueChange={(value) => handleVolumeChange(currentSoundscape.id, value)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          );
-        })}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-8 px-2 ml-1">
+                Laden
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
+              <DropdownMenuItem onClick={() => loadMix(1)}>
+                Laad slot 1
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => loadMix(2)}>
+                Laad slot 2
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => loadMix(3)}>
+                Laad slot 3
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <CollapsibleTrigger asChild onClick={() => setIsOpen(!isOpen)} className="ml-1">
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : 'transform rotate-180'}`} />
+            </Button>
+          </CollapsibleTrigger>
+        </div>
       </div>
+      
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleContent className="space-y-4">
+          {Array.from({ length: maxDisplayed }).map((_, index) => {
+            const currentId = selectedSoundscapeIds[index] || "";
+            const currentSoundscape = soundscapes.find(s => s.id === currentId);
+            const availableSoundscapes = getAvailableSoundscapes(index);
+            
+            return (
+              <div key={index} className="space-y-2">
+                <Select 
+                  value={currentId} 
+                  onValueChange={(value) => handleSoundscapeChange(index, value)}
+                >
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Kies een soundscape..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border">
+                    {availableSoundscapes.map((soundscape) => (
+                      <SelectItem key={soundscape.id} value={soundscape.id}>
+                        {soundscape.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {currentSoundscape && (
+                  <Card className="overflow-hidden">
+                    <CardContent className="p-3">
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => toggleMute(currentSoundscape.id)}
+                          className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                        >
+                          {volumes[currentSoundscape.id] === 0 ? (
+                            <VolumeX className="h-4 w-4 text-muted-foreground" />
+                          ) : volumes[currentSoundscape.id] < 0.5 ? (
+                            <Volume className="h-4 w-4" />
+                          ) : (
+                            <Volume2 className="h-4 w-4" />
+                          )}
+                        </button>
+                        
+                        <div className="flex-grow">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-sm font-medium truncate">
+                              {currentSoundscape.title}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {Math.round(volumes[currentSoundscape.id] * 100)}%
+                            </span>
+                          </div>
+                          
+                          <Slider
+                            value={[volumes[currentSoundscape.id]]}
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            onValueChange={(value) => handleVolumeChange(currentSoundscape.id, value)}
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            );
+          })}
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
