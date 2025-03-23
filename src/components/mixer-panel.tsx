@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Volume2, Volume, VolumeX, ChevronDown, Save, Download, Disc } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Soundscape } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, getPublicUrl } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Select,
@@ -34,16 +35,24 @@ interface MixerPanelProps {
   className?: string;
   maxDisplayed?: number;
   resetVolumesOnChange?: boolean;
+  externalSoundscapeId?: string;
+  onSoundscapeChange?: (soundscapeId: string) => void;
+  compactMode?: boolean;
 }
 
 export function MixerPanel({ 
   soundscapes, 
   className, 
   maxDisplayed = 4, 
-  resetVolumesOnChange = false 
+  resetVolumesOnChange = false,
+  externalSoundscapeId,
+  onSoundscapeChange,
+  compactMode = false
 }: MixerPanelProps) {
   const [selectedSoundscapeIds, setSelectedSoundscapeIds] = useState<string[]>(
-    soundscapes.slice(0, maxDisplayed).map(s => s.id)
+    externalSoundscapeId 
+      ? [externalSoundscapeId, ...soundscapes.slice(0, maxDisplayed - 1).map(s => s.id)]
+      : soundscapes.slice(0, maxDisplayed).map(s => s.id)
   );
   
   const [volumes, setVolumes] = useState<{ [key: string]: number }>(
@@ -57,13 +66,24 @@ export function MixerPanel({
   const [audioUrls, setAudioUrls] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [fadeIntervals, setFadeIntervals] = useState<{ [key: string]: number | null }>({});
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(!compactMode);
   const [savedMixes, setSavedMixes] = useState<SavedMix[]>([
     { id: 1, name: "Slot 1", soundscapes: [] },
     { id: 2, name: "Slot 2", soundscapes: [] },
     { id: 3, name: "Slot 3", soundscapes: [] }
   ]);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  
+  // Update selected soundscape when external ID changes
+  useEffect(() => {
+    if (externalSoundscapeId && !selectedSoundscapeIds.includes(externalSoundscapeId)) {
+      setSelectedSoundscapeIds(prev => {
+        const newSelection = [...prev];
+        newSelection[0] = externalSoundscapeId;
+        return newSelection;
+      });
+    }
+  }, [externalSoundscapeId, selectedSoundscapeIds]);
   
   useEffect(() => {
     const savedMixesData = localStorage.getItem('savedSoundscapeMixes');
@@ -117,6 +137,7 @@ export function MixerPanel({
       return;
     }
     
+    // Fade out current sounds
     Object.keys(volumes).forEach(id => {
       if (volumes[id] > 0) {
         fadeOutAudio(id, true);
@@ -127,21 +148,28 @@ export function MixerPanel({
     
     mixToLoad.soundscapes.forEach((savedSound, index) => {
       if (index < maxDisplayed) {
-        newSelectedIds[index] = savedSound.id;
+        // Make sure the sound exists in the available soundscapes
+        if (soundscapes.some(s => s.id === savedSound.id)) {
+          newSelectedIds[index] = savedSound.id;
+        }
       }
     });
     
     setSelectedSoundscapeIds(newSelectedIds);
     
+    // Apply new volumes to trigger sound playback
     const newVolumes = { ...volumes };
     Object.keys(newVolumes).forEach(id => {
       newVolumes[id] = 0;
     });
-    mixToLoad.soundscapes.forEach(savedSound => {
-      newVolumes[savedSound.id] = savedSound.volume;
-    });
-    setVolumes(newVolumes);
     
+    mixToLoad.soundscapes.forEach(savedSound => {
+      if (soundscapes.some(s => s.id === savedSound.id)) {
+        newVolumes[savedSound.id] = savedSound.volume;
+      }
+    });
+    
+    setVolumes(newVolumes);
     setActiveSlot(slotId);
     toast.success(`Mix geladen uit ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
   };
@@ -157,12 +185,14 @@ export function MixerPanel({
             urls[soundscape.id] = soundscape.audioUrl;
           } else {
             try {
-              const { data } = await supabase.storage
-                .from('meditations')
-                .getPublicUrl(soundscape.audioUrl);
-              
-              urls[soundscape.id] = data.publicUrl;
-              console.log(`Loaded audio URL for ${soundscape.title}:`, data.publicUrl);
+              const publicUrl = getPublicUrl('meditations', soundscape.audioUrl);
+              if (publicUrl) {
+                urls[soundscape.id] = publicUrl;
+                console.log(`Loaded audio URL for ${soundscape.title}:`, publicUrl);
+              } else {
+                console.error(`Failed to get public URL for ${soundscape.title}`);
+                toast.error(`Kon geluid niet laden voor ${soundscape.title}`);
+              }
             } catch (error) {
               console.error(`Error loading audio for ${soundscape.title}:`, error);
               toast.error(`Kon geluid niet laden voor ${soundscape.title}`);
@@ -186,6 +216,7 @@ export function MixerPanel({
   useEffect(() => {
     if (loading) return;
     
+    // Clean up existing audio elements
     Object.values(audioRefs.current).forEach((audio) => {
       if (audio) {
         audio.pause();
@@ -195,6 +226,7 @@ export function MixerPanel({
     
     audioRefs.current = {};
     
+    // Create new audio elements
     soundscapes.forEach((soundscape) => {
       if (audioUrls[soundscape.id]) {
         const audio = new Audio(audioUrls[soundscape.id]);
@@ -214,6 +246,7 @@ export function MixerPanel({
       }
     });
     
+    // Cleanup function
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
@@ -332,6 +365,11 @@ export function MixerPanel({
       ...prev,
       [soundscapeId]: 0
     }));
+
+    // Call external handler if provided and this is the first position
+    if (position === 0 && onSoundscapeChange) {
+      onSoundscapeChange(soundscapeId);
+    }
   };
   
   useEffect(() => {
@@ -358,6 +396,65 @@ export function MixerPanel({
   const selectedSoundscapes = selectedSoundscapeIds
     .map(id => soundscapes.find(s => s.id === id))
     .filter(s => s !== undefined) as Soundscape[];
+    
+  // For compact mode: show just the first soundscape
+  if (compactMode) {
+    const currentId = selectedSoundscapeIds[0] || "";
+    const currentSoundscape = soundscapes.find(s => s.id === currentId);
+    
+    return (
+      <div className={cn("w-full", className)}>
+        <div className="flex items-center space-x-3 bg-card dark:bg-card rounded-lg p-3 border">
+          <Select 
+            value={currentId} 
+            onValueChange={(value) => handleSoundscapeChange(0, value)}
+          >
+            <SelectTrigger className="w-[180px] bg-background">
+              <SelectValue placeholder="Kies een soundscape..." />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border border-border">
+              {soundscapes.map((soundscape) => (
+                <SelectItem key={soundscape.id} value={soundscape.id}>
+                  {soundscape.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {currentSoundscape && (
+            <div className="flex-grow flex items-center space-x-3">
+              <button
+                onClick={() => toggleMute(currentSoundscape.id)}
+                className="p-1.5 rounded-full hover:bg-muted transition-colors"
+              >
+                {volumes[currentSoundscape.id] === 0 ? (
+                  <VolumeX className="h-4 w-4 text-muted-foreground" />
+                ) : volumes[currentSoundscape.id] < 0.5 ? (
+                  <Volume className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
+              </button>
+              
+              <div className="flex-grow">
+                <Slider
+                  value={[volumes[currentSoundscape.id]]}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onValueChange={(value) => handleVolumeChange(currentSoundscape.id, value)}
+                  className="w-full"
+                />
+              </div>
+              <span className="text-xs text-muted-foreground w-8 text-right">
+                {Math.round(volumes[currentSoundscape.id] * 100)}%
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className={cn("w-full space-y-2", className)}>

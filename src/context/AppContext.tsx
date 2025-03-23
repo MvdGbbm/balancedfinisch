@@ -129,7 +129,71 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     };
     
+    // Process soundscape URLs
+    const processSoundscapeUrls = async () => {
+      try {
+        console.log("Processing soundscape URLs in AppContext...");
+        
+        // Check if we have processed URLs in localStorage
+        const cachedSoundscapes = localStorage.getItem('processedSoundscapes');
+        if (cachedSoundscapes) {
+          console.log("Using cached soundscape URLs");
+          setSoundscapes(JSON.parse(cachedSoundscapes));
+          return;
+        }
+        
+        // Process URLs for all soundscapes
+        const processed = await Promise.all(
+          soundscapesData.map(async (soundscape) => {
+            let audioUrl = soundscape.audioUrl;
+            let coverImageUrl = soundscape.coverImageUrl;
+            
+            // Process audio URL
+            if (!audioUrl.startsWith('http')) {
+              try {
+                const { data: audioData } = await supabase.storage
+                  .from('meditations')
+                  .getPublicUrl(audioUrl);
+                audioUrl = audioData.publicUrl;
+                console.log(`Processed audio URL for ${soundscape.title}:`, audioUrl);
+              } catch (error) {
+                console.error(`Error processing audio URL for ${soundscape.title}:`, error);
+              }
+            }
+            
+            // Process cover image URL if it exists
+            if (coverImageUrl && !coverImageUrl.startsWith('http')) {
+              try {
+                const { data: imageData } = await supabase.storage
+                  .from('meditations')
+                  .getPublicUrl(coverImageUrl);
+                coverImageUrl = imageData.publicUrl;
+                console.log(`Processed image URL for ${soundscape.title}:`, coverImageUrl);
+              } catch (error) {
+                console.error(`Error processing cover image URL for ${soundscape.title}:`, error);
+              }
+            }
+            
+            return {
+              ...soundscape,
+              audioUrl,
+              coverImageUrl
+            };
+          })
+        );
+        
+        console.log("Finished processing soundscape URLs:", processed);
+        setSoundscapes(processed);
+        
+        // Cache the processed soundscapes
+        localStorage.setItem('processedSoundscapes', JSON.stringify(processed));
+      } catch (error) {
+        console.error("Error processing soundscape URLs:", error);
+      }
+    };
+    
     processMediaUrls();
+    processSoundscapeUrls();
   }, []);
   
   // Load data from localStorage on initial render
