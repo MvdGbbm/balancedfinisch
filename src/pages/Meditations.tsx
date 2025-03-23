@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -287,10 +288,10 @@ const Meditations = () => {
         open={currentMeditation !== null} 
         onOpenChange={(open) => !open && setCurrentMeditation(null)}
       >
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-black text-white border-gray-800">
           <DialogHeader>
-            <DialogTitle>{currentMeditationWithUrls?.title}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">{currentMeditationWithUrls?.title}</DialogTitle>
+            <DialogDescription className="text-blue-300">
               {currentMeditationWithUrls?.description}
             </DialogDescription>
           </DialogHeader>
@@ -303,47 +304,59 @@ const Meditations = () => {
               />
               
               <div className="grid grid-cols-1 gap-3">
-                {(currentMeditationWithUrls.veraLink || currentMeditationWithUrls.marcoLink) && (
-                  <div className="flex gap-2 items-center">
-                    <Button 
-                      variant={selectedAudioSource === 'default' ? "default" : "outline"}
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleAudioSourceChange('default')}
-                    >
-                      <Headphones className="h-4 w-4 mr-2" />
-                      Standaard
-                    </Button>
-                    
-                    {currentMeditationWithUrls.veraLink && (
-                      <Button 
-                        variant={selectedAudioSource === 'vera' ? "default" : "outline"}
-                        size="sm"
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => handleAudioSourceChange('vera')}
-                      >
-                        <Music className="h-4 w-4 mr-2" />
-                        Vera
-                      </Button>
+                {/* Audio source selection buttons */}
+                <div className="flex gap-2 items-center justify-between mt-2">
+                  <Button 
+                    variant={selectedAudioSource === 'default' ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 rounded-full",
+                      selectedAudioSource === 'default' 
+                        ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                        : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
                     )}
-                    
-                    {currentMeditationWithUrls.marcoLink && (
-                      <Button 
-                        variant={selectedAudioSource === 'marco' ? "default" : "outline"}
-                        size="sm"
-                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                        onClick={() => handleAudioSourceChange('marco')}
-                      >
-                        <Music className="h-4 w-4 mr-2" />
-                        Marco
-                      </Button>
+                    onClick={() => handleAudioSourceChange('default')}
+                  >
+                    <Headphones className="h-4 w-4 mr-2" />
+                    Standaard
+                  </Button>
+                  
+                  <Button 
+                    variant={selectedAudioSource === 'vera' ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 rounded-full",
+                      selectedAudioSource === 'vera' 
+                        ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                        : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
                     )}
-                  </div>
-                )}
+                    onClick={() => handleAudioSourceChange('vera')}
+                    disabled={!currentMeditationWithUrls.veraLink}
+                  >
+                    <Music className="h-4 w-4 mr-2" />
+                    Vera
+                  </Button>
+                  
+                  <Button 
+                    variant={selectedAudioSource === 'marco' ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "flex-1 rounded-full",
+                      selectedAudioSource === 'marco' 
+                        ? "bg-purple-500 hover:bg-purple-600 text-white" 
+                        : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
+                    )}
+                    onClick={() => handleAudioSourceChange('marco')}
+                    disabled={!currentMeditationWithUrls.marcoLink}
+                  >
+                    <Music className="h-4 w-4 mr-2" />
+                    Marco
+                  </Button>
+                </div>
               
                 <AudioPlayer 
                   audioUrl={getActiveAudioUrl()}
-                  className="w-full"
+                  className="w-full bg-transparent border-none"
                   showTitle={false}
                   showQuote={true}
                 />
