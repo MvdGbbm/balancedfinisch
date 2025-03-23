@@ -27,12 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag } from "lucide-react";
 
 import { Soundscape } from "@/lib/types";
@@ -134,9 +128,6 @@ const AdminSoundscapes = () => {
     setIsDialogOpen(false);
     resetForm();
   };
-  
-  // Filter out the current category from available categories for the dropdown
-  const filteredCategories = availableCategories.filter(cat => cat !== category);
   
   const groupedSoundscapes = soundscapes.reduce((acc, soundscape) => {
     const category = soundscape.category;
@@ -263,24 +254,21 @@ const AdminSoundscapes = () => {
                 <Label htmlFor="category">Categorie</Label>
                 <div className="flex gap-2 items-start">
                   {availableCategories.length > 0 ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                          {category || "Selecteer een categorie"}
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56 bg-background">
-                        {filteredCategories.map((cat) => (
-                          <DropdownMenuItem
-                            key={cat}
-                            onClick={() => setCategory(cat)}
-                          >
+                    <Select
+                      value={category}
+                      onValueChange={setCategory}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecteer of typ een categorie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCategories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
                             {cat}
-                          </DropdownMenuItem>
+                          </SelectItem>
                         ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <Input
                       id="category"
@@ -290,15 +278,17 @@ const AdminSoundscapes = () => {
                     />
                   )}
                 </div>
-                <div className="mt-1">
-                  <Input
-                    id="custom-category"
-                    placeholder="Of voer een nieuwe categorie in"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="mt-2"
-                  />
-                </div>
+                {availableCategories.length > 0 && (
+                  <div className="mt-1">
+                    <Input
+                      id="custom-category"
+                      placeholder="Of voer een nieuwe categorie in"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="mt-2"
+                    />
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
