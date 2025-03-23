@@ -87,7 +87,6 @@ const Soundscapes = () => {
   const [volumes, setVolumes] = useState<Record<string, number>>({});
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   
-  // Initialize audio elements and volumes
   useEffect(() => {
     const initialVolumes: Record<string, number> = {};
     
@@ -104,7 +103,6 @@ const Soundscapes = () => {
     
     setVolumes(initialVolumes);
     
-    // Clean up
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
@@ -115,15 +113,12 @@ const Soundscapes = () => {
     };
   }, [soundscapes]);
   
-  // Implement seamless looping for all audio elements
   useEffect(() => {
     const handleSeamlessLoops = () => {
       Object.entries(audioRefs.current).forEach(([id, audio]) => {
         if (!audio) return;
         
-        // Only set up seamless looping for playing audio
         if (!audio.paused && audio.duration > 0) {
-          // When we're 0.2 seconds away from the end, seamlessly loop
           if (audio.currentTime > audio.duration - 0.2) {
             const currentPlaybackRate = audio.playbackRate;
             audio.currentTime = 0;
@@ -133,7 +128,6 @@ const Soundscapes = () => {
       });
     };
     
-    // Set up interval to check audio positions
     const intervalId = setInterval(handleSeamlessLoops, 100);
     
     return () => {
@@ -141,7 +135,6 @@ const Soundscapes = () => {
     };
   }, []);
   
-  // Update audio elements when volumes change
   useEffect(() => {
     Object.entries(volumes).forEach(([id, volume]) => {
       const audio = audioRefs.current[id];
@@ -164,7 +157,6 @@ const Soundscapes = () => {
     });
   }, [volumes, playingSoundscapes]);
   
-  // Toggle play/pause
   const togglePlay = (id: string) => {
     const audio = audioRefs.current[id];
     if (!audio) return;
@@ -187,12 +179,10 @@ const Soundscapes = () => {
     }
   };
   
-  // Handle volume change
   const handleVolumeChange = (id: string, value: number[]) => {
     setVolumes((prev) => ({ ...prev, [id]: value[0] }));
   };
   
-  // Filter soundscapes based on search
   const filteredSoundscapes = soundscapes.filter((soundscape) => {
     return (
       soundscape.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -204,7 +194,6 @@ const Soundscapes = () => {
     );
   });
   
-  // Group soundscapes by category
   const categorizedSoundscapes = filteredSoundscapes.reduce((acc, soundscape) => {
     if (!acc[soundscape.category]) {
       acc[soundscape.category] = [];
@@ -265,7 +254,6 @@ const Soundscapes = () => {
           )}
         </div>
         
-        {/* Mixer panel at the bottom (only if playing something) */}
         {Object.values(playingSoundscapes).some(Boolean) && (
           <div className="fixed bottom-16 left-0 right-0 px-4 pb-2">
             <div className="glass-morphism rounded-lg p-3 shadow-lg animate-slide-in">
