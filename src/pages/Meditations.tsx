@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -29,7 +28,6 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Process Supabase URLs
   useEffect(() => {
     const processUrls = async () => {
       try {
@@ -41,7 +39,6 @@ const Meditations = () => {
             let audioUrl = meditation.audioUrl;
             let coverImageUrl = meditation.coverImageUrl;
             
-            // Process audio URL
             if (!audioUrl.startsWith('http')) {
               try {
                 const { data: audioData } = await supabase.storage
@@ -55,7 +52,6 @@ const Meditations = () => {
               }
             }
             
-            // Process cover image URL
             if (!coverImageUrl.startsWith('http')) {
               try {
                 const { data: imageData } = await supabase.storage
@@ -90,12 +86,10 @@ const Meditations = () => {
     processUrls();
   }, [meditations]);
   
-  // Get unique categories
   const categories = Array.from(
     new Set(processedMeditations.map((meditation) => meditation.category))
   );
   
-  // Filter meditations based on search and category
   const filteredMeditations = processedMeditations.filter((meditation) => {
     const matchesSearch = meditation.title
       .toLowerCase()
@@ -116,7 +110,6 @@ const Meditations = () => {
     setSearchQuery("");
   };
   
-  // Get current meditation with processed URLs
   const currentMeditationWithUrls = currentMeditation
     ? processedMeditations.find(m => m.id === currentMeditation.id) || currentMeditation
     : null;
@@ -234,7 +227,6 @@ const Meditations = () => {
         </div>
       </div>
       
-      {/* Meditation player modal */}
       <Dialog 
         open={currentMeditation !== null} 
         onOpenChange={(open) => !open && setCurrentMeditation(null)}
@@ -259,18 +251,7 @@ const Meditations = () => {
                 className="w-full"
               />
               
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Tags</h3>
-                <div className="flex flex-wrap gap-1">
-                  {currentMeditationWithUrls.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              
-              <MixerPanel soundscapes={soundscapes.slice(0, 3)} />
+              <MixerPanel soundscapes={soundscapes} maxDisplayed={4} />
             </div>
           )}
         </DialogContent>

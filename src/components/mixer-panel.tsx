@@ -7,13 +7,25 @@ import { Soundscape } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MixerPanelProps {
   soundscapes: Soundscape[];
   className?: string;
+  maxDisplayed?: number;
 }
 
-export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
+export function MixerPanel({ soundscapes, className, maxDisplayed = 4 }: MixerPanelProps) {
+  const [selectedSoundscapeIds, setSelectedSoundscapeIds] = useState<string[]>(
+    soundscapes.slice(0, maxDisplayed).map(s => s.id)
+  );
+  
   const [volumes, setVolumes] = useState<{ [key: string]: number }>(
     soundscapes.reduce((acc, soundscape) => {
       acc[soundscape.id] = 0;
@@ -172,54 +184,99 @@ export function MixerPanel({ soundscapes, className }: MixerPanelProps) {
     }));
   };
   
+  // Handle soundscape selection change
+  const handleSoundscapeChange = (position: number, soundscapeId: string) => {
+    setSelectedSoundscapeIds(prev => {
+      const newSelection = [...prev];
+      newSelection[position] = soundscapeId;
+      return newSelection;
+    });
+    
+    // Reset volume for this new selection
+    setVolumes(prev => ({
+      ...prev,
+      [soundscapeId]: 0
+    }));
+  };
+  
   if (loading) {
     return <div className="text-center p-4">Geluid laden...</div>;
   }
+  
+  // Get the selected soundscapes based on their IDs
+  const selectedSoundscapes = selectedSoundscapeIds
+    .map(id => soundscapes.find(s => s.id === id))
+    .filter(s => s !== undefined) as Soundscape[];
   
   return (
     <div className={cn("w-full space-y-3", className)}>
       <h3 className="text-lg font-medium">Mix Soundscapes</h3>
       
-      <div className="space-y-3">
-        {soundscapes.map((soundscape) => (
-          <Card key={soundscape.id} className="overflow-hidden">
-            <CardContent className="p-3">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => toggleMute(soundscape.id)}
-                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
-                >
-                  {volumes[soundscape.id] === 0 ? (
-                    <VolumeX className="h-4 w-4 text-muted-foreground" />
-                  ) : volumes[soundscape.id] < 0.5 ? (
-                    <Volume className="h-4 w-4" />
-                  ) : (
-                    <Volume2 className="h-4 w-4" />
-                  )}
-                </button>
-                
-                <div className="flex-grow">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-sm font-medium truncate">
+      <div className="space-y-4">
+        {Array.from({ length: maxDisplayed }).map((_, index) => {
+          const currentId = selectedSoundscapeIds[index] || "";
+          const currentSoundscape = soundscapes.find(s => s.id === currentId);
+          
+          return (
+            <div key={index} className="space-y-2">
+              <Select 
+                value={currentId} 
+                onValueChange={(value) => handleSoundscapeChange(index, value)}
+              >
+                <SelectTrigger className="w-full bg-background">
+                  <SelectValue placeholder="Kies een soundscape..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {soundscapes.map((soundscape) => (
+                    <SelectItem key={soundscape.id} value={soundscape.id}>
                       {soundscape.title}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {Math.round(volumes[soundscape.id] * 100)}%
-                    </span>
-                  </div>
-                  
-                  <Slider
-                    value={[volumes[soundscape.id]]}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    onValueChange={(value) => handleVolumeChange(soundscape.id, value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {currentSoundscape && (
+                <Card className="overflow-hidden">
+                  <CardContent className="p-3">
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => toggleMute(currentSoundscape.id)}
+                        className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                      >
+                        {volumes[currentSoundscape.id] === 0 ? (
+                          <VolumeX className="h-4 w-4 text-muted-foreground" />
+                        ) : volumes[currentSoundscape.id] < 0.5 ? (
+                          <Volume className="h-4 w-4" />
+                        ) : (
+                          <Volume2 className="h-4 w-4" />
+                        )}
+                      </button>
+                      
+                      <div className="flex-grow">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-medium truncate">
+                            {currentSoundscape.title}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {Math.round(volumes[currentSoundscape.id] * 100)}%
+                          </span>
+                        </div>
+                        
+                        <Slider
+                          value={[volumes[currentSoundscape.id]]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={(value) => handleVolumeChange(currentSoundscape.id, value)}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
