@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -34,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical, Link } from "lucide-react";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical } from "lucide-react";
 
 import { Meditation } from "@/lib/types";
 
@@ -54,8 +55,6 @@ const AdminMeditations = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [veraLink, setVeraLink] = useState("");
-  const [marcoLink, setMarcoLink] = useState("");
   
   // Category management
   const [newCategory, setNewCategory] = useState("");
@@ -71,8 +70,6 @@ const AdminMeditations = () => {
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
-    setVeraLink("");
-    setMarcoLink("");
   };
   
   const handleOpenNew = () => {
@@ -90,8 +87,6 @@ const AdminMeditations = () => {
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
     setTags([...meditation.tags]);
-    setVeraLink(meditation.veraLink || "");
-    setMarcoLink(meditation.marcoLink || "");
     setIsDialogOpen(true);
   };
   
@@ -127,8 +122,6 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags,
-        veraLink,
-        marcoLink,
       });
     } else {
       addMeditation({
@@ -139,8 +132,6 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags,
-        veraLink,
-        marcoLink,
       });
     }
     
@@ -166,8 +157,6 @@ const AdminMeditations = () => {
       category: newCategory,
       coverImageUrl: "images/sample.jpg",
       tags: [newCategory.toLowerCase()],
-      veraLink: "",
-      marcoLink: "",
     });
     
     setNewCategory("");
@@ -440,33 +429,6 @@ const AdminMeditations = () => {
                       </button>
                     </span>
                   ))}
-                </div>
-              </div>
-              
-              <div className="space-y-2 border-t pt-4">
-                <Label className="flex items-center gap-2">
-                  <Link className="h-4 w-4" />
-                  Externe Links
-                </Label>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="veraLink">Vera Link</Label>
-                  <Input
-                    id="veraLink"
-                    placeholder="Link voor Vera knop (bijv. https://example.com)"
-                    value={veraLink}
-                    onChange={(e) => setVeraLink(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="marcoLink">Marco Link</Label>
-                  <Input
-                    id="marcoLink"
-                    placeholder="Link voor Marco knop (bijv. https://example.com)"
-                    value={marcoLink}
-                    onChange={(e) => setMarcoLink(e.target.value)}
-                  />
                 </div>
               </div>
             </div>

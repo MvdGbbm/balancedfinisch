@@ -4,13 +4,11 @@ export interface Meditation {
   title: string;
   description: string;
   audioUrl: string;
-  coverImageUrl: string;
-  duration: number; // in minutes
+  duration: number;
   category: string;
+  coverImageUrl: string;
   tags: string[];
-  veraLink?: string;
-  marcoLink?: string;
-  createdAt?: string; // Adding the createdAt property
+  createdAt: string;
 }
 
 export interface Soundscape {
