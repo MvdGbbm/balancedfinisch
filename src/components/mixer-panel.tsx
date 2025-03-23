@@ -27,6 +27,7 @@ interface SavedMix {
     id: string;
     volume: number;
   }[];
+  masterVolume?: number;
 }
 
 interface MixerPanelProps {
@@ -61,6 +62,8 @@ export function MixerPanel({
     }, {} as { [key: string]: number })
   );
   
+  const [masterVolume, setMasterVolume] = useState<number>(1);
+  
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement | null }>({});
   const [audioUrls, setAudioUrls] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
@@ -73,7 +76,6 @@ export function MixerPanel({
   ]);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   
-  // Update selected soundscape when external ID changes
   useEffect(() => {
     if (externalSoundscapeId && !selectedSoundscapeIds.includes(externalSoundscapeId)) {
       setSelectedSoundscapeIds(prev => {
@@ -84,7 +86,6 @@ export function MixerPanel({
     }
   }, [externalSoundscapeId, selectedSoundscapeIds]);
   
-  // Load saved mixes from localStorage on component mount
   useEffect(() => {
     const savedMixesData = localStorage.getItem('savedSoundscapeMixes');
     if (savedMixesData) {
@@ -98,14 +99,12 @@ export function MixerPanel({
     }
   }, []);
   
-  // Save mixes to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('savedSoundscapeMixes', JSON.stringify(savedMixes));
     console.log("Saved mixes to localStorage:", savedMixes);
   }, [savedMixes]);
 
   const saveMixToSlot = (slotId: number) => {
-    // Get active soundscapes and their current volumes
     const activeSoundscapes = Object.entries(volumes)
       .filter(([_, volume]) => volume > 0)
       .map(([id, volume]) => ({
@@ -113,7 +112,6 @@ export function MixerPanel({
         volume
       }));
     
-    // Also include the selected soundscapes even if they're not active
     selectedSoundscapeIds.forEach(id => {
       if (!activeSoundscapes.some(s => s.id === id)) {
         activeSoundscapes.push({
@@ -128,11 +126,10 @@ export function MixerPanel({
       return;
     }
     
-    // Update the savedMixes state with the new mix
     setSavedMixes(prev => 
       prev.map(mix => 
         mix.id === slotId 
-          ? { ...mix, soundscapes: activeSoundscapes } 
+          ? { ...mix, soundscapes: activeSoundscapes, masterVolume } 
           : mix
       )
     );
@@ -149,36 +146,33 @@ export function MixerPanel({
       return;
     }
     
-    // Fade out current sounds
     Object.keys(volumes).forEach(id => {
       if (volumes[id] > 0) {
         fadeOutAudio(id, true);
       }
     });
     
-    // Create a new array for selected soundscape IDs based on the saved mix
+    if (mixToLoad.masterVolume !== undefined) {
+      setMasterVolume(mixToLoad.masterVolume);
+    }
+    
     const newSelectedIds = [...Array(maxDisplayed)].map((_, i) => {
-      // If we have a saved soundscape for this position, use it
       if (i < mixToLoad.soundscapes.length) {
         const savedSound = mixToLoad.soundscapes[i];
-        // Make sure the soundscape still exists
         if (soundscapes.some(s => s.id === savedSound.id)) {
           return savedSound.id;
         }
       }
-      // Otherwise use the current selection or first available
       return selectedSoundscapeIds[i] || soundscapes[i]?.id || "";
     });
     
     setSelectedSoundscapeIds(newSelectedIds);
     
-    // Create a new volumes object with all volumes set to 0
     const newVolumes = { ...volumes };
     Object.keys(newVolumes).forEach(id => {
       newVolumes[id] = 0;
     });
     
-    // Set the volumes for the soundscapes in the saved mix
     mixToLoad.soundscapes.forEach(savedSound => {
       if (soundscapes.some(s => s.id === savedSound.id)) {
         newVolumes[savedSound.id] = savedSound.volume;
@@ -189,7 +183,6 @@ export function MixerPanel({
     console.log("New volumes:", newVolumes);
     console.log("New selected IDs:", newSelectedIds);
     
-    // Update the volumes and active slot
     setVolumes(newVolumes);
     setActiveSlot(slotId);
     toast.success(`Mix geladen uit ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
@@ -237,7 +230,6 @@ export function MixerPanel({
   useEffect(() => {
     if (loading) return;
     
-    // Clean up existing audio elements
     Object.values(audioRefs.current).forEach((audio) => {
       if (audio) {
         audio.pause();
@@ -247,7 +239,6 @@ export function MixerPanel({
     
     audioRefs.current = {};
     
-    // Create new audio elements
     soundscapes.forEach((soundscape) => {
       if (audioUrls[soundscape.id]) {
         const audio = new Audio(audioUrls[soundscape.id]);
@@ -267,7 +258,6 @@ export function MixerPanel({
       }
     });
     
-    // Cleanup function
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
@@ -304,7 +294,7 @@ export function MixerPanel({
     Object.entries(volumes).forEach(([id, volume]) => {
       const audio = audioRefs.current[id];
       if (audio) {
-        audio.volume = volume;
+        audio.volume = volume * masterVolume;
         if (volume > 0 && audio.paused) {
           audio.play().catch(error => {
             console.error(`Error playing audio for soundscape ${id}:`, error);
@@ -315,7 +305,7 @@ export function MixerPanel({
         }
       }
     });
-  }, [volumes]);
+  }, [volumes, masterVolume]);
   
   const fadeOutAudio = (soundscapeId: string, quick = false) => {
     if (fadeIntervals[soundscapeId]) {
@@ -387,7 +377,6 @@ export function MixerPanel({
       [soundscapeId]: 0
     }));
 
-    // Call external handler if provided and this is the first position
     if (position === 0 && onSoundscapeChange) {
       onSoundscapeChange(soundscapeId);
     }
@@ -402,6 +391,10 @@ export function MixerPanel({
       });
     };
   }, [fadeIntervals]);
+  
+  const handleMasterVolumeChange = (value: number[]) => {
+    setMasterVolume(value[0]);
+  };
   
   if (loading) {
     return <div className="text-center p-4">Geluid laden...</div>;
@@ -418,7 +411,6 @@ export function MixerPanel({
     .map(id => soundscapes.find(s => s.id === id))
     .filter(s => s !== undefined) as Soundscape[];
     
-  // For compact mode: show just the first soundscape
   if (compactMode) {
     const currentId = selectedSoundscapeIds[0] || "";
     const currentSoundscape = soundscapes.find(s => s.id === currentId);
@@ -485,11 +477,29 @@ export function MixerPanel({
             <Disc className="h-4 w-4 text-primary" />
             <h3 className="text-lg font-medium">Mix Soundscapes</h3>
           </div>
-          <CollapsibleTrigger asChild>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? '' : 'transform rotate-180'}`} />
-            </Button>
-          </CollapsibleTrigger>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-md">
+              <Volume2 className="h-3.5 w-3.5 text-primary" />
+              <Slider
+                value={[masterVolume]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={handleMasterVolumeChange}
+                className="w-20"
+              />
+              <span className="text-xs text-muted-foreground min-w-8">
+                {Math.round(masterVolume * 100)}%
+              </span>
+            </div>
+            
+            <CollapsibleTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? '' : 'transform rotate-180'}`} />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
         </div>
         
         <CollapsibleContent className="space-y-4 mt-2">
