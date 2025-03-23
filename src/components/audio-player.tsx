@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -140,92 +141,90 @@ export function AudioPlayer({
   };
   
   return (
-    <div className={cn("w-full rounded-lg p-4 glass-morphism", className)}>
+    <div className={cn("w-full space-y-3", className)}>
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
-      <div className="flex flex-col space-y-2">
-        {showTitle && title && (
-          <h3 className="text-sm font-medium mb-2">{title}</h3>
-        )}
-        
-        <div className="w-full flex items-center space-x-2">
-          <div className="text-xs w-10 text-right">{formatTime(currentTime)}</div>
-          <div className="flex-grow">
+      {showTitle && title && (
+        <h3 className="text-lg font-medium">{title}</h3>
+      )}
+      
+      <div className="w-full flex items-center space-x-2">
+        <div className="text-xs w-10 text-right">{formatTime(currentTime)}</div>
+        <div className="flex-grow">
+          <Slider
+            value={[currentTime]}
+            min={0}
+            max={duration || 100}
+            step={0.01}
+            onValueChange={handleProgressChange}
+            className="audio-player-slider"
+          />
+        </div>
+        <div className="text-xs w-10">{formatTime(duration)}</div>
+      </div>
+      
+      {showControls && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => skipTime(-10)}
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-full"
+            >
+              <SkipBack className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              onClick={togglePlay}
+              size="icon"
+              variant="outline"
+              className="h-10 w-10 rounded-full"
+            >
+              {isPlaying ? (
+                <Pause className="h-5 w-5" />
+              ) : (
+                <Play className="h-5 w-5" />
+              )}
+            </Button>
+            
+            <Button
+              onClick={() => skipTime(10)}
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-full"
+            >
+              <SkipForward className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center ml-2 space-x-1">
+              <Button
+                onClick={toggleLoop}
+                size="icon"
+                variant={isLooping ? "default" : "ghost"}
+                className={cn(
+                  "h-8 w-8 rounded-full transition-colors",
+                  isLooping && "bg-primary text-primary-foreground"
+                )}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
             <Slider
-              value={[currentTime]}
+              value={[volume]}
               min={0}
-              max={duration || 100}
+              max={1}
               step={0.01}
-              onValueChange={handleProgressChange}
-              className="audio-player-slider"
+              onValueChange={handleVolumeChange}
+              className="w-24"
             />
           </div>
-          <div className="text-xs w-10">{formatTime(duration)}</div>
         </div>
-        
-        {showControls && (
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={() => skipTime(-10)}
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full"
-              >
-                <SkipBack className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                onClick={togglePlay}
-                size="icon"
-                variant="outline"
-                className="h-10 w-10 rounded-full"
-              >
-                {isPlaying ? (
-                  <Pause className="h-5 w-5" />
-                ) : (
-                  <Play className="h-5 w-5" />
-                )}
-              </Button>
-              
-              <Button
-                onClick={() => skipTime(10)}
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full"
-              >
-                <SkipForward className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex items-center ml-2 space-x-1">
-                <Button
-                  onClick={toggleLoop}
-                  size="icon"
-                  variant={isLooping ? "default" : "ghost"}
-                  className={cn(
-                    "h-8 w-8 rounded-full transition-colors",
-                    isLooping && "bg-primary text-primary-foreground"
-                  )}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Volume2 className="h-4 w-4 text-muted-foreground" />
-              <Slider
-                value={[volume]}
-                min={0}
-                max={1}
-                step={0.01}
-                onValueChange={handleVolumeChange}
-                className="w-24"
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

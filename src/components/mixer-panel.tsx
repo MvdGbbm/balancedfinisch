@@ -369,56 +369,56 @@ export function MixerPanel({
   
   return (
     <div className={cn("w-full space-y-3", className)}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Mix Soundscapes</h3>
-        <div className="flex gap-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-8 px-2">
-                <Save className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
-              <DropdownMenuItem onClick={() => saveMixToSlot(1)}>
-                Opslaan in slot 1
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => saveMixToSlot(2)}>
-                Opslaan in slot 2
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => saveMixToSlot(3)}>
-                Opslaan in slot 3
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="outline" className="h-8 px-2 ml-1">
-                Laden
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
-              <DropdownMenuItem onClick={() => loadMix(1)}>
-                Laad slot 1
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => loadMix(2)}>
-                Laad slot 2
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => loadMix(3)}>
-                Laad slot 3
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <CollapsibleTrigger asChild onClick={() => setIsOpen(!isOpen)} className="ml-1">
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : 'transform rotate-180'}`} />
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-      </div>
-      
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium">Mix Soundscapes</h3>
+          <div className="flex gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 px-2">
+                  <Save className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
+                <DropdownMenuItem onClick={() => saveMixToSlot(1)}>
+                  Opslaan in slot 1
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => saveMixToSlot(2)}>
+                  Opslaan in slot 2
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => saveMixToSlot(3)}>
+                  Opslaan in slot 3
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline" className="h-8 px-2 ml-1">
+                  Laden
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
+                <DropdownMenuItem onClick={() => loadMix(1)}>
+                  Laad slot 1
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => loadMix(2)}>
+                  Laad slot 2
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => loadMix(3)}>
+                  Laad slot 3
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <CollapsibleTrigger asChild>
+              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 ml-1">
+                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : 'transform rotate-180'}`} />
+              </Button>
+            </CollapsibleTrigger>
+          </div>
+        </div>
+        
         <CollapsibleContent className="space-y-4">
           {Array.from({ length: maxDisplayed }).map((_, index) => {
             const currentId = selectedSoundscapeIds[index] || "";
