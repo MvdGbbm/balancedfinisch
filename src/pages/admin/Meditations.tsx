@@ -57,6 +57,11 @@ const AdminMeditations = () => {
   const [veraLink, setVeraLink] = useState("");
   const [marcoLink, setMarcoLink] = useState("");
   
+  // Add the missing state variables
+  const [newCategory, setNewCategory] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [updatedCategoryName, setUpdatedCategoryName] = useState("");
+  
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -151,7 +156,7 @@ const AdminMeditations = () => {
     if (!newCategory.trim()) return;
     
     addMeditation({
-      title: `${newCategory} Meditatie",
+      title: `${newCategory} Meditatie`,
       description: `Een nieuwe meditatie in de ${newCategory} categorie.`,
       audioUrl: "audio/sample.mp3",
       duration: 10,
