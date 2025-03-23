@@ -489,9 +489,6 @@ export function MixerPanel({
                 onValueChange={handleMasterVolumeChange}
                 className="w-20"
               />
-              <span className="text-xs text-muted-foreground min-w-8">
-                {Math.round(masterVolume * 100)}%
-              </span>
             </div>
             
             <CollapsibleTrigger asChild>
