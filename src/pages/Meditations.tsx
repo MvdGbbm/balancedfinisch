@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -18,6 +17,7 @@ const Meditations = () => {
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
   const [selectedAudioSource, setSelectedAudioSource] = useState<'vera' | 'marco'>('vera');
+  const [customAudioUrl, setCustomAudioUrl] = useState<string>("");
   
   useEffect(() => {
     const fetchAndProcessMeditations = async () => {
@@ -55,10 +55,15 @@ const Meditations = () => {
   
   const handleAudioSourceChange = (source: 'vera' | 'marco') => {
     setSelectedAudioSource(source);
+    setCustomAudioUrl("");
     toast.success(`${source === 'vera' ? 'Vera' : 'Marco'} audio geselecteerd`);
   };
   
   const getActiveAudioUrl = () => {
+    if (customAudioUrl) {
+      return customAudioUrl;
+    }
+    
     if (!currentMeditationWithUrls) return '';
     
     if (selectedAudioSource === 'vera' && currentMeditationWithUrls.veraLink) {
