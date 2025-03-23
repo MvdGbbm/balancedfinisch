@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -20,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Meditation } from "@/lib/types";
 import { toast } from "sonner";
-import { useQuote } from "@/hooks/use-quote";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
@@ -30,7 +28,6 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
-  const { quote } = useQuote();
   
   useEffect(() => {
     const processUrls = async () => {
@@ -249,23 +246,10 @@ const Meditations = () => {
           
           {currentMeditationWithUrls && (
             <div className="space-y-4">
-              <div className="relative">
-                <div 
-                  className="w-full h-80 bg-cover bg-center rounded-md overflow-hidden"
-                  style={{ 
-                    backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})`,
-                  }}
-                />
-              </div>
-              
-              {quote && (
-                <div className="bg-[#131d2c] p-3 rounded-md">
-                  <p className="italic text-white">{quote.text}</p>
-                  {quote.author && (
-                    <p className="text-right text-sm text-white/70 mt-2">— {quote.author}</p>
-                  )}
-                </div>
-              )}
+              <div 
+                className="w-full h-80 bg-cover bg-center rounded-md"
+                style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})`, objectFit: "cover" }}
+              />
               
               <div className="grid grid-cols-1 gap-3">
                 <AudioPlayer 
