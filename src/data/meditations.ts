@@ -68,4 +68,38 @@ export const meditations: Meditation[] = [
     tags: ["dankbaarheid", "positiviteit", "geluk"],
     createdAt: "2023-01-06T09:15:00Z",
   },
+  // Add new meditation items with "Persoonlijke meditatie muziek" category
+  {
+    id: "med-7",
+    title: "Rustgevende Natuurgeluiden",
+    description: "Ontspan met kalme natuurgeluiden die je helpen tot rust te komen.",
+    audioUrl: "audio/nature-sounds.mp3",
+    duration: 15,
+    category: "Persoonlijke meditatie muziek",
+    coverImageUrl: "images/nature.jpg",
+    tags: ["natuur", "ontspanning", "rust"],
+    createdAt: "2023-01-07T14:30:00Z",
+  },
+  {
+    id: "med-8",
+    title: "Oceaan Meditatie",
+    description: "Laat je meevoeren op de golven van de oceaan met deze kalme muziek.",
+    audioUrl: "audio/ocean-waves.mp3",
+    duration: 20,
+    category: "Persoonlijke meditatie muziek",
+    coverImageUrl: "images/ocean.jpg",
+    tags: ["oceaan", "water", "kalmte"],
+    createdAt: "2023-01-08T11:20:00Z",
+  },
+  {
+    id: "med-9",
+    title: "Regendruppels",
+    description: "Geniet van het kalme geluid van regendruppels voor diepe ontspanning.",
+    audioUrl: "audio/rain.mp3",
+    duration: 18,
+    category: "Persoonlijke meditatie muziek",
+    coverImageUrl: "images/rain.jpg",
+    tags: ["regen", "water", "rust"],
+    createdAt: "2023-01-09T19:45:00Z",
+  }
 ];
