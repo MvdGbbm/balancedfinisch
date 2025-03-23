@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, Filter, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Clock, Play, Filter, X } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Meditation } from "@/lib/types";
@@ -30,7 +30,6 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
-  const [imageZoom, setImageZoom] = useState(1);
   const { quote } = useQuote();
   
   useEffect(() => {
@@ -121,10 +120,6 @@ const Meditations = () => {
     
   const handleSoundscapeChange = (soundscapeId: string) => {
     setCurrentSoundscapeId(soundscapeId);
-  };
-  
-  const handleZoomChange = (value: number[]) => {
-    setImageZoom(value[0]);
   };
   
   if (loading) {
@@ -259,27 +254,8 @@ const Meditations = () => {
                   className="w-full h-80 bg-cover bg-center rounded-md overflow-hidden"
                   style={{ 
                     backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})`,
-                    transform: `scale(${imageZoom})`,
-                    transformOrigin: 'center',
-                    transition: 'transform 0.3s ease',
                   }}
                 />
-                
-                <div className="mt-2 p-3 bg-[#131d2c] rounded-md flex items-center gap-3">
-                  <ZoomOut className="h-4 w-4 text-white" />
-                  <Slider
-                    value={[imageZoom]}
-                    min={1}
-                    max={1.5}
-                    step={0.01}
-                    onValueChange={handleZoomChange}
-                    className="slider-blue"
-                  />
-                  <ZoomIn className="h-4 w-4 text-white" />
-                  <span className="text-xs text-white w-10 text-right">
-                    {Math.round(imageZoom * 100)}%
-                  </span>
-                </div>
               </div>
               
               {quote && (
