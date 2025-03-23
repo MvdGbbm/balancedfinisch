@@ -22,24 +22,26 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
     <Card 
       key={meditation.id} 
       className={cn(
-        "overflow-hidden cursor-pointer hover:shadow-md transition-shadow animate-slide-in",
-        isSelected ? "ring-2 ring-primary/50" : "neo-morphism"
+        "overflow-hidden cursor-pointer transition-all hover:shadow-md animate-slide-in",
+        isSelected 
+          ? "ring-2 ring-primary/50 bg-primary/5" 
+          : "neo-morphism hover:translate-y-[-2px]"
       )}
       onClick={() => onClick(meditation)}
     >
-      <div className="flex h-24">
+      <div className="flex h-20">
         <div
-          className="w-24 bg-cover bg-center"
+          className="w-20 bg-cover bg-center"
           style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
         />
-        <CardContent className="flex-1 p-3 flex flex-col justify-between">
+        <CardContent className="flex-1 p-2.5 flex flex-col justify-between">
           <div>
-            <h3 className="font-medium">{meditation.title}</h3>
-            <p className="text-xs text-muted-foreground line-clamp-2">
+            <h3 className="font-medium text-sm mb-0.5 line-clamp-1">{meditation.title}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">
               {meditation.description}
             </p>
           </div>
-          <div className="flex justify-between items-center mt-1">
+          <div className="flex justify-between items-center">
             <div className="flex items-center text-xs text-muted-foreground">
               <Clock className="h-3 w-3 mr-1" />
               {meditation.duration} min
@@ -47,7 +49,7 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
             <Button 
               size="icon" 
               variant="ghost" 
-              className="h-6 w-6"
+              className="h-6 w-6 text-primary hover:text-primary/70 hover:bg-primary/10"
               onClick={handlePlayClick}
               aria-label="Speel meditatie af"
             >
