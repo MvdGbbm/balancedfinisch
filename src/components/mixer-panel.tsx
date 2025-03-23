@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Volume2, Volume, VolumeX, ChevronDown, Save, Download, Disc } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -85,38 +84,55 @@ export function MixerPanel({
     }
   }, [externalSoundscapeId, selectedSoundscapeIds]);
   
+  // Load saved mixes from localStorage on component mount
   useEffect(() => {
     const savedMixesData = localStorage.getItem('savedSoundscapeMixes');
     if (savedMixesData) {
       try {
-        setSavedMixes(JSON.parse(savedMixesData));
+        const parsedMixes = JSON.parse(savedMixesData);
+        setSavedMixes(parsedMixes);
+        console.log("Loaded saved mixes from localStorage:", parsedMixes);
       } catch (e) {
         console.error("Error parsing saved mixes:", e);
       }
     }
   }, []);
   
+  // Save mixes to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('savedSoundscapeMixes', JSON.stringify(savedMixes));
+    console.log("Saved mixes to localStorage:", savedMixes);
   }, [savedMixes]);
 
   const saveMixToSlot = (slotId: number) => {
-    const currentMix = selectedSoundscapeIds
-      .filter(id => volumes[id] > 0)
-      .map(id => ({
+    // Get active soundscapes and their current volumes
+    const activeSoundscapes = Object.entries(volumes)
+      .filter(([_, volume]) => volume > 0)
+      .map(([id, volume]) => ({
         id,
-        volume: volumes[id]
+        volume
       }));
     
-    if (currentMix.length === 0) {
+    // Also include the selected soundscapes even if they're not active
+    selectedSoundscapeIds.forEach(id => {
+      if (!activeSoundscapes.some(s => s.id === id)) {
+        activeSoundscapes.push({
+          id,
+          volume: volumes[id]
+        });
+      }
+    });
+    
+    if (activeSoundscapes.length === 0) {
       toast.error("Geen actieve geluiden om op te slaan");
       return;
     }
     
+    // Update the savedMixes state with the new mix
     setSavedMixes(prev => 
       prev.map(mix => 
         mix.id === slotId 
-          ? { ...mix, soundscapes: currentMix } 
+          ? { ...mix, soundscapes: activeSoundscapes } 
           : mix
       )
     );
@@ -126,10 +142,6 @@ export function MixerPanel({
   };
   
   const loadMix = (slotId: number) => {
-    if (activeSlot === slotId) {
-      return;
-    }
-    
     const mixToLoad = savedMixes.find(mix => mix.id === slotId);
     
     if (!mixToLoad || mixToLoad.soundscapes.length === 0) {
@@ -144,31 +156,40 @@ export function MixerPanel({
       }
     });
     
-    const newSelectedIds = [...selectedSoundscapeIds];
-    
-    mixToLoad.soundscapes.forEach((savedSound, index) => {
-      if (index < maxDisplayed) {
-        // Make sure the sound exists in the available soundscapes
+    // Create a new array for selected soundscape IDs based on the saved mix
+    const newSelectedIds = [...Array(maxDisplayed)].map((_, i) => {
+      // If we have a saved soundscape for this position, use it
+      if (i < mixToLoad.soundscapes.length) {
+        const savedSound = mixToLoad.soundscapes[i];
+        // Make sure the soundscape still exists
         if (soundscapes.some(s => s.id === savedSound.id)) {
-          newSelectedIds[index] = savedSound.id;
+          return savedSound.id;
         }
       }
+      // Otherwise use the current selection or first available
+      return selectedSoundscapeIds[i] || soundscapes[i]?.id || "";
     });
     
     setSelectedSoundscapeIds(newSelectedIds);
     
-    // Apply new volumes to trigger sound playback
+    // Create a new volumes object with all volumes set to 0
     const newVolumes = { ...volumes };
     Object.keys(newVolumes).forEach(id => {
       newVolumes[id] = 0;
     });
     
+    // Set the volumes for the soundscapes in the saved mix
     mixToLoad.soundscapes.forEach(savedSound => {
       if (soundscapes.some(s => s.id === savedSound.id)) {
         newVolumes[savedSound.id] = savedSound.volume;
       }
     });
     
+    console.log("Loading mix:", mixToLoad);
+    console.log("New volumes:", newVolumes);
+    console.log("New selected IDs:", newSelectedIds);
+    
+    // Update the volumes and active slot
     setVolumes(newVolumes);
     setActiveSlot(slotId);
     toast.success(`Mix geladen uit ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
