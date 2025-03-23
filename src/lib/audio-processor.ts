@@ -14,12 +14,18 @@ export class AudioProcessor {
   
   // Static map to track which audio elements have already been connected
   private static connectedElements = new WeakMap<HTMLMediaElement, AudioContext>();
+  private static globalContext: AudioContext | null = null;
   
   // Standard EQ frequencies
   private readonly EQ_FREQUENCIES = [60, 170, 310, 600, 1000, 3000, 6000, 12000, 16000];
   
   constructor(audioElement: HTMLAudioElement | null, destination?: AudioNode) {
-    this.context = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Try to reuse the global context if it exists
+    if (!AudioProcessor.globalContext) {
+      AudioProcessor.globalContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    this.context = AudioProcessor.globalContext;
+    
     this.destinationNode = destination || this.context.destination;
     
     // Create nodes
@@ -45,6 +51,9 @@ export class AudioProcessor {
     // Connect audio source if provided
     if (audioElement) {
       this.connectSource(audioElement);
+    } else {
+      // Connect without source
+      this.connectAudioGraphWithoutSource();
     }
     
     // Load impulse response for reverb
@@ -174,41 +183,40 @@ export class AudioProcessor {
   
   private async loadReverbImpulse(): Promise<void> {
     try {
-      // Default hall reverb impulse response
+      // Creëer direct een fallback reverb en gebruik deze om te beginnen
+      this.createFallbackReverb();
+      
+      // Try to load a real impulse response asynchronously
+      // Deze aanpak vermindert het risico op startproblemen met de audio
       const response = await fetch("/lovable-uploads/89bef4b9-51c7-4fa8-b0b8-d50b7049c2b4.png");
       const arrayBuffer = await response.arrayBuffer();
       
-      this.reverbNode = this.context.createConvolver();
-      this.context.decodeAudioData(arrayBuffer, buffer => {
+      try {
+        const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
         if (this.reverbNode) {
-          this.reverbNode.buffer = buffer;
-          
-          // Reconnect audio graph if source exists
-          if (this.sourceNode) {
-            this.connectAudioGraph();
-          }
+          this.reverbNode.buffer = audioBuffer;
         }
-      }).catch(e => {
+      } catch (e) {
         console.error("Failed to decode impulse response:", e);
-        // Create a fallback impulse response
-        this.createFallbackReverb();
-      });
+        // Fallback already created, so we'll just use that
+      }
     } catch (e) {
       console.error("Error loading reverb impulse:", e);
-      this.createFallbackReverb();
+      // Fallback already created, so we'll just use that
     }
   }
   
   private createFallbackReverb(): void {
     // Create a simple impulse response as fallback
     const sampleRate = this.context.sampleRate;
-    const length = sampleRate * 2; // 2 seconds
+    const length = sampleRate * 1.5; // 1.5 seconds
     const impulse = this.context.createBuffer(2, length, sampleRate);
     
     for (let channel = 0; channel < 2; channel++) {
       const impulseData = impulse.getChannelData(channel);
       for (let i = 0; i < length; i++) {
-        impulseData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+        // Simpele exponentieel afnemende ruis
+        impulseData[i] = (Math.random() * 2 - 1) * Math.pow(0.95, i / 50);
       }
     }
     
@@ -218,6 +226,8 @@ export class AudioProcessor {
     // Reconnect audio graph if source exists
     if (this.sourceNode) {
       this.connectAudioGraph();
+    } else {
+      this.connectAudioGraphWithoutSource();
     }
   }
   
