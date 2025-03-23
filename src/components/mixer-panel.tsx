@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from "react";
-import { Volume2, Volume, VolumeX, ChevronDown, Save, Download } from "lucide-react";
+import { Volume2, Volume, VolumeX, ChevronDown, Save, Download, Disc } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Soundscape } from "@/lib/types";
@@ -19,12 +18,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 
 interface SavedMix {
@@ -379,53 +372,56 @@ export function MixerPanel({
     .filter(s => s !== undefined) as Soundscape[];
   
   return (
-    <div className={cn("w-full space-y-3", className)}>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <div className={cn("w-full space-y-2", className)}>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="border rounded-lg p-3 bg-card shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Mix Soundscapes</h3>
+          <div className="flex items-center gap-1">
+            <Disc className="h-4 w-4 text-primary" />
+            <h3 className="text-lg font-medium">Mix Soundscapes</h3>
+          </div>
           <CollapsibleTrigger asChild>
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : 'transform rotate-180'}`} />
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? '' : 'transform rotate-180'}`} />
             </Button>
           </CollapsibleTrigger>
         </div>
         
-        <CollapsibleContent className="space-y-4">
-          <div className="flex gap-2 mt-2">
-            <div className="flex items-center gap-1 flex-wrap">
-              {savedMixes.map((mix) => (
-                <Button
-                  key={`save-${mix.id}`}
-                  size="sm"
-                  variant="outline"
-                  className={cn(
-                    "h-8 text-xs flex items-center gap-1",
-                    activeSlot === mix.id && "bg-secondary"
-                  )}
-                  onClick={() => saveMixToSlot(mix.id)}
-                >
-                  <Save className="h-3 w-3" />
-                  Bewaren {mix.id}
-                </Button>
-              ))}
+        <CollapsibleContent className="space-y-4 mt-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Opslaan</p>
+              <div className="flex gap-1 flex-wrap">
+                {savedMixes.map((mix) => (
+                  <Button
+                    key={`save-${mix.id}`}
+                    size="sm"
+                    variant={activeSlot === mix.id ? "secondary" : "outline"}
+                    className="h-8 text-xs w-full flex items-center gap-1"
+                    onClick={() => saveMixToSlot(mix.id)}
+                  >
+                    <Save className="h-3 w-3" />
+                    <span>Bewaren {mix.id}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
-            <div className="border-l mx-1"></div>
-            <div className="flex items-center gap-1 flex-wrap">
-              {savedMixes.map((mix) => (
-                <Button
-                  key={`load-${mix.id}`}
-                  size="sm"
-                  variant="outline"
-                  className={cn(
-                    "h-8 text-xs flex items-center gap-1",
-                    activeSlot === mix.id && "bg-primary text-primary-foreground"
-                  )}
-                  onClick={() => loadMix(mix.id)}
-                >
-                  <Download className="h-3 w-3" />
-                  Oproepen {mix.id}
-                </Button>
-              ))}
+            
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground font-medium">Laden</p>
+              <div className="flex gap-1 flex-wrap">
+                {savedMixes.map((mix) => (
+                  <Button
+                    key={`load-${mix.id}`}
+                    size="sm"
+                    variant={activeSlot === mix.id ? "primary" : "outline"}
+                    className="h-8 text-xs w-full flex items-center gap-1"
+                    onClick={() => loadMix(mix.id)}
+                  >
+                    <Download className="h-3 w-3" />
+                    <span>Oproepen {mix.id}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
 

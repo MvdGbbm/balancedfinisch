@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -231,7 +232,7 @@ const Meditations = () => {
         open={currentMeditation !== null} 
         onOpenChange={(open) => !open && setCurrentMeditation(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{currentMeditationWithUrls?.title}</DialogTitle>
             <DialogDescription>
@@ -242,11 +243,11 @@ const Meditations = () => {
           {currentMeditationWithUrls && (
             <div className="space-y-4">
               <div 
-                className="w-full h-40 bg-cover bg-center rounded-md"
+                className="w-full h-60 bg-cover bg-center rounded-md"
                 style={{ backgroundImage: `url(${currentMeditationWithUrls.coverImageUrl})` }}
               />
               
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 <AudioPlayer 
                   audioUrl={currentMeditationWithUrls.audioUrl} 
                   className="w-full"

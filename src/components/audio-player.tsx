@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,6 @@ export function AudioPlayer({
   const [isLooping, setIsLooping] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -154,7 +154,7 @@ export function AudioPlayer({
   };
   
   return (
-    <div className={cn("w-full space-y-3", className)}>
+    <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} src={audioUrl} preload="metadata" />
       
       {showTitle && title && (
