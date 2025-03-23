@@ -13,6 +13,11 @@ interface MeditationCardProps {
 }
 
 export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCardProps) => {
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    onClick(meditation); // Use the same click handler to open the meditation
+  };
+
   return (
     <Card 
       key={meditation.id} 
@@ -39,7 +44,13 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
               <Clock className="h-3 w-3 mr-1" />
               {meditation.duration} min
             </div>
-            <Button size="icon" variant="ghost" className="h-6 w-6">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="h-6 w-6"
+              onClick={handlePlayClick}
+              aria-label="Speel meditatie af"
+            >
               <Play className="h-3 w-3" />
             </Button>
           </div>
