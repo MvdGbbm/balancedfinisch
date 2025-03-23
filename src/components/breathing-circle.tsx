@@ -24,12 +24,15 @@ export function BreathingCircle({
   const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
-  const [transitionProgress, setTransitionProgress] = useState(0);
-  const [textFade, setTextFade] = useState(1);
+  const [phaseTransition, setPhaseTransition] = useState(false);
 
+  // Reset state when durations change
   useEffect(() => {
     if (isActive) {
+      // If active, just let the current cycle complete
+      // The new durations will be used in the next cycle
     } else {
+      // If not active, reset the phase
       setPhase("rest");
       setProgress(0);
     }
@@ -46,15 +49,14 @@ export function BreathingCircle({
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, phaseDuration - elapsed);
       const phaseProgress = elapsed / phaseDuration * 100;
-      
-      if (phaseProgress > 80 && textFade > 0) {
-        const fadeOutProgress = (phaseProgress - 80) * 5;
-        setTextFade(Math.max(0, 1 - fadeOutProgress / 100));
-      }
-      
       setPhaseTimeLeft(Math.ceil(remaining / 1000));
       setProgress(Math.min(phaseProgress, 100));
-      setTransitionProgress(Math.min(phaseProgress / 100, 1));
+      
+      // Trigger phase transition animation when getting close to phase change
+      if (phaseProgress > 85 && !phaseTransition) {
+        setPhaseTransition(true);
+      }
+      
       return elapsed >= phaseDuration;
     };
 
@@ -73,21 +75,15 @@ export function BreathingCircle({
           currentPhase = "inhale";
           phaseDuration = inhaleDuration;
         }
-        
-        setTextFade(0);
         setPhase(currentPhase);
-        setTimeout(() => {
-          setTextFade(1);
-        }, 200);
-        
+        setPhaseTransition(false);
         startTime = Date.now();
         setProgress(0);
-        setTransitionProgress(0);
       }
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, textFade]);
+  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, phaseTransition]);
 
   const toggleActive = () => {
     setIsActive(!isActive);
@@ -95,49 +91,20 @@ export function BreathingCircle({
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
-      setTextFade(1);
     } else {
       setPhase("rest");
     }
   };
 
-  const getGradientStyle = () => {
-    if (phase === "rest") {
-      return {
-        background: "linear-gradient(to right, #2563eb, #3b82f6)"
-      };
-    }
-    
-    if (phase === "inhale") {
-      return {
-        background: `linear-gradient(to right, 
-          #2563eb, 
-          hsl(${230 + transitionProgress * 30}, ${60 + transitionProgress * 10}%, ${50 - transitionProgress * 5}%),
-          hsl(${260 + transitionProgress * 20}, ${70 + transitionProgress * 10}%, ${50}%))`
-      };
-    }
-    
-    if (phase === "hold") {
-      return {
-        background: `linear-gradient(to right, 
-          hsl(${280 - transitionProgress * 20}, ${70}%, ${50}%), 
-          hsl(${260 - transitionProgress * 70}, ${80 - transitionProgress * 20}%, ${60 + transitionProgress * 20}%),
-          hsl(${190 - transitionProgress * 50}, ${90 - transitionProgress * 10}%, ${70 + transitionProgress * 10}%))`
-      };
-    }
-    
-    if (phase === "exhale") {
-      return {
-        background: `linear-gradient(to right, 
-          hsl(${45 - transitionProgress * 15}, ${80 - transitionProgress * 20}%, ${70 - transitionProgress * 10}%), 
-          hsl(${30 + transitionProgress * 180}, ${70 + transitionProgress * 10}%, ${60 - transitionProgress * 10}%),
-          hsl(${210 + transitionProgress * 30}, ${80}%, ${50}%))`
-      };
-    }
-    
-    return {};
+  // Get text color based on phase with smooth transitions
+  const getPhaseTextColorClass = () => {
+    if (phase === "inhale") return "text-blue-400";
+    if (phase === "hold") return "text-amber-400";
+    if (phase === "exhale") return "text-indigo-400";
+    return "text-white";
   };
 
+  // Get phase text with transition effect
   const getPhaseText = () => {
     if (phase === "inhale") return "Adem in";
     if (phase === "hold") return "Houd vast";
@@ -145,50 +112,52 @@ export function BreathingCircle({
     return "";
   };
 
-  return <div className="flex flex-col items-center justify-center space-y-4">
+  return <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative w-full max-w-xs">
-        {phase !== "rest" && <Progress value={progress} className="h-1.5 mb-4 bg-gray-800" />}
+        {phase !== "rest" && <Progress value={progress} className="h-2 mb-6 bg-gray-800" />}
       </div>
       
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" style={{
-        width: '240px',
-        height: '240px',
-        transform: 'translate(-8px, -8px)'
+        width: '280px',
+        height: '280px',
+        transform: 'translate(-10px, -10px)'
       }} />
         
         <div className={cn("relative flex items-center justify-center rounded-full transition-all", {
         "scale-100 opacity-100": phase === "rest" || phase === "exhale",
         "scale-125 opacity-100": phase === "inhale" || phase === "hold"
       }, className)} style={{
-        width: '220px',
-        height: '220px',
+        width: '260px',
+        height: '260px',
         transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
       }}>
-          <div className="rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]" 
-               style={{
-                  width: '100%',
-                  height: '100%',
-                  transition: 'background 500ms linear',
-                  ...getGradientStyle()
-               }}>
+          <div className={cn("rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", {
+          "bg-gradient-to-r from-blue-600 to-blue-500": phase === "rest",
+          "bg-gradient-to-r from-blue-600 to-cyan-500": phase === "inhale",
+          "bg-gradient-to-r from-purple-500 to-amber-400": phase === "hold",
+          "bg-gradient-to-r from-indigo-600 to-blue-500": phase === "exhale"
+        })} style={{
+          width: '100%',
+          height: '100%'
+        }}>
             <div className="text-center text-white">
-              {phase === "rest" ? <button onClick={toggleActive} className="flex flex-col items-center justify-center space-y-1 px-6 py-3 rounded-full transition-colors">
-                  <Play className="h-7 w-7" />
+              {phase === "rest" ? <button onClick={toggleActive} className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors">
+                  <Play className="h-8 w-8" />
                   <span className="text-lg font-medium">Start</span>
-                </button> : <div className="flex flex-col items-center space-y-1">
-                  <div 
-                    className="text-xl font-semibold transition-opacity duration-500" 
-                    style={{ opacity: textFade }}
-                  >
+                </button> : <div className="flex flex-col items-center space-y-2">
+                  <div className={cn(
+                    "text-2xl font-semibold mb-1 transition-colors duration-1000",
+                    getPhaseTextColorClass()
+                  )}>
                     {getPhaseText()}
                   </div>
-                  <div className="flex items-center justify-center text-3xl font-bold">
+                  <div className="flex items-center justify-center text-4xl font-bold">
                     {phaseTimeLeft}
-                    <span className="text-xs ml-1 mt-1">s</span>
+                    <span className="text-sm ml-1 mt-1">s</span>
                   </div>
-                  <button onClick={toggleActive} className="mt-2 flex items-center justify-center space-x-1 px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors text-sm">
-                    <Pause className="h-3 w-3" />
+                  <button onClick={toggleActive} className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors">
+                    <Pause className="h-4 w-4" />
                     <span>Pauzeren</span>
                   </button>
                 </div>}
@@ -197,11 +166,11 @@ export function BreathingCircle({
         </div>
       </div>
       
-      {isActive && <div className="mt-1 text-center flex items-center gap-1 text-xs text-muted-foreground">
-          <Timer className="h-3 w-3" />
-          <p>
-            In ({inhaleDuration / 1000}s) → Vast ({holdDuration / 1000}s) →
-            Uit ({exhaleDuration / 1000}s)
+      {isActive && <div className="mt-4 text-center flex items-center gap-2 text-sm text-muted-foreground">
+          <Timer className="h-4 w-4" />
+          <p className="py-[25px]">
+            Adem in ({inhaleDuration / 1000}s) → Houd vast ({holdDuration / 1000}s) →
+            Adem uit ({exhaleDuration / 1000}s)
           </p>
         </div>}
     </div>;
