@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingCircle } from "@/components/breathing-circle";
 import { 
@@ -80,12 +80,22 @@ const Breathing = () => {
   const [selectedPatternId, setSelectedPatternId] = useState(breathingPatterns[0].id);
   const [breathCount, setBreathCount] = useState(0);
   
+  // Reset breath count when pattern changes
+  useEffect(() => {
+    setBreathCount(0);
+  }, [selectedPatternId]);
+  
   const selectedPattern = breathingPatterns.find(
     (pattern) => pattern.id === selectedPatternId
   ) || breathingPatterns[0];
   
   const handleBreathComplete = () => {
     setBreathCount((prevCount) => prevCount + 1);
+  };
+  
+  const handlePatternChange = (value: string) => {
+    setSelectedPatternId(value);
+    // The breathCount will be reset in the useEffect
   };
   
   const PatternIcon = selectedPattern.icon;
@@ -115,7 +125,7 @@ const Breathing = () => {
           <CardContent>
             <Select 
               value={selectedPatternId}
-              onValueChange={setSelectedPatternId}
+              onValueChange={handlePatternChange}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecteer een patroon" />

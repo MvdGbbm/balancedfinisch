@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -24,11 +25,25 @@ export function BreathingCircle({
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
 
+  // Reset state when durations change
+  useEffect(() => {
+    if (isActive) {
+      // If active, just let the current cycle complete
+      // The new durations will be used in the next cycle
+    } else {
+      // If not active, reset the phase
+      setPhase("rest");
+      setProgress(0);
+    }
+  }, [inhaleDuration, holdDuration, exhaleDuration, isActive]);
+
   useEffect(() => {
     if (!isActive) return;
+    
     let startTime = Date.now();
     let currentPhase = phase;
     let phaseDuration = currentPhase === "inhale" ? inhaleDuration : currentPhase === "hold" ? holdDuration : exhaleDuration;
+    
     const calculateProgress = () => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, phaseDuration - elapsed);
