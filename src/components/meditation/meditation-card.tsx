@@ -18,6 +18,9 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
     onClick(meditation); // Use the same click handler to open the meditation
   };
 
+  // Check if meditation has audio URL before rendering play button
+  const hasAudio = !!meditation.audioUrl;
+
   return (
     <Card 
       key={meditation.id} 
@@ -46,15 +49,17 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
               <Clock className="h-3 w-3 mr-1" />
               {meditation.duration} min
             </div>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-6 w-6 text-primary hover:text-primary/70 hover:bg-primary/10"
-              onClick={handlePlayClick}
-              aria-label="Speel meditatie af"
-            >
-              <Play className="h-3 w-3" />
-            </Button>
+            {hasAudio && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-6 w-6 text-primary hover:text-primary/70 hover:bg-primary/10"
+                onClick={handlePlayClick}
+                aria-label="Speel meditatie af"
+              >
+                <Play className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </CardContent>
       </div>

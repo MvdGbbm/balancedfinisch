@@ -1,9 +1,8 @@
-
 export interface Meditation {
   id: string;
   title: string;
   description: string;
-  audioUrl: string;
+  audioUrl?: string;
   duration: number;
   category: string;
   coverImageUrl: string;

@@ -57,7 +57,6 @@ const AdminMeditations = () => {
   const [veraLink, setVeraLink] = useState("");
   const [marcoLink, setMarcoLink] = useState("");
   
-  // Add the missing state variables
   const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [updatedCategoryName, setUpdatedCategoryName] = useState("");
@@ -113,7 +112,7 @@ const AdminMeditations = () => {
   };
   
   const handleSave = () => {
-    if (!title || !description || !audioUrl || !category || !coverImageUrl) {
+    if (!title || !description || !category || !coverImageUrl) {
       alert("Vul alle verplichte velden in");
       return;
     }
@@ -438,7 +437,7 @@ const AdminMeditations = () => {
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
-                    placeholder="URL naar audio bestand"
+                    placeholder="URL naar audio bestand (optioneel)"
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
                   />
