@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -35,7 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical } from "lucide-react";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical, Link } from "lucide-react";
 
 import { Meditation } from "@/lib/types";
 
@@ -46,7 +45,6 @@ const AdminMeditations = () => {
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [currentMeditation, setCurrentMeditation] = useState<Meditation | null>(null);
   
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
@@ -56,10 +54,8 @@ const AdminMeditations = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   
-  // Category management
-  const [newCategory, setNewCategory] = useState("");
-  const [editingCategory, setEditingCategory] = useState<string | null>(null);
-  const [updatedCategoryName, setUpdatedCategoryName] = useState("");
+  const [veraLink, setVeraLink] = useState("");
+  const [marcoLink, setMarcoLink] = useState("");
   
   const resetForm = () => {
     setTitle("");
@@ -70,6 +66,8 @@ const AdminMeditations = () => {
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
+    setVeraLink("");
+    setMarcoLink("");
   };
   
   const handleOpenNew = () => {
@@ -87,6 +85,8 @@ const AdminMeditations = () => {
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
     setTags([...meditation.tags]);
+    setVeraLink(meditation.veraLink || "");
+    setMarcoLink(meditation.marcoLink || "");
     setIsDialogOpen(true);
   };
   
@@ -122,6 +122,8 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags,
+        veraLink: veraLink || undefined,
+        marcoLink: marcoLink || undefined,
       });
     } else {
       addMeditation({
@@ -132,6 +134,8 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags,
+        veraLink: veraLink || undefined,
+        marcoLink: marcoLink || undefined,
       });
     }
     
@@ -139,18 +143,15 @@ const AdminMeditations = () => {
     resetForm();
   };
   
-  // Get unique categories
   const categories = Array.from(
     new Set(meditations.map((meditation) => meditation.category))
   );
   
-  // Handle adding a new category
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
     
-    // Add a meditation with this category to demonstrate the category exists
     addMeditation({
-      title: `${newCategory} Meditatie`,
+      title: `${newCategory} Meditatie",
       description: `Een nieuwe meditatie in de ${newCategory} categorie.`,
       audioUrl: "audio/sample.mp3",
       duration: 10,
@@ -163,11 +164,9 @@ const AdminMeditations = () => {
     setIsCategoryDialogOpen(false);
   };
   
-  // Handle updating a category
   const handleUpdateCategory = () => {
     if (!editingCategory || !updatedCategoryName.trim()) return;
     
-    // Update all meditations in this category
     meditations
       .filter(m => m.category === editingCategory)
       .forEach(m => {
@@ -183,10 +182,8 @@ const AdminMeditations = () => {
     setIsCategoryDialogOpen(false);
   };
   
-  // Handle deleting a category
   const handleDeleteCategory = (categoryName: string) => {
     if (window.confirm(`Weet je zeker dat je de categorie "${categoryName}" wilt verwijderen? Alle meditaties in deze categorie worden ook verwijderd.`)) {
-      // Delete all meditations in this category
       meditations
         .filter(m => m.category === categoryName)
         .forEach(m => {
@@ -195,7 +192,6 @@ const AdminMeditations = () => {
     }
   };
   
-  // Group meditations by category for display
   const groupedMeditations = meditations.reduce((acc, meditation) => {
     const category = meditation.category;
     if (!acc[category]) {
@@ -317,7 +313,6 @@ const AdminMeditations = () => {
         </div>
       </div>
       
-      {/* Add/Edit Meditation Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -368,7 +363,6 @@ const AdminMeditations = () => {
                           {cat}
                         </SelectItem>
                       ))}
-                      {/* Allow creating a new category if they type something not in the list */}
                       {category && !categories.includes(category) && (
                         <SelectItem value={category}>
                           {category} (Nieuw)
@@ -491,6 +485,48 @@ const AdminMeditations = () => {
                   <AudioPlayer audioUrl={audioUrl} />
                 </div>
               )}
+              
+              <div className="space-y-4 border-t pt-4 mt-4">
+                <h3 className="font-medium">Extra Knoppen</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="veraLink">Vera Link (optioneel)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="veraLink"
+                      placeholder="URL voor Vera knop"
+                      value={veraLink}
+                      onChange={(e) => setVeraLink(e.target.value)}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="shrink-0"
+                    >
+                      <Link className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="marcoLink">Marco Link (optioneel)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="marcoLink"
+                      placeholder="URL voor Marco knop"
+                      value={marcoLink}
+                      onChange={(e) => setMarcoLink(e.target.value)}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="shrink-0"
+                    >
+                      <Link className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -505,7 +541,6 @@ const AdminMeditations = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Category Management Dialog */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

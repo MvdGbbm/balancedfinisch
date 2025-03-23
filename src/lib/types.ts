@@ -8,7 +8,9 @@ export interface Meditation {
   category: string;
   coverImageUrl: string;
   tags: string[];
-  createdAt: string;
+  createdAt?: string;
+  veraLink?: string;
+  marcoLink?: string;
 }
 
 export interface Soundscape {

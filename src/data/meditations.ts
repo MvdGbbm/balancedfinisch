@@ -1,4 +1,3 @@
-
 import { Meditation } from "@/lib/types";
 
 export const meditations: Meditation[] = [
@@ -12,6 +11,8 @@ export const meditations: Meditation[] = [
     coverImageUrl: "/images/morning-meditation.jpg",
     tags: ["beginners", "focus", "ochtend"],
     createdAt: "2023-01-01T08:00:00Z",
+    veraLink: "https://example.com/vera/ochtend-meditatie",
+    marcoLink: "https://example.com/marco/ochtend-meditatie"
   },
   {
     id: "med-2",
@@ -23,6 +24,7 @@ export const meditations: Meditation[] = [
     tags: ["ademhaling", "stress", "ontspanning"],
     coverImageUrl: "/images/breathing.jpg",
     createdAt: "2023-01-02T10:30:00Z",
+    veraLink: "https://example.com/vera/ademhalingsmeditatie"
   },
   {
     id: "med-3",

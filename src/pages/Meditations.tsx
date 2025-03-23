@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -7,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, Filter, X, ChevronDown } from "lucide-react";
+import { Clock, Play, Filter, X, ChevronDown, ExternalLink } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -300,6 +299,28 @@ const Meditations = () => {
                   externalSoundscapeId={currentSoundscapeId}
                   onSoundscapeChange={handleSoundscapeChange}
                 />
+                
+                <div className="flex gap-3 pt-2">
+                  {currentMeditationWithUrls.veraLink && (
+                    <Button 
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => window.open(currentMeditationWithUrls.veraLink, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Vera
+                    </Button>
+                  )}
+                  
+                  {currentMeditationWithUrls.marcoLink && (
+                    <Button 
+                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                      onClick={() => window.open(currentMeditationWithUrls.marcoLink, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Marco
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           )}
