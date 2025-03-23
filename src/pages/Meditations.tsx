@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Clock, Play, Filter, X, ChevronDown, ExternalLink } from "lucide-react";
+import { Clock, Play, Filter, X, ChevronDown, Headphones, Music } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
+  const [selectedAudioSource, setSelectedAudioSource] = useState<'default' | 'vera' | 'marco'>('default');
   
   useEffect(() => {
     const processUrls = async () => {
@@ -129,6 +130,23 @@ const Meditations = () => {
     
   const handleSoundscapeChange = (soundscapeId: string) => {
     setCurrentSoundscapeId(soundscapeId);
+  };
+  
+  const handleAudioSourceChange = (source: 'default' | 'vera' | 'marco') => {
+    setSelectedAudioSource(source);
+    toast.success(`${source === 'vera' ? 'Vera' : source === 'marco' ? 'Marco' : 'Standaard'} audio geselecteerd`);
+  };
+  
+  const getActiveAudioUrl = () => {
+    if (!currentMeditationWithUrls) return '';
+    
+    if (selectedAudioSource === 'vera' && currentMeditationWithUrls.veraLink) {
+      return currentMeditationWithUrls.veraLink;
+    } else if (selectedAudioSource === 'marco' && currentMeditationWithUrls.marcoLink) {
+      return currentMeditationWithUrls.marcoLink;
+    }
+    
+    return currentMeditationWithUrls.audioUrl;
   };
   
   if (loading) {
@@ -285,8 +303,46 @@ const Meditations = () => {
               />
               
               <div className="grid grid-cols-1 gap-3">
+                {(currentMeditationWithUrls.veraLink || currentMeditationWithUrls.marcoLink) && (
+                  <div className="flex gap-2 items-center">
+                    <Button 
+                      variant={selectedAudioSource === 'default' ? "default" : "outline"}
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleAudioSourceChange('default')}
+                    >
+                      <Headphones className="h-4 w-4 mr-2" />
+                      Standaard
+                    </Button>
+                    
+                    {currentMeditationWithUrls.veraLink && (
+                      <Button 
+                        variant={selectedAudioSource === 'vera' ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => handleAudioSourceChange('vera')}
+                      >
+                        <Music className="h-4 w-4 mr-2" />
+                        Vera
+                      </Button>
+                    )}
+                    
+                    {currentMeditationWithUrls.marcoLink && (
+                      <Button 
+                        variant={selectedAudioSource === 'marco' ? "default" : "outline"}
+                        size="sm"
+                        className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => handleAudioSourceChange('marco')}
+                      >
+                        <Music className="h-4 w-4 mr-2" />
+                        Marco
+                      </Button>
+                    )}
+                  </div>
+                )}
+              
                 <AudioPlayer 
-                  audioUrl={currentMeditationWithUrls.audioUrl} 
+                  audioUrl={getActiveAudioUrl()}
                   className="w-full"
                   showTitle={false}
                   showQuote={true}
@@ -299,28 +355,6 @@ const Meditations = () => {
                   externalSoundscapeId={currentSoundscapeId}
                   onSoundscapeChange={handleSoundscapeChange}
                 />
-                
-                <div className="flex gap-3 pt-2">
-                  {currentMeditationWithUrls.veraLink && (
-                    <Button 
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                      onClick={() => window.open(currentMeditationWithUrls.veraLink, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Vera
-                    </Button>
-                  )}
-                  
-                  {currentMeditationWithUrls.marcoLink && (
-                    <Button 
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                      onClick={() => window.open(currentMeditationWithUrls.marcoLink, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Marco
-                    </Button>
-                  )}
-                </div>
               </div>
             </div>
           )}
