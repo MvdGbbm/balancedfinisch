@@ -247,15 +247,15 @@ export function AudioPlayer({
             </div>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Volume2 className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-md">
+            <Volume2 className="h-3.5 w-3.5 text-primary" />
             <Slider
               value={[volume]}
               min={0}
               max={1}
               step={0.01}
               onValueChange={handleVolumeChange}
-              className="w-24"
+              className="w-20"
             />
           </div>
         </div>
