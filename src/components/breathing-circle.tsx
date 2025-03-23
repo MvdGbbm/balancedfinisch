@@ -24,6 +24,7 @@ export function BreathingCircle({
   const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
+  const [transitionProgress, setTransitionProgress] = useState(0);
 
   // Reset state when durations change
   useEffect(() => {
@@ -50,6 +51,7 @@ export function BreathingCircle({
       const phaseProgress = elapsed / phaseDuration * 100;
       setPhaseTimeLeft(Math.ceil(remaining / 1000));
       setProgress(Math.min(phaseProgress, 100));
+      setTransitionProgress(Math.min(phaseProgress / 100, 1));
       return elapsed >= phaseDuration;
     };
 
@@ -71,6 +73,7 @@ export function BreathingCircle({
         setPhase(currentPhase);
         startTime = Date.now();
         setProgress(0);
+        setTransitionProgress(0);
       }
     }, 16);
 
@@ -86,6 +89,26 @@ export function BreathingCircle({
     } else {
       setPhase("rest");
     }
+  };
+
+  // Dynamic gradient colors based on phases with smooth transitions
+  const getGradientStyle = () => {
+    let gradientColors = "";
+    
+    if (phase === "rest") {
+      gradientColors = "bg-gradient-to-r from-blue-600 to-blue-500";
+    } else if (phase === "inhale") {
+      // Transition from blue to purple
+      gradientColors = `bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500`;
+    } else if (phase === "hold") {
+      // Transition from purple to amber
+      gradientColors = `bg-gradient-to-r from-violet-500 via-purple-500 to-amber-400`;
+    } else if (phase === "exhale") {
+      // Transition from amber to blue
+      gradientColors = `bg-gradient-to-r from-amber-400 via-cyan-500 to-blue-600`;
+    }
+    
+    return gradientColors;
   };
 
   return <div className="flex flex-col items-center justify-center space-y-6">
@@ -108,14 +131,10 @@ export function BreathingCircle({
         height: '260px',
         transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
       }}>
-          <div className={cn("rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", {
-          "bg-gradient-to-r from-blue-600 to-blue-500": phase === "rest",
-          "bg-gradient-to-r from-blue-600 to-cyan-500": phase === "inhale",
-          "bg-gradient-to-r from-purple-500 to-amber-400": phase === "hold",
-          "bg-gradient-to-r from-indigo-600 to-blue-500": phase === "exhale"
-        })} style={{
+          <div className={cn("rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", getGradientStyle())} style={{
           width: '100%',
-          height: '100%'
+          height: '100%',
+          transition: 'background 1s ease-in-out'
         }}>
             <div className="text-center text-white">
               {phase === "rest" ? <button onClick={toggleActive} className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors">
