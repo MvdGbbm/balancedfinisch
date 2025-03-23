@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Volume2, Volume, VolumeX, ChevronDown, Save } from "lucide-react";
+import { Volume2, Volume, VolumeX, ChevronDown, Save, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Soundscape } from "@/lib/types";
@@ -70,6 +70,7 @@ export function MixerPanel({
     { id: 2, name: "Slot 2", soundscapes: [] },
     { id: 3, name: "Slot 3", soundscapes: [] }
   ]);
+  const [activeSlot, setActiveSlot] = useState<number | null>(null);
   
   // Try to load saved mixes from localStorage on mount
   useEffect(() => {
@@ -110,11 +111,17 @@ export function MixerPanel({
       )
     );
     
+    setActiveSlot(slotId);
     toast.success(`Mix opgeslagen in ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
   };
   
   // Load a saved mix
   const loadMix = (slotId: number) => {
+    if (activeSlot === slotId) {
+      // Don't reload if it's already the active slot
+      return;
+    }
+    
     const mixToLoad = savedMixes.find(mix => mix.id === slotId);
     
     if (!mixToLoad || mixToLoad.soundscapes.length === 0) {
@@ -125,7 +132,7 @@ export function MixerPanel({
     // First fade out all current sounds
     Object.keys(volumes).forEach(id => {
       if (volumes[id] > 0) {
-        fadeOutAudio(id);
+        fadeOutAudio(id, true); // Use quick fade
       }
     });
     
@@ -141,15 +148,19 @@ export function MixerPanel({
     
     setSelectedSoundscapeIds(newSelectedIds);
     
-    // Wait a bit for the fade out to complete before setting new volumes
-    setTimeout(() => {
-      const newVolumes = { ...volumes };
-      mixToLoad.soundscapes.forEach(savedSound => {
-        newVolumes[savedSound.id] = savedSound.volume;
-      });
-      setVolumes(newVolumes);
-    }, 300);
+    // Set new volumes immediately to start the sounds
+    const newVolumes = { ...volumes };
+    // First reset all volumes
+    Object.keys(newVolumes).forEach(id => {
+      newVolumes[id] = 0;
+    });
+    // Then set the volumes from the saved mix
+    mixToLoad.soundscapes.forEach(savedSound => {
+      newVolumes[savedSound.id] = savedSound.volume;
+    });
+    setVolumes(newVolumes);
     
+    setActiveSlot(slotId);
     toast.success(`Mix geladen uit ${slotId === 1 ? 'eerste' : slotId === 2 ? 'tweede' : 'derde'} slot`);
   };
   
@@ -270,7 +281,7 @@ export function MixerPanel({
     });
   }, [volumes]);
   
-  const fadeOutAudio = (soundscapeId: string) => {
+  const fadeOutAudio = (soundscapeId: string, quick = false) => {
     if (fadeIntervals[soundscapeId]) {
       clearInterval(fadeIntervals[soundscapeId] as number);
     }
@@ -282,8 +293,8 @@ export function MixerPanel({
     }
     
     const startVolume = audio.volume;
-    const fadeSteps = 10;
-    const fadeInterval = 50;
+    const fadeSteps = quick ? 3 : 10; // Fewer steps for quick fade
+    const fadeInterval = quick ? 30 : 50; // Faster interval for quick fade
     let step = 0;
     
     const intervalId = window.setInterval(() => {
@@ -372,54 +383,52 @@ export function MixerPanel({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Mix Soundscapes</h3>
-          <div className="flex gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 px-2">
-                  <Save className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
-                <DropdownMenuItem onClick={() => saveMixToSlot(1)}>
-                  Opslaan in slot 1
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => saveMixToSlot(2)}>
-                  Opslaan in slot 2
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => saveMixToSlot(3)}>
-                  Opslaan in slot 3
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="outline" className="h-8 px-2 ml-1">
-                  Laden
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-popover border border-border">
-                <DropdownMenuItem onClick={() => loadMix(1)}>
-                  Laad slot 1
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => loadMix(2)}>
-                  Laad slot 2
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => loadMix(3)}>
-                  Laad slot 3
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <CollapsibleTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0 ml-1">
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : 'transform rotate-180'}`} />
-              </Button>
-            </CollapsibleTrigger>
-          </div>
+          <CollapsibleTrigger asChild>
+            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? '' : 'transform rotate-180'}`} />
+            </Button>
+          </CollapsibleTrigger>
         </div>
         
         <CollapsibleContent className="space-y-4">
+          <div className="flex gap-2 mt-2">
+            <div className="flex items-center gap-1 flex-wrap">
+              {savedMixes.map((mix) => (
+                <Button
+                  key={`save-${mix.id}`}
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    "h-8 text-xs flex items-center gap-1",
+                    activeSlot === mix.id && "bg-secondary"
+                  )}
+                  onClick={() => saveMixToSlot(mix.id)}
+                >
+                  <Save className="h-3 w-3" />
+                  Bewaren {mix.id}
+                </Button>
+              ))}
+            </div>
+            <div className="border-l mx-1"></div>
+            <div className="flex items-center gap-1 flex-wrap">
+              {savedMixes.map((mix) => (
+                <Button
+                  key={`load-${mix.id}`}
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    "h-8 text-xs flex items-center gap-1",
+                    activeSlot === mix.id && "bg-primary text-primary-foreground"
+                  )}
+                  onClick={() => loadMix(mix.id)}
+                >
+                  <Download className="h-3 w-3" />
+                  Oproepen {mix.id}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {Array.from({ length: maxDisplayed }).map((_, index) => {
             const currentId = selectedSoundscapeIds[index] || "";
             const currentSoundscape = soundscapes.find(s => s.id === currentId);

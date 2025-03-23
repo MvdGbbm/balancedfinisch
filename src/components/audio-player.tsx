@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -63,6 +62,20 @@ export function AudioPlayer({
       audio.removeEventListener("ended", handleEnded);
     };
   }, [onEnded, volume, isLooping]);
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    setCurrentTime(0);
+    
+    if (isPlaying) {
+      audio.play().catch(error => {
+        console.error("Error playing audio:", error);
+        setIsPlaying(false);
+      });
+    }
+  }, [audioUrl]);
   
   useEffect(() => {
     const audio = audioRef.current;
