@@ -11,14 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Music, ChevronDown } from "lucide-react";
 import { meditations } from "@/data/meditations";
+import { useToast } from "@/hooks/use-toast";
 
 export function MeditationMusicPlayer() {
   const [selectedMusic, setSelectedMusic] = useState(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
+  const { toast } = useToast();
 
-  // Filter meditations for personal meditation music (only category "Ochtend")
+  // Filter meditations for guided meditations only
   const meditationMusic = meditations.filter(item => 
-    item.category === "Ochtend"
+    item.category === "Geleide Meditaties"
   );
 
   // If we have meditation music available, set the first one as default
@@ -31,6 +33,10 @@ export function MeditationMusicPlayer() {
   const handleMusicSelect = (meditation) => {
     setSelectedMusic(meditation);
     setIsPlayerVisible(true);
+    toast({
+      title: "Meditatie geselecteerd",
+      description: `${meditation.title} is geselecteerd en klaar om af te spelen.`
+    });
   };
 
   return (
@@ -38,14 +44,14 @@ export function MeditationMusicPlayer() {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Music className="text-primary h-4 w-4" />
-          <h3 className="text-sm font-medium">Ochtend Meditatie</h3>
+          <h3 className="text-sm font-medium">Geleide Meditaties</h3>
         </div>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-8 gap-1">
               <span className="truncate max-w-[160px]">
-                {isPlayerVisible && selectedMusic ? selectedMusic.title : "Kies muziek"}
+                {isPlayerVisible && selectedMusic ? selectedMusic.title : "Kies meditatie"}
               </span>
               <ChevronDown className="h-4 w-4 opacity-70" />
             </Button>
@@ -67,7 +73,7 @@ export function MeditationMusicPlayer() {
                 ))
               ) : (
                 <DropdownMenuItem disabled>
-                  Geen ochtend meditatie muziek beschikbaar
+                  Geen geleide meditaties beschikbaar
                 </DropdownMenuItem>
               )}
             </DropdownMenuGroup>
