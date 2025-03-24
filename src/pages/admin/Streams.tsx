@@ -166,10 +166,17 @@ const AdminStreams = () => {
       await Promise.all(updatePromises);
       return streamsToUpdate;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+    onSuccess: (orderedStreams) => {
+      queryClient.setQueryData(['radioStreams'], (oldData: RadioStream[] | undefined) => {
+        if (!oldData) return orderedStreams;
+        
+        const inactiveStreams = oldData.filter(stream => !stream.is_active);
+        return [...orderedStreams, ...inactiveStreams];
+      });
+      
       toast.success("Volgorde van streaming links opgeslagen");
       setPendingOrderChanges(false);
+      setReorderedStreams([]);
     },
     onError: (error) => {
       console.error("Error saving stream order:", error);
@@ -283,10 +290,11 @@ const AdminStreams = () => {
     setReorderedStreams(updatedStreamsWithPositions);
     setPendingOrderChanges(true);
     
-    queryClient.setQueryData(['radioStreams'], [
-      ...updatedStreamsWithPositions,
-      ...inactiveStreams
-    ]);
+    queryClient.setQueryData(['radioStreams'], (oldData: RadioStream[] | undefined) => {
+      if (!oldData) return oldData;
+      const inactiveStreams = oldData.filter(stream => !stream.is_active);
+      return [...updatedStreamsWithPositions, ...inactiveStreams];
+    });
   };
   
   return (
