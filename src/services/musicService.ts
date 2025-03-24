@@ -2,10 +2,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MusicItem, Playlist } from "@/lib/types";
 
+// Using "as any" to bypass type checking for tables that exist in the database
+// but are not defined in the TypeScript types
 // Fetch all music items
 export const fetchMusicItems = async (): Promise<MusicItem[]> => {
   const { data, error } = await supabase
-    .from("music_items")
+    .from("music_items" as any)
     .select("*")
     .order("title");
 
@@ -20,7 +22,7 @@ export const fetchMusicItems = async (): Promise<MusicItem[]> => {
 // Fetch music item by ID
 export const fetchMusicItemById = async (id: string): Promise<MusicItem | null> => {
   const { data, error } = await supabase
-    .from("music_items")
+    .from("music_items" as any)
     .select("*")
     .eq("id", id)
     .single();
@@ -36,7 +38,7 @@ export const fetchMusicItemById = async (id: string): Promise<MusicItem | null> 
 // Fetch all playlists
 export const fetchPlaylists = async (): Promise<Playlist[]> => {
   const { data: playlistsData, error: playlistsError } = await supabase
-    .from("playlists")
+    .from("playlists" as any)
     .select("*")
     .order("title");
 
@@ -49,7 +51,7 @@ export const fetchPlaylists = async (): Promise<Playlist[]> => {
   const playlists = await Promise.all(
     playlistsData.map(async (playlist) => {
       const { data: playlistItemsData, error: playlistItemsError } = await supabase
-        .from("playlist_items")
+        .from("playlist_items" as any)
         .select("*, music_item_id(*)")
         .eq("playlist_id", playlist.id)
         .order("position");
@@ -62,7 +64,7 @@ export const fetchPlaylists = async (): Promise<Playlist[]> => {
         };
       }
 
-      const tracks = playlistItemsData.map((item) => item.music_item_id) as MusicItem[];
+      const tracks = playlistItemsData.map((item: any) => item.music_item_id) as MusicItem[];
       
       return {
         ...playlist,
@@ -121,7 +123,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
   if (musicItem.id) {
     // Update existing music item
     query = supabase
-      .from("music_items")
+      .from("music_items" as any)
       .update({
         title: musicItem.title,
         artist: musicItem.artist,
@@ -139,7 +141,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
   } else {
     // Create new music item
     query = supabase
-      .from("music_items")
+      .from("music_items" as any)
       .insert({
         title: musicItem.title,
         artist: musicItem.artist,
@@ -167,7 +169,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
 // Delete music item
 export const deleteMusicItem = async (id: string): Promise<boolean> => {
   const { error } = await supabase
-    .from("music_items")
+    .from("music_items" as any)
     .delete()
     .eq("id", id);
 
@@ -187,7 +189,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   if (playlist.id) {
     // Update existing playlist
     const { data, error } = await supabase
-      .from("playlists")
+      .from("playlists" as any)
       .update({
         title: playlist.title,
         description: playlist.description,
@@ -206,7 +208,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   } else {
     // Create new playlist
     const { data, error } = await supabase
-      .from("playlists")
+      .from("playlists" as any)
       .insert({
         title: playlist.title,
         description: playlist.description,
@@ -226,7 +228,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   if (playlist.tracks && playlistData.id) {
     // First remove existing items
     await supabase
-      .from("playlist_items")
+      .from("playlist_items" as any)
       .delete()
       .eq("playlist_id", playlistData.id);
     
@@ -239,8 +241,8 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
       }));
       
       const { error } = await supabase
-        .from("playlist_items")
-        .insert(playlistItems);
+        .from("playlist_items" as any)
+        .insert(playlistItems as any);
       
       if (error) {
         console.error("Error updating playlist items:", error);
@@ -257,7 +259,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
 // Delete playlist
 export const deletePlaylist = async (id: string): Promise<boolean> => {
   const { error } = await supabase
-    .from("playlists")
+    .from("playlists" as any)
     .delete()
     .eq("id", id);
 
