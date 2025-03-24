@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -344,7 +345,7 @@ const Music = () => {
   const renderVisibleAudioPlayer = () => {
     if (!isAudioActive && !currentTrack && !streamUrl && !hiddenIframeUrl) {
       return (
-        <div className="mb-6 bg-card rounded-lg p-4 border shadow-sm">
+        <div className="bg-card rounded-lg p-4 border shadow-sm">
           <div className="flex items-center justify-center py-4">
             <div className="text-center">
               <MusicIcon className="mx-auto h-10 w-10 text-muted-foreground mb-2 opacity-50" />
@@ -359,7 +360,7 @@ const Music = () => {
     }
 
     return (
-      <div className="mb-6 bg-card rounded-lg p-4 border shadow-sm">
+      <div className="bg-card rounded-lg p-4 border shadow-sm">
         {currentTrack && isPlaying ? (
           <div className="mb-3">
             <div className="flex items-center gap-3">
@@ -456,7 +457,7 @@ const Music = () => {
 
   return (
     <MobileLayout>
-      <div className="space-y-4">
+      <div className="space-y-4 pb-32"> {/* Added padding at bottom for the fixed player */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Ontspannende Muziek</h1>
           <p className="text-muted-foreground">
@@ -470,8 +471,6 @@ const Music = () => {
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
-          
-          {renderVisibleAudioPlayer()}
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
@@ -705,6 +704,11 @@ const Music = () => {
             title="Radio Stream"
           />
         )}
+      </div>
+      
+      {/* Fixed audio player at the bottom */}
+      <div className="fixed bottom-16 left-0 right-0 z-30 px-4 pb-2">
+        {renderVisibleAudioPlayer()}
       </div>
       
       <CreatePlaylistDialog
