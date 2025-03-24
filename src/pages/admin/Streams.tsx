@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link2, Edit, Trash2, ExternalLink, Check, X } from "lucide-react";
+import { Radio, Edit, Trash2, Volume2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -192,6 +192,22 @@ const AdminStreams = () => {
       return;
     }
     
+    // Check if URL is valid for streaming audio
+    const isStreamUrl = url.toLowerCase().match(/\.(mp3|aac|wav|ogg|opus|m4a|flac|webm|m3u8|pls)$/) || 
+                        url.includes('stream') || 
+                        url.includes('radio') || 
+                        url.includes('audio');
+    
+    if (!isStreamUrl) {
+      const shouldContinue = window.confirm(
+        "De URL lijkt geen directe audio stream te zijn. " +
+        "Audio streams eindigen meestal op .mp3, .m3u8 of bevatten woorden als 'stream'. " +
+        "Wil je toch doorgaan?"
+      );
+      
+      if (!shouldContinue) return;
+    }
+    
     if (currentStream) {
       // Update existing stream
       updateStreamMutation.mutate({
@@ -226,15 +242,15 @@ const AdminStreams = () => {
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Radiolinks Beheren</h1>
+          <h1 className="text-2xl font-bold">Radio Links Beheren</h1>
           <Button onClick={handleOpenNew}>
-            <Link2 className="h-4 w-4 mr-2" />
-            Nieuwe Link
+            <Radio className="h-4 w-4 mr-2" />
+            Nieuwe Radio Link
           </Button>
         </div>
         
         <p className="text-muted-foreground">
-          Beheer radiolinks die gebruikers kunnen openen vanuit de muziekspeler
+          Beheer radio links die direct in de app kunnen worden afgespeeld
         </p>
         
         <Tabs defaultValue="active" className="mt-6">
@@ -304,7 +320,7 @@ const AdminStreams = () => {
               {currentStream ? "Radiolink Bewerken" : "Nieuwe Radiolink"}
             </DialogTitle>
             <DialogDescription>
-              Vul de details in voor de radiolink
+              Vul de details in voor de radiolink. Let op: voer een directe audio stream URL in (meestal .mp3 of .m3u8).
             </DialogDescription>
           </DialogHeader>
           
@@ -313,25 +329,33 @@ const AdminStreams = () => {
               <Label htmlFor="title">Titel</Label>
               <Input
                 id="title"
-                placeholder="Naam van de radiolink"
+                placeholder="Naam van de radiostation"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="url">Link URL</Label>
+              <Label htmlFor="url">Audio Stream URL</Label>
               <Input
                 id="url"
-                placeholder="URL naar de website of audio (bijv. https://voorbeeld.com)"
+                placeholder="URL naar de audio stream (bijv. https://example.com/stream.mp3)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
-              {isValidUrl(url) && (
+              {isValidUrl(url) ? (
                 <div className="text-xs text-muted-foreground flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Geldige URL
+                  <Volume2 className="h-3 w-3 mr-1" />
+                  {url.toLowerCase().match(/\.(mp3|aac|wav|ogg|opus|m4a|flac|webm|m3u8|pls)$/) || 
+                   url.includes('stream') || 
+                   url.includes('radio') || 
+                   url.includes('audio') ? 
+                    "Geldige audio stream URL" : 
+                    "URL is geldig, maar lijkt geen directe audio stream te zijn"
+                  }
                 </div>
+              ) : (
+                url && <div className="text-xs text-red-500 mt-1">Ongeldige URL</div>
               )}
             </div>
             
@@ -339,7 +363,7 @@ const AdminStreams = () => {
               <Label htmlFor="description">Beschrijving (optioneel)</Label>
               <Textarea
                 id="description"
-                placeholder="Korte beschrijving van de radiolink"
+                placeholder="Korte beschrijving van de radiostation"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
@@ -384,18 +408,18 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <div className="flex items-center">
-              <Link2 className="h-4 w-4 mr-2 text-primary" />
+              <Radio className="h-4 w-4 mr-2 text-primary" />
               <h3 className="font-medium">{stream.title}</h3>
               {!stream.is_active && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-sm">Inactief</span>}
             </div>
             {stream.description && (
               <p className="text-sm text-muted-foreground">{stream.description}</p>
             )}
-            <p className="text-xs text-blue-500 hover:underline break-all">
-              <a href={stream.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                <ExternalLink className="h-3 w-3 mr-1 inline-block flex-shrink-0" />
+            <p className="text-xs text-blue-500 break-all">
+              <span className="flex items-center">
+                <Volume2 className="h-3 w-3 mr-1 inline-block flex-shrink-0" />
                 <span>{stream.url}</span>
-              </a>
+              </span>
             </p>
           </div>
           
