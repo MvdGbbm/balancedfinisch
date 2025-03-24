@@ -22,19 +22,12 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
-        >
-          <Plus className="h-4 w-4" />
+        <Button variant="outline" size="sm">
+          <Plus className="h-4 w-4 mr-1" />
           Toevoegen aan
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
-        className="w-48 bg-background/95 backdrop-blur-sm border-muted z-50"
-      >
+      <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>Afspeellijsten</DropdownMenuLabel>
         <DropdownMenuSeparator />
         

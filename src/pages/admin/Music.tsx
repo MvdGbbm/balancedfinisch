@@ -167,7 +167,7 @@ const AdminMusic = () => {
           {musicItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {musicItems.map((musicItem) => (
-                <Card key={musicItem.id} className="overflow-hidden border-muted bg-background/30 backdrop-blur-sm">
+                <Card key={musicItem.id} className="overflow-hidden">
                   <div className="aspect-video bg-cover bg-center relative">
                     <img 
                       src={musicItem.coverImageUrl} 
@@ -200,7 +200,7 @@ const AdminMusic = () => {
                       </Button>
                     </div>
                   </div>
-                  <CardFooter className="p-3 bg-background/50 backdrop-blur-sm">
+                  <CardFooter className="p-3 bg-background">
                     <AudioPlayer audioUrl={musicItem.audioUrl} showControls={false} />
                   </CardFooter>
                 </Card>
