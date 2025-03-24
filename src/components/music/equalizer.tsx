@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -65,7 +64,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         analyzerRef.current = audioContextRef.current.createAnalyser();
         analyzerRef.current.fftSize = 1024;
-        analyzerRef.current.smoothingTimeConstant = 0.65;
+        analyzerRef.current.smoothingTimeConstant = 0.5; // Decreased for more responsiveness (was 0.65)
         
         const bufferLength = analyzerRef.current.frequencyBinCount;
         dataArrayRef.current = new Uint8Array(bufferLength);
@@ -119,74 +118,72 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         const frequencyData = dataArrayRef.current;
         const frequencyBands = [];
         
-        // Enhanced bass frequency mapping - use logarithmic scale for better low frequency representation
+        // Enhanced bass frequency mapping with improved sensitivity
         for (let i = 0; i < numBars; i++) {
-          // Improved frequency scaling for better bass response
-          // Using a more pronounced logarithmic scale to emphasize low frequencies
-          const scale = Math.pow(frequencyData.length, (i / numBars) * 0.8) / 8;
+          // Improved frequency scaling with better sensitivity
+          const scale = Math.pow(frequencyData.length, (i / numBars) * 0.75) / 6; // Adjusted scale for better response
           const index = Math.min(Math.floor(scale), frequencyData.length - 1);
           
           let sum = 0;
           let count = 0;
-          // Wider range for low frequencies to capture more data
-          const range = i < numBars / 3 ? 5 : 3;
+          // Optimized range for better responsiveness
+          const range = i < numBars / 3 ? 4 : 2; // Slightly reduced range
           
           for (let j = Math.max(0, index - range); j <= Math.min(frequencyData.length - 1, index + range); j++) {
             const weight = 1.0 - Math.abs(j - index) / (range + 1);
-            sum += Math.pow(frequencyData[j] / 255, 1.3) * 255 * weight;
+            sum += Math.pow(frequencyData[j] / 255, 1.2) * 255 * weight; // Reduced power for more sensitivity
             count += weight;
           }
           
           const value = count > 0 ? sum / count : 0;
           
-          // Enhanced bass boost with progressive scaling
-          // First 1/4 of bars get significant bass boost, gradually decreasing
+          // Adjusted boost values for more dancing motion
           let boost = 1.0;
           if (i < numBars / 6) {
-            boost = 2.2; // Significant boost for the lowest frequencies
+            boost = 2.4; // Increased boost for the lowest frequencies
           } else if (i < numBars / 3) {
-            boost = 1.8; // Medium boost for low-mid frequencies
+            boost = 1.9; // Increased for low-mid frequencies
           } else if (i < numBars / 2) {
-            boost = 1.2; // Slight boost for mid frequencies
+            boost = 1.4; // Increased for mid frequencies
           } else if (i > (numBars * 3) / 4) {
-            boost = 1.15; // Small boost for high frequencies
+            boost = 1.25; // Increased for high frequencies
           }
           
           const boostedValue = value * boost;
           
-          // Ensure minimum height for better visualization and cap maximum to avoid distortion
-          frequencyBands.push(Math.max(8, Math.min(100, (boostedValue / 255) * 100)));
+          // Increased minimum height for more visible movement even at low volumes
+          frequencyBands.push(Math.max(12, Math.min(100, (boostedValue / 255) * 100)));
         }
         
         return frequencyBands;
       } else {
-        // Simulation mode with improved bass response
+        // Enhanced simulation mode with more dynamic movement
         let heights = Array(numBars).fill(0).map((_, i) => {
-          // Generate more responsive bass patterns in simulation
+          // Generate more responsive patterns in simulation with higher base values
           if (i < numBars / 6) {
-            return Math.random() * 0.9 + 0.3; // More variation in bass frequencies
+            return Math.random() * 1.0 + 0.35; // More variation in bass frequencies
           } else if (i < numBars / 3) {
-            return Math.random() * 0.8 + 0.2;
+            return Math.random() * 0.9 + 0.25;
           } else {
-            return Math.random() * 0.7 + 0.1;
+            return Math.random() * 0.8 + 0.15;
           }
         });
         
-        // Enhanced bass boost for simulation
+        // Enhanced boost for simulation with increased values
         for (let i = 0; i < numBars; i++) {
           if (i < numBars / 6) {
-            heights[i] *= 1.8; // Heavy bass emphasis
+            heights[i] *= 2.0; // Increased bass emphasis
           } else if (i < numBars / 3) {
-            heights[i] *= 1.4; // Moderate bass emphasis
+            heights[i] *= 1.6; // Increased bass-mid emphasis
           } else if (i < numBars / 2) {
-            heights[i] *= 0.9;
+            heights[i] *= 1.1; // Slightly increased mid emphasis
           } else if (i > (numBars * 3) / 4) {
-            heights[i] *= 1.3;
+            heights[i] *= 1.4; // Increased high frequency emphasis
           }
         }
         
-        // Smoothing to make it more natural looking
-        for (let i = 0; i < 3; i++) {
+        // Light smoothing to maintain natural look while keeping more dynamic movement
+        for (let i = 0; i < 2; i++) { // Reduced smoothing passes for more responsiveness
           const newHeights = [...heights];
           for (let j = 1; j < heights.length - 1; j++) {
             newHeights[j] = (heights[j-1] + heights[j] * 2 + heights[j+1]) / 4;
@@ -194,7 +191,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           heights = newHeights;
         }
         
-        return heights.map(h => Math.floor(h * 92) + 8);
+        return heights.map(h => Math.floor(h * 92) + 12); // Increased minimum height
       }
     };
 
@@ -206,21 +203,22 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         
         const height = heights[index];
         
-        // Bass frequencies (lower index) get longer transition times for more "weight"
-        const baseDuration = 100;
+        // Optimized transition times for more responsive movement
+        const baseDuration = 80; // Reduced for faster response (was 100)
         const duration = index < numBars / 4 
-          ? baseDuration + 50 // Even slower for deep bass
+          ? baseDuration + 40 // Reduced for faster bass response (was +50)
           : index < numBars / 2 
-            ? baseDuration + 20
-            : baseDuration;
+            ? baseDuration + 15 // Reduced for faster mid response (was +20)
+            : baseDuration - 10; // Reduced for high frequencies for faster response
         
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
       });
       
+      // Increased animation rate for more movement
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(animate);
-      }, 40) as unknown as number;
+      }, 30) as unknown as number; // Faster update rate (was 40ms)
     };
 
     animate();
