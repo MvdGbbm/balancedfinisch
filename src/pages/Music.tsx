@@ -490,7 +490,7 @@ const Music = () => {
               }}
               className="h-6 w-6 p-0"
             >
-              <Square className="h-3 w-6 p-0"
+              <Square className="h-3 w-3" />
             </Button>
           </div>
           <AudioPlayer 
