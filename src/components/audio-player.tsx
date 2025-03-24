@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -161,6 +161,91 @@ export function AudioPlayer({
     }
   }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isStream]);
   
+  // Define the event handlers as callbacks so they don't get recreated on every render
+  const handleAudioData = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    if (!isStream) {
+      setDuration(audio.duration);
+    } else {
+      setDuration(0);
+    }
+    setIsLoaded(true);
+    setLoadError(false);
+    setLazyLoaded(true);
+    
+    if (isPlayingExternal) {
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(error => {
+          console.error("Error auto-playing audio:", error);
+        });
+    }
+    
+    toast({
+      title: isStream ? "Stream geladen" : "Audio geladen",
+      description: isStream 
+        ? "De stream is klaar om af te spelen." 
+        : "De meditatie is klaar om af te spelen."
+    });
+  }, [isStream, isPlayingExternal, toast]);
+  
+  const handleAudioTime = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    if (!hasTransitionedToNext || !isCrossfading) {
+      setCurrentTime(audio.currentTime);
+    }
+  }, [hasTransitionedToNext, isCrossfading]);
+  
+  const handleAudioEnded = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    if (!isCrossfading) {
+      if (!isLooping) {
+        setIsPlaying(false);
+        if (onPlayPauseChange) onPlayPauseChange(false);
+        if (onEnded) onEnded();
+      } else {
+        audio.currentTime = 0;
+        audio.play().catch(error => {
+          console.error("Error restarting audio:", error);
+        });
+      }
+    }
+  }, [isCrossfading, isLooping, onPlayPauseChange, onEnded]);
+  
+  const handleAudioError = useCallback((e: Event) => {
+    console.error("Error loading audio:", e);
+    setLoadError(true);
+    setIsLoaded(false);
+    setLazyLoaded(false);
+    
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    if (audioUrl.startsWith('http') && !isRetrying) {
+      setIsRetrying(true);
+      
+      setTimeout(() => {
+        audio.load();
+        setIsRetrying(false);
+      }, 1000);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Fout bij laden",
+        description: "Kon de audio niet laden. Controleer of het bestand bestaat."
+      });
+      if (onError) onError();
+    }
+  }, [audioUrl, isRetrying, toast, onError]);
+  
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -172,98 +257,29 @@ export function AudioPlayer({
     }
     
     return () => {
-      audio.removeEventListener("loadeddata", setAudioData);
-      audio.removeEventListener("timeupdate", setAudioTime);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
+      if (audio) {
+        audio.removeEventListener("loadeddata", handleAudioData);
+        audio.removeEventListener("timeupdate", handleAudioTime);
+        audio.removeEventListener("ended", handleAudioEnded);
+        audio.removeEventListener("error", handleAudioError);
+      }
       
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
       }
     };
-  }, [audioUrl, isStream]);
+  }, [audioUrl, isStream, handleAudioData, handleAudioTime, handleAudioEnded, handleAudioError]);
   
-  const loadAudioFile = () => {
+  const loadAudioFile = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
-    const setAudioData = () => {
-      if (!isStream) {
-        setDuration(audio.duration);
-      } else {
-        setDuration(0);
-      }
-      setIsLoaded(true);
-      setLoadError(false);
-      setLazyLoaded(true);
-      
-      if (isPlayingExternal) {
-        audio.play()
-          .then(() => {
-            setIsPlaying(true);
-          })
-          .catch(error => {
-            console.error("Error auto-playing audio:", error);
-          });
-      }
-      
-      toast({
-        title: isStream ? "Stream geladen" : "Audio geladen",
-        description: isStream 
-          ? "De stream is klaar om af te spelen." 
-          : "De meditatie is klaar om af te spelen."
-      });
-    };
-    
-    const setAudioTime = () => {
-      if (!hasTransitionedToNext || !isCrossfading) {
-        setCurrentTime(audio.currentTime);
-      }
-    };
-    
-    const handleEnded = () => {
-      if (!isCrossfading) {
-        if (!isLooping) {
-          setIsPlaying(false);
-          if (onPlayPauseChange) onPlayPauseChange(false);
-          if (onEnded) onEnded();
-        } else {
-          audio.currentTime = 0;
-          audio.play().catch(error => {
-            console.error("Error restarting audio:", error);
-          });
-        }
-      }
-    };
-
-    const handleError = (e: Event) => {
-      console.error("Error loading audio:", e);
-      setLoadError(true);
-      setIsLoaded(false);
-      setLazyLoaded(false);
-      
-      if (audioUrl.startsWith('http') && !isRetrying) {
-        setIsRetrying(true);
-        
-        setTimeout(() => {
-          audio.load();
-          setIsRetrying(false);
-        }, 1000);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Fout bij laden",
-          description: "Kon de audio niet laden. Controleer of het bestand bestaat."
-        });
-        if (onError) onError();
-      }
-    };
-    
-    audio.addEventListener("loadeddata", setAudioData);
-    audio.addEventListener("timeupdate", setAudioTime);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
+    // Add event listeners
+    audio.addEventListener("loadeddata", handleAudioData);
+    audio.addEventListener("timeupdate", handleAudioTime);
+    audio.addEventListener("ended", handleAudioEnded);
+    audio.addEventListener("error", handleAudioError);
     
     audio.volume = volume;
     audio.loop = isLooping;
@@ -272,9 +288,9 @@ export function AudioPlayer({
     if (!isStream || (isStream && lazyLoaded)) {
       audio.load();
     }
-  };
+  }, [audioUrl, isStream, lazyLoaded, volume, isLooping, handleAudioData, handleAudioTime, handleAudioEnded, handleAudioError]);
   
-  const loadStreamAudio = () => {
+  const loadStreamAudio = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
@@ -320,7 +336,7 @@ export function AudioPlayer({
       });
       if (onError) onError();
     }, { once: true });
-  };
+  }, [audioUrl, onPlayPauseChange, title, toast, onError]);
   
   useEffect(() => {
     const audio = audioRef.current;
