@@ -15,6 +15,7 @@ import DailyQuote from "./pages/DailyQuote";
 import Admin from "./pages/Admin";
 import AdminMeditations from "./pages/admin/Meditations";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
+import AdminMusic from "./pages/admin/Music";
 import AdminQuotes from "./pages/admin/Quotes";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/meditations" element={<AdminMeditations />} />
             <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
+            <Route path="/admin/music" element={<AdminMusic />} />
             <Route path="/admin/quotes" element={<AdminQuotes />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
