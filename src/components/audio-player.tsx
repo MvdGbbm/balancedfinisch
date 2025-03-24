@@ -42,6 +42,21 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const [randomQuote] = React.useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   
+  // Early return if no audioUrl is provided
+  if (!audioUrl) {
+    return (
+      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+        <div className="text-center py-3 text-muted-foreground">
+          <p>Geen audio URL opgegeven</p>
+        </div>
+        
+        {showQuote && (
+          <QuoteDisplay quote={randomQuote} />
+        )}
+      </div>
+    );
+  }
+  
   // Log the audio URL for debugging
   React.useEffect(() => {
     console.log(`AudioPlayer attempting to load: ${audioUrl}`);

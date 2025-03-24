@@ -95,26 +95,48 @@ export const MeditationDetailDialog = ({
     const targetMeditation = meditation || null;
     
     // Check if Marco's link exists when Marco is selected
-    if (source === 'marco' && targetMeditation && !targetMeditation.marcoLink) {
-      toast({
-        title: "Marco's versie niet beschikbaar",
-        description: "De meditatie van Marco is niet beschikbaar. We schakelen terug naar Vera's versie.",
-        variant: "destructive"
-      });
-      // Default to Vera if Marco isn't available
-      onAudioSourceChange('vera');
-    } else {
-      onAudioSourceChange(source);
-      if (targetMeditation) {
-        onGuidedMeditationSelect(targetMeditation);
+    if (source === 'marco' && targetMeditation) {
+      if (!targetMeditation.marcoLink) {
+        toast({
+          title: "Marco's versie niet beschikbaar",
+          description: "De meditatie van Marco is niet beschikbaar. We schakelen terug naar Vera's versie.",
+          variant: "destructive"
+        });
+        // Default to Vera if Marco isn't available
+        onAudioSourceChange('vera');
+        return;
       }
-      
-      // Update the audio URL immediately to reflect the change
-      setTimeout(() => {
-        setAudioUrl(getActiveAudioUrl());
-      }, 100);
+    } else if (source === 'vera' && targetMeditation) {
+      if (!targetMeditation.veraLink && !targetMeditation.audioUrl) {
+        toast({
+          title: "Vera's versie niet beschikbaar",
+          description: "De meditatie van Vera is niet beschikbaar.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
+    
+    onAudioSourceChange(source);
+    if (targetMeditation) {
+      onGuidedMeditationSelect(targetMeditation);
+    }
+    
+    // Update the audio URL immediately to reflect the change
+    setTimeout(() => {
+      setAudioUrl(getActiveAudioUrl());
+    }, 100);
   };
+  
+  // Function to check if an audio URL is valid (not empty)
+  const isValidAudioUrl = (url: string | undefined): boolean => {
+    return !!url && url.trim() !== '';
+  };
+  
+  // Check if the selected source has a valid URL
+  const hasValidSelectedAudio = selectedAudioSource === 'vera' 
+    ? isValidAudioUrl(meditation.veraLink) || isValidAudioUrl(meditation.audioUrl)
+    : isValidAudioUrl(meditation.marcoLink);
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -146,6 +168,7 @@ export const MeditationDetailDialog = ({
                         ? "bg-blue-500 hover:bg-blue-600 text-white" 
                         : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
                     )}
+                    disabled={!isValidAudioUrl(meditation.veraLink) && !isValidAudioUrl(meditation.audioUrl)}
                   >
                     <div className="flex items-center">
                       <Music className="h-4 w-4 mr-2" />
@@ -184,6 +207,7 @@ export const MeditationDetailDialog = ({
                         ? "bg-purple-500 hover:bg-purple-600 text-white" 
                         : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
                     )}
+                    disabled={!isValidAudioUrl(meditation.marcoLink)}
                   >
                     <div className="flex items-center">
                       <Music className="h-4 w-4 mr-2" />
@@ -212,12 +236,18 @@ export const MeditationDetailDialog = ({
               </DropdownMenu>
             </div>
           
-            <AudioPlayer 
-              audioUrl={audioUrl}
-              className="w-full bg-transparent border-none"
-              showTitle={false}
-              showQuote={true}
-            />
+            {hasValidSelectedAudio ? (
+              <AudioPlayer 
+                audioUrl={audioUrl}
+                className="w-full bg-transparent border-none"
+                showTitle={false}
+                showQuote={true}
+              />
+            ) : (
+              <div className="text-center py-4 text-gray-400 border border-gray-800 rounded-lg">
+                <p>Geen audio beschikbaar voor {selectedAudioSource === 'vera' ? 'Vera' : 'Marco'}</p>
+              </div>
+            )}
             
             <MixerPanel 
               soundscapes={soundscapes} 
