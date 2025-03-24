@@ -17,6 +17,11 @@ export function Equalizer({ isActive, className, audioRef }: EqualizerProps) {
   const numBars = 12;
   const [isAudioConnected, setIsAudioConnected] = useState(false);
 
+  // Threshold in dB (approximately)
+  const DB_THRESHOLD = 5;
+  // Convert dB threshold to a value between 0-255 (roughly)
+  const AMPLITUDE_THRESHOLD = Math.round((DB_THRESHOLD / 60) * 255);
+
   // Setup audio analyzer when active and audioRef is provided
   useEffect(() => {
     if (!isActive || !audioRef?.current) {
@@ -105,12 +110,19 @@ export function Equalizer({ isActive, className, audioRef }: EqualizerProps) {
           
           // Get average and convert to percentage height (15% minimum, 95% maximum)
           const average = sum / barWidth;
-          const height = 15 + (average / 255) * 80;
           
-          // Add different transition speeds for more natural movement
-          const duration = 100 + (index % 3) * 50; // 100-200ms transitions
-          bar.style.transitionDuration = `${duration}ms`;
-          bar.style.height = `${height}%`;
+          // Only show activity if above threshold
+          if (average > AMPLITUDE_THRESHOLD) {
+            const height = 15 + ((average - AMPLITUDE_THRESHOLD) / (255 - AMPLITUDE_THRESHOLD)) * 80;
+            
+            // Add different transition speeds for more natural movement
+            const duration = 100 + (index % 3) * 50; // 100-200ms transitions
+            bar.style.transitionDuration = `${duration}ms`;
+            bar.style.height = `${height}%`;
+          } else {
+            // Stay at baseline if below threshold
+            bar.style.height = "15%";
+          }
         });
 
         // Continue animation loop
@@ -148,8 +160,19 @@ export function Equalizer({ isActive, className, audioRef }: EqualizerProps) {
         heights = newHeights;
       }
       
-      // Scale to appropriate percentage range (15% to 95%)
-      return heights.map(h => Math.floor(h * 80) + 15);
+      // Apply threshold to simulated values too
+      heights = heights.map(h => {
+        // Scale to 0-255 range first to apply same threshold logic
+        const scaledValue = h * 255;
+        if (scaledValue > AMPLITUDE_THRESHOLD) {
+          return ((scaledValue - AMPLITUDE_THRESHOLD) / (255 - AMPLITUDE_THRESHOLD)) * 0.8 + 0.15;
+        } else {
+          return 0.15; // 15% minimum height
+        }
+      });
+      
+      // Convert to percentage (15% to 95%)
+      return heights.map(h => Math.floor(h * 100));
     };
 
     const animateSimulated = () => {
