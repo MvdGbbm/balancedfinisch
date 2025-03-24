@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
@@ -130,9 +129,8 @@ export const MeditationDetailDialog = ({
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
           
-          {/* Daily quote display above Vera and Marco buttons */}
           <div className="mb-2">
-            <QuoteDisplay quote={randomQuote} />
+            <QuoteDisplay quote={randomQuote} transparentBackground={true} />
           </div>
           
           <div className="flex gap-2 mt-2">

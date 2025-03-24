@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
@@ -96,25 +95,18 @@ export function MeditationPlayerContainer({
     }
     
     try {
-      // Trim the URL
       url = url.trim();
       
-      // Check if URL has protocol, if not add https://
       if (!/^https?:\/\//i.test(url)) {
         url = 'https://' + url;
       }
       
-      // Validate URL
       const validatedUrl = new URL(url).toString();
       
-      // Log the validated URL for debugging
       console.log(`Playing ${linkType} link:`, validatedUrl);
       
-      // Set the new audio URL for the player
       setCurrentAudioUrl(validatedUrl);
-      // Force audio player to remount with new URL
       setPlayerKey(prevKey => prevKey + 1);
-      // Start playing automatically
       setIsPlaying(true);
       
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
@@ -198,12 +190,10 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      {/* Daily quote display above Vera and Marco buttons */}
       <div className="mb-4">
-        <QuoteDisplay quote={randomQuote} />
+        <QuoteDisplay quote={randomQuote} transparentBackground={true} />
       </div>
       
-      {/* Vera and Marco buttons */}
       <div className="flex gap-2 mb-4">
         <Button
           variant="outline"
