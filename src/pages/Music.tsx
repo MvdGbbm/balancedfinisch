@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Square } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -136,11 +136,35 @@ const Music = () => {
       setStreamTitle("");
     }
     
-    setPreviewTrack(track);
-    setIsPlaying(true);
+    if (previewTrack?.id === track.id && isPlaying) {
+      setPreviewTrack(null);
+      setIsPlaying(false);
+      toast({
+        title: "Voorluisteren gestopt",
+        description: `${track.title} is gestopt.`
+      });
+    } else {
+      setPreviewTrack(track);
+      setIsPlaying(true);
+      toast({
+        title: "Voorluisteren gestart",
+        description: `${track.title} wordt nu afgespeeld.`
+      });
+    }
     
     setSelectedPlaylist(null);
     setNextTrack(null);
+  };
+
+  const handleStopPreview = () => {
+    if (previewTrack) {
+      setPreviewTrack(null);
+      setIsPlaying(false);
+      toast({
+        title: "Voorluisteren gestopt",
+        description: "Het afspelen is gestopt."
+      });
+    }
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
@@ -332,8 +356,18 @@ const Music = () => {
           <Equalizer isActive={isAudioActive} className="mb-4" audioElement={visibleAudioRef.current} />
           
           {previewTrack && (
-            <div className="mb-6">
-              <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
+            <div className="mb-6 bg-muted/30 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">Voorluisteren: <span className="text-primary">{previewTrack.title}</span></h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleStopPreview}
+                  className="h-8 w-8 p-0"
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
+              </div>
               <AudioPlayer 
                 audioUrl={previewTrack.audioUrl} 
                 showControls={true}
@@ -346,10 +380,24 @@ const Music = () => {
           )}
           
           {isStreamPlaying && (
-            <div className="mb-6">
-              <h3 className="font-medium mb-2">
-                {streamTitle} <span className="text-xs text-primary">LIVE</span>
-              </h3>
+            <div className="mb-6 bg-muted/30 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">
+                  {streamTitle} <span className="text-xs text-primary">LIVE</span>
+                </h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setIsStreamPlaying(false);
+                    setStreamUrl("");
+                    setStreamTitle("");
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
+              </div>
               <AudioPlayer 
                 audioUrl={streamUrl} 
                 showControls={true}
@@ -367,7 +415,7 @@ const Music = () => {
                 {musicTracks.map((track) => (
                   <Card 
                     key={track.id} 
-                    className={`transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
+                    className={`transition-all ${previewTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
@@ -378,25 +426,34 @@ const Music = () => {
                             className="h-12 w-12 rounded-md object-cover"
                           />
                         ) : (
-                          <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
+                          <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${previewTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
                             <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <h3 className="font-medium">{track.title}</h3>
+                          <h3 className={`font-medium ${previewTrack?.id === track.id ? 'text-primary' : ''}`}>{track.title}</h3>
                           <p className="text-sm text-muted-foreground">{track.description}</p>
                         </div>
                       </div>
                       
                       <div className="flex justify-between mt-3">
                         <Button 
-                          variant="outline" 
+                          variant={previewTrack?.id === track.id && isPlaying ? "default" : "outline"}
                           size="sm" 
                           onClick={() => handlePreviewTrack(track)}
                           className="flex items-center gap-1"
                         >
-                          <Play className="h-4 w-4" />
-                          Voorluisteren
+                          {previewTrack?.id === track.id && isPlaying ? (
+                            <>
+                              <Pause className="h-4 w-4" />
+                              Stop voorluisteren
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" />
+                              Voorluisteren
+                            </>
+                          )}
                         </Button>
                         
                         <PlaylistSelector 

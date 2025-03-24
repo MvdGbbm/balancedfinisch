@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause, Square } from "lucide-react";
 import { toast } from "sonner";
 
 import { Soundscape } from "@/lib/types";
@@ -96,6 +96,11 @@ const AdminMusic = () => {
   const handleAudioPreview = () => {
     if (audioUrl) {
       setIsPreviewPlaying(!isPreviewPlaying);
+      if (!isPreviewPlaying) {
+        toast.success(`Audio voorluisteren: ${title || 'Nieuwe muziek'}`);
+      } else {
+        toast.info("Voorluisteren gestopt");
+      }
     } else {
       toast.error("Voer eerst een audio URL in om voor te luisteren");
     }
@@ -309,11 +314,11 @@ const AdminMusic = () => {
                   />
                   <Button 
                     type="button" 
-                    variant="outline"
+                    variant={isPreviewPlaying ? "default" : "outline"}
                     className="shrink-0"
                     onClick={handleAudioPreview}
                   >
-                    {isPreviewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isPreviewPlaying ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
                 </div>
                 {isValidUrl(audioUrl) && (
@@ -364,8 +369,18 @@ const AdminMusic = () => {
               )}
               
               {audioUrl && isPreviewPlaying && (
-                <div className="mt-4">
-                  <Label>Audio Preview</Label>
+                <div className="mt-4 bg-muted/30 p-3 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Audio Voorluisteren: <span className="text-primary">{title || "Nieuwe muziek"}</span></Label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsPreviewPlaying(false)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Square className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <AudioPlayer 
                     audioUrl={audioUrl} 
                     isPlayingExternal={isPreviewPlaying}
