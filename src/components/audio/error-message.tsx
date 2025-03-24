@@ -24,7 +24,7 @@ export function ErrorMessage({ onRetry, isRetrying }: ErrorMessageProps) {
       <Button 
         variant="outline" 
         size="sm" 
-        className="mt-1 w-full" 
+        className="mt-1 w-full text-destructive hover:text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50" 
         onClick={onRetry}
         disabled={isRetrying}
       >

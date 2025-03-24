@@ -36,8 +36,7 @@ export interface AudioEngineState {
   isLooping: boolean;
 }
 
-// Constants for crossfade
-const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
+const CROSSFADE_DURATION = 5;
 
 export function useAudioEngine({
   audioUrl,
@@ -68,9 +67,7 @@ export function useAudioEngine({
   const nextAudioRef = useRef<HTMLAudioElement>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
 
-  // Check if URL is potentially a live stream
   const checkIfLiveStream = (url: string) => {
-    // Common live stream indicators
     return url.includes('radio') || 
            url.includes('stream') || 
            url.includes('live') || 
@@ -79,28 +76,23 @@ export function useAudioEngine({
            url.includes('shoutcast');
   };
 
-  // Play audio directly without preloading for external URLs
   const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
     if (!audioElement) return;
     
-    // Check if potentially a live stream
     const potentialLiveStream = checkIfLiveStream(url);
     if (potentialLiveStream) {
       setIsLiveStream(true);
-      // For live streams, we don't expect duration info
       setDuration(0);
     } else {
       setIsLiveStream(false);
     }
     
-    // Fix 1: Make sure we set the src attribute properly
     try {
       audioElement.src = url;
       audioElement.load();
       
       console.log("Setting audio source to:", url);
       
-      // Set up event listeners for this direct play
       const onCanPlay = () => {
         audioElement.play()
           .then(() => {
@@ -120,7 +112,6 @@ export function useAudioEngine({
       
       audioElement.addEventListener('canplay', onCanPlay);
       
-      // Error handling
       const handleDirectError = (e: Event) => {
         console.error(`Error loading audio for URL ${url}:`, e);
         setLoadError(true);
@@ -136,11 +127,9 @@ export function useAudioEngine({
     }
   };
 
-  // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
       if (isPlayingExternal && !isPlaying) {
-        // Always use direct method for any URL
         playDirectly(audioUrl, audioRef.current);
       } else if (!isPlayingExternal && isPlaying) {
         audioRef.current.pause();
@@ -149,7 +138,6 @@ export function useAudioEngine({
     }
   }, [isPlayingExternal, isPlaying, isLoaded, audioUrl]);
   
-  // Set up crossfade when current track is near the end
   useEffect(() => {
     if (!nextAudioUrl || !isPlaying || isCrossfading || isLiveStream) return;
     
@@ -158,28 +146,22 @@ export function useAudioEngine({
     
     if (!audio || !nextAudio || !isLoaded || duration === 0) return;
     
-    // Start crossfade when we're CROSSFADE_DURATION seconds from the end
     if (duration - currentTime <= CROSSFADE_DURATION && duration > CROSSFADE_DURATION) {
-      if (crossfadeTimeoutRef.current) return; // Prevent multiple crossfades
+      if (crossfadeTimeoutRef.current) return;
       
       setIsCrossfading(true);
       console.info("Starting crossfade");
       
-      // Preload next track
       nextAudio.volume = 0;
       nextAudio.src = nextAudioUrl;
       nextAudio.load();
       
-      // Start playing next track and gradually increase volume
       nextAudio.play()
         .then(() => {
-          // Notify parent that crossfade has started
           if (onCrossfadeStart) onCrossfadeStart();
           
-          // Calculate how much time is left in current track
           const timeLeft = duration - currentTime;
           
-          // Gradually decrease volume of current track
           const fadeOutInterval = setInterval(() => {
             if (!audio) {
               clearInterval(fadeOutInterval);
@@ -194,7 +176,6 @@ export function useAudioEngine({
             }
           }, 100);
           
-          // Gradually increase volume of next track
           const fadeInInterval = setInterval(() => {
             if (!nextAudio) {
               clearInterval(fadeInInterval);
@@ -209,12 +190,10 @@ export function useAudioEngine({
             }
           }, 100);
           
-          // When current track ends, trigger onEnded and reset crossfade
           crossfadeTimeoutRef.current = window.setTimeout(() => {
             if (onEnded) onEnded();
             crossfadeTimeoutRef.current = null;
             setIsCrossfading(false);
-            // Reset the time to 0 for the new track
             setCurrentTime(0);
           }, timeLeft * 1000);
         })
@@ -229,7 +208,6 @@ export function useAudioEngine({
     const audio = audioRef.current;
     if (!audio) return;
     
-    // Pass the audio element reference to the parent component if the callback exists
     if (onAudioElementRef) {
       onAudioElementRef(audio);
     }
@@ -240,7 +218,6 @@ export function useAudioEngine({
         setDuration(audio.duration);
         setIsLiveStream(false);
       } else {
-        // Infinite duration indicates a stream
         setIsLiveStream(true);
         setDuration(0);
       }
@@ -248,7 +225,6 @@ export function useAudioEngine({
       setIsLoaded(true);
       setLoadError(false);
       
-      // Auto-play when loaded if isPlayingExternal is true
       if (isPlayingExternal) {
         audio.play()
           .then(() => {
@@ -271,15 +247,12 @@ export function useAudioEngine({
     };
     
     const handleEnded = () => {
-      // If we're crossfading, the crossfade handler will call onEnded
-      // Only trigger onEnded if we're not crossfading (e.g., no next track)
       if (!isCrossfading) {
         if (!isLooping) {
           setIsPlaying(false);
           if (onPlayPauseChange) onPlayPauseChange(false);
           if (onEnded) onEnded();
         } else {
-          // For looping, just restart the track
           audio.currentTime = 0;
           audio.play().catch(error => {
             console.error("Error restarting audio:", error);
@@ -296,13 +269,10 @@ export function useAudioEngine({
       if (!isRetrying) {
         setIsRetrying(true);
         
-        // Try direct playback as fallback
         setTimeout(() => {
           try {
-            // Check if URL is still valid before retrying
             if (audioUrl && (audioUrl.startsWith('http') || audioUrl.startsWith('/'))) {
               console.log("Attempting fallback playback for:", audioUrl);
-              // Try direct playback again
               playDirectly(audioUrl, audio);
             } else {
               console.error("Invalid URL for retry:", audioUrl);
@@ -336,7 +306,7 @@ export function useAudioEngine({
     };
     
     audio.addEventListener("loadeddata", setAudioData);
-    audio.addEventListener("loadedmetadata", setAudioData); // Added for streams
+    audio.addEventListener("loadedmetadata", setAudioData);
     audio.addEventListener("timeupdate", setAudioTime);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
@@ -344,9 +314,7 @@ export function useAudioEngine({
     audio.volume = volume;
     audio.loop = isLooping;
     
-    // Special event for live streams
     audio.addEventListener("progress", () => {
-      // For live streams, we might not get duration
       if (audio.duration === Infinity || isNaN(audio.duration)) {
         setIsLiveStream(true);
       }
@@ -360,20 +328,17 @@ export function useAudioEngine({
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("progress", () => {});
       
-      // Clear crossfade timeout if component unmounts
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
       }
       
-      // Clear the audio element reference when the component unmounts
       if (onAudioElementRef) {
         onAudioElementRef(null);
       }
     };
   }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef]);
   
-  // Reset audio state when audioUrl changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -390,7 +355,6 @@ export function useAudioEngine({
       crossfadeTimeoutRef.current = null;
     }
     
-    // Always use direct playback method
     if (isPlayingExternal) {
       playDirectly(audioUrl, audio);
     } else {
@@ -424,7 +388,6 @@ export function useAudioEngine({
     }
   }, [isLooping, isLiveStream]);
 
-  // Functions to control audio playback
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -434,7 +397,6 @@ export function useAudioEngine({
       setIsPlaying(false);
       if (onPlayPauseChange) onPlayPauseChange(false);
       
-      // If we're in the middle of a crossfade, also pause the next track
       if (isCrossfading && nextAudioRef.current) {
         nextAudioRef.current.pause();
       }
@@ -444,7 +406,6 @@ export function useAudioEngine({
         description: "De audio is gepauzeerd."
       });
     } else {
-      // Always use direct method to play
       if (!isLoaded) {
         playDirectly(audioUrl, audio);
       } else {
@@ -453,7 +414,6 @@ export function useAudioEngine({
             setIsPlaying(true);
             if (onPlayPauseChange) onPlayPauseChange(true);
             
-            // If we're in the middle of a crossfade, also resume the next track
             if (isCrossfading && nextAudioRef.current) {
               nextAudioRef.current.play().catch(error => {
                 console.error("Error resuming next audio:", error);
@@ -484,17 +444,24 @@ export function useAudioEngine({
     setLoadError(false);
     setIsRetrying(true);
     
-    // Reset audio element completely
     audio.pause();
     audio.removeAttribute('src');
     audio.load();
     
-    // Short timeout before retrying
     setTimeout(() => {
       try {
-        // Try direct playback again with full URL
-        playDirectly(audioUrl, audio);
-        setIsRetrying(false);
+        if (audioUrl && (audioUrl.startsWith('http') || audioUrl.startsWith('/'))) {
+          console.log("Attempting fallback playback for:", audioUrl);
+          playDirectly(audioUrl, audio);
+          setIsRetrying(false);
+        } else {
+          console.error("Invalid URL for retry:", audioUrl);
+          toast({
+            variant: "destructive",
+            title: "Fout bij laden",
+            description: "Ongeldige audio URL."
+          });
+        }
       } catch (error) {
         console.error("Error retrying direct playback:", error);
         setIsRetrying(false);
@@ -504,7 +471,6 @@ export function useAudioEngine({
           title: "Fout bij laden",
           description: "Kon de audio niet laden. Controleer of de URL correct is."
         });
-        
         if (onError) onError();
       }
     }, 1000);
@@ -526,7 +492,6 @@ export function useAudioEngine({
     audio.currentTime = newTime;
     setCurrentTime(newTime);
     
-    // If we were crossfading but user seeks back, cancel crossfade
     if (isCrossfading && duration - newTime > CROSSFADE_DURATION) {
       setIsCrossfading(false);
       if (crossfadeTimeoutRef.current) {
@@ -546,7 +511,6 @@ export function useAudioEngine({
     
     const newVolume = newValue[0];
     
-    // If we're crossfading, adjust both volumes proportionally
     if (isCrossfading && nextAudioRef.current) {
       const currentRatio = audio.volume / volume;
       const nextRatio = nextAudioRef.current.volume / volume;
