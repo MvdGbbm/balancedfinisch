@@ -40,6 +40,9 @@ export interface AudioEngineState {
 const CROSSFADE_DURATION = 5;
 const MAX_RETRY_ATTEMPTS = 3;
 
+// Track existing audio contexts globally to prevent duplicate connections
+const connectedAudioElements = new WeakMap();
+
 export function useAudioEngine({
   audioUrl,
   isPlayingExternal,
@@ -70,6 +73,8 @@ export function useAudioEngine({
   const nextAudioRef = useRef<HTMLAudioElement>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
   const lastValidUrlRef = useRef<string | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const checkIfLiveStream = (url: string) => {
     return url.includes('radio') || 
@@ -258,6 +263,7 @@ export function useAudioEngine({
     }
   }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isLiveStream]);
   
+  // Set up audio context and connect gain node
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -266,19 +272,40 @@ export function useAudioEngine({
       onAudioElementRef(audio);
     }
     
-    // Create an Audio gain node to control volume without affecting the analyser
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.5; // Set to 50% of original volume
-    
-    let source: MediaElementAudioSourceNode | null = null;
+    // Check if we've already set up audio processing for this element
+    if (connectedAudioElements.has(audio)) {
+      console.log("Audio element already has context, skipping setup");
+      return;
+    }
     
     try {
-      source = audioContext.createMediaElementSource(audio);
+      // Create a new audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      // Create gain node to control volume without affecting the analyzer
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 0.5; // Set to 50% of original volume
+      gainNodeRef.current = gainNode;
+      
+      // Create media element source
+      const source = audioContext.createMediaElementSource(audio);
+      
+      // Connect the source to the gain node and then to the destination
       source.connect(gainNode);
       gainNode.connect(audioContext.destination);
+      
+      // Mark this audio element as connected
+      connectedAudioElements.set(audio, { 
+        context: audioContext, 
+        source, 
+        gainNode 
+      });
+      
+      console.log("Successfully set up audio processing chain");
     } catch (error) {
       console.error("Error creating audio processing chain:", error);
+      // Even if we have an error, we should still be able to play audio directly
     }
     
     const setAudioData = () => {
@@ -418,18 +445,30 @@ export function useAudioEngine({
         onAudioElementRef(null);
       }
       
-      // Clean up audio context
-      if (source) {
+      // Note: We don't clean up the audio context here anymore
+      // This would be done when the component is fully unmounted
+    };
+  }, [onEnded, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef, retryAttempts, volume]);
+  
+  // Clean up audio context when component is unmounted
+  useEffect(() => {
+    return () => {
+      // Clean up audio processing when component unmounts
+      const audio = audioRef.current;
+      if (audio && connectedAudioElements.has(audio)) {
         try {
-          source.disconnect();
-          gainNode.disconnect();
-          audioContext.close();
+          const { context, source, gainNode } = connectedAudioElements.get(audio);
+          if (source) source.disconnect();
+          if (gainNode) gainNode.disconnect();
+          if (context) context.close();
+          connectedAudioElements.delete(audio);
+          console.log("Cleaned up audio context on unmount");
         } catch (error) {
           console.error("Error cleaning up audio context:", error);
         }
       }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef, retryAttempts]);
+  }, []);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -454,6 +493,21 @@ export function useAudioEngine({
       audio.load();
     }
   }, [audioUrl, isPlayingExternal]);
+  
+  // Update volume through gain node if available
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    // Apply gain node if available
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = 0.5; // Keep at 50%
+      audio.volume = volume; // Set volume on audio element
+    } else {
+      // Fall back to regular volume control
+      audio.volume = volume * 0.5; // Apply 50% reduction
+    }
+  }, [volume]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -604,18 +658,28 @@ export function useAudioEngine({
     if (!audio) return;
     
     const newVolume = newValue[0];
+    setVolume(newVolume);
+    
+    if (gainNodeRef.current) {
+      // Volume is controlled through the gain node (which is already at 50%)
+      audio.volume = newVolume;
+    } else {
+      // Apply 50% reduction directly
+      audio.volume = newVolume * 0.5;
+    }
     
     if (isCrossfading && nextAudioRef.current) {
       const currentRatio = audio.volume / volume;
       const nextRatio = nextAudioRef.current.volume / volume;
       
-      audio.volume = newVolume * currentRatio;
-      nextAudioRef.current.volume = newVolume * nextRatio;
-    } else {
-      audio.volume = newVolume;
+      if (gainNodeRef.current) {
+        audio.volume = newVolume * currentRatio;
+        nextAudioRef.current.volume = newVolume * nextRatio;
+      } else {
+        audio.volume = newVolume * currentRatio * 0.5;
+        nextAudioRef.current.volume = newVolume * nextRatio * 0.5;
+      }
     }
-    
-    setVolume(newVolume);
   };
   
   const skipTime = (amount: number) => {
