@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -224,12 +223,6 @@ const Music = () => {
       return;
     }
     
-    // If this playlist is already playing, stop it
-    if (selectedPlaylist?.id === playlist.id && isPlaying) {
-      handleStopPlaylist();
-      return;
-    }
-    
     setPreviewTrack(null);
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
@@ -242,14 +235,6 @@ const Music = () => {
     toast({
       title: "Afspeellijst gestart",
       description: `${playlist.name} wordt nu afgespeeld`
-    });
-  };
-  
-  const handleStopPlaylist = () => {
-    setIsPlaying(false);
-    toast({
-      title: "Afspeellijst gestopt",
-      description: "De afspeellijst is gestopt met afspelen"
     });
   };
 
@@ -431,8 +416,6 @@ const Music = () => {
               <div className="grid grid-cols-1 gap-4">
                 {playlists.map((playlist) => {
                   const trackCount = playlist.tracks.length;
-                  const isCurrentPlaylist = selectedPlaylist?.id === playlist.id && isPlaying;
-                  
                   return (
                     <Card key={playlist.id}>
                       <CardContent className="p-4">
@@ -446,28 +429,15 @@ const Music = () => {
                               {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
                             </p>
                           </div>
-                          <div className="flex gap-2">
-                            {isCurrentPlaylist ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleStopPlaylist()}
-                              >
-                                <StopCircle className="h-4 w-4 mr-1" />
-                                Stoppen
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handlePlayPlaylist(playlist)}
-                                disabled={trackCount === 0}
-                              >
-                                <Play className="h-4 w-4 mr-1" />
-                                Lijst afspelen
-                              </Button>
-                            )}
-                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handlePlayPlaylist(playlist)}
+                            disabled={trackCount === 0}
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Lijst afspelen
+                          </Button>
                         </div>
                         
                         {playlist.tracks.length > 0 && (
@@ -494,16 +464,6 @@ const Music = () => {
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        )}
-                        
-                        {isCurrentPlaylist && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <ToneEqualizer 
-                              isActive={isPlaying} 
-                              className="bg-black/50" 
-                              audioRef={audioPlayerRef} 
-                            />
                           </div>
                         )}
                       </CardContent>
