@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useNavigate } from "react-router-dom";
@@ -26,12 +25,12 @@ const features = [
     path: "/breathing"
   },
   {
-    title: "Muziek",
-    description: "Luister naar rustgevende muziek en afspeellijsten",
-    icon: Music,
+    title: "Planner",
+    description: "Plan je meditatiesessies voor consistent welzijn",
+    icon: Clock,
     color: "bg-amber-100 dark:bg-amber-900/30",
     textColor: "text-amber-600 dark:text-amber-300",
-    path: "/music"
+    path: "/planner"
   },
   {
     title: "Dagboek",

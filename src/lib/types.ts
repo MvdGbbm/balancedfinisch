@@ -1,4 +1,3 @@
-
 export interface Meditation {
   id: string;
   title: string;
@@ -46,28 +45,4 @@ export interface PlannerEvent {
   duration?: number;
   completed: boolean;
   meditationId?: string;
-}
-
-export interface Track {
-  id: string;
-  title: string;
-  artist: string;
-  audioUrl: string;
-  coverImageUrl?: string;
-  duration: number;
-  album?: string;
-  year?: number;
-  genre?: string;
-  tags?: string[];
-}
-
-export interface Playlist {
-  id: string;
-  name: string;
-  description?: string;
-  coverImageUrl?: string;
-  tracks: string[]; // Array of track IDs
-  trackCount: number;
-  createdAt: string;
-  updatedAt: string;
 }
