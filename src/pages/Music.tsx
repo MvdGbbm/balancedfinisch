@@ -21,6 +21,7 @@ interface RadioStream {
   url: string;
   description: string | null;
   is_active: boolean;
+  position: number | null;
 }
 
 const Music = () => {
@@ -52,6 +53,7 @@ const Music = () => {
         .from('radio_streams')
         .select('*')
         .eq('is_active', true)
+        .order('position')
         .order('title');
       
       if (error) {
@@ -468,6 +470,9 @@ const Music = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm">{stream.title}</h3>
+                            {stream.description && (
+                              <p className="text-xs text-muted-foreground">{stream.description}</p>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
