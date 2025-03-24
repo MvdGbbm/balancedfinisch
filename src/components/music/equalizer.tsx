@@ -16,47 +16,103 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const [audioElementId, setAudioElementId] = useState<string | null>(null);
   const numBars = 32; // Increased from 24 to 32 bars for more detailed visualization
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
     if (!audioElement) return;
     
-    // Create audio context and analyzer on first render
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      analyzerRef.current = audioContextRef.current.createAnalyser();
-      analyzerRef.current.fftSize = 1024; // Increased from 256 for more detailed frequency data
-      analyzerRef.current.smoothingTimeConstant = 0.7; // Slightly reduced smoothing for more responsive visualization
-      
-      const bufferLength = analyzerRef.current.frequencyBinCount;
-      dataArrayRef.current = new Uint8Array(bufferLength);
+    // Track if this is a new audio element by checking its id
+    const currentAudioId = audioElement.dataset.equalizerId || audioElement.src;
+    const isNewAudioElement = currentAudioId !== audioElementId;
+    
+    // Clean up old connections before creating new ones
+    if (sourceRef.current && (isNewAudioElement || !isActive)) {
+      try {
+        sourceRef.current.disconnect();
+        sourceRef.current = null;
+      } catch (err) {
+        console.log("Error disconnecting previous source:", err);
+      }
     }
     
-    // Connect the audio element to the analyzer
+    // If we're deactivating or switching elements, disconnect and clean up
+    if (!isActive || isNewAudioElement) {
+      if (analyzerRef.current) {
+        try {
+          analyzerRef.current.disconnect();
+        } catch (err) {
+          console.log("Error disconnecting analyzer:", err);
+        }
+      }
+      
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        try {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        } catch (err) {
+          console.log("Error closing audio context:", err);
+        }
+      }
+    }
+    
+    if (!isActive) return;
+    
+    // Set an identifier on the audio element to track it
+    if (!audioElement.dataset.equalizerId) {
+      audioElement.dataset.equalizerId = `eq-${Date.now()}`;
+    }
+    setAudioElementId(audioElement.dataset.equalizerId || audioElement.src);
+    
+    // Create audio context and analyzer on first render or when we need a new one
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        analyzerRef.current = audioContextRef.current.createAnalyser();
+        analyzerRef.current.fftSize = 1024; // Increased from 256 for more detailed frequency data
+        analyzerRef.current.smoothingTimeConstant = 0.7; // Slightly reduced smoothing for more responsive visualization
+        
+        const bufferLength = analyzerRef.current.frequencyBinCount;
+        dataArrayRef.current = new Uint8Array(bufferLength);
+        
+        console.log("Created new AudioContext for equalizer");
+      } catch (err) {
+        console.error("Failed to create audio context:", err);
+        return;
+      }
+    }
+    
+    // Connect the audio element to the analyzer if not already connected
     if (audioElement && audioContextRef.current && !sourceRef.current) {
-      sourceRef.current = audioContextRef.current.createMediaElementSource(audioElement);
-      sourceRef.current.connect(analyzerRef.current);
-      analyzerRef.current.connect(audioContextRef.current.destination);
+      try {
+        // Check if the element already has a source node
+        if (!audioElement.dataset.connected) {
+          sourceRef.current = audioContextRef.current.createMediaElementSource(audioElement);
+          sourceRef.current.connect(analyzerRef.current);
+          analyzerRef.current.connect(audioContextRef.current.destination);
+          
+          // Mark the element as connected
+          audioElement.dataset.connected = "true";
+          console.log("Connected audio element to analyzer");
+        } else {
+          console.log("Audio element already connected to a source node, using simulation mode");
+        }
+      } catch (err) {
+        console.error("Error connecting audio element:", err);
+        // If we fail to connect the source, we'll use simulation mode
+        audioElement.dataset.connected = "failed";
+      }
     }
     
     return () => {
-      // Cleanup if component unmounts
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-        sourceRef.current = null;
-      }
-      
-      if (analyzerRef.current) {
-        analyzerRef.current.disconnect();
-      }
-      
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
+      // Cleanup function will be called when:
+      // 1. Component unmounts
+      // 2. audioElement changes
+      // 3. isActive changes
+      // We'll handle the actual cleanup at the start of the next effect run
     };
-  }, [audioElement]);
+  }, [audioElement, isActive, audioElementId]);
 
   useEffect(() => {
     if (!isActive) {
@@ -76,7 +132,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
     // Function to generate heights based on audio data or use simulation
     const generateHeights = () => {
       // Use audio data if available
-      if (analyzerRef.current && dataArrayRef.current && audioElement) {
+      if (analyzerRef.current && dataArrayRef.current && audioElement && audioElement.dataset.connected === "true") {
         analyzerRef.current.getByteFrequencyData(dataArrayRef.current);
         
         // Apply frequency weighting for more natural visualization
@@ -197,7 +253,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       "relative flex items-end justify-center h-20 gap-[1px] p-2 bg-card/30 rounded-md overflow-hidden", 
       className
     )}>
-      {isActive && !audioElement && (
+      {isActive && (!audioElement || audioElement.dataset.connected !== "true") && (
         <div className="absolute top-1 right-1 text-xs text-muted-foreground flex items-center opacity-50">
           <AudioWaveform className="h-3 w-3 mr-1" />
           <span>Simulatie</span>

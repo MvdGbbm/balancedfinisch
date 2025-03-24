@@ -59,7 +59,10 @@ export function MeditationPlayerContainer({
   };
 
   const handleAudioElementRef = (element: HTMLAudioElement | null) => {
-    audioRef.current = element;
+    // Only update the ref if it's a different element or null
+    if (element !== audioRef.current) {
+      audioRef.current = element;
+    }
   };
 
   if (!hasValidAudio || audioError) {
