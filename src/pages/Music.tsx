@@ -385,17 +385,6 @@ const Music = () => {
                               </>
                             )}
                           </Button>
-                          {previewTrack?.id === track.id && isPlaying && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={handleStopPreview}
-                              className="flex items-center gap-1"
-                            >
-                              <StopCircle className="h-4 w-4" />
-                              Stoppen
-                            </Button>
-                          )}
                         </div>
                         
                         <PlaylistSelector 

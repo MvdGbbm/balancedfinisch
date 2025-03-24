@@ -39,25 +39,24 @@ export function MeditationItem({
         </div>
       </div>
       <div className="flex items-center gap-1">
-        {isPlaying && onStopPlaying && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStopPlaying();
-            }}
-          >
-            <StopCircle className="h-4 w-4" />
-          </Button>
-        )}
         <Button 
           variant="ghost" 
           size="icon" 
           className="h-8 w-8 text-primary"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isPlaying && onStopPlaying) {
+              onStopPlaying();
+            } else {
+              onSelect(meditation);
+            }
+          }}
         >
-          <Play className="h-4 w-4" />
+          {isPlaying ? (
+            <StopCircle className="h-4 w-4" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
         </Button>
       </div>
     </div>
