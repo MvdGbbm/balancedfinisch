@@ -10,15 +10,18 @@ import { ToneEqualizer } from "@/components/music/tone-equalizer";
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
   selectedMeditation: Meditation | null;
+  isPlaying?: boolean;
+  setIsPlaying?: (isPlaying: boolean) => void;
 }
 
 export function MeditationPlayerContainer({ 
   isVisible, 
-  selectedMeditation 
+  selectedMeditation,
+  isPlaying = false,
+  setIsPlaying = () => {}
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -26,7 +29,6 @@ export function MeditationPlayerContainer({
       // Reset errors when meditation changes
       setAudioError(false);
       setImageError(false);
-      setIsPlaying(true); // Auto-play when meditation changes
       
       // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);

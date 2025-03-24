@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect } from "react";
 import { Tabs } from "@/components/ui/tabs";
-import { Music } from "lucide-react";
+import { Music, StopCircle } from "lucide-react";
 import { meditations } from "@/data/meditations";
 import { useToast } from "@/hooks/use-toast";
 import { Meditation } from "@/lib/types";
 import { MeditationCategoryTabs } from "./meditation/meditation-category-tabs";
 import { MeditationPlayerContainer } from "./meditation/meditation-player-container";
+import { Button } from "./ui/button";
 
 export function MeditationMusicPlayer() {
   const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const { toast } = useToast();
 
   // Group meditations by category
@@ -37,9 +39,18 @@ export function MeditationMusicPlayer() {
   const handleMeditationSelect = (meditation: Meditation) => {
     setSelectedMeditation(meditation);
     setIsPlayerVisible(true);
+    setIsPlaying(true);
     toast({
       title: "Meditatie geselecteerd",
       description: `${meditation.title} is geselecteerd en klaar om af te spelen.`
+    });
+  };
+
+  const handleStopPlaying = () => {
+    setIsPlaying(false);
+    toast({
+      title: "Meditatie gestopt",
+      description: "De meditatie is gestopt met afspelen."
     });
   };
 
@@ -97,12 +108,16 @@ export function MeditationMusicPlayer() {
           selectedMeditationId={selectedMeditation?.id || null}
           getSubcategories={getSubcategories}
           onSelectMeditation={handleMeditationSelect}
+          playingMeditationId={isPlaying ? selectedMeditation?.id : null}
+          onStopPlaying={handleStopPlaying}
         />
       </Tabs>
       
       <MeditationPlayerContainer 
         isVisible={isPlayerVisible}
         selectedMeditation={selectedMeditation}
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
       />
     </div>
   );

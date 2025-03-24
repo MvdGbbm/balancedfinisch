@@ -1,4 +1,3 @@
-
 import React from "react";
 import { 
   TabsContent, 
@@ -15,6 +14,8 @@ interface MeditationCategoryTabsProps {
   selectedMeditationId: string | null;
   getSubcategories: (meditations: Meditation[]) => Record<string, Meditation[]>;
   onSelectMeditation: (meditation: Meditation) => void;
+  playbackState: any; // Add playback state prop
+  onPlaybackChange: (state: any) => void; // Add playback change handler
 }
 
 export function MeditationCategoryTabs({
@@ -22,7 +23,9 @@ export function MeditationCategoryTabs({
   meditationsByCategory,
   selectedMeditationId,
   getSubcategories,
-  onSelectMeditation
+  onSelectMeditation,
+  playbackState,
+  onPlaybackChange
 }: MeditationCategoryTabsProps) {
   return (
     <>
@@ -54,6 +57,8 @@ export function MeditationCategoryTabs({
                   meditations={tagGroups[tag]}
                   selectedMeditationId={selectedMeditationId}
                   onSelectMeditation={onSelectMeditation}
+                  playbackState={playbackState}
+                  onPlaybackChange={onPlaybackChange}
                 />
               ))
             ) : (
@@ -65,6 +70,8 @@ export function MeditationCategoryTabs({
                     meditation={meditation}
                     isSelected={selectedMeditationId === meditation.id}
                     onSelect={onSelectMeditation}
+                    playbackState={playbackState}
+                    onPlaybackChange={onPlaybackChange}
                   />
                 ))}
               </div>
