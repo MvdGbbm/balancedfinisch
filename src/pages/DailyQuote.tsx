@@ -8,7 +8,7 @@ import { ArrowRight, BookOpen, Share2, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { getQuoteForDate, getGradientForDate } from "@/data/quotes";
+import { getQuoteForDate, getGradientForDate, colorGradients } from "@/data/quotes";
 import { DailyQuote as DailyQuoteType } from "@/lib/types";
 
 const DailyQuote = () => {
@@ -21,6 +21,7 @@ const DailyQuote = () => {
   
   const [quote, setQuote] = useState<DailyQuoteType | null>(currentQuote);
   const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [usedGradientIndexes, setUsedGradientIndexes] = useState<number[]>([]);
   
   // Initialize with today's quote and gradient
   useEffect(() => {
@@ -34,13 +35,40 @@ const DailyQuote = () => {
   }, []);
   
   const getNextQuote = () => {
-    // Use the app's random quote function but also generate a new gradient
+    // Get a new quote first
     const newQuote = getRandomQuote();
-    const newDate = format(new Date(Date.now() + Math.random() * 7776000000), 'yyyy-MM-dd'); // Random date within 90 days
     
-    console.log("New quote:", newQuote);
+    // Create a function to get a random gradient that hasn't been used recently
+    const getUniqueRandomGradient = () => {
+      // If we've used all or most gradients, reset the tracking
+      if (usedGradientIndexes.length >= colorGradients.length - 5) {
+        setUsedGradientIndexes([]);
+      }
+      
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * colorGradients.length);
+      } while (usedGradientIndexes.includes(randomIndex));
+      
+      // Add this index to our used list
+      setUsedGradientIndexes(prev => [...prev, randomIndex]);
+      
+      return colorGradients[randomIndex];
+    };
     
-    setQuote(newQuote);
+    // Apply a unique random gradient
+    const uniqueGradient = getUniqueRandomGradient();
+    
+    // Generate a new date for this quote
+    const newDate = format(new Date(Date.now() + Math.random() * 7776000000), 'yyyy-MM-dd');
+    
+    console.log("New quote with unique gradient:", { ...newQuote, backgroundClass: uniqueGradient });
+    
+    // Set the quote with the unique gradient
+    setQuote({
+      ...newQuote,
+      backgroundClass: uniqueGradient
+    });
     setDate(newDate);
   };
   
