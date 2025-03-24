@@ -13,7 +13,6 @@ import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Equalizer } from "@/components/music/equalizer";
 
 interface RadioStream {
   id: string;
@@ -374,9 +373,127 @@ const Music = () => {
     visibleAudioRef.current = element;
   };
 
+  const renderMiniPlayer = () => {
+    if (isStreamPlaying && streamUrl) {
+      return (
+        <div className="mb-2 bg-muted/30 rounded-lg p-2">
+          <div className="flex justify-between items-center mb-1">
+            <h3 className="font-medium text-sm">
+              {streamTitle} <span className="text-xs text-primary">LIVE</span>
+            </h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setIsStreamPlaying(false);
+                setStreamUrl("");
+                setStreamTitle("");
+              }}
+              className="h-6 w-6 p-0"
+            >
+              <Square className="h-3 w-3" />
+            </Button>
+          </div>
+          <AudioPlayer 
+            audioUrl={streamUrl} 
+            showControls={true}
+            title={streamTitle}
+            isPlayingExternal={isStreamPlaying}
+            onPlayPauseChange={setIsStreamPlaying}
+            onAudioElementRef={handleAudioElementRef}
+            className="bg-card/30 rounded-md"
+          />
+        </div>
+      );
+    }
+
+    if (previewTrack && isPlaying) {
+      return (
+        <div className="mb-2 bg-muted/30 rounded-lg p-2">
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-2">
+              {previewTrack.coverImageUrl && (
+                <img 
+                  src={previewTrack.coverImageUrl} 
+                  alt={previewTrack.title} 
+                  className="h-6 w-6 rounded object-cover"
+                />
+              )}
+              <h3 className="font-medium text-sm truncate max-w-[200px]">
+                {previewTrack.title}
+              </h3>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleStopPreview}
+              className="h-6 w-6 p-0"
+            >
+              <Square className="h-3 w-3" />
+            </Button>
+          </div>
+          <AudioPlayer 
+            audioUrl={previewTrack.audioUrl}
+            showControls={true}
+            isPlayingExternal={isPlaying}
+            onPlayPauseChange={setIsPlaying}
+            className="bg-card/30 rounded-md"
+          />
+        </div>
+      );
+    }
+
+    if (selectedPlaylist && currentTrack) {
+      return (
+        <div className="mb-2 bg-muted/30 rounded-lg p-2">
+          <div className="flex justify-between items-center mb-1">
+            <div className="flex items-center gap-2">
+              {currentTrack.coverImageUrl && (
+                <img 
+                  src={currentTrack.coverImageUrl} 
+                  alt={currentTrack.title} 
+                  className="h-6 w-6 rounded object-cover"
+                />
+              )}
+              <div className="truncate max-w-[200px]">
+                <h3 className="font-medium text-sm">{currentTrack.title}</h3>
+                <p className="text-xs text-muted-foreground">{selectedPlaylist.name}</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                setSelectedPlaylist(null);
+                setCurrentTrack(null);
+                setIsPlaying(false);
+              }}
+              className="h-6 w-6 p-0"
+            >
+              <Square className="h-3 w-3" />
+            </Button>
+          </div>
+          <AudioPlayer 
+            audioUrl={currentTrack.audioUrl}
+            nextAudioUrl={nextTrack?.audioUrl}
+            showControls={true}
+            onEnded={handleTrackEnded}
+            onCrossfadeStart={handleCrossfadeStart}
+            isPlayingExternal={isPlaying}
+            onPlayPauseChange={setIsPlaying}
+            onAudioElementRef={handleAudioElementRef}
+            className="bg-card/30 rounded-md"
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <MobileLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Ontspannende Muziek</h1>
           <p className="text-muted-foreground">
@@ -384,44 +501,14 @@ const Music = () => {
           </p>
         </div>
 
+        {renderMiniPlayer()}
+
         <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
-          
-          <Equalizer isActive={isAudioActive} className="mb-4" audioElement={previewAudioRef.current || visibleAudioRef.current} />
-          
-          {isStreamPlaying && (
-            <div className="mb-6 bg-muted/30 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">
-                  {streamTitle} <span className="text-xs text-primary">LIVE</span>
-                </h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setIsStreamPlaying(false);
-                    setStreamUrl("");
-                    setStreamTitle("");
-                  }}
-                  className="h-8 w-8 p-0"
-                >
-                  <Square className="h-4 w-4" />
-                </Button>
-              </div>
-              <AudioPlayer 
-                audioUrl={streamUrl} 
-                showControls={true}
-                title={streamTitle}
-                isPlayingExternal={isStreamPlaying}
-                onPlayPauseChange={setIsStreamPlaying}
-                onAudioElementRef={handleAudioElementRef}
-              />
-            </div>
-          )}
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
@@ -631,38 +718,6 @@ const Music = () => {
             )}
           </TabsContent>
         </Tabs>
-        
-        {selectedPlaylist && currentTrack && (
-          <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-sm">Speelt nu: {selectedPlaylist.name}</h4>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6" 
-                onClick={() => {
-                  setSelectedPlaylist(null);
-                  setCurrentTrack(null);
-                  setIsPlaying(false);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <AudioPlayer 
-              audioUrl={currentTrack.audioUrl}
-              nextAudioUrl={nextTrack?.audioUrl}
-              showControls={true}
-              title={currentTrack.title}
-              className="mb-0"
-              onEnded={handleTrackEnded}
-              onCrossfadeStart={handleCrossfadeStart}
-              isPlayingExternal={isPlaying}
-              onPlayPauseChange={setIsPlaying}
-              onAudioElementRef={handleAudioElementRef}
-            />
-          </div>
-        )}
         
         {hiddenIframeUrl && (
           <iframe 

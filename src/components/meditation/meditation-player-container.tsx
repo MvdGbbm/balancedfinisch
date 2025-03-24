@@ -5,7 +5,6 @@ import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Equalizer } from "@/components/music/equalizer";
 import { Button } from "@/components/ui/button";
 import { checkAudioCompatibility } from "@/utils/meditation-utils";
 
@@ -181,8 +180,6 @@ export function MeditationPlayerContainer({
           </AlertDescription>
         </Alert>
       )}
-      
-      <Equalizer isActive={isPlaying} className="mb-2" audioElement={audioRef.current} />
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}
