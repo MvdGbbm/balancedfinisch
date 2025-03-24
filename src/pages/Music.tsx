@@ -218,12 +218,7 @@ const Music: React.FC = () => {
   
   const visualizerTabContent = (
     <div className="space-y-4 pb-32">
-      {audioElement && <AudioVisualizer audioElement={audioElement} />}
-      {!audioElement && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>Speel eerst een nummer af om de visualizer te zien.</p>
-        </div>
-      )}
+      <AudioVisualizer audioElement={audioElement} />
     </div>
   );
   

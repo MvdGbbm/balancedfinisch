@@ -26,10 +26,9 @@ import {
   FileMusic
 } from "lucide-react";
 import { Track, Playlist } from "@/lib/types";
-import { tracks as initialTracks, playlists as initialPlaylists, createTrack, createPlaylist, getTracksForPlaylist } from "@/data/music";
+import { tracks, playlists, createTrack, createPlaylist, getTracksForPlaylist } from "@/data/music";
 import { TrackItem } from "@/components/music/track-item";
 import { formatDuration } from "@/lib/utils";
-import { toast } from "sonner";
 
 const AdminMusic = () => {
   const [currentTab, setCurrentTab] = useState("tracks");
@@ -50,10 +49,6 @@ const AdminMusic = () => {
     genre: "",
     tags: ""
   });
-  
-  // Tracks and playlists state
-  const [tracks, setTracks] = useState<Track[]>(initialTracks);
-  const [playlists, setPlaylists] = useState<Playlist[]>(initialPlaylists);
   
   // Playlist management
   const [isPlaylistDialogOpen, setIsPlaylistDialogOpen] = useState(false);
@@ -84,8 +79,8 @@ const AdminMusic = () => {
   
   useEffect(() => {
     if (currentPlaylist) {
-      const playlistTracks = getTracksForPlaylist(currentPlaylist.id);
-      setPlaylistTracks(playlistTracks);
+      const tracks = getTracksForPlaylist(currentPlaylist.id);
+      setPlaylistTracks(tracks);
       setSelectedTrackIds(currentPlaylist.tracks);
       
       // Set available tracks (tracks not in the playlist)
@@ -95,7 +90,7 @@ const AdminMusic = () => {
       setPlaylistTracks([]);
       setAvailableTracks(tracks);
     }
-  }, [currentPlaylist, tracks]);
+  }, [currentPlaylist]);
   
   // Handle track playback
   const handlePlayTrack = (trackId: string, audioUrl: string) => {
@@ -157,7 +152,7 @@ const AdminMusic = () => {
   
   const handleSaveTrack = () => {
     if (!trackFormData.title || !trackFormData.artist || !trackFormData.audioUrl) {
-      toast.error("Vul alle verplichte velden in");
+      alert("Vul alle verplichte velden in");
       return;
     }
     
@@ -179,42 +174,17 @@ const AdminMusic = () => {
     
     if (currentTrack) {
       // Update existing track
-      const updatedTrack = {
-        ...currentTrack,
-        ...trackData
-      };
-      
-      const updatedTracks = tracks.map(track => 
-        track.id === currentTrack.id ? updatedTrack : track
-      );
-      
-      setTracks(updatedTracks);
-      toast.success("Nummer succesvol bijgewerkt");
+      console.log("Updating track:", { ...currentTrack, ...trackData });
+      // In a real app, this would call an API to update the track
     } else {
       // Create new track
       const newTrack = createTrack(trackData);
-      setTracks([...tracks, newTrack]);
-      toast.success("Nieuw nummer succesvol toegevoegd");
+      console.log("New track created:", newTrack);
+      // In a real app, this would call an API to save the new track
     }
     
     setIsTrackDialogOpen(false);
     resetTrackForm();
-  };
-  
-  const handleDeleteTrack = (trackId: string) => {
-    // First check if the track is used in any playlist
-    const usedInPlaylists = playlists.filter(playlist => 
-      playlist.tracks.includes(trackId)
-    );
-    
-    if (usedInPlaylists.length > 0) {
-      const playlistNames = usedInPlaylists.map(p => p.name).join(", ");
-      toast.error(`Dit nummer kan niet worden verwijderd omdat het wordt gebruikt in de volgende afspeellijsten: ${playlistNames}`);
-      return;
-    }
-    
-    setTracks(tracks.filter(track => track.id !== trackId));
-    toast.success("Nummer succesvol verwijderd");
   };
   
   // Playlist form handlers
@@ -248,7 +218,7 @@ const AdminMusic = () => {
   
   const handleSavePlaylist = () => {
     if (!playlistFormData.name) {
-      toast.error("Vul de naam van de afspeellijst in");
+      alert("Vul de naam van de afspeellijst in");
       return;
     }
     
@@ -261,33 +231,17 @@ const AdminMusic = () => {
     
     if (currentPlaylist) {
       // Update existing playlist
-      const updatedPlaylist = {
-        ...currentPlaylist,
-        ...playlistData,
-        trackCount: selectedTrackIds.length,
-        updatedAt: new Date().toISOString()
-      };
-      
-      const updatedPlaylists = playlists.map(playlist => 
-        playlist.id === currentPlaylist.id ? updatedPlaylist : playlist
-      );
-      
-      setPlaylists(updatedPlaylists);
-      toast.success("Afspeellijst succesvol bijgewerkt");
+      console.log("Updating playlist:", { ...currentPlaylist, ...playlistData });
+      // In a real app, this would call an API to update the playlist
     } else {
       // Create new playlist
       const newPlaylist = createPlaylist(playlistData);
-      setPlaylists([...playlists, newPlaylist]);
-      toast.success("Nieuwe afspeellijst succesvol aangemaakt");
+      console.log("New playlist created:", newPlaylist);
+      // In a real app, this would call an API to save the new playlist
     }
     
     setIsPlaylistDialogOpen(false);
     resetPlaylistForm();
-  };
-  
-  const handleDeletePlaylist = (playlistId: string) => {
-    setPlaylists(playlists.filter(playlist => playlist.id !== playlistId));
-    toast.success("Afspeellijst succesvol verwijderd");
   };
   
   const toggleTrackInPlaylist = (trackId: string) => {
@@ -379,7 +333,6 @@ const AdminMusic = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive"
-                          onClick={() => handleDeleteTrack(track.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -461,7 +414,6 @@ const AdminMusic = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-destructive"
-                            onClick={() => handleDeletePlaylist(playlist.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
