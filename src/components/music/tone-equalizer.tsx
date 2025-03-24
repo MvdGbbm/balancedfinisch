@@ -12,7 +12,6 @@ interface ToneEqualizerProps {
 }
 
 type FilterBand = {
-  name: string;
   frequency: number;
   gain: number;
   q: number;
@@ -33,12 +32,26 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
   const dryGainNodeRef = useRef<GainNode | null>(null);
   const wetGainNodeRef = useRef<GainNode | null>(null);
   
-  // Default EQ bands
-  const [bands, setBands] = useState<FilterBand[]>([
-    { name: "Bass", frequency: 100, gain: 0, q: 1 },
-    { name: "Mid", frequency: 1000, gain: 0, q: 1 },
-    { name: "Treble", frequency: 8000, gain: 0, q: 1 }
-  ]);
+  // Generate 40 bands with logarithmic frequency distribution
+  const [bands, setBands] = useState<FilterBand[]>(() => {
+    const bandsArray: FilterBand[] = [];
+    // Frequency range from 20Hz to 20kHz (logarithmically spaced)
+    const minFreq = 20;
+    const maxFreq = 20000;
+    const bandsCount = 40;
+    
+    for (let i = 0; i < bandsCount; i++) {
+      // Calculate frequency using logarithmic distribution
+      const normalized = i / (bandsCount - 1);
+      const freq = minFreq * Math.pow(maxFreq / minFreq, normalized);
+      bandsArray.push({
+        frequency: Math.round(freq), 
+        gain: 0, 
+        q: 1.41 // Standard Q value for 1-octave bands
+      });
+    }
+    return bandsArray;
+  });
   
   // Initialize audio context and nodes when activated
   useEffect(() => {
@@ -98,9 +111,6 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
         
         // Generate impulse response for reverb
         await generateImpulseResponse();
-        
-        // Connect nodes:
-        // source -> filter1 -> filter2 -> filter3 -> masterGain
         
         // Connect source to first filter
         sourceNodeRef.current.connect(filterNodesRef.current[0]);
@@ -234,12 +244,32 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     setReverbEnabled(checked);
   };
 
+  // Helper to format frequency display
+  const formatFrequency = (frequency: number): string => {
+    if (frequency < 1000) {
+      return `${frequency}Hz`;
+    } else {
+      return `${(frequency / 1000).toFixed(1)}kHz`;
+    }
+  };
+
+  // Helper function to get only the bands we want to display
+  // (showing all 40 would be too crowded, so select representative ones)
+  const getDisplayBands = () => {
+    // Select bands to display in UI (for space constraints)
+    // Using indices to select a representative subset of our 40 bands
+    const displayIndices = [0, 3, 7, 11, 15, 19, 23, 27, 31, 35, 39]; 
+    return displayIndices.map(index => bands[index]);
+  };
+
+  const displayBands = getDisplayBands();
+
   return (
     <div className={cn("p-3 bg-black/90 backdrop-blur-lg rounded-lg shadow-lg", className)}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Waves className="h-3.5 w-3.5 text-blue-400" />
-          <span className="text-xs font-medium text-blue-400">Tone EQ</span>
+          <span className="text-xs font-medium text-blue-400">40-Band EQ</span>
         </div>
         <div className="flex items-center gap-1.5">
           <Volume2 className="h-3 w-3 text-blue-400/70" />
@@ -253,25 +283,28 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           />
         </div>
       </div>
-      
-      <div className="grid grid-cols-3 gap-3 mb-2">
-        {bands.map((band, index) => (
-          <div key={index} className="space-y-0.5">
-            <div className="text-[10px] text-center text-blue-100/70 mb-1">
-              {band.name} ({band.frequency}Hz)
-            </div>
+
+      {/* Display selected bands in UI */}
+      <div className="flex justify-between mb-1 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-blue-900 scrollbar-track-transparent">
+        {displayBands.map((band, index) => (
+          <div key={index} className="flex flex-col items-center mx-0.5 min-w-[18px]">
             <Slider
               orientation="vertical"
-              value={[band.gain]}
+              value={[bands.find(b => b.frequency === band.frequency)?.gain || 0]}
               min={-12}
               max={12}
               step={0.5}
-              className="h-16"
+              className="h-14"
               disabled={!isActive || !isInitialized}
-              onValueChange={(value) => handleBandChange(index, value)}
+              onValueChange={(value) => {
+                const originalIndex = bands.findIndex(b => b.frequency === band.frequency);
+                if (originalIndex !== -1) {
+                  handleBandChange(originalIndex, value);
+                }
+              }}
             />
-            <div className="text-[9px] text-center text-blue-200">
-              {band.gain > 0 ? "+" : ""}{band.gain}dB
+            <div className="text-[7px] text-center text-blue-200/70 mt-0.5 -rotate-45 origin-top-left translate-x-2">
+              {formatFrequency(band.frequency)}
             </div>
           </div>
         ))}
