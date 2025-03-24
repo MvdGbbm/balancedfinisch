@@ -79,13 +79,13 @@ export function MeditationPlayerContainer({
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 space-y-4">
       {hasValidImage && !imageError && (
         <div className="mb-4">
           <img 
             src={selectedMeditation.coverImageUrl}
             alt={selectedMeditation.title}
-            className="w-full h-48 object-cover rounded-lg"
+            className="w-full h-48 object-cover rounded-lg shadow-md"
             onError={handleImageError}
           />
         </div>
@@ -100,7 +100,11 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <Equalizer isActive={isPlaying} className="mb-2" audioElement={audioRef.current} />
+      <Equalizer 
+        isActive={isPlaying} 
+        className="mb-2" 
+        audioElement={audioRef.current} 
+      />
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}

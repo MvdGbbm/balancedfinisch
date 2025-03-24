@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -16,7 +17,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
-  const numBars = 30; // Changed from 32 to 30 bars as requested
+  const numBars = 30; // Number of equalizer bars
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
@@ -69,8 +70,8 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       try {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         analyzerRef.current = audioContextRef.current.createAnalyser();
-        analyzerRef.current.fftSize = 1024; // Increased from 256 for more detailed frequency data
-        analyzerRef.current.smoothingTimeConstant = 0.7; // Slightly reduced smoothing for more responsive visualization
+        analyzerRef.current.fftSize = 1024; // For more detailed frequency data
+        analyzerRef.current.smoothingTimeConstant = 0.65; // Good balance for responsiveness 
         
         const bufferLength = analyzerRef.current.frequencyBinCount;
         dataArrayRef.current = new Uint8Array(bufferLength);
@@ -105,11 +106,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
     }
     
     return () => {
-      // Cleanup function will be called when:
-      // 1. Component unmounts
-      // 2. audioElement changes
-      // 3. isActive changes
-      // We'll handle the actual cleanup at the start of the next effect run
+      // Cleanup function runs when component unmounts or dependencies change
     };
   }, [audioElement, isActive, audioElementId]);
 
@@ -135,14 +132,12 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         analyzerRef.current.getByteFrequencyData(dataArrayRef.current);
         
         // Apply frequency weighting for more natural visualization
-        // Human hearing is more sensitive in mid-range frequencies
         const frequencyData = dataArrayRef.current;
         const frequencyBands = []; 
         
-        // Log scale distribution of frequency bins to better match human hearing
+        // Logarithmic scale distribution of frequency bins for better human hearing match
         for (let i = 0; i < numBars; i++) {
-          // Calculate exponential position in the frequency range
-          // This gives more bins to lower frequencies, similar to how we hear
+          // Calculate logarithmic position in the frequency range
           const scale = Math.pow(frequencyData.length, i / numBars) / 10;
           const index = Math.min(Math.floor(scale), frequencyData.length - 1);
           
@@ -152,58 +147,51 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           const range = 3; // Look at a few bins in either direction for averaging
           
           for (let j = Math.max(0, index - range); j <= Math.min(frequencyData.length - 1, index + range); j++) {
-            // Apply exponential weighting to increase sensitivity
             const weight = 1.0 - Math.abs(j - index) / (range + 1);
-            sum += Math.pow(frequencyData[j] / 255, 1.2) * 255 * weight; // Exponential scaling for more dynamic range
+            sum += Math.pow(frequencyData[j] / 255, 1.3) * 255 * weight; // Exponential scaling for more dynamic range
             count += weight;
           }
           
           const value = count > 0 ? sum / count : 0;
           
-          // Boost low frequencies slightly (bass boost)
-          const bassBoost = i < numBars / 4 ? 1.3 : 1.0;
-          // Boost high frequencies slightly (treble boost)
-          const trebleBoost = i > (numBars * 3) / 4 ? 1.2 : 1.0;
+          // Apply frequency-based weighting
+          const bassBoost = i < numBars / 4 ? 1.2 : 1.0;
+          const trebleBoost = i > (numBars * 3) / 4 ? 1.15 : 1.0;
           
           const boostedValue = value * bassBoost * trebleBoost;
           
-          // Convert to percentage (10-100%) with 10% minimum height
-          frequencyBands.push(Math.max(10, Math.min(100, (boostedValue / 255) * 100)));
+          // Convert to percentage with 8% minimum height
+          frequencyBands.push(Math.max(8, Math.min(100, (boostedValue / 255) * 100)));
         }
         
         return frequencyBands;
       } else {
-        // Fallback: Generate simulated responsive heights
+        // Fallback simulation mode with improved realism
         let heights = Array(numBars).fill(0).map(() => Math.random() * 0.7 + 0.1);
         
-        // Simulate frequency response patterns (more bass, mid falloff, some treble)
+        // Simulate a more realistic frequency response curve
         for (let i = 0; i < numBars; i++) {
-          // Bass boost for first quarter
+          // Apply frequency curve with more natural movement
           if (i < numBars / 4) {
-            heights[i] *= 1.5;
-          }
-          // Mid cut
-          else if (i < numBars / 2) {
-            heights[i] *= 0.8;
-          }
-          // Some high frequency emphasis
-          else if (i > (numBars * 3) / 4) {
-            heights[i] *= 1.2;
+            heights[i] *= 1.5; // Bass boost
+          } else if (i < numBars / 2) {
+            heights[i] *= 0.9; // Mid dip
+          } else if (i > (numBars * 3) / 4) {
+            heights[i] *= 1.3; // Treble boost
           }
         }
         
-        // Smooth the values for a more natural pattern
+        // Apply smoothing for natural pattern
         for (let i = 0; i < 3; i++) {
           const newHeights = [...heights];
           for (let j = 1; j < heights.length - 1; j++) {
-            // Each bar is influenced by its neighbors (smoothing)
             newHeights[j] = (heights[j-1] + heights[j] * 2 + heights[j+1]) / 4;
           }
           heights = newHeights;
         }
         
-        // Scale to appropriate percentage range (10% to 100%)
-        return heights.map(h => Math.floor(h * 90) + 10);
+        // Scale to percentage range (8% to 100%)
+        return heights.map(h => Math.floor(h * 92) + 8);
       }
     };
 
@@ -213,26 +201,25 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       barsRef.current.forEach((bar, index) => {
         if (!bar) return;
         
-        // Apply the height from our generator
+        // Apply the height with dynamic transition speed
         const height = heights[index];
         
-        // Add different transition speeds for different frequency ranges
-        // Lower frequencies (bass) tend to change more slowly than higher ones
-        const baseDuration = 120;
+        // Different transition speeds for different frequency ranges
+        const baseDuration = 100; // Faster base duration for more responsiveness
         const duration = index < numBars / 3 
-          ? baseDuration + 60  // Bass - slower transitions
+          ? baseDuration + 30  // Bass - slightly slower transitions
           : index < (2 * numBars) / 3 
-            ? baseDuration     // Mids - medium transitions
-            : baseDuration - 40; // Highs - faster transitions
+            ? baseDuration     // Mids
+            : baseDuration - 20; // Highs - faster transitions
             
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
       });
       
-      // Faster frame rate for more responsive movement
+      // Use requestAnimationFrame for smoother animation
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(animate);
-      }, 50) as unknown as number; // Reduced from 80ms to 50ms for quicker response
+      }, 40) as unknown as number; // Faster refresh for more responsive feel
     };
 
     // Start the animation
@@ -249,7 +236,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
 
   return (
     <div className={cn(
-      "relative flex items-end justify-center h-20 gap-[1px] p-2 bg-card/30 rounded-md overflow-hidden", 
+      "relative flex items-end justify-center h-16 gap-[1px] p-2 bg-card/20 backdrop-blur-sm rounded-lg overflow-hidden border border-white/5",
       className
     )}>
       {isActive && (!audioElement || audioElement.dataset.connected !== "true") && (
@@ -258,22 +245,49 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           <span>Simulatie</span>
         </div>
       )}
+      
+      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-40 z-0"></div>
+      
       {Array.from({ length: numBars }).map((_, index) => (
         <div
           key={index}
           ref={el => (barsRef.current[index] = el)}
           className={cn(
-            "w-full rounded-t-sm transition-all ease-in-out",
+            "relative w-full rounded-t-md transition-all ease-out",
             isActive 
-              ? "bg-gradient-to-t from-blue-700 to-blue-400" 
-              : "bg-blue-300/30"
+              ? "bg-gradient-to-t from-blue-700 via-blue-500 to-purple-400" 
+              : "bg-blue-400/20"
           )}
           style={{ 
-            height: "10%",
-            transitionDuration: "200ms" 
+            height: "8%",
+            transitionDuration: "200ms",
           }}
-        />
+        >
+          {isActive && (
+            <div className="absolute bottom-0 inset-x-0 h-full bg-gradient-to-t from-transparent to-white/30 opacity-50"></div>
+          )}
+          <div className="absolute bottom-0 inset-x-0 h-[2px] bg-white/20 rounded-sm"></div>
+        </div>
       ))}
+      
+      {/* Reflection effect */}
+      <div className="absolute bottom-0 inset-x-0 h-full transform scale-y-[-0.2] translate-y-full opacity-30 blur-[1px] pointer-events-none">
+        {Array.from({ length: numBars }).map((_, index) => (
+          <div
+            key={`reflection-${index}`}
+            className={cn(
+              "absolute bottom-0 rounded-b-md transition-all ease-out",
+              isActive ? "bg-gradient-to-b from-blue-700/50 via-blue-500/30 to-purple-400/10" : "bg-blue-400/5"
+            )}
+            style={{
+              left: `${(index / numBars) * 100}%`,
+              width: `${100 / numBars - 0.5}%`,
+              height: barsRef.current[index]?.style.height || "8%",
+              transitionDuration: "200ms"
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
