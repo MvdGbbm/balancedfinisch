@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -15,6 +16,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
   const numBars = 38; // 38 bars for the equalizer
 
@@ -42,6 +44,14 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         }
       }
       
+      if (gainNodeRef.current) {
+        try {
+          gainNodeRef.current.disconnect();
+        } catch (err) {
+          console.log("Error disconnecting gain node:", err);
+        }
+      }
+      
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
         try {
           audioContextRef.current.close();
@@ -66,10 +76,14 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         analyzerRef.current.fftSize = 1024;
         analyzerRef.current.smoothingTimeConstant = 0.5; // Decreased for more responsiveness (was 0.65)
         
+        // Create a gain node to control volume
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.gain.value = 0.5; // Set to 50% volume
+        
         const bufferLength = analyzerRef.current.frequencyBinCount;
         dataArrayRef.current = new Uint8Array(bufferLength);
         
-        console.log("Created new AudioContext for equalizer");
+        console.log("Created new AudioContext for equalizer with 50% gain");
       } catch (err) {
         console.error("Failed to create audio context:", err);
         return;
@@ -80,11 +94,14 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       try {
         if (!audioElement.dataset.connected) {
           sourceRef.current = audioContextRef.current.createMediaElementSource(audioElement);
-          sourceRef.current.connect(analyzerRef.current);
-          analyzerRef.current.connect(audioContextRef.current.destination);
+          
+          // Connect source -> gain -> analyzer -> destination
+          sourceRef.current.connect(gainNodeRef.current!);
+          gainNodeRef.current!.connect(analyzerRef.current!);
+          analyzerRef.current!.connect(audioContextRef.current.destination);
           
           audioElement.dataset.connected = "true";
-          console.log("Connected audio element to analyzer");
+          console.log("Connected audio element to analyzer with 50% gain");
         } else {
           console.log("Audio element already connected to a source node, using simulation mode");
         }
