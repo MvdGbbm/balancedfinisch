@@ -2,9 +2,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Mic, Volume2, Waves } from "lucide-react";
+import { Waves, Volume2 } from "lucide-react";
 
 interface ToneEqualizerProps {
   isActive: boolean;
@@ -236,67 +235,69 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
   };
 
   return (
-    <div className={cn("p-4 bg-card/30 rounded-md space-y-4", className)}>
+    <div className={cn("p-3 bg-black/90 backdrop-blur-lg rounded-lg shadow-lg", className)}>
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Waves className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-medium">Tone EQ</h3>
+        <div className="flex items-center gap-1.5">
+          <Waves className="h-3.5 w-3.5 text-blue-400" />
+          <span className="text-xs font-medium text-blue-400">Tone EQ</span>
         </div>
-        <div className="flex items-center gap-2">
-          <Volume2 className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-1.5">
+          <Volume2 className="h-3 w-3 text-blue-400/70" />
           <Slider
             value={[masterVolume]}
             min={0}
             max={1.5}
             step={0.01}
             onValueChange={handleVolumeChange}
-            className="w-24"
+            className="w-20"
           />
         </div>
       </div>
       
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3 mb-2">
         {bands.map((band, index) => (
-          <div key={index} className="space-y-1">
-            <Label className="text-xs">{band.name} ({band.frequency}Hz)</Label>
+          <div key={index} className="space-y-0.5">
+            <div className="text-[10px] text-center text-blue-100/70 mb-1">
+              {band.name} ({band.frequency}Hz)
+            </div>
             <Slider
               orientation="vertical"
               value={[band.gain]}
               min={-12}
               max={12}
               step={0.5}
-              className="h-24"
+              className="h-16"
               disabled={!isActive || !isInitialized}
               onValueChange={(value) => handleBandChange(index, value)}
             />
-            <div className="text-xs text-center">{band.gain > 0 ? "+" : ""}{band.gain}dB</div>
+            <div className="text-[9px] text-center text-blue-200">
+              {band.gain > 0 ? "+" : ""}{band.gain}dB
+            </div>
           </div>
         ))}
       </div>
       
-      <div className="pt-2 border-t border-border/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Mic className="h-4 w-4 text-muted-foreground" />
-            <Label className="text-xs">Reverb</Label>
-            <Switch 
-              checked={reverbEnabled} 
-              onCheckedChange={handleReverbToggle} 
-              disabled={!isActive || !isInitialized}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Slider
-              value={[reverbAmount]}
-              min={0}
-              max={0.8}
-              step={0.01}
-              disabled={!isActive || !isInitialized || !reverbEnabled}
-              onValueChange={handleReverbAmountChange}
-              className="w-24"
-            />
-            <span className="text-xs w-8 text-right">{Math.round(reverbAmount * 100)}%</span>
-          </div>
+      <div className="flex items-center justify-between border-t border-blue-900/30 pt-1.5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-blue-100/70">Reverb</span>
+          <Switch 
+            checked={reverbEnabled} 
+            onCheckedChange={handleReverbToggle} 
+            disabled={!isActive || !isInitialized}
+            className="h-4 w-7 data-[state=checked]:bg-blue-500"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <Slider
+            value={[reverbAmount]}
+            min={0}
+            max={0.8}
+            step={0.01}
+            disabled={!isActive || !isInitialized || !reverbEnabled}
+            onValueChange={handleReverbAmountChange}
+            className="w-20"
+          />
+          <span className="text-[10px] text-blue-100/70 w-6 text-right">{Math.round(reverbAmount * 100)}%</span>
         </div>
       </div>
     </div>
