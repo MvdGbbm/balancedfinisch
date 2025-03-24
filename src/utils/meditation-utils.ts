@@ -51,6 +51,60 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
 };
 
 /**
+ * Test of een audio URL geldig is en ondersteund
+ */
+export const checkAudioCompatibility = async (url: string): Promise<boolean> => {
+  if (!url) return false;
+  
+  try {
+    // Valide URL formaat?
+    new URL(url);
+    
+    // Voor lokale bestanden, accepteer alle
+    if (url.startsWith('/')) {
+      return true;
+    }
+    
+    // Bekende audio formaten
+    const supportedFormats = ['.mp3', '.wav', '.ogg', '.aac', '.m4a', '.flac', '.webm'];
+    const lowerUrl = url.toLowerCase();
+    
+    // Check of URL eindigt met ondersteund formaat
+    if (supportedFormats.some(format => lowerUrl.endsWith(format))) {
+      return true;
+    }
+    
+    // Check voor bekende streamingdiensten
+    if (lowerUrl.includes('stream') || 
+        lowerUrl.includes('radio') || 
+        lowerUrl.includes('live') || 
+        lowerUrl.endsWith('.m3u8') || 
+        lowerUrl.includes('icecast')) {
+      return true;  
+    }
+    
+    // Voor onbekende formaten, probeer een HEAD request
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('audio')) {
+        return true;
+      }
+    } catch (error) {
+      console.warn("Could not check Content-Type for URL:", url);
+      // We vallen terug op een "best guess" aanpak als de HEAD request faalt
+    }
+    
+    // Als we hier komen, laten we toch true retourneren en de browser het laten proberen
+    return true;
+  } catch (error) {
+    console.error("Invalid URL format:", url);
+    return false;
+  }
+};
+
+/**
  * Verwerkt meditatie URL's voor audio en afbeeldingen
  */
 export const processMeditationUrls = async (meditations: Meditation[]): Promise<Meditation[]> => {

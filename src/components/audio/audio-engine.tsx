@@ -1,4 +1,3 @@
-
 import { RefObject, useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -34,6 +33,7 @@ export interface AudioEngineState {
   toggleLoop: () => void;
   handleRetry: () => void;
   skipTime: (amount: number) => void;
+  isLooping: boolean;
 }
 
 // Constants for crossfade
@@ -93,36 +93,47 @@ export function useAudioEngine({
       setIsLiveStream(false);
     }
     
-    audioElement.src = url;
-    audioElement.load();
-    
-    // Set up event listeners for this direct play
-    const onCanPlay = () => {
-      audioElement.play()
-        .then(() => {
-          setIsPlaying(true);
-          if (onPlayPauseChange) onPlayPauseChange(true);
-          setIsLoaded(true);
-          setLoadError(false);
-        })
-        .catch(error => {
-          console.error("Error playing direct URL:", error);
-          setLoadError(true);
-          if (onError) onError();
-        });
-      audioElement.removeEventListener('canplay', onCanPlay);
-    };
-    
-    audioElement.addEventListener('canplay', onCanPlay);
-    
-    // Error handling
-    const handleDirectError = () => {
+    // Fix 1: Make sure we set the src attribute properly
+    try {
+      audioElement.src = url;
+      audioElement.load();
+      
+      console.log("Setting audio source to:", url);
+      
+      // Set up event listeners for this direct play
+      const onCanPlay = () => {
+        audioElement.play()
+          .then(() => {
+            setIsPlaying(true);
+            if (onPlayPauseChange) onPlayPauseChange(true);
+            setIsLoaded(true);
+            setLoadError(false);
+            console.log("Audio playing successfully after canplay event");
+          })
+          .catch(error => {
+            console.error("Error playing direct URL:", error);
+            setLoadError(true);
+            if (onError) onError();
+          });
+        audioElement.removeEventListener('canplay', onCanPlay);
+      };
+      
+      audioElement.addEventListener('canplay', onCanPlay);
+      
+      // Error handling
+      const handleDirectError = (e: Event) => {
+        console.error(`Error loading audio for URL ${url}:`, e);
+        setLoadError(true);
+        if (onError) onError();
+        audioElement.removeEventListener('error', handleDirectError);
+      };
+      
+      audioElement.addEventListener('error', handleDirectError);
+    } catch (error) {
+      console.error("Exception during playDirectly:", error);
       setLoadError(true);
       if (onError) onError();
-      audioElement.removeEventListener('error', handleDirectError);
-    };
-    
-    audioElement.addEventListener('error', handleDirectError);
+    }
   };
 
   // Handle external play/pause control
@@ -224,6 +235,7 @@ export function useAudioEngine({
     }
     
     const setAudioData = () => {
+      console.log("Audio loaded. Duration:", audio.duration);
       if (audio.duration !== Infinity && !isNaN(audio.duration)) {
         setDuration(audio.duration);
         setIsLiveStream(false);
@@ -241,6 +253,7 @@ export function useAudioEngine({
         audio.play()
           .then(() => {
             setIsPlaying(true);
+            console.log("Auto-play successful");
           })
           .catch(error => {
             console.error("Error auto-playing audio:", error);
@@ -276,7 +289,7 @@ export function useAudioEngine({
     };
 
     const handleError = (e: Event) => {
-      console.error("Error loading audio:", e);
+      console.error("Error loading audio:", e, "Current src:", audio.src);
       setLoadError(true);
       setIsLoaded(false);
       
@@ -286,8 +299,19 @@ export function useAudioEngine({
         // Try direct playback as fallback
         setTimeout(() => {
           try {
-            // Try direct playback again
-            playDirectly(audioUrl, audio);
+            // Check if URL is still valid before retrying
+            if (audioUrl && (audioUrl.startsWith('http') || audioUrl.startsWith('/'))) {
+              console.log("Attempting fallback playback for:", audioUrl);
+              // Try direct playback again
+              playDirectly(audioUrl, audio);
+            } else {
+              console.error("Invalid URL for retry:", audioUrl);
+              toast({
+                variant: "destructive",
+                title: "Fout bij laden",
+                description: "Ongeldige audio URL."
+              });
+            }
             setIsRetrying(false);
           } catch (error) {
             console.error("Error retrying direct playback:", error);
@@ -456,16 +480,34 @@ export function useAudioEngine({
     const audio = audioRef.current;
     if (!audio) return;
     
+    console.log("Retrying audio playback for URL:", audioUrl);
     setLoadError(false);
     setIsRetrying(true);
     
-    // Always use direct method
-    playDirectly(audioUrl, audio);
+    // Reset audio element completely
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
     
-    toast({
-      title: "Opnieuw laden",
-      description: "Probeert audio opnieuw te laden."
-    });
+    // Short timeout before retrying
+    setTimeout(() => {
+      try {
+        // Try direct playback again with full URL
+        playDirectly(audioUrl, audio);
+        setIsRetrying(false);
+      } catch (error) {
+        console.error("Error retrying direct playback:", error);
+        setIsRetrying(false);
+        
+        toast({
+          variant: "destructive",
+          title: "Fout bij laden",
+          description: "Kon de audio niet laden. Controleer of de URL correct is."
+        });
+        
+        if (onError) onError();
+      }
+    }, 1000);
   };
   
   const toggleLoop = () => {
@@ -543,6 +585,7 @@ export function useAudioEngine({
     togglePlay,
     toggleLoop,
     handleRetry,
-    skipTime
+    skipTime,
+    isLooping
   };
 }

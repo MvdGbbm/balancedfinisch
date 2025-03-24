@@ -8,6 +8,8 @@ import { PlayerControls } from "./audio/player-controls";
 import { VolumeControl } from "./audio/volume-control";
 import { ErrorMessage } from "./audio/error-message";
 import { QuoteDisplay } from "./audio/quote-display";
+import { checkAudioCompatibility } from "@/utils/meditation-utils";
+import { toast } from "sonner";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -48,6 +50,33 @@ export function AudioPlayer({
     return quotes[randomIndex];
   });
   
+  // Check audio URL before attempting to play
+  const [urlChecked, setUrlChecked] = useState(false);
+  
+  React.useEffect(() => {
+    const validateAudioUrl = async () => {
+      if (!audioUrl) {
+        console.error("No audio URL provided");
+        return;
+      }
+      
+      try {
+        const isCompatible = await checkAudioCompatibility(audioUrl);
+        if (!isCompatible) {
+          console.error("Audio format not supported:", audioUrl);
+          toast.error("Dit audioformaat wordt niet ondersteund");
+          if (onError) onError();
+        }
+        setUrlChecked(true);
+      } catch (error) {
+        console.error("Error checking audio compatibility:", error);
+        setUrlChecked(true);
+      }
+    };
+    
+    validateAudioUrl();
+  }, [audioUrl, onError]);
+  
   // Use our custom audio engine hook to manage audio state and controls
   const {
     isPlaying,
@@ -79,6 +108,17 @@ export function AudioPlayer({
     nextAudioUrl,
     onCrossfadeStart,
   });
+  
+  // Log the current audio state for debugging
+  React.useEffect(() => {
+    console.log("Audio player state:", {
+      audioUrl,
+      isPlaying,
+      isLoaded,
+      loadError,
+      duration
+    });
+  }, [audioUrl, isPlaying, isLoaded, loadError, duration]);
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
