@@ -271,7 +271,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           <Slider
             value={[currentBand.gain]}
             min={0}
-            max={24}
+            max={12}
             step={0.5}
             disabled={!isActive || !isInitialized}
             onValueChange={handleBandChange}
@@ -279,7 +279,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           />
           <div className="flex justify-between text-[10px] text-blue-300/60">
             <span>0 dB</span>
-            <span>24 dB</span>
+            <span>12 dB</span>
           </div>
         </div>
       </div>
@@ -298,7 +298,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           <Slider
             value={[reverbAmount]}
             min={0}
-            max={0.8}
+            max={1}
             step={0.01}
             disabled={!isActive || !isInitialized || !reverbEnabled}
             onValueChange={handleReverbAmountChange}
