@@ -1,10 +1,12 @@
+
 import React, { useState } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CalendarPlus, Share2 } from "lucide-react";
+import { ArrowRight, BookOpen, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 const DailyQuote = () => {
   const {
     dailyQuotes,
@@ -12,16 +14,20 @@ const DailyQuote = () => {
     getRandomQuote,
     saveDailyQuoteToCalendar
   } = useApp();
+  
   const [quote, setQuote] = useState(currentQuote);
+  
   const getNextQuote = () => {
     const newQuote = getRandomQuote();
     setQuote(newQuote);
   };
-  const handleSaveToCalendar = () => {
+  
+  const handleSaveToJournal = () => {
     if (quote) {
       saveDailyQuoteToCalendar(quote);
     }
   };
+  
   const handleShare = () => {
     if (quote) {
       if (navigator.share) {
@@ -37,6 +43,7 @@ const DailyQuote = () => {
       }
     }
   };
+  
   return <MobileLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="text-center mb-4">
@@ -61,8 +68,8 @@ const DailyQuote = () => {
             </Card>
             
             <div className="flex justify-center gap-3 mt-8">
-              <Button onClick={handleSaveToCalendar} variant="outline" className="flex items-center gap-2">
-                <CalendarPlus className="h-4 w-4" />
+              <Button onClick={handleSaveToJournal} variant="outline" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
                 <span>Opslaan in Dagboek</span>
               </Button>
               
@@ -96,4 +103,5 @@ const DailyQuote = () => {
       </div>
     </MobileLayout>;
 };
+
 export default DailyQuote;
