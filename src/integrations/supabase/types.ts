@@ -129,6 +129,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          position: number | null
           title: string
           updated_at: string
           url: string
@@ -138,6 +139,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          position?: number | null
           title: string
           updated_at?: string
           url: string
@@ -147,6 +149,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          position?: number | null
           title?: string
           updated_at?: string
           url?: string

@@ -22,6 +22,7 @@ import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play } from "lucide
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface RadioStream {
   id: string;
@@ -47,7 +48,7 @@ const AdminStreams = () => {
       const { data, error } = await supabase
         .from('radio_streams')
         .select('*')
-        .order('title');
+        .order('position');
       
       if (error) throw error;
       return data || [];
@@ -226,6 +227,32 @@ const AdminStreams = () => {
            streamingServices.some(service => lowercaseUrl.includes(service));
   };
   
+  const handleDragEnd = async (result: any) => {
+    const { destination, source } = result;
+    
+    if (!destination) return;
+    
+    const updatedStreams = Array.from(streams);
+    const [reorderedItem] = updatedStreams.splice(source.index, 1);
+    updatedStreams.splice(destination.index, 0, reorderedItem);
+    
+    const updatePromises = updatedStreams.map((stream, index) => 
+      supabase
+        .from('radio_streams')
+        .update({ position: index })
+        .eq('id', stream.id)
+    );
+    
+    try {
+      await Promise.all(updatePromises);
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+      toast.success("Streaming links gereorganiseerd");
+    } catch (error) {
+      console.error("Error reordering streams:", error);
+      toast.error("Kon de streaming links niet reorganiseren");
+    }
+  };
+  
   return (
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
@@ -253,17 +280,41 @@ const AdminStreams = () => {
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
               </div>
             ) : activeStreams.length > 0 ? (
-              <div className="space-y-2">
-                {activeStreams.map((stream) => (
-                  <StreamCard 
-                    key={stream.id} 
-                    stream={stream} 
-                    onEdit={handleEdit} 
-                    onDelete={handleDelete}
-                    onToggleActive={handleToggleActive}
-                  />
-                ))}
-              </div>
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="radio-streams">
+                  {(provided) => (
+                    <div 
+                      {...provided.droppableProps} 
+                      ref={provided.innerRef} 
+                      className="space-y-2"
+                    >
+                      {activeStreams.map((stream, index) => (
+                        <Draggable 
+                          key={stream.id} 
+                          draggableId={stream.id} 
+                          index={index}
+                        >
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                            >
+                              <StreamCard 
+                                stream={stream} 
+                                onEdit={handleEdit} 
+                                onDelete={handleDelete}
+                                onToggleActive={handleToggleActive}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             ) : (
               <div className="text-center py-8 bg-muted/30 rounded-lg">
                 <p className="text-muted-foreground">Geen actieve streaming links gevonden</p>
