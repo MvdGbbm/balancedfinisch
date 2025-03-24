@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
@@ -18,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play } from "lucide-react";
+import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,7 @@ interface RadioStream {
   url: string;
   description: string | null;
   is_active: boolean;
+  position: number | null;
 }
 
 const AdminStreams = () => {
@@ -59,10 +61,15 @@ const AdminStreams = () => {
   const inactiveStreams = streams.filter(stream => !stream.is_active);
   
   const createStreamMutation = useMutation({
-    mutationFn: async (newStream: Omit<RadioStream, 'id'>) => {
+    mutationFn: async (newStream: Omit<RadioStream, 'id' | 'position'>) => {
+      // Get the max position to place the new item at the end
+      const maxPosition = streams.length > 0 
+        ? Math.max(...streams.map(s => s.position || 0)) + 1 
+        : 0;
+      
       const { data, error } = await supabase
         .from('radio_streams')
-        .insert(newStream)
+        .insert({ ...newStream, position: maxPosition })
         .select();
       
       if (error) throw error;
@@ -230,12 +237,21 @@ const AdminStreams = () => {
   const handleDragEnd = async (result: any) => {
     const { destination, source } = result;
     
-    if (!destination) return;
+    // If dropped outside a droppable area or in the same position
+    if (!destination || (destination.index === source.index)) {
+      return;
+    }
     
+    // Create a copy of the streams array
     const updatedStreams = Array.from(streams);
+    
+    // Remove the dragged item from its original position
     const [reorderedItem] = updatedStreams.splice(source.index, 1);
+    
+    // Insert the dragged item at the new position
     updatedStreams.splice(destination.index, 0, reorderedItem);
     
+    // Update position values for all streams
     const updatePromises = updatedStreams.map((stream, index) => 
       supabase
         .from('radio_streams')
@@ -244,12 +260,24 @@ const AdminStreams = () => {
     );
     
     try {
+      // Optimistically update the UI first for better UX
+      queryClient.setQueryData(['radioStreams'], updatedStreams.map((stream, index) => ({
+        ...stream,
+        position: index
+      })));
+      
+      // Then perform the actual database updates
       await Promise.all(updatePromises);
+      
+      // Verify updates with a fresh query
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
       toast.success("Streaming links gereorganiseerd");
     } catch (error) {
       console.error("Error reordering streams:", error);
       toast.error("Kon de streaming links niet reorganiseren");
+      
+      // Revert to original data on error
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
     }
   };
   
@@ -299,7 +327,11 @@ const AdminStreams = () => {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
+                              className="relative group"
                             >
+                              <div className="absolute left-0 top-0 bottom-0 flex items-center pl-1 opacity-0 group-hover:opacity-50">
+                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+                              </div>
                               <StreamCard 
                                 stream={stream} 
                                 onEdit={handleEdit} 
