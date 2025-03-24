@@ -3,11 +3,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Equalizer } from "@/components/music/equalizer";
-import { Button } from "@/components/ui/button";
-import { checkAudioCompatibility } from "@/utils/meditation-utils";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -21,41 +19,13 @@ export function MeditationPlayerContainer({
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Reset states when meditation changes
   useEffect(() => {
     if (selectedMeditation) {
-      // Reset states when meditation changes
+      // Reset errors when meditation changes
       setAudioError(false);
       setImageError(false);
-      setIsLoading(true);
-      
-      // Validate audio URL 
-      const validateAudio = async () => {
-        if (!selectedMeditation.audioUrl) {
-          setAudioError(true);
-          setIsLoading(false);
-          return;
-        }
-        
-        try {
-          const isValid = await checkAudioCompatibility(selectedMeditation.audioUrl);
-          if (!isValid) {
-            console.error("Audio format not supported:", selectedMeditation.audioUrl);
-            setAudioError(true);
-          }
-        } catch (error) {
-          console.error("Error checking audio:", error);
-          setAudioError(true);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      validateAudio();
       setIsPlaying(true); // Auto-play when meditation changes
       
       // Log the meditation details for debugging
@@ -80,7 +50,6 @@ export function MeditationPlayerContainer({
   const handleAudioError = () => {
     setAudioError(true);
     setIsPlaying(false);
-    setIsLoading(false);
     toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
@@ -95,53 +64,16 @@ export function MeditationPlayerContainer({
       audioRef.current = element;
     }
   };
-  
-  const handleRetry = () => {
-    setAudioError(false);
-    setIsLoading(true);
-    setRetryCount(prevCount => prevCount + 1);
-    
-    // Force reload audio by toggling isPlaying 
-    setIsPlaying(false);
-    setTimeout(() => {
-      setIsPlaying(true);
-    }, 500);
-    
-    toast.info("Probeer audio opnieuw te laden...");
-  };
 
-  // Show loading state
-  if (isLoading && !audioError) {
-    return (
-      <div className="mt-4 p-4 text-center">
-        <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent text-primary rounded-full mb-2" 
-             role="status" aria-label="loading">
-          <span className="sr-only">Laden...</span>
-        </div>
-        <p className="text-sm text-muted-foreground">Audio laden...</p>
-      </div>
-    );
-  }
-
-  // Show error state with retry button
   if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren of opnieuw te laden.
+            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
           </AlertDescription>
         </Alert>
-        <Button 
-          onClick={handleRetry} 
-          variant="outline" 
-          size="sm" 
-          className="mt-3 w-full"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Opnieuw proberen
-        </Button>
       </div>
     );
   }
@@ -180,7 +112,6 @@ export function MeditationPlayerContainer({
         isPlayingExternal={isPlaying}
         onPlayPauseChange={setIsPlaying}
         onAudioElementRef={handleAudioElementRef}
-        key={`meditation-${selectedMeditation.id}-retry-${retryCount}`} // Force remount on retry
       />
     </div>
   );
