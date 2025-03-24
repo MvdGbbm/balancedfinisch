@@ -19,8 +19,6 @@ interface AudioPlayerProps {
   showQuote?: boolean;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
-  nextTrackUrl?: string; // URL of the next track for crossfading
-  enableCrossfade?: boolean; // Whether to enable crossfading
 }
 
 export function AudioPlayer({ 
@@ -34,9 +32,7 @@ export function AudioPlayer({
   customSoundscapeSelector,
   showQuote = false,
   isPlayingExternal,
-  onPlayPauseChange,
-  nextTrackUrl,
-  enableCrossfade = false
+  onPlayPauseChange
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -54,25 +50,8 @@ export function AudioPlayer({
   });
   
   const audioRef = useRef<HTMLAudioElement>(null);
-  const nextAudioRef = useRef<HTMLAudioElement | null>(null);
-  const crossfadeTimeoutRef = useRef<number | null>(null);
   
-  useEffect(() => {
-    if (enableCrossfade && nextTrackUrl) {
-      nextAudioRef.current = new Audio(nextTrackUrl);
-      nextAudioRef.current.volume = 0;
-      nextAudioRef.current.preload = "auto";
-      
-      return () => {
-        if (nextAudioRef.current) {
-          nextAudioRef.current.pause();
-          nextAudioRef.current.src = "";
-          nextAudioRef.current = null;
-        }
-      };
-    }
-  }, [nextTrackUrl, enableCrossfade]);
-  
+  // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
       if (isPlayingExternal && !isPlaying && isLoaded) {
@@ -99,6 +78,7 @@ export function AudioPlayer({
       setIsLoaded(true);
       setLoadError(false);
       
+      // Auto-play when loaded if isPlayingExternal is true
       if (isPlayingExternal) {
         audio.play()
           .then(() => {
@@ -117,80 +97,13 @@ export function AudioPlayer({
     
     const setAudioTime = () => {
       setCurrentTime(audio.currentTime);
-      
-      if (enableCrossfade && nextTrackUrl && !isLooping && audio.duration > 0) {
-        const timeRemaining = audio.duration - audio.currentTime;
-        
-        if (timeRemaining <= 5 && timeRemaining > 0 && nextAudioRef.current && !crossfadeTimeoutRef.current) {
-          const nextAudio = nextAudioRef.current;
-          
-          nextAudio.currentTime = 0;
-          
-          nextAudio.play()
-            .then(() => {
-              console.log("Started playing next track for crossfade");
-              
-              const fadeDuration = Math.min(timeRemaining * 1000, 5000);
-              const fadeSteps = 25;
-              const stepTime = fadeDuration / fadeSteps;
-              let step = 0;
-              
-              const fadeInterval = window.setInterval(() => {
-                step++;
-                const progress = step / fadeSteps;
-                
-                const easeOutProgress = 1 - Math.pow(1 - progress, 2);
-                
-                if (audio) {
-                  audio.volume = volume * (1 - easeOutProgress);
-                }
-                
-                if (nextAudio) {
-                  nextAudio.volume = volume * easeOutProgress;
-                }
-                
-                if (step >= fadeSteps) {
-                  clearInterval(fadeInterval);
-                  crossfadeTimeoutRef.current = null;
-                  
-                  if (audio) {
-                    audio.volume = 0;
-                  }
-                }
-              }, stepTime);
-              
-              crossfadeTimeoutRef.current = fadeInterval as unknown as number;
-            })
-            .catch(error => {
-              console.error("Error starting crossfade:", error);
-            });
-        }
-      }
     };
     
     const handleEnded = () => {
       if (!isLooping) {
-        if (enableCrossfade && nextTrackUrl && nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
-          // Instead of just triggering the onEnded callback, we need to ensure the next track
-          // continues playing and becomes the main track
-          if (onEnded) {
-            // Let the parent component know to switch to the next track
-            onEnded();
-          }
-          
-          // Don't reset isPlaying state since the next track is already playing
-          // The parent component will set a new currentTrack which will unmount this
-          // component and mount a new one with the next track as audioUrl
-        } else {
-          setIsPlaying(false);
-          if (onPlayPauseChange) onPlayPauseChange(false);
-          if (onEnded) onEnded();
-        }
-        
-        if (crossfadeTimeoutRef.current) {
-          clearInterval(crossfadeTimeoutRef.current);
-          crossfadeTimeoutRef.current = null;
-        }
+        setIsPlaying(false);
+        if (onPlayPauseChange) onPlayPauseChange(false);
+        if (onEnded) onEnded();
       }
     };
 
@@ -229,13 +142,8 @@ export function AudioPlayer({
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
-      
-      if (crossfadeTimeoutRef.current) {
-        clearInterval(crossfadeTimeoutRef.current);
-        crossfadeTimeoutRef.current = null;
-      }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, enableCrossfade, nextTrackUrl]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -247,11 +155,6 @@ export function AudioPlayer({
     setIsRetrying(false);
     
     audio.load();
-    
-    if (crossfadeTimeoutRef.current) {
-      clearInterval(crossfadeTimeoutRef.current);
-      crossfadeTimeoutRef.current = null;
-    }
   }, [audioUrl]);
   
   useEffect(() => {
@@ -280,12 +183,6 @@ export function AudioPlayer({
     }
   }, [isLooping]);
   
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-  
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -294,10 +191,6 @@ export function AudioPlayer({
       audio.pause();
       setIsPlaying(false);
       if (onPlayPauseChange) onPlayPauseChange(false);
-      
-      if (nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
-        nextAudioRef.current.pause();
-      }
       
       toast({
         title: "Gepauzeerd",
@@ -308,10 +201,6 @@ export function AudioPlayer({
         .then(() => {
           setIsPlaying(true);
           if (onPlayPauseChange) onPlayPauseChange(true);
-          
-          if (nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
-            nextAudioRef.current.play().catch(e => console.error("Error resuming next track:", e));
-          }
           
           toast({
             title: "Speelt nu",
@@ -361,17 +250,6 @@ export function AudioPlayer({
     const newTime = newValue[0];
     audio.currentTime = newTime;
     setCurrentTime(newTime);
-    
-    if (crossfadeTimeoutRef.current && (audio.duration - newTime) > 5) {
-      clearInterval(crossfadeTimeoutRef.current);
-      crossfadeTimeoutRef.current = null;
-      
-      if (nextAudioRef.current) {
-        nextAudioRef.current.pause();
-        nextAudioRef.current.currentTime = 0;
-        nextAudioRef.current.volume = 0;
-      }
-    }
   };
   
   const handleVolumeChange = (newValue: number[]) => {
@@ -379,17 +257,8 @@ export function AudioPlayer({
     if (!audio) return;
     
     const newVolume = newValue[0];
+    audio.volume = newVolume;
     setVolume(newVolume);
-    
-    if (crossfadeTimeoutRef.current && nextAudioRef.current) {
-      const remainingTime = audio.duration - audio.currentTime;
-      const fadeProgress = Math.max(0, Math.min(1, 1 - (remainingTime / 10)));
-      
-      audio.volume = newVolume * (1 - fadeProgress);
-      nextAudioRef.current.volume = newVolume * fadeProgress;
-    } else {
-      audio.volume = newVolume;
-    }
   };
   
   const formatTime = (time: number) => {
