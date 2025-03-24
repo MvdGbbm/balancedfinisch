@@ -355,30 +355,6 @@ const Music = () => {
           
           <Equalizer isActive={isAudioActive} className="mb-4" audioElement={visibleAudioRef.current} />
           
-          {previewTrack && (
-            <div className="mb-6 bg-muted/30 rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">Voorluisteren: <span className="text-primary">{previewTrack.title}</span></h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleStopPreview}
-                  className="h-8 w-8 p-0"
-                >
-                  <Square className="h-4 w-4" />
-                </Button>
-              </div>
-              <AudioPlayer 
-                audioUrl={previewTrack.audioUrl} 
-                showControls={true}
-                title={previewTrack.title}
-                isPlayingExternal={isPlaying}
-                onPlayPauseChange={setIsPlaying}
-                onAudioElementRef={handleAudioElementRef}
-              />
-            </div>
-          )}
-          
           {isStreamPlaying && (
             <div className="mb-6 bg-muted/30 rounded-lg p-3">
               <div className="flex justify-between items-center mb-2">
