@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Music } from "lucide-react";
+import { Music, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,57 @@ export const MeditationDetailDialog = ({
     }
   }, [isOpen, meditation]);
   
+  const handleExternalLink = (linkType: 'vera' | 'marco') => {
+    if (!meditation) return;
+    
+    let url = '';
+    
+    if (linkType === 'vera') {
+      url = meditation.veraLink || '';
+    } else {
+      url = meditation.marcoLink || '';
+    }
+    
+    if (!url) {
+      toast.error(`Geen ${linkType === 'vera' ? 'Vera' : 'Marco'} link beschikbaar voor deze meditatie`);
+      return;
+    }
+    
+    try {
+      // Trim the URL
+      url = url.trim();
+      
+      // Check if URL has protocol, if not add https://
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'https://' + url;
+      }
+      
+      // Validate URL
+      const validatedUrl = new URL(url);
+      
+      // Log the validated URL for debugging
+      console.log(`Opening ${linkType} link:`, validatedUrl.toString());
+      
+      // Open in new tab with security attributes
+      const newWindow = window.open(validatedUrl.toString(), '_blank');
+      
+      // Check if window was blocked by popup blocker
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast.error(`Popup blocker heeft voorkomen dat de ${linkType} link geopend werd`);
+        console.error("Popup blocked for URL:", validatedUrl.toString());
+        return;
+      }
+      
+      // Ensure proper security attributes
+      newWindow.opener = null;
+      
+      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
+    } catch (e) {
+      console.error(`Invalid URL for ${linkType}:`, url, e);
+      toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
+    }
+  };
+  
   if (!meditation) return null;
   
   // Function to check if an audio URL is valid (not empty)
@@ -87,6 +138,31 @@ export const MeditationDetailDialog = ({
             className="w-full h-80 bg-cover bg-center rounded-md"
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
+          
+          {/* Vera and Marco buttons at the bottom of the image */}
+          <div className="flex gap-2 mt-2">
+            <Button
+              variant="outline"
+              className={`flex-1 ${meditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'opacity-50'}`}
+              onClick={() => handleExternalLink('vera')}
+              disabled={!meditation.veraLink}
+              type="button"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Vera
+            </Button>
+            
+            <Button
+              variant="outline"
+              className={`flex-1 ${meditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'opacity-50'}`}
+              onClick={() => handleExternalLink('marco')}
+              disabled={!meditation.marcoLink}
+              type="button"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Marco
+            </Button>
+          </div>
           
           <div className="grid grid-cols-1 gap-3">
             {hasValidAudio ? (
