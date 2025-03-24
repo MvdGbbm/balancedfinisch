@@ -1,10 +1,9 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash, ArrowUp } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -24,14 +23,15 @@ const Music = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [showPlaylistCreator, setShowPlaylistCreator] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [draggingTrack, setDraggingTrack] = useState<Soundscape | null>(null);
+  const [draggingOver, setDraggingOver] = useState<string | null>(null);
+  const [showDragIndicator, setShowDragIndicator] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  // Filter soundscapes to only "Muziek" category
   useEffect(() => {
     const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
     setMusicTracks(filteredTracks);
     
-    // Load playlists from localStorage on component mount
     const storedPlaylists = localStorage.getItem('musicPlaylists');
     if (storedPlaylists) {
       try {
@@ -42,7 +42,6 @@ const Music = () => {
     }
   }, [soundscapes]);
 
-  // Save playlists to localStorage when they change
   useEffect(() => {
     localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
   }, [playlists]);
@@ -53,7 +52,6 @@ const Music = () => {
   };
 
   const handleTrackEnded = () => {
-    // If we're playing a playlist, move to the next track
     if (selectedPlaylist && selectedPlaylist.tracks.length > 0) {
       const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
       setCurrentTrackIndex(nextIndex);
@@ -82,10 +80,10 @@ const Music = () => {
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
     
-    // Play the first track in the playlist
     const firstTrackId = playlist.tracks[0].trackId;
     const track = soundscapes.find(s => s.id === firstTrackId) || null;
     setCurrentTrack(track);
+    setIsPlaying(true);
     
     toast({
       title: "Afspeellijst gestart",
@@ -94,7 +92,6 @@ const Music = () => {
   };
 
   const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
-    // Check if track already exists in playlist
     if (playlist.tracks.some(t => t.trackId === track.id)) {
       toast({
         title: "Track bestaat al in afspeellijst",
@@ -104,7 +101,6 @@ const Music = () => {
       return;
     }
     
-    // Add track to playlist
     const updatedPlaylist = {
       ...playlist,
       tracks: [
@@ -113,7 +109,6 @@ const Music = () => {
       ]
     };
     
-    // Update playlists array
     const updatedPlaylists = playlists.map(p => 
       p.id === playlist.id ? updatedPlaylist : p
     );
@@ -140,12 +135,91 @@ const Music = () => {
       description: `Afspeellijst '${name}' is aangemaakt`,
     });
   };
-  
-  // Get playlist tracks as Soundscape objects
+
   const getPlaylistTracks = (playlist: Playlist): Soundscape[] => {
     return playlist.tracks
       .map(track => soundscapes.find(s => s.id === track.trackId))
       .filter((track): track is Soundscape => track !== undefined);
+  };
+
+  const handleRemoveFromPlaylist = (playlist: Playlist, trackIndex: number) => {
+    const updatedTracks = [...playlist.tracks];
+    updatedTracks.splice(trackIndex, 1);
+    
+    const updatedPlaylist = {
+      ...playlist,
+      tracks: updatedTracks
+    };
+    
+    const updatedPlaylists = playlists.map(p => 
+      p.id === playlist.id ? updatedPlaylist : p
+    );
+    
+    setPlaylists(updatedPlaylists);
+    
+    if (selectedPlaylist?.id === playlist.id) {
+      setSelectedPlaylist(updatedPlaylist);
+      
+      if (updatedTracks.length === 0) {
+        setCurrentTrack(null);
+      } else if (currentTrackIndex >= updatedTracks.length) {
+        const newIndex = updatedTracks.length - 1;
+        setCurrentTrackIndex(newIndex);
+        const trackId = updatedTracks[newIndex].trackId;
+        const track = soundscapes.find(s => s.id === trackId) || null;
+        setCurrentTrack(track);
+      }
+    }
+    
+    toast({
+      title: "Nummer verwijderd",
+      description: "Het nummer is verwijderd uit de afspeellijst."
+    });
+  };
+
+  const handleDragStart = (e: React.DragEvent, track: Soundscape) => {
+    e.dataTransfer.setData("trackId", track.id);
+    setDraggingTrack(track);
+    setShowDragIndicator(true);
+  };
+
+  const handleDragEnd = () => {
+    setDraggingTrack(null);
+    setDraggingOver(null);
+    setShowDragIndicator(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent, playlistId: string) => {
+    e.preventDefault();
+    if (draggingTrack && draggingOver !== playlistId) {
+      setDraggingOver(playlistId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDraggingOver(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, playlist: Playlist) => {
+    e.preventDefault();
+    const trackId = e.dataTransfer.getData("trackId");
+    const track = soundscapes.find(s => s.id === trackId);
+    
+    if (track) {
+      if (playlist.tracks.some(t => t.trackId === track.id)) {
+        toast({
+          title: "Track bestaat al in afspeellijst",
+          description: `${track.title} is al toegevoegd aan ${playlist.name}`,
+          variant: "destructive"
+        });
+      } else {
+        handleAddToPlaylist(track, playlist);
+      }
+    }
+    
+    setDraggingTrack(null);
+    setDraggingOver(null);
+    setShowDragIndicator(false);
   };
 
   return (
@@ -157,6 +231,15 @@ const Music = () => {
             Luister naar rustgevende muziek voor meditatie en ontspanning
           </p>
         </div>
+
+        {showDragIndicator && (
+          <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center bg-black/30">
+            <div className="bg-background p-4 rounded-lg shadow-lg text-center">
+              <ArrowUp className="h-10 w-10 mx-auto text-primary animate-bounce" />
+              <p className="mt-2 font-medium">Sleep naar een afspeellijst om toe te voegen</p>
+            </div>
+          </div>
+        )}
 
         <Tabs defaultValue="music">
           <TabsList className="grid grid-cols-2 mb-4">
@@ -171,6 +254,9 @@ const Music = () => {
                   <Card 
                     key={track.id} 
                     className={`transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, track)}
+                    onDragEnd={handleDragEnd}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
@@ -223,8 +309,15 @@ const Music = () => {
               <div className="grid grid-cols-1 gap-4">
                 {playlists.map((playlist) => {
                   const trackCount = playlist.tracks.length;
+                  const playlistTracks = getPlaylistTracks(playlist);
                   return (
-                    <Card key={playlist.id}>
+                    <Card 
+                      key={playlist.id}
+                      className={`transition-all ${draggingOver === playlist.id ? 'ring-2 ring-primary bg-primary/5' : ''}`}
+                      onDragOver={(e) => handleDragOver(e, playlist.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, playlist)}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-full bg-primary/20">
@@ -247,15 +340,24 @@ const Music = () => {
                           </Button>
                         </div>
                         
-                        {/* Show playlist tracks */}
                         {playlist.tracks.length > 0 && (
                           <div className="mt-3 space-y-2">
                             <h4 className="text-sm font-medium">Nummers:</h4>
                             <div className="pl-2 space-y-1">
-                              {getPlaylistTracks(playlist).map((track, index) => (
-                                <div key={track.id} className="flex items-center text-sm">
-                                  <span className="w-5 text-muted-foreground">{index + 1}.</span>
-                                  <span>{track.title}</span>
+                              {playlistTracks.map((track, index) => (
+                                <div key={track.id} className="flex items-center justify-between text-sm">
+                                  <div className="flex items-center">
+                                    <span className="w-5 text-muted-foreground">{index + 1}.</span>
+                                    <span>{track.title}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => handleRemoveFromPlaylist(playlist, index)}
+                                  >
+                                    <Trash className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                  </Button>
                                 </div>
                               ))}
                             </div>
@@ -281,7 +383,6 @@ const Music = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Preview Player */}
         {previewTrack && (
           <div className="mb-14">
             <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
@@ -293,7 +394,6 @@ const Music = () => {
           </div>
         )}
         
-        {/* Playlist Player */}
         {selectedPlaylist && currentTrack && (
           <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
             <div className="flex items-center justify-between mb-2">
