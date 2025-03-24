@@ -24,6 +24,8 @@ const Music = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [showPlaylistCreator, setShowPlaylistCreator] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [nextTrack, setNextTrack] = useState<Soundscape | null>(null);
+  const [isCrossfading, setIsCrossfading] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Filter soundscapes to only "Muziek" category
@@ -47,30 +49,54 @@ const Music = () => {
     localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
   }, [playlists]);
 
+  // Setup next track when playing a playlist
+  useEffect(() => {
+    if (selectedPlaylist && selectedPlaylist.tracks.length > 0 && currentTrack) {
+      const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
+      const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
+      const nextTrackObj = soundscapes.find(s => s.id === nextTrackId) || null;
+      setNextTrack(nextTrackObj);
+      console.info("Next track for crossfade:", nextIndex);
+    } else {
+      setNextTrack(null);
+    }
+  }, [currentTrack, currentTrackIndex, selectedPlaylist, soundscapes]);
+
   const handlePreviewTrack = (track: Soundscape) => {
     setPreviewTrack(track);
     setIsPlaying(true);
     
     // Stop any currently playing playlist when previewing a track
     setSelectedPlaylist(null);
+    setNextTrack(null);
   };
 
   const handleTrackEnded = () => {
+    console.info("Track ended callback");
+    
     // If we're playing a playlist, move to the next track
     if (selectedPlaylist && selectedPlaylist.tracks.length > 0) {
       const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
       setCurrentTrackIndex(nextIndex);
       
       const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
-      const nextTrack = soundscapes.find(s => s.id === nextTrackId) || null;
-      setCurrentTrack(nextTrack);
-      setIsPlaying(true); // Auto-play next track
+      const nextTrackObj = soundscapes.find(s => s.id === nextTrackId) || null;
       
-      toast({
-        title: "Volgende nummer",
-        description: `Nu speelt: ${nextTrack?.title}`
-      });
+      if (nextTrackObj) {
+        setCurrentTrack(nextTrackObj);
+        setIsPlaying(true); // Keep playing
+        
+        toast({
+          title: "Volgende nummer",
+          description: `Nu speelt: ${nextTrackObj.title}`
+        });
+      }
     }
+  };
+
+  const handleCrossfadeStart = () => {
+    console.info("Started playing next track for crossfade");
+    setIsCrossfading(true);
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
@@ -381,11 +407,13 @@ const Music = () => {
               </Button>
             </div>
             <AudioPlayer 
-              audioUrl={currentTrack.audioUrl} 
+              audioUrl={currentTrack.audioUrl}
+              nextAudioUrl={nextTrack?.audioUrl}
               showControls={true}
               title={currentTrack.title}
               className="mb-0"
               onEnded={handleTrackEnded}
+              onCrossfadeStart={handleCrossfadeStart}
               isPlayingExternal={isPlaying}
               onPlayPauseChange={setIsPlaying}
             />
