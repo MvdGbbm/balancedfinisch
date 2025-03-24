@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,6 @@ const Music = () => {
   const { soundscapes } = useApp();
   const { toast } = useToast();
   const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
-  const [previewTrack, setPreviewTrack] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -41,12 +41,10 @@ const Music = () => {
   const [streamUrl, setStreamUrl] = useState("");
   const [streamTitle, setStreamTitle] = useState("");
   const [hiddenIframeUrl, setHiddenIframeUrl] = useState<string | null>(null);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const hiddenIframeRef = useRef<HTMLIFrameElement>(null);
   const [activeTab, setActiveTab] = useState<string>("music");
   const [isAudioActive, setIsAudioActive] = useState(false);
-  const visibleAudioRef = useRef<HTMLAudioElement | null>(null);
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -113,30 +111,17 @@ const Music = () => {
     setActiveTab(value);
     
     if (value !== activeTab) {
-      if (isPlaying) {
-        setIsPlaying(false);
-        setPreviewTrack(null);
-        setCurrentTrack(null);
-        setSelectedPlaylist(null);
-      }
-      
-      if (isStreamPlaying || hiddenIframeUrl) {
-        setIsStreamPlaying(false);
-        setStreamUrl("");
-        setStreamTitle("");
-        setHiddenIframeUrl(null);
-      }
+      stopAllAudio();
     }
   };
 
   const stopAllAudio = () => {
     console.log("Stopping all audio playback");
     
-    if (previewTrack && previewAudioRef.current) {
-      previewAudioRef.current.pause();
-      setPreviewTrack(null);
-      setIsPlaying(false);
-    }
+    setCurrentTrack(null);
+    setIsPlaying(false);
+    setIsPreviewMode(false);
+    setSelectedPlaylist(null);
     
     if (isStreamPlaying) {
       setIsStreamPlaying(false);
@@ -148,58 +133,24 @@ const Music = () => {
       setHiddenIframeUrl(null);
     }
     
-    if (selectedPlaylist && visibleAudioRef.current) {
-      visibleAudioRef.current.pause();
-      setIsPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
   };
 
   const handlePreviewTrack = (track: Soundscape) => {
-    stopAllAudio();
-    
-    if (previewTrack?.id === track.id && isPlaying) {
-      setPreviewTrack(null);
-      setIsPlaying(false);
-      
-      if (previewAudioRef.current) {
-        previewAudioRef.current.pause();
-      }
-      
+    if (currentTrack?.id === track.id && isPlaying && isPreviewMode) {
+      stopAllAudio();
       toast({
         title: "Voorluisteren gestopt",
         description: `${track.title} is gestopt.`
       });
     } else {
-      setPreviewTrack(track);
+      stopAllAudio();
+      setCurrentTrack(track);
       setIsPlaying(true);
-      setSelectedPlaylist(null);
-      setNextTrack(null);
-      
-      if (!previewAudioRef.current) {
-        previewAudioRef.current = new Audio(track.audioUrl);
-        previewAudioRef.current.volume = 0.8;
-        previewAudioRef.current.addEventListener('ended', () => {
-          setIsPlaying(false);
-          setPreviewTrack(null);
-        });
-      } else {
-        previewAudioRef.current.src = track.audioUrl;
-        previewAudioRef.current.load();
-      }
-      
-      const playPromise = previewAudioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Error playing audio:", error);
-          toast({
-            variant: "destructive",
-            title: "Fout bij afspelen",
-            description: "Kon de audio niet afspelen. Probeer het later opnieuw."
-          });
-          setIsPlaying(false);
-          setPreviewTrack(null);
-        });
-      }
+      setIsPreviewMode(true);
       
       toast({
         title: "Voorluisteren gestart",
@@ -208,20 +159,12 @@ const Music = () => {
     }
   };
 
-  const handleStopPreview = () => {
-    if (previewTrack && isPlaying) {
-      if (previewAudioRef.current) {
-        previewAudioRef.current.pause();
-      }
-      
-      setPreviewTrack(null);
-      setIsPlaying(false);
-      
-      toast({
-        title: "Voorluisteren gestopt",
-        description: "Het afspelen is gestopt."
-      });
-    }
+  const handleStopPlaying = () => {
+    stopAllAudio();
+    toast({
+      title: "Afspelen gestopt",
+      description: "Het afspelen is gestopt."
+    });
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
@@ -261,6 +204,11 @@ const Music = () => {
           description: `Nu speelt: ${nextTrackObj.title}`
         });
       }
+    } else if (isPreviewMode) {
+      // End preview mode after track completes
+      setIsPlaying(false);
+      setIsPreviewMode(false);
+      setCurrentTrack(null);
     }
   };
 
@@ -270,7 +218,7 @@ const Music = () => {
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
-    if (selectedPlaylist?.id === playlist.id && isPlaying) {
+    if (selectedPlaylist?.id === playlist.id && isPlaying && !isPreviewMode) {
       stopAllAudio();
       return;
     }
@@ -288,6 +236,7 @@ const Music = () => {
     
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
+    setIsPreviewMode(false);
     
     const firstTrackId = playlist.tracks[0].trackId;
     const track = soundscapes.find(s => s.id === firstTrackId) || null;
@@ -390,7 +339,7 @@ const Music = () => {
   };
 
   const handleAudioElementRef = (element: HTMLAudioElement | null) => {
-    visibleAudioRef.current = element;
+    audioRef.current = element;
   };
 
   const renderAudioPlayer = () => {
@@ -427,43 +376,7 @@ const Music = () => {
       );
     }
 
-    if (previewTrack && isPlaying) {
-      return (
-        <div className="mb-2 bg-muted/30 rounded-lg p-2">
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center gap-2">
-              {previewTrack.coverImageUrl && (
-                <img 
-                  src={previewTrack.coverImageUrl} 
-                  alt={previewTrack.title} 
-                  className="h-6 w-6 rounded object-cover"
-                />
-              )}
-              <h3 className="font-medium text-sm truncate max-w-[200px]">
-                {previewTrack.title}
-              </h3>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleStopPreview}
-              className="h-6 w-6 p-0"
-            >
-              <Square className="h-3 w-3" />
-            </Button>
-          </div>
-          <AudioPlayer 
-            audioUrl={previewTrack.audioUrl}
-            showControls={true}
-            isPlayingExternal={isPlaying}
-            onPlayPauseChange={setIsPlaying}
-            className="bg-card/30 rounded-md"
-          />
-        </div>
-      );
-    }
-
-    if (selectedPlaylist && currentTrack) {
+    if (currentTrack && isPlaying) {
       return (
         <div className="mb-2 bg-muted/30 rounded-lg p-2">
           <div className="flex justify-between items-center mb-1">
@@ -477,17 +390,18 @@ const Music = () => {
               )}
               <div className="truncate max-w-[200px]">
                 <h3 className="font-medium text-sm">{currentTrack.title}</h3>
-                <p className="text-xs text-muted-foreground">{selectedPlaylist.name}</p>
+                {selectedPlaylist && !isPreviewMode && (
+                  <p className="text-xs text-muted-foreground">{selectedPlaylist.name}</p>
+                )}
+                {isPreviewMode && (
+                  <p className="text-xs text-primary">Voorluisteren</p>
+                )}
               </div>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => {
-                setSelectedPlaylist(null);
-                setCurrentTrack(null);
-                setIsPlaying(false);
-              }}
+              onClick={handleStopPlaying}
               className="h-6 w-6 p-0"
             >
               <Square className="h-3 w-3" />
@@ -495,10 +409,10 @@ const Music = () => {
           </div>
           <AudioPlayer 
             audioUrl={currentTrack.audioUrl}
-            nextAudioUrl={nextTrack?.audioUrl}
+            nextAudioUrl={!isPreviewMode ? nextTrack?.audioUrl : undefined}
             showControls={true}
             onEnded={handleTrackEnded}
-            onCrossfadeStart={handleCrossfadeStart}
+            onCrossfadeStart={!isPreviewMode ? handleCrossfadeStart : undefined}
             isPlayingExternal={isPlaying}
             onPlayPauseChange={setIsPlaying}
             onAudioElementRef={handleAudioElementRef}
@@ -544,7 +458,7 @@ const Music = () => {
                 {musicTracks.map((track) => (
                   <Card 
                     key={track.id} 
-                    className={`transition-all ${previewTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
+                    className={`transition-all ${currentTrack?.id === track.id && isPlaying && isPreviewMode ? 'ring-2 ring-primary' : ''}`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
@@ -555,18 +469,18 @@ const Music = () => {
                             className="h-12 w-12 rounded-md object-cover"
                           />
                         ) : (
-                          <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${previewTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
+                          <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id && isPlaying && isPreviewMode ? 'bg-primary/20' : ''}`}>
                             <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
                           </div>
                         )}
                         <div className="flex-1">
-                          <h3 className={`font-medium ${previewTrack?.id === track.id ? 'text-primary' : ''}`}>{track.title}</h3>
+                          <h3 className={`font-medium ${currentTrack?.id === track.id && isPlaying && isPreviewMode ? 'text-primary' : ''}`}>{track.title}</h3>
                           <p className="text-sm text-muted-foreground">{track.description}</p>
                         </div>
                       </div>
                       
                       <div className="flex justify-between mt-3">
-                        {previewTrack?.id === track.id && isPlaying ? (
+                        {currentTrack?.id === track.id && isPlaying && isPreviewMode ? (
                           <Button 
                             variant="default"
                             size="sm" 
@@ -617,7 +531,7 @@ const Music = () => {
               <div className="grid grid-cols-1 gap-4">
                 {playlists.map((playlist) => {
                   const trackCount = playlist.tracks.length;
-                  const isCurrentlyPlaying = selectedPlaylist?.id === playlist.id && isPlaying;
+                  const isCurrentlyPlaying = selectedPlaylist?.id === playlist.id && isPlaying && !isPreviewMode;
                   
                   return (
                     <Card key={playlist.id}>
