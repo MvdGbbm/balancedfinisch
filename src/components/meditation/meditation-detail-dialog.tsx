@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
+import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -46,6 +48,8 @@ export const MeditationDetailDialog = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [equalizerVisible, setEqualizerVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showQuote, setShowQuote] = useState(true);
+  const [randomQuote] = useState(getRandomQuote());
   
   // Filter out the currently playing meditation from the list
   const filteredGuidedMeditations = guidedMeditations.filter(
