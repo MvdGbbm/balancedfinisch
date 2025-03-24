@@ -135,7 +135,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
         duration: musicItem.duration,
         waveform_data: musicItem.waveformData,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", musicItem.id)
       .select();
   } else {
@@ -152,7 +152,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
         tags: musicItem.tags,
         duration: musicItem.duration,
         waveform_data: musicItem.waveformData,
-      })
+      } as any)
       .select();
   }
 
@@ -195,7 +195,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
         description: playlist.description,
         cover_image_url: playlist.coverImageUrl,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", playlist.id)
       .select();
     
@@ -213,7 +213,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
         title: playlist.title,
         description: playlist.description,
         cover_image_url: playlist.coverImageUrl,
-      })
+      } as any)
       .select();
     
     if (error) {
