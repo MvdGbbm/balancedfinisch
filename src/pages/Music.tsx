@@ -47,6 +47,7 @@ const Music = () => {
   const [isAudioActive, setIsAudioActive] = useState(false);
   const visibleAudioRef = useRef<HTMLAudioElement | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -59,6 +60,7 @@ const Music = () => {
         .order('title');
       
       if (error) {
+        console.error("Error fetching radio streams:", error);
         throw error;
       }
       
@@ -77,17 +79,33 @@ const Music = () => {
   });
 
   useEffect(() => {
-    const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
-    setMusicTracks(filteredTracks);
+    // Set initial loading state
+    setIsAppLoading(true);
     
-    const storedPlaylists = localStorage.getItem('musicPlaylists');
-    if (storedPlaylists) {
+    const loadData = async () => {
       try {
-        setPlaylists(JSON.parse(storedPlaylists));
+        // Filter tracks
+        const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
+        setMusicTracks(filteredTracks);
+        
+        // Load playlists from localStorage
+        const storedPlaylists = localStorage.getItem('musicPlaylists');
+        if (storedPlaylists) {
+          try {
+            setPlaylists(JSON.parse(storedPlaylists));
+          } catch (error) {
+            console.error("Error parsing playlists:", error);
+          }
+        }
       } catch (error) {
-        console.error("Error parsing playlists:", error);
+        console.error("Error loading data:", error);
+      } finally {
+        // Set loading to false after data is loaded
+        setIsAppLoading(false);
       }
-    }
+    };
+    
+    loadData();
   }, [soundscapes]);
 
   useEffect(() => {
@@ -113,19 +131,7 @@ const Music = () => {
     setActiveTab(value);
     
     if (value !== activeTab) {
-      if (isPlaying) {
-        setIsPlaying(false);
-        setPreviewTrack(null);
-        setCurrentTrack(null);
-        setSelectedPlaylist(null);
-      }
-      
-      if (isStreamPlaying || hiddenIframeUrl) {
-        setIsStreamPlaying(false);
-        setStreamUrl("");
-        setStreamTitle("");
-        setHiddenIframeUrl(null);
-      }
+      stopAllAudio();
     }
   };
 
@@ -151,6 +157,8 @@ const Music = () => {
     if (selectedPlaylist && visibleAudioRef.current) {
       visibleAudioRef.current.pause();
       setIsPlaying(false);
+      setSelectedPlaylist(null);
+      setCurrentTrack(null);
     }
   };
 
@@ -225,6 +233,7 @@ const Music = () => {
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
+    stopAllAudio();
     setHiddenIframeUrl(stream.url);
     
     toast({
@@ -270,11 +279,15 @@ const Music = () => {
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
-    if (isStreamPlaying) {
-      setIsStreamPlaying(false);
-      setStreamUrl("");
-      setStreamTitle("");
+    // Check if this playlist is already playing
+    if (selectedPlaylist?.id === playlist.id && isPlaying) {
+      // Stop playing this playlist
+      stopAllAudio();
+      return;
     }
+    
+    // Otherwise, stop all audio and start this playlist
+    stopAllAudio();
     
     if (playlist.tracks.length === 0) {
       toast({
@@ -285,7 +298,6 @@ const Music = () => {
       return;
     }
     
-    setPreviewTrack(null);
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
     
@@ -490,7 +502,7 @@ const Music = () => {
               }}
               className="h-6 w-6 p-0"
             >
-              <Square className="h-3 w-6 p-0"
+              <Square className="h-3 w-3" />
             </Button>
           </div>
           <AudioPlayer 
@@ -517,6 +529,18 @@ const Music = () => {
     );
   };
 
+  // Loading state for the entire application
+  if (isAppLoading) {
+    return (
+      <MobileLayout>
+        <div className="flex flex-col items-center justify-center space-y-4 h-[50vh]">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
+          <p className="text-muted-foreground">Laden...</p>
+        </div>
+      </MobileLayout>
+    );
+  }
+
   return (
     <MobileLayout>
       <div className="space-y-4">
@@ -539,7 +563,11 @@ const Music = () => {
           </div>
           
           <TabsContent value="music" className="space-y-4">
-            {musicTracks.length > 0 ? (
+            {isAppLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            ) : musicTracks.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {musicTracks.map((track) => (
                   <Card 
