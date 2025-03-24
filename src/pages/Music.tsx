@@ -26,12 +26,10 @@ const Music = () => {
   const [nextTrackUrl, setNextTrackUrl] = useState<string | undefined>(undefined);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  // Filter soundscapes to only "Muziek" category
   useEffect(() => {
     const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
     setMusicTracks(filteredTracks);
     
-    // Load playlists from localStorage on component mount
     const storedPlaylists = localStorage.getItem('musicPlaylists');
     if (storedPlaylists) {
       try {
@@ -42,12 +40,10 @@ const Music = () => {
     }
   }, [soundscapes]);
 
-  // Save playlists to localStorage when they change
   useEffect(() => {
     localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
   }, [playlists]);
 
-  // Update next track URL whenever current track or playlist changes
   useEffect(() => {
     if (selectedPlaylist && selectedPlaylist.tracks.length > 1 && currentTrack) {
       const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
@@ -69,20 +65,19 @@ const Music = () => {
     setPreviewTrack(track);
     setIsPlaying(true);
     
-    // Stop any currently playing playlist when previewing a track
     setSelectedPlaylist(null);
   };
 
   const handleTrackEnded = () => {
-    // If we're playing a playlist, move to the next track
     if (selectedPlaylist && selectedPlaylist.tracks.length > 0) {
       const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
       setCurrentTrackIndex(nextIndex);
       
       const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
       const nextTrack = soundscapes.find(s => s.id === nextTrackId) || null;
+      
       setCurrentTrack(nextTrack);
-      setIsPlaying(true); // Auto-play next track
+      setIsPlaying(true);
       
       toast({
         title: "Volgende nummer",
@@ -101,17 +96,15 @@ const Music = () => {
       return;
     }
     
-    // Stop any currently previewing track
     setPreviewTrack(null);
     
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
     
-    // Play the first track in the playlist
     const firstTrackId = playlist.tracks[0].trackId;
     const track = soundscapes.find(s => s.id === firstTrackId) || null;
     setCurrentTrack(track);
-    setIsPlaying(true); // Auto-play immediately
+    setIsPlaying(true);
     
     toast({
       title: "Afspeellijst gestart",
@@ -120,7 +113,6 @@ const Music = () => {
   };
 
   const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
-    // Check if track already exists in playlist
     if (playlist.tracks.some(t => t.trackId === track.id)) {
       toast({
         title: "Track bestaat al in afspeellijst",
@@ -130,7 +122,6 @@ const Music = () => {
       return;
     }
     
-    // Add track to playlist
     const updatedPlaylist = {
       ...playlist,
       tracks: [
@@ -139,7 +130,6 @@ const Music = () => {
       ]
     };
     
-    // Update playlists array
     const updatedPlaylists = playlists.map(p => 
       p.id === playlist.id ? updatedPlaylist : p
     );
@@ -152,34 +142,27 @@ const Music = () => {
   };
 
   const handleRemoveFromPlaylist = (trackId: string, playlistId: string) => {
-    // Find the playlist
     const playlist = playlists.find(p => p.id === playlistId);
     if (!playlist) return;
     
-    // Create updated playlist with track removed
     const updatedPlaylist = {
       ...playlist,
       tracks: playlist.tracks.filter(t => t.trackId !== trackId)
     };
     
-    // Update playlists array
     const updatedPlaylists = playlists.map(p => 
       p.id === playlistId ? updatedPlaylist : p
     );
     
     setPlaylists(updatedPlaylists);
     
-    // If the currently playing playlist is affected
     if (selectedPlaylist?.id === playlistId) {
-      // If we're removing the current track
       if (selectedPlaylist.tracks[currentTrackIndex]?.trackId === trackId) {
-        // If this was the last track, stop playback
         if (updatedPlaylist.tracks.length === 0) {
           setSelectedPlaylist(null);
           setCurrentTrack(null);
           setIsPlaying(false);
         } else {
-          // Adjust currentTrackIndex if needed and continue playing
           const newIndex = Math.min(currentTrackIndex, updatedPlaylist.tracks.length - 1);
           setCurrentTrackIndex(newIndex);
           const newTrackId = updatedPlaylist.tracks[newIndex].trackId;
@@ -187,7 +170,6 @@ const Music = () => {
           setCurrentTrack(newTrack);
         }
       }
-      // Update the selectedPlaylist reference
       setSelectedPlaylist(updatedPlaylist);
     }
     
@@ -212,8 +194,7 @@ const Music = () => {
       description: `Afspeellijst '${name}' is aangemaakt`,
     });
   };
-  
-  // Get playlist tracks as Soundscape objects
+
   const getPlaylistTracks = (playlist: Playlist): Soundscape[] => {
     return playlist.tracks
       .map(track => soundscapes.find(s => s.id === track.trackId))
@@ -319,7 +300,6 @@ const Music = () => {
                           </Button>
                         </div>
                         
-                        {/* Show playlist tracks */}
                         {playlist.tracks.length > 0 && (
                           <div className="mt-3 space-y-2">
                             <h4 className="text-sm font-medium">Nummers:</h4>
@@ -366,7 +346,6 @@ const Music = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Preview Player */}
         {previewTrack && (
           <div className="mb-14">
             <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
@@ -380,7 +359,6 @@ const Music = () => {
           </div>
         )}
         
-        {/* Playlist Player */}
         {selectedPlaylist && currentTrack && (
           <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
             <div className="flex items-center justify-between mb-2">

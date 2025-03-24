@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -170,7 +171,16 @@ export function AudioPlayer({
     const handleEnded = () => {
       if (!isLooping) {
         if (enableCrossfade && nextTrackUrl && nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
-          if (onEnded) onEnded();
+          // Instead of just triggering the onEnded callback, we need to ensure the next track
+          // continues playing and becomes the main track
+          if (onEnded) {
+            // Let the parent component know to switch to the next track
+            onEnded();
+          }
+          
+          // Don't reset isPlaying state since the next track is already playing
+          // The parent component will set a new currentTrack which will unmount this
+          // component and mount a new one with the next track as audioUrl
         } else {
           setIsPlaying(false);
           if (onPlayPauseChange) onPlayPauseChange(false);
@@ -516,4 +526,3 @@ export function AudioPlayer({
     </div>
   );
 }
-
