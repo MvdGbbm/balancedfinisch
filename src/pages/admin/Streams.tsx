@@ -36,13 +36,11 @@ const AdminStreams = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStream, setCurrentStream] = useState<RadioStream | null>(null);
   
-  // Form state
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
   
-  // Fetch streams with React Query
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ['radioStreams'],
     queryFn: async () => {
@@ -56,11 +54,9 @@ const AdminStreams = () => {
     }
   });
   
-  // Derived state from streams data
   const activeStreams = streams.filter(stream => stream.is_active);
   const inactiveStreams = streams.filter(stream => !stream.is_active);
   
-  // Mutations
   const createStreamMutation = useMutation({
     mutationFn: async (newStream: Omit<RadioStream, 'id'>) => {
       const { data, error } = await supabase
@@ -73,13 +69,13 @@ const AdminStreams = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Nieuwe radiolink toegevoegd");
+      toast.success("Nieuwe streaming link toegevoegd");
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
       console.error("Error creating link:", error);
-      toast.error("Kon de radiolink niet opslaan");
+      toast.error("Kon de streaming link niet opslaan");
     }
   });
   
@@ -100,13 +96,13 @@ const AdminStreams = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Radiolink bijgewerkt");
+      toast.success("Streaming link bijgewerkt");
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
       console.error("Error updating link:", error);
-      toast.error("Kon de radiolink niet bijwerken");
+      toast.error("Kon de streaming link niet bijwerken");
     }
   });
   
@@ -122,11 +118,11 @@ const AdminStreams = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Radiolink verwijderd");
+      toast.success("Streaming link verwijderd");
     },
     onError: (error) => {
       console.error("Error deleting link:", error);
-      toast.error("Kon de radiolink niet verwijderen");
+      toast.error("Kon de streaming link niet verwijderen");
     }
   });
   
@@ -142,7 +138,7 @@ const AdminStreams = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success(`Radiolink ${data.isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
+      toast.success(`Streaming link ${data.isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
     },
     onError: (error) => {
       console.error("Error updating link status:", error);
@@ -173,7 +169,7 @@ const AdminStreams = () => {
   };
   
   const handleDelete = async (id: string) => {
-    if (window.confirm("Weet je zeker dat je deze radiolink wilt verwijderen?")) {
+    if (window.confirm("Weet je zeker dat je deze streaming link wilt verwijderen?")) {
       deleteStreamMutation.mutate(id);
     }
   };
@@ -192,7 +188,6 @@ const AdminStreams = () => {
     }
     
     if (currentStream) {
-      // Update existing stream
       updateStreamMutation.mutate({
         ...currentStream,
         title,
@@ -201,7 +196,6 @@ const AdminStreams = () => {
         is_active: isActive
       });
     } else {
-      // Create new stream
       createStreamMutation.mutate({
         title,
         url,
@@ -224,7 +218,6 @@ const AdminStreams = () => {
   const isValidAudioUrl = (url: string) => {
     if (!isValidUrl(url)) return false;
     
-    // Basic check for common audio streaming formats and services
     const lowercaseUrl = url.toLowerCase();
     const audioExtensions = ['.mp3', '.aac', '.ogg', '.m3u', '.m3u8', '.pls', '.xspf'];
     const streamingServices = ['icecast', 'shoutcast', 'radio', 'stream', 'listen', 'audio'];
@@ -237,15 +230,15 @@ const AdminStreams = () => {
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Radiolinks Beheren</h1>
+          <h1 className="text-2xl font-bold">Streaming Beheren</h1>
           <Button onClick={handleOpenNew}>
             <Radio className="h-4 w-4 mr-2" />
-            Nieuwe Radiolink
+            Nieuwe Streaming Link
           </Button>
         </div>
         
         <p className="text-muted-foreground">
-          Beheer radiolinks die gebruikers kunnen afspelen vanuit de muziekspeler
+          Beheer streaming links die gebruikers kunnen afspelen vanuit de muziekspeler
         </p>
         
         <Tabs defaultValue="active" className="mt-6">
@@ -273,7 +266,7 @@ const AdminStreams = () => {
               </div>
             ) : (
               <div className="text-center py-8 bg-muted/30 rounded-lg">
-                <p className="text-muted-foreground">Geen actieve radiolinks gevonden</p>
+                <p className="text-muted-foreground">Geen actieve streaming links gevonden</p>
                 <Button variant="outline" className="mt-2" onClick={handleOpenNew}>
                   Link toevoegen
                 </Button>
@@ -300,22 +293,21 @@ const AdminStreams = () => {
               </div>
             ) : (
               <div className="text-center py-8 bg-muted/30 rounded-lg">
-                <p className="text-muted-foreground">Geen inactieve radiolinks gevonden</p>
+                <p className="text-muted-foreground">Geen inactieve streaming links gevonden</p>
               </div>
             )}
           </TabsContent>
         </Tabs>
       </div>
       
-      {/* Add/Edit Stream Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {currentStream ? "Radiolink Bewerken" : "Nieuwe Radiolink"}
+              {currentStream ? "Streaming Link Bewerken" : "Nieuwe Streaming Link"}
             </DialogTitle>
             <DialogDescription>
-              Vul de details in voor de radiolink. De link zal in de achtergrond worden afgespeeld.
+              Vul de details in voor de streaming link. De link zal in de achtergrond worden afgespeeld.
             </DialogDescription>
           </DialogHeader>
           
@@ -324,17 +316,17 @@ const AdminStreams = () => {
               <Label htmlFor="title">Titel</Label>
               <Input
                 id="title"
-                placeholder="Naam van de radiolink"
+                placeholder="Naam van de streaming link"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="url">Radio Stream URL</Label>
+              <Label htmlFor="url">Streaming Link URL</Label>
               <Input
                 id="url"
-                placeholder="URL naar de radiostream (bijv. https://voorbeeld.com/stream)"
+                placeholder="URL naar de streaming link (bijv. https://voorbeeld.com/stream)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
@@ -352,7 +344,7 @@ const AdminStreams = () => {
               <Label htmlFor="description">Beschrijving (optioneel)</Label>
               <Textarea
                 id="description"
-                placeholder="Korte beschrijving van de radiolink"
+                placeholder="Korte beschrijving van de streaming link"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}

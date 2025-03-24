@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2 } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -118,6 +118,15 @@ const Music = () => {
     toast({
       title: "Radio link geopend",
       description: `"${stream.title}" speelt nu in de achtergrond`
+    });
+  };
+
+  const handleStreamStop = () => {
+    setHiddenIframeUrl(null);
+    
+    toast({
+      title: "Streaming gestopt",
+      description: "De streaming verbinding is verbroken"
     });
   };
 
@@ -281,7 +290,7 @@ const Music = () => {
         <Tabs defaultValue="music">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
-            <TabsTrigger value="radio">Radio Links</TabsTrigger>
+            <TabsTrigger value="radio">Streaming</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
           </TabsList>
           
@@ -349,20 +358,29 @@ const Music = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm">{stream.title}</h3>
-                            {stream.description && (
-                              <p className="text-xs text-muted-foreground truncate">{stream.description}</p>
-                            )}
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStreamPlay(stream)}
-                          className="px-3 ml-2"
-                        >
-                          <Play className="h-3.5 w-3.5 mr-1.5" />
-                          Afspelen
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStreamPlay(stream)}
+                            className="px-3"
+                          >
+                            <Play className="h-3.5 w-3.5 mr-1.5" />
+                            Afspelen
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleStreamStop}
+                            className="px-3"
+                            disabled={!hiddenIframeUrl}
+                          >
+                            <StopCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Stop
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
