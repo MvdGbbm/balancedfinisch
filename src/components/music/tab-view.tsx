@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface TabItem {
   value: string;
   label: string;
-  content: React.ReactNode;  // Changed from string to ReactNode to accept JSX elements
+  content: React.ReactNode;  // This must be ReactNode to accept JSX elements
 }
 
 interface TabViewProps {
