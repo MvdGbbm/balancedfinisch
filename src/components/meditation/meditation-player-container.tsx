@@ -6,8 +6,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, StopCircle, PlayCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -23,7 +21,6 @@ export function MeditationPlayerContainer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
-  const [randomQuote] = useState(getRandomQuote);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -198,12 +195,7 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      {/* Display quote above buttons */}
-      <div className="mb-4">
-        <QuoteDisplay quote={randomQuote} />
-      </div>
-      
-      {/* Vera and Marco buttons below the quote */}
+      {/* Vera and Marco buttons */}
       <div className="flex gap-2 mb-4">
         <Button
           variant="outline"
@@ -238,6 +230,7 @@ export function MeditationPlayerContainer({
         title={selectedMeditation.title}
         showTitle
         showControls
+        showQuote={false}
         className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
         onError={handleAudioError}
         isPlayingExternal={isPlaying}

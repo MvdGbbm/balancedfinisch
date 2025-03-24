@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
@@ -17,8 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -47,8 +46,6 @@ export const MeditationDetailDialog = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [equalizerVisible, setEqualizerVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showQuote, setShowQuote] = useState(true);
-  const [randomQuote] = useState(getRandomQuote());
   
   const filteredGuidedMeditations = guidedMeditations.filter(
     med => meditation && med.id !== meditation.id
@@ -130,10 +127,6 @@ export const MeditationDetailDialog = ({
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
           
-          {showQuote && (
-            <QuoteDisplay quote={randomQuote} />
-          )}
-          
           <div className="flex gap-2 mt-2">
             <Button
               variant="outline"
@@ -165,7 +158,7 @@ export const MeditationDetailDialog = ({
                 audioUrl={audioUrl}
                 className="w-full bg-transparent border-none"
                 showTitle={false}
-                showQuote={!equalizerVisible}
+                showQuote={false}
                 ref={audioRef}
                 isPlayingExternal={isPlaying}
                 onPlayPauseChange={setIsPlaying}
