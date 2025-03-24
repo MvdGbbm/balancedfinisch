@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Sunrise, Clock, BookOpen, Music, Quote, Heart } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const features = [
@@ -62,54 +61,16 @@ const features = [
 const Index = () => {
   const navigate = useNavigate();
   const { currentQuote, meditations } = useApp();
-  const [processedMeditations, setProcessedMeditations] = useState([]);
+  const [displayMeditations, setDisplayMeditations] = useState([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const processUrls = async () => {
-      try {
-        console.log("Processing meditation URLs in Index page...");
-        
-        const processed = await Promise.all(
-          meditations.slice(0, 3).map(async (meditation) => {
-            let audioUrl = meditation.audioUrl;
-            let coverImageUrl = meditation.coverImageUrl;
-            
-            if (!coverImageUrl.startsWith('http')) {
-              try {
-                const { data: imageData } = await supabase.storage
-                  .from('meditations')
-                  .getPublicUrl(coverImageUrl);
-                coverImageUrl = imageData.publicUrl;
-                console.log(`Loaded image URL for ${meditation.title}:`, coverImageUrl);
-              } catch (error) {
-                console.error(`Error processing cover image URL for ${meditation.title}:`, error);
-                toast.error(`Kon afbeelding niet laden voor ${meditation.title}`);
-              }
-            }
-            
-            return {
-              ...meditation,
-              coverImageUrl
-            };
-          })
-        );
-        
-        console.log("Processed meditations for Index page:", processed);
-        setProcessedMeditations(processed);
-      } catch (error) {
-        console.error("Error in processUrls (Index):", error);
-        toast.error("Er is een fout opgetreden bij het laden van meditaties");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    processUrls();
+    setDisplayMeditations(meditations.slice(0, 3));
+    setLoading(false);
   }, [meditations]);
   
   const getRecentMeditations = () => {
-    return processedMeditations.length > 0 ? processedMeditations : [];
+    return displayMeditations.length > 0 ? displayMeditations : [];
   };
   
   return (
