@@ -151,6 +151,10 @@ export function AudioPlayer({
                 if (step >= fadeSteps) {
                   clearInterval(fadeInterval);
                   crossfadeTimeoutRef.current = null;
+                  
+                  if (audio) {
+                    audio.volume = 0;
+                  }
                 }
               }, stepTime);
               
@@ -165,9 +169,13 @@ export function AudioPlayer({
     
     const handleEnded = () => {
       if (!isLooping) {
-        setIsPlaying(false);
-        if (onPlayPauseChange) onPlayPauseChange(false);
-        if (onEnded) onEnded();
+        if (enableCrossfade && nextTrackUrl && nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
+          if (onEnded) onEnded();
+        } else {
+          setIsPlaying(false);
+          if (onPlayPauseChange) onPlayPauseChange(false);
+          if (onEnded) onEnded();
+        }
         
         if (crossfadeTimeoutRef.current) {
           clearInterval(crossfadeTimeoutRef.current);
@@ -508,3 +516,4 @@ export function AudioPlayer({
     </div>
   );
 }
+
