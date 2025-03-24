@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
@@ -18,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play, GripVertical, Save } from "lucide-react";
+import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play, GripVertical, Save, Image, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,7 @@ interface RadioStream {
   description: string | null;
   is_active: boolean;
   position: number | null;
+  cover_image_url: string | null;
 }
 
 const AdminStreams = () => {
@@ -44,6 +46,8 @@ const AdminStreams = () => {
   const [isActive, setIsActive] = useState(true);
   const [pendingOrderChanges, setPendingOrderChanges] = useState(false);
   const [reorderedStreams, setReorderedStreams] = useState<RadioStream[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ['radioStreams'],
@@ -67,9 +71,30 @@ const AdminStreams = () => {
         ? Math.max(...streams.map(s => s.position || 0)) + 1 
         : 0;
       
+      // Handle image upload if an image is selected
+      let coverImageUrl = null;
+      if (imageFile) {
+        const fileName = `${Date.now()}-${imageFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('public')
+          .upload(`stream-images/${fileName}`, imageFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: publicUrlData } = supabase.storage
+          .from('public')
+          .getPublicUrl(`stream-images/${fileName}`);
+          
+        coverImageUrl = publicUrlData.publicUrl;
+      }
+      
       const { data, error } = await supabase
         .from('radio_streams')
-        .insert({ ...newStream, position: maxPosition })
+        .insert({ 
+          ...newStream, 
+          position: maxPosition,
+          cover_image_url: coverImageUrl
+        })
         .select();
       
       if (error) throw error;
@@ -89,18 +114,37 @@ const AdminStreams = () => {
   
   const updateStreamMutation = useMutation({
     mutationFn: async (stream: RadioStream) => {
+      let coverImageUrl = stream.cover_image_url;
+      
+      // Handle image upload if an image is selected
+      if (imageFile) {
+        const fileName = `${Date.now()}-${imageFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('public')
+          .upload(`stream-images/${fileName}`, imageFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: publicUrlData } = supabase.storage
+          .from('public')
+          .getPublicUrl(`stream-images/${fileName}`);
+          
+        coverImageUrl = publicUrlData.publicUrl;
+      }
+      
       const { error } = await supabase
         .from('radio_streams')
         .update({
           title: stream.title,
           url: stream.url,
           description: stream.description,
-          is_active: stream.is_active
+          is_active: stream.is_active,
+          cover_image_url: coverImageUrl
         })
         .eq('id', stream.id);
       
       if (error) throw error;
-      return stream;
+      return { ...stream, cover_image_url: coverImageUrl };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
@@ -189,6 +233,8 @@ const AdminStreams = () => {
     setUrl("");
     setDescription("");
     setIsActive(true);
+    setImageFile(null);
+    setImagePreview(null);
   };
   
   const handleOpenNew = () => {
@@ -203,6 +249,7 @@ const AdminStreams = () => {
     setUrl(stream.url);
     setDescription(stream.description || "");
     setIsActive(stream.is_active);
+    setImagePreview(stream.cover_image_url);
     setIsDialogOpen(true);
   };
   
@@ -238,7 +285,8 @@ const AdminStreams = () => {
         title,
         url,
         description,
-        is_active: isActive
+        is_active: isActive,
+        cover_image_url: null
       });
     }
   };
@@ -246,6 +294,21 @@ const AdminStreams = () => {
   const handleSaveOrder = () => {
     if (!pendingOrderChanges || reorderedStreams.length === 0) return;
     saveOrderMutation.mutate(reorderedStreams);
+  };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImageFile(null);
+      setImagePreview(currentStream?.cover_image_url || null);
+    }
   };
   
   const isValidUrl = (url: string) => {
@@ -469,6 +532,44 @@ const AdminStreams = () => {
               />
             </div>
             
+            <div className="space-y-2">
+              <Label htmlFor="cover-image">Afbeelding (optioneel)</Label>
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => document.getElementById('cover-image')?.click()}
+                      className="flex items-center gap-1.5"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Afbeelding kiezen
+                    </Button>
+                    {imageFile && (
+                      <span className="text-sm text-muted-foreground">{imageFile.name}</span>
+                    )}
+                  </div>
+                  <Input
+                    id="cover-image"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Aanbevolen afmeting: 400x400px</p>
+                </div>
+                
+                {imagePreview && (
+                  <div 
+                    className="h-24 w-24 rounded-md bg-cover bg-center border"
+                    style={{ backgroundImage: `url(${imagePreview})` }}
+                  />
+                )}
+              </div>
+            </div>
+            
             <div className="flex items-center space-x-2">
               <Switch
                 id="is-active"
@@ -505,21 +606,33 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
     <Card className={stream.is_active ? "" : "opacity-70"}>
       <CardContent className="p-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1 flex-1">
-            <div className="flex items-center">
-              <Radio className="h-4 w-4 mr-2 text-primary" />
-              <h3 className="font-medium">{stream.title}</h3>
-              {!stream.is_active && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-sm">Inactief</span>}
-            </div>
-            {stream.description && (
-              <p className="text-sm text-muted-foreground">{stream.description}</p>
+          <div className="space-y-1 flex-1 flex items-start gap-3">
+            {stream.cover_image_url ? (
+              <div 
+                className="h-12 w-12 rounded-md bg-cover bg-center flex-shrink-0 border"
+                style={{ backgroundImage: `url(${stream.cover_image_url})` }}
+              />
+            ) : (
+              <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center flex-shrink-0 border">
+                <Radio className="h-5 w-5 text-muted-foreground" />
+              </div>
             )}
-            <p className="text-xs text-blue-500 hover:underline break-all">
-              <a href={stream.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                <ExternalLink className="h-3 w-3 mr-1 inline-block flex-shrink-0" />
-                <span>{stream.url}</span>
-              </a>
-            </p>
+            
+            <div className="space-y-1">
+              <div className="flex items-center">
+                <h3 className="font-medium">{stream.title}</h3>
+                {!stream.is_active && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-sm">Inactief</span>}
+              </div>
+              {stream.description && (
+                <p className="text-sm text-muted-foreground">{stream.description}</p>
+              )}
+              <p className="text-xs text-blue-500 hover:underline break-all">
+                <a href={stream.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                  <ExternalLink className="h-3 w-3 mr-1 inline-block flex-shrink-0" />
+                  <span>{stream.url}</span>
+                </a>
+              </p>
+            </div>
           </div>
           
           <div className="flex gap-1 ml-2">
@@ -556,3 +669,4 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
 };
 
 export default AdminStreams;
+
