@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
+import { validateAudioUrl } from "@/components/audio-player/utils";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -52,34 +53,13 @@ export const MeditationDetailDialog = ({
 }: MeditationDetailDialogProps) => {
   const { toast: useToastFn } = useToast();
   const [audioUrl, setAudioUrl] = useState<string>("");
-  const [audioKey, setAudioKey] = useState<number>(0); // Add a key to force Audio player to remount
+  const [audioKey, setAudioKey] = useState<number>(0); 
   
-  useEffect(() => {
-    if (isOpen) {
-      const url = getActiveAudioUrl();
-      setAudioUrl(url);
-      console.log("Active audio URL in dialog:", url);
-      console.log("Selected audio source:", selectedAudioSource);
-      
-      // Increment the key to force AudioPlayer remount when the source changes
-      setAudioKey(prevKey => prevKey + 1);
-      
-      // Check if Marco's link exists when Marco is selected
-      if (selectedAudioSource === 'marco' && meditation && !meditation.marcoLink) {
-        useToastFn({
-          title: "Marco's versie niet beschikbaar",
-          description: "De meditatie van Marco is niet beschikbaar. We spelen de standaard versie af.",
-          variant: "destructive"
-        });
-      }
-    }
-  }, [isOpen, getActiveAudioUrl, selectedAudioSource, meditation, useToastFn]);
-  
-  if (!meditation) return null;
+  // Move all hooks to the top level to avoid conditional hook calls
+  const [showSourceNotAvailableWarning, setShowSourceNotAvailableWarning] = useState(false);
   
   // Get the currently selected guided meditation ID
   const getCurrentGuidedMeditationId = () => {
-    // If we're playing a guided meditation, we need to exclude it from the dropdown
     const currentAudioUrl = getActiveAudioUrl();
     const currentGuidedMeditation = guidedMeditations.find(
       med => med.audioUrl === currentAudioUrl || 
@@ -95,6 +75,53 @@ export const MeditationDetailDialog = ({
   const filteredGuidedMeditations = guidedMeditations.filter(
     med => med.id !== currentGuidedMeditationId
   );
+  
+  useEffect(() => {
+    if (isOpen && meditation) {
+      // Reset warnings
+      setShowSourceNotAvailableWarning(false);
+      
+      const url = getActiveAudioUrl();
+      setAudioUrl(url);
+      console.log("Active audio URL in dialog:", url);
+      console.log("Selected audio source:", selectedAudioSource);
+      
+      // Increment the key to force AudioPlayer remount when the source changes
+      setAudioKey(prevKey => prevKey + 1);
+      
+      // Check if Marco's link exists when Marco is selected
+      if (selectedAudioSource === 'marco' && meditation && !meditation.marcoLink) {
+        setShowSourceNotAvailableWarning(true);
+        useToastFn({
+          title: "Marco's versie niet beschikbaar",
+          description: "De meditatie van Marco is niet beschikbaar. We spelen de standaard versie af.",
+          variant: "destructive"
+        });
+      }
+      
+      // Check if Vera's link exists when Vera is selected
+      if (selectedAudioSource === 'vera' && meditation && !meditation.veraLink && !meditation.audioUrl) {
+        setShowSourceNotAvailableWarning(true);
+        useToastFn({
+          title: "Vera's versie niet beschikbaar",
+          description: "De meditatie van Vera is niet beschikbaar.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [isOpen, getActiveAudioUrl, selectedAudioSource, meditation, useToastFn]);
+  
+  if (!meditation) return null;
+  
+  // Function to check if an audio URL is valid (not empty)
+  const isValidAudioUrl = (url: string | undefined): boolean => {
+    return !!url && url.trim() !== '';
+  };
+  
+  // Check if the selected source has a valid URL
+  const hasValidSelectedAudio = selectedAudioSource === 'vera' 
+    ? isValidAudioUrl(meditation.veraLink) || isValidAudioUrl(meditation.audioUrl)
+    : isValidAudioUrl(meditation.marcoLink);
   
   const handleSelectSource = (source: 'vera' | 'marco', meditation?: Meditation) => {
     const targetMeditation = meditation || null;
@@ -131,16 +158,6 @@ export const MeditationDetailDialog = ({
       console.log("Audio source changed to:", source, "New URL:", newUrl);
     }, 100);
   };
-  
-  // Function to check if an audio URL is valid (not empty)
-  const isValidAudioUrl = (url: string | undefined): boolean => {
-    return !!url && url.trim() !== '';
-  };
-  
-  // Check if the selected source has a valid URL
-  const hasValidSelectedAudio = selectedAudioSource === 'vera' 
-    ? isValidAudioUrl(meditation.veraLink) || isValidAudioUrl(meditation.audioUrl)
-    : isValidAudioUrl(meditation.marcoLink);
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

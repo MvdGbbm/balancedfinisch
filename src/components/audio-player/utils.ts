@@ -13,3 +13,20 @@ export const getRandomQuote = () => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   return quotes[randomIndex];
 };
+
+export const validateAudioUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  
+  // Remove any trailing or leading whitespace
+  url = url.trim();
+  
+  // Ensure URL has valid protocol
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+    // If it's a relative path, add leading slash
+    if (!url.startsWith('/')) {
+      url = '/' + url;
+    }
+  }
+  
+  return url;
+};
