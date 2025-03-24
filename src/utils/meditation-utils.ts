@@ -6,10 +6,21 @@ import { toast } from "sonner";
 const urlCache = new Map<string, string>();
 
 /**
- * Haalt een publieke URL op voor een bestand in Supabase storage
+ * Haalt een publieke URL op voor een bestand in Supabase storage of gebruikt de fallback
  */
 export const getPublicUrl = async (path: string, bucket = 'meditations'): Promise<string> => {
-  if (!path || path.startsWith('http')) {
+  if (!path) {
+    console.error('Empty path provided to getPublicUrl');
+    return '/placeholder.svg'; // Fallback naar placeholder
+  }
+  
+  // Als al een volledige URL is, retourneer die direct
+  if (path.startsWith('http')) {
+    return path;
+  }
+  
+  // Als het een lokaal pad is (begint met /), gebruik het direct
+  if (path.startsWith('/')) {
     return path;
   }
   
@@ -30,11 +41,12 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
       console.log(`Loaded URL from ${bucket} for path: ${path}`, data.publicUrl);
       return data.publicUrl;
     }
-    return path;
+    
+    console.error(`No public URL returned for path: ${path} from bucket: ${bucket}`);
+    return '/placeholder.svg'; // Fallback naar placeholder
   } catch (error) {
     console.error(`Error getting public URL for ${path} from ${bucket}:`, error);
-    toast.error(`Kon bestand niet laden: ${path}`);
-    return path;
+    return '/placeholder.svg'; // Fallback naar placeholder
   }
 };
 
@@ -43,28 +55,34 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
  */
 export const processMeditationUrls = async (meditations: Meditation[]): Promise<Meditation[]> => {
   try {
-    console.log("Processing meditation URLs...");
+    console.log("Processing meditation URLs for", meditations.length, "meditations");
     
     const processed = await Promise.all(
       meditations.map(async (meditation) => {
-        let audioUrl = meditation.audioUrl;
-        let coverImageUrl = meditation.coverImageUrl;
-        
-        // Verwerk audio URL
-        if (audioUrl && !audioUrl.startsWith('http')) {
-          audioUrl = await getPublicUrl(audioUrl);
+        try {
+          let audioUrl = meditation.audioUrl || '';
+          let coverImageUrl = meditation.coverImageUrl || '/placeholder.svg';
+          
+          // Verwerk audio URL als die bestaat
+          if (audioUrl && !audioUrl.startsWith('http') && !audioUrl.startsWith('/')) {
+            audioUrl = await getPublicUrl(audioUrl);
+          }
+          
+          // Verwerk afbeelding URL
+          if (coverImageUrl && !coverImageUrl.startsWith('http') && !coverImageUrl.startsWith('/')) {
+            coverImageUrl = await getPublicUrl(coverImageUrl, 'meditations');
+          }
+          
+          return {
+            ...meditation,
+            audioUrl,
+            coverImageUrl
+          };
+        } catch (err) {
+          console.error(`Error processing meditation ${meditation.id}:`, err);
+          // Return the meditation with unprocessed URLs als er een fout is
+          return meditation;
         }
-        
-        // Verwerk afbeelding URL
-        if (coverImageUrl && !coverImageUrl.startsWith('http')) {
-          coverImageUrl = await getPublicUrl(coverImageUrl);
-        }
-        
-        return {
-          ...meditation,
-          audioUrl,
-          coverImageUrl
-        };
       })
     );
     
@@ -116,6 +134,9 @@ export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<
   }
 };
 
+/**
+ * Filtert meditaties op basis van zoekterm en categorie
+ */
 export const filterMeditations = (meditations: Meditation[], searchQuery: string, selectedCategory: string | null): Meditation[] => {
   return meditations.filter((meditation) => {
     const matchesSearch = meditation.title

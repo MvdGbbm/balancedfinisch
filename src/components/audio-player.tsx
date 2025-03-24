@@ -13,6 +13,7 @@ interface AudioPlayerProps {
   title?: string;
   className?: string;
   onEnded?: () => void;
+  onError?: () => void;
   customSoundscapeSelector?: React.ReactNode;
   showQuote?: boolean;
 }
@@ -24,6 +25,7 @@ export function AudioPlayer({
   title,
   className, 
   onEnded,
+  onError,
   customSoundscapeSelector,
   showQuote = false
 }: AudioPlayerProps) {
@@ -87,6 +89,7 @@ export function AudioPlayer({
           title: "Fout bij laden",
           description: "Kon de audio niet laden. Controleer of het bestand bestaat."
         });
+        if (onError) onError();
       }
     };
     
@@ -104,7 +107,7 @@ export function AudioPlayer({
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError]);
   
   useEffect(() => {
     const audio = audioRef.current;

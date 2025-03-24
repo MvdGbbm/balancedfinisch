@@ -1,9 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -15,17 +16,44 @@ export function MeditationPlayerContainer({
   selectedMeditation 
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  
+  useEffect(() => {
+    if (selectedMeditation) {
+      // Reset errors when meditation changes
+      setAudioError(false);
+      setImageError(false);
+      
+      // Log the meditation details for debugging
+      console.log("Selected meditation:", selectedMeditation);
+    }
+  }, [selectedMeditation]);
   
   if (!isVisible || !selectedMeditation) {
     return null;
   }
   
-  // Controleer of de audioUrl bestaat en geldig is
+  // Check if the audioUrl exists and is valid
   const hasValidAudio = selectedMeditation.audioUrl && 
     (selectedMeditation.audioUrl.startsWith('http') || 
     selectedMeditation.audioUrl.startsWith('/'));
   
-  if (!hasValidAudio) {
+  // Check if the coverImageUrl exists and is valid
+  const hasValidImage = selectedMeditation.coverImageUrl && 
+    (selectedMeditation.coverImageUrl.startsWith('http') || 
+    selectedMeditation.coverImageUrl.startsWith('/'));
+  
+  const handleAudioError = () => {
+    setAudioError(true);
+    toast.error("Kon de audio niet laden. Controleer de URL.");
+  };
+  
+  const handleImageError = () => {
+    setImageError(true);
+    toast.error("Kon de afbeelding niet laden. Controleer de URL.");
+  };
+
+  if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
         <Alert variant="destructive">
@@ -40,12 +68,33 @@ export function MeditationPlayerContainer({
 
   return (
     <div className="mt-4">
+      {hasValidImage && !imageError && (
+        <div className="mb-4">
+          <img 
+            src={selectedMeditation.coverImageUrl}
+            alt={selectedMeditation.title}
+            className="w-full h-48 object-cover rounded-lg"
+            onError={handleImageError}
+          />
+        </div>
+      )}
+      
+      {imageError && (
+        <Alert className="mb-4" variant="warning">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}
         title={selectedMeditation.title}
         showTitle
         showControls
         className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
+        onError={handleAudioError}
       />
     </div>
   );
