@@ -3,17 +3,19 @@ import React, { useState, useEffect } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
   selectedMeditation: Meditation | null;
+  isStreamMode?: boolean;
 }
 
 export function MeditationPlayerContainer({ 
   isVisible, 
-  selectedMeditation 
+  selectedMeditation,
+  isStreamMode = false 
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -59,7 +61,7 @@ export function MeditationPlayerContainer({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
+            Geen audio beschikbaar voor deze {isStreamMode ? "stream" : "meditatie"}. Probeer een andere {isStreamMode ? "stream" : "meditatie"} te selecteren.
           </AlertDescription>
         </Alert>
       </div>
@@ -83,7 +85,7 @@ export function MeditationPlayerContainer({
         <Alert className="mb-4" variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.
+            Kon de afbeelding niet laden. De {isStreamMode ? "stream" : "meditatie"} is nog steeds beschikbaar.
           </AlertDescription>
         </Alert>
       )}
@@ -93,6 +95,7 @@ export function MeditationPlayerContainer({
         title={selectedMeditation.title}
         showTitle
         showControls
+        isStream={isStreamMode}
         className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
         onError={handleAudioError}
       />

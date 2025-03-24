@@ -27,15 +27,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, FileAudio, Image, Tag, Music } from "lucide-react";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, Play, Radio } from "lucide-react";
 
 import { Soundscape } from "@/lib/types";
 
 const AdminMusic = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
   
+  // Filter by music type
+  const [activeTab, setActiveTab] = useState("music");
+  
   // Filter only music items (category "Muziek")
   const musicItems = soundscapes.filter(item => item.category === "Muziek");
+  const radioItems = soundscapes.filter(item => item.category === "Radio");
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
@@ -74,7 +85,7 @@ const AdminMusic = () => {
   };
   
   const handleDelete = (id: string) => {
-    if (window.confirm("Weet je zeker dat je dit muziekstuk wilt verwijderen?")) {
+    if (window.confirm(`Weet je zeker dat je dit ${activeTab === "radio" ? "radio station" : "muziekstuk"} wilt verwijderen?`)) {
       deleteSoundscape(id);
     }
   };
@@ -91,7 +102,7 @@ const AdminMusic = () => {
   };
   
   const handleSave = () => {
-    if (!title || !description || !audioUrl || !coverImageUrl) {
+    if (!title || !description || !audioUrl) {
       alert("Vul alle verplichte velden in");
       return;
     }
@@ -101,7 +112,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: "Muziek", // Always set category to "Muziek"
+        category: activeTab === "radio" ? "Radio" : "Muziek", // Set category based on active tab
         coverImageUrl,
         tags,
       });
@@ -110,7 +121,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: "Muziek", // Always set category to "Muziek"
+        category: activeTab === "radio" ? "Radio" : "Muziek", // Set category based on active tab
         coverImageUrl,
         tags,
       });
@@ -120,87 +131,202 @@ const AdminMusic = () => {
     resetForm();
   };
   
+  // Update database entries if needed
+  const updateDatabase = async () => {
+    try {
+      // Check if we need to update the database
+      for (const soundscape of soundscapes) {
+        if (soundscape.category === "Radio" || soundscape.category === "Muziek") {
+          // Try to add to the database if it's not already there
+          const { data, error } = await supabase
+            .from('music_items')
+            .select('id')
+            .eq('id', soundscape.id)
+            .single();
+          
+          if (error && error.code === 'PGRST116') {
+            // Record doesn't exist, so insert it
+            await supabase.from('music_items').insert({
+              id: soundscape.id,
+              title: soundscape.title,
+              description: soundscape.description || '',
+              audio_url: soundscape.audioUrl,
+              cover_image_url: soundscape.coverImageUrl || '',
+              category: soundscape.category,
+              tags: soundscape.tags || []
+            });
+            console.log(`Added ${soundscape.category} item to database: ${soundscape.title}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error synchronizing with database:", error);
+    }
+  };
+  
+  // On component mount, update the database
+  useEffect(() => {
+    updateDatabase();
+  }, []);
+  
   return (
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Muziek Beheren</h1>
-          <Button onClick={handleOpenNew}>
-            <Music className="h-4 w-4 mr-2" />
-            Nieuwe Muziek
-          </Button>
-        </div>
-        
-        <p className="text-muted-foreground">
-          Voeg nieuwe muziek toe of bewerk bestaande muziekstukken
-        </p>
-        
-        <div className="space-y-8 pb-20">
-          {musicItems.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {musicItems.map((musicItem) => (
-                <Card key={musicItem.id} className="overflow-hidden">
-                  <div className="aspect-video bg-cover bg-center relative">
-                    <img 
-                      src={musicItem.coverImageUrl} 
-                      alt={musicItem.title}
-                      className="w-full h-full object-cover" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-white font-medium">{musicItem.title}</h3>
-                      <p className="text-white/80 text-sm truncate">
-                        {musicItem.description}
-                      </p>
-                    </div>
-                    <div className="absolute top-2 right-2 flex gap-1">
-                      <Button 
-                        variant="secondary" 
-                        size="icon"
-                        className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                        onClick={() => handleEdit(musicItem)}
-                      >
-                        <Edit className="h-4 w-4 text-white" />
-                      </Button>
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                        onClick={() => handleDelete(musicItem.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-white" />
-                      </Button>
-                    </div>
-                  </div>
-                  <CardFooter className="p-3 bg-background">
-                    <AudioPlayer audioUrl={musicItem.audioUrl} showControls={false} />
-                  </CardFooter>
-                </Card>
-              ))}
+        <Tabs defaultValue="music" onValueChange={setActiveTab}>
+          <div className="flex justify-between items-center">
+            <TabsList>
+              <TabsTrigger value="music">Muziek</TabsTrigger>
+              <TabsTrigger value="radio">Radio Streams</TabsTrigger>
+            </TabsList>
+            <Button onClick={handleOpenNew}>
+              {activeTab === "radio" ? <Radio className="h-4 w-4 mr-2" /> : <Music className="h-4 w-4 mr-2" />}
+              {activeTab === "radio" ? "Nieuwe Radio Stream" : "Nieuwe Muziek"}
+            </Button>
+          </div>
+          
+          <TabsContent value="music">
+            <h1 className="text-2xl font-bold">Muziek Beheren</h1>
+            <p className="text-muted-foreground mb-4">
+              Voeg nieuwe muziek toe of bewerk bestaande muziekstukken
+            </p>
+            
+            <div className="space-y-8 pb-20">
+              {musicItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {musicItems.map((musicItem) => (
+                    <Card key={musicItem.id} className="overflow-hidden">
+                      <div className="aspect-video bg-cover bg-center relative">
+                        <img 
+                          src={musicItem.coverImageUrl} 
+                          alt={musicItem.title}
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <h3 className="text-white font-medium">{musicItem.title}</h3>
+                          <p className="text-white/80 text-sm truncate">
+                            {musicItem.description}
+                          </p>
+                        </div>
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <Button 
+                            variant="secondary" 
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                            onClick={() => handleEdit(musicItem)}
+                          >
+                            <Edit className="h-4 w-4 text-white" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                            onClick={() => handleDelete(musicItem.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-white" />
+                          </Button>
+                        </div>
+                      </div>
+                      <CardFooter className="p-3 bg-background">
+                        <AudioPlayer audioUrl={musicItem.audioUrl} showControls={false} />
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-muted-foreground mb-4">
+                    Er zijn nog geen muziekstukken. Voeg je eerste muziekstuk toe!
+                  </p>
+                  <Button onClick={handleOpenNew}>
+                    <Music className="h-4 w-4 mr-2" />
+                    Nieuwe Muziek
+                  </Button>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground mb-4">
-                Er zijn nog geen muziekstukken. Voeg je eerste muziekstuk toe!
-              </p>
-              <Button onClick={handleOpenNew}>
-                <Music className="h-4 w-4 mr-2" />
-                Nieuwe Muziek
-              </Button>
+          </TabsContent>
+          
+          <TabsContent value="radio">
+            <h1 className="text-2xl font-bold">Radio Streams Beheren</h1>
+            <p className="text-muted-foreground mb-4">
+              Voeg nieuwe radio streams toe of bewerk bestaande stations
+            </p>
+            
+            <div className="space-y-8 pb-20">
+              {radioItems.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {radioItems.map((radioItem) => (
+                    <Card key={radioItem.id} className="overflow-hidden">
+                      <div className="aspect-video bg-cover bg-center relative">
+                        <img 
+                          src={radioItem.coverImageUrl || "https://placehold.co/600x400?text=Radio+Stream"} 
+                          alt={radioItem.title}
+                          className="w-full h-full object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <h3 className="text-white font-medium">{radioItem.title}</h3>
+                          <p className="text-white/80 text-sm truncate">
+                            {radioItem.description}
+                          </p>
+                        </div>
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <Button 
+                            variant="secondary" 
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                            onClick={() => handleEdit(radioItem)}
+                          >
+                            <Edit className="h-4 w-4 text-white" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="icon"
+                            className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                            onClick={() => handleDelete(radioItem.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-white" />
+                          </Button>
+                        </div>
+                      </div>
+                      <CardFooter className="p-3 bg-background">
+                        <AudioPlayer audioUrl={radioItem.audioUrl} showControls={false} isStream={true} />
+                      </CardFooter>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-muted-foreground mb-4">
+                    Er zijn nog geen radio streams. Voeg je eerste radio stream toe!
+                  </p>
+                  <Button onClick={handleOpenNew}>
+                    <Radio className="h-4 w-4 mr-2" />
+                    Nieuwe Radio Stream
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
       
-      {/* Add/Edit Music Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {currentMusicItem ? "Muziek Bewerken" : "Nieuwe Muziek"}
+              {currentMusicItem 
+                ? activeTab === "radio" ? "Radio Stream Bewerken" : "Muziek Bewerken"
+                : activeTab === "radio" ? "Nieuwe Radio Stream" : "Nieuwe Muziek"
+              }
             </DialogTitle>
             <DialogDescription>
-              Vul de details in voor de muziek
+              {activeTab === "radio"
+                ? "Vul de details in voor de radio stream"
+                : "Vul de details in voor de muziek"
+              }
             </DialogDescription>
           </DialogHeader>
           
@@ -210,7 +336,7 @@ const AdminMusic = () => {
                 <Label htmlFor="title">Titel</Label>
                 <Input
                   id="title"
-                  placeholder="Titel van de muziek"
+                  placeholder={activeTab === "radio" ? "Naam van het radio station" : "Titel van de muziek"}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -220,7 +346,7 @@ const AdminMusic = () => {
                 <Label htmlFor="description">Beschrijving</Label>
                 <Textarea
                   id="description"
-                  placeholder="Beschrijving van de muziek"
+                  placeholder={activeTab === "radio" ? "Beschrijving van het radio station" : "Beschrijving van de muziek"}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
@@ -271,11 +397,13 @@ const AdminMusic = () => {
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="audioUrl">Audio URL</Label>
+                <Label htmlFor="audioUrl">
+                  {activeTab === "radio" ? "Stream URL" : "Audio URL"}
+                </Label>
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
-                    placeholder="URL naar audio bestand"
+                    placeholder={activeTab === "radio" ? "URL naar radio stream" : "URL naar audio bestand"}
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
                   />
@@ -315,7 +443,7 @@ const AdminMusic = () => {
                     alt="Preview" 
                     className="w-full h-full object-cover" 
                     onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      e.currentTarget.src = "https://placehold.co/600x400?text=Ongeldige+Afbeelding";
                     }}
                   />
                 </div>
@@ -324,7 +452,10 @@ const AdminMusic = () => {
               {audioUrl && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
-                  <AudioPlayer audioUrl={audioUrl} />
+                  <AudioPlayer 
+                    audioUrl={audioUrl} 
+                    isStream={activeTab === "radio"}
+                  />
                 </div>
               )}
             </div>

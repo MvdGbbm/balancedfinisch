@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +11,7 @@ import { Soundscape } from "@/lib/types";
 import { Playlist, PlaylistTrack } from "@/components/playlist/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
+import { RadioStreamPlayer } from "@/components/radio-stream-player";
 
 const Music = () => {
   const { soundscapes } = useApp();
@@ -234,14 +234,14 @@ const Music = () => {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Ontspannende Muziek</h1>
           <p className="text-muted-foreground">
-            Luister naar rustgevende muziek voor meditatie en ontspanning
+            Luister naar rustgevende muziek en radio streams
           </p>
         </div>
 
         <Tabs defaultValue="music">
           <TabsList className="grid grid-cols-2 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
-            <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
+            <TabsTrigger value="radio">Radio</TabsTrigger>
           </TabsList>
           
           <TabsContent value="music" className="space-y-4">
@@ -289,6 +289,10 @@ const Music = () => {
                 <p className="text-muted-foreground">Geen muziek tracks gevonden</p>
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="radio" className="space-y-4">
+            <RadioStreamPlayer />
           </TabsContent>
           
           <TabsContent value="playlists" className="space-y-4">
