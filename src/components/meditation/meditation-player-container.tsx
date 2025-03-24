@@ -5,7 +5,6 @@ import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, StopCircle } from "lucide-react";
 import { toast } from "sonner";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Button } from "@/components/ui/button";
 
 interface MeditationPlayerContainerProps {
@@ -114,7 +113,7 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <ToneEqualizer isActive={isPlaying} className="mb-2" audioRef={audioRef} />
+      {/* Removed the ToneEqualizer from here */}
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}

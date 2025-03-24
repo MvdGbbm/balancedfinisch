@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -224,7 +223,6 @@ const Music = () => {
       return;
     }
     
-    // If this playlist is already playing, stop it
     if (selectedPlaylist?.id === playlist.id && isPlaying) {
       handleStopPlaylist();
       return;
@@ -358,8 +356,6 @@ const Music = () => {
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
-          
-          <ToneEqualizer isActive={isAudioActive} className="mb-4" audioRef={audioPlayerRef} />
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
