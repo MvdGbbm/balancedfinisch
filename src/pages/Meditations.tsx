@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -36,7 +35,6 @@ const Meditations = () => {
   
   const filteredMeditations = filterMeditations(processedMeditations, searchQuery, selectedCategory);
   
-  // Get guided meditations - no tag filtering needed
   const guidedMeditations = processedMeditations.filter(
     meditation => meditation.category === "Geleide Meditaties"
   );
@@ -68,8 +66,16 @@ const Meditations = () => {
     return currentMeditationWithUrls.audioUrl || '';
   };
   
+  const handleGuidedMeditationSelect = (meditation: Meditation) => {
+    setSelectedGuidedMeditation(meditation);
+    if (meditation.audioUrl) {
+      console.log("Selected guided meditation:", meditation.title);
+    } else {
+      toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
+    }
+  };
+  
   useEffect(() => {
-    // Log the current selection state when it changes
     if (currentMeditationWithUrls) {
       console.log("Current meditation:", currentMeditationWithUrls.title);
       console.log("Active URL:", getActiveAudioUrl());
@@ -113,7 +119,6 @@ const Meditations = () => {
                 setCurrentMeditation(med);
                 setSelectedGuidedMeditation(null);
                 
-                // Check if audio is available
                 if (!med.audioUrl) {
                   toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
                   return;
