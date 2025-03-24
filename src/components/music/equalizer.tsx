@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -17,7 +16,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
-  const numBars = 32; // Increased from 24 to 32 bars for more detailed visualization
+  const numBars = 30; // Changed from 32 to 30 bars as requested
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
@@ -266,9 +265,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           className={cn(
             "w-full rounded-t-sm transition-all ease-in-out",
             isActive 
-              ? index % 2 === 0 
-                ? "bg-gradient-to-t from-blue-700 to-blue-400" 
-                : "bg-gradient-to-t from-indigo-700 to-indigo-400"
+              ? "bg-gradient-to-t from-blue-700 to-blue-400" 
               : "bg-blue-300/30"
           )}
           style={{ 
