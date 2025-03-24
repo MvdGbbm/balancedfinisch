@@ -1,4 +1,3 @@
-
 import { RefObject, useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,6 +76,10 @@ export function useAudioEngine({
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const checkIfLiveStream = (url: string) => {
+    if (url.includes('meditation') || url.includes('meditatie')) {
+      return false;
+    }
+    
     return url.includes('radio') || 
            url.includes('stream') || 
            url.includes('live') || 
@@ -310,7 +313,17 @@ export function useAudioEngine({
     
     const setAudioData = () => {
       console.log("Audio loaded. Duration:", audio.duration);
-      if (audio.duration !== Infinity && !isNaN(audio.duration)) {
+      
+      // Specifically force duration for meditation files
+      if (audioUrl.includes('meditation') || audioUrl.includes('meditatie')) {
+        setIsLiveStream(false);
+        if (!isNaN(audio.duration) && audio.duration !== Infinity) {
+          setDuration(audio.duration);
+        } else {
+          // Default duration for meditation files if we can't determine it
+          setDuration(300); // 5 minutes default
+        }
+      } else if (audio.duration !== Infinity && !isNaN(audio.duration)) {
         setDuration(audio.duration);
         setIsLiveStream(false);
       } else {
@@ -423,7 +436,10 @@ export function useAudioEngine({
     audio.loop = isLooping;
     
     audio.addEventListener("progress", () => {
-      if (audio.duration === Infinity || isNaN(audio.duration)) {
+      // Only consider it a livestream if it matches our criteria
+      // For meditation files, ensure we never mark them as livestreams
+      if ((audio.duration === Infinity || isNaN(audio.duration)) && 
+          !audioUrl.includes('meditation') && !audioUrl.includes('meditatie')) {
         setIsLiveStream(true);
       }
     });

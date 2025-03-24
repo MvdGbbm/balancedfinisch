@@ -48,7 +48,7 @@ export function ProgressBar({
         />
       </div>
       <div className="text-xs w-10">
-        {isLiveStream ? "LIVE" : formatTime(duration)}
+        {isLiveStream && duration === 0 ? "LIVE" : formatTime(duration)}
       </div>
     </div>
   );

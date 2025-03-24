@@ -1,3 +1,4 @@
+
 import { Meditation, Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -62,6 +63,11 @@ export const checkAudioCompatibility = async (url: string): Promise<boolean> => 
     
     // Voor lokale bestanden, accepteer alle
     if (url.startsWith('/')) {
+      return true;
+    }
+    
+    // Voor meditatie bestanden, altijd als compatibel beschouwen
+    if (url.includes('meditation') || url.includes('meditatie')) {
       return true;
     }
     
