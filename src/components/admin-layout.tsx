@@ -2,7 +2,7 @@
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Lock, FileMusic, Music, Quote, Home } from "lucide-react";
+import { Moon, Sun, Lock, FileMusic, Music, Quote, Home, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
