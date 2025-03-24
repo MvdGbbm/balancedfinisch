@@ -20,6 +20,7 @@ export function MeditationPlayerContainer({
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -27,6 +28,7 @@ export function MeditationPlayerContainer({
       setAudioError(false);
       setImageError(false);
       setIsPlaying(false);
+      setCurrentAudioUrl(selectedMeditation.audioUrl || "");
       setPlayerKey(prevKey => prevKey + 1);
       
       console.log("Selected meditation:", selectedMeditation);
@@ -53,7 +55,7 @@ export function MeditationPlayerContainer({
   const handleAudioError = () => {
     setAudioError(true);
     setIsPlaying(false);
-    console.error("Audio error for:", selectedMeditation.audioUrl);
+    console.error("Audio error for:", currentAudioUrl);
     toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
@@ -76,7 +78,7 @@ export function MeditationPlayerContainer({
     });
   };
 
-  const handleExternalLink = (linkType: 'vera' | 'marco') => {
+  const handlePlayExternalLink = (linkType: 'vera' | 'marco') => {
     let url = '';
     
     if (linkType === 'vera') {
@@ -100,25 +102,19 @@ export function MeditationPlayerContainer({
       }
       
       // Validate URL
-      const validatedUrl = new URL(url);
+      const validatedUrl = new URL(url).toString();
       
       // Log the validated URL for debugging
-      console.log(`Opening ${linkType} link:`, validatedUrl.toString());
+      console.log(`Playing ${linkType} link:`, validatedUrl);
       
-      // Open in new tab with security attributes
-      const newWindow = window.open(validatedUrl.toString(), '_blank');
+      // Set the new audio URL for the player
+      setCurrentAudioUrl(validatedUrl);
+      // Force audio player to remount with new URL
+      setPlayerKey(prevKey => prevKey + 1);
+      // Start playing
+      setIsPlaying(true);
       
-      // Check if window was blocked by popup blocker
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        toast.error(`Popup blocker heeft voorkomen dat de ${linkType} link geopend werd`);
-        console.error("Popup blocked for URL:", validatedUrl.toString());
-        return;
-      }
-      
-      // Ensure proper security attributes
-      newWindow.opener = null;
-      
-      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
+      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
     } catch (e) {
       console.error(`Invalid URL for ${linkType}:`, url, e);
       toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
@@ -201,7 +197,7 @@ export function MeditationPlayerContainer({
       
       <AudioPlayer 
         key={playerKey}
-        audioUrl={selectedMeditation.audioUrl || ''}
+        audioUrl={currentAudioUrl || ''}
         title={selectedMeditation.title}
         showTitle
         showControls
@@ -216,7 +212,7 @@ export function MeditationPlayerContainer({
         <Button
           variant="outline"
           className={`flex-1 ${selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'opacity-50'}`}
-          onClick={() => handleExternalLink('vera')}
+          onClick={() => handlePlayExternalLink('vera')}
           disabled={!selectedMeditation.veraLink}
           type="button"
         >
@@ -227,7 +223,7 @@ export function MeditationPlayerContainer({
         <Button
           variant="outline"
           className={`flex-1 ${selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'opacity-50'}`}
-          onClick={() => handleExternalLink('marco')}
+          onClick={() => handlePlayExternalLink('marco')}
           disabled={!selectedMeditation.marcoLink}
           type="button"
         >

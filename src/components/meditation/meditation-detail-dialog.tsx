@@ -62,7 +62,7 @@ export const MeditationDetailDialog = ({
     }
   }, [isOpen, meditation]);
   
-  const handleExternalLink = (linkType: 'vera' | 'marco') => {
+  const handlePlayExternalLink = (linkType: 'vera' | 'marco') => {
     if (!meditation) return;
     
     let url = '';
@@ -88,25 +88,18 @@ export const MeditationDetailDialog = ({
       }
       
       // Validate URL
-      const validatedUrl = new URL(url);
+      const validatedUrl = new URL(url).toString();
       
       // Log the validated URL for debugging
-      console.log(`Opening ${linkType} link:`, validatedUrl.toString());
+      console.log(`Playing ${linkType} link:`, validatedUrl);
       
-      // Open in new tab with security attributes
-      const newWindow = window.open(validatedUrl.toString(), '_blank');
+      // Set the new audio URL for the player
+      setAudioUrl(validatedUrl);
       
-      // Check if window was blocked by popup blocker
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        toast.error(`Popup blocker heeft voorkomen dat de ${linkType} link geopend werd`);
-        console.error("Popup blocked for URL:", validatedUrl.toString());
-        return;
-      }
+      // Increment the key to force AudioPlayer remount with new URL
+      setAudioKey(prevKey => prevKey + 1);
       
-      // Ensure proper security attributes
-      newWindow.opener = null;
-      
-      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
+      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
     } catch (e) {
       console.error(`Invalid URL for ${linkType}:`, url, e);
       toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
@@ -121,7 +114,7 @@ export const MeditationDetailDialog = ({
   };
   
   // Check if there's a valid audio URL
-  const hasValidAudio = isValidAudioUrl(meditation.audioUrl);
+  const hasValidAudio = isValidAudioUrl(audioUrl);
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -144,7 +137,7 @@ export const MeditationDetailDialog = ({
             <Button
               variant="outline"
               className={`flex-1 ${meditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'opacity-50'}`}
-              onClick={() => handleExternalLink('vera')}
+              onClick={() => handlePlayExternalLink('vera')}
               disabled={!meditation.veraLink}
               type="button"
             >
@@ -155,7 +148,7 @@ export const MeditationDetailDialog = ({
             <Button
               variant="outline"
               className={`flex-1 ${meditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'opacity-50'}`}
-              onClick={() => handleExternalLink('marco')}
+              onClick={() => handlePlayExternalLink('marco')}
               disabled={!meditation.marcoLink}
               type="button"
             >
