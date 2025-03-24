@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Equalizer as EqualizerIcon } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,7 @@ import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Equalizer } from "@/components/music/equalizer";
 
 interface RadioStream {
   id: string;
@@ -41,6 +42,8 @@ const Music = () => {
   const [hiddenIframeUrl, setHiddenIframeUrl] = useState<string | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const hiddenIframeRef = useRef<HTMLIFrameElement>(null);
+  const [activeTab, setActiveTab] = useState<string>("music");
+  const [isAudioActive, setIsAudioActive] = useState(false);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -97,6 +100,30 @@ const Music = () => {
       setNextTrack(null);
     }
   }, [currentTrack, currentTrackIndex, selectedPlaylist, soundscapes]);
+
+  useEffect(() => {
+    setIsAudioActive(isPlaying || isStreamPlaying);
+  }, [isPlaying, isStreamPlaying]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    
+    if (value !== activeTab) {
+      if (isPlaying) {
+        setIsPlaying(false);
+        setPreviewTrack(null);
+        setCurrentTrack(null);
+        setSelectedPlaylist(null);
+      }
+      
+      if (isStreamPlaying || hiddenIframeUrl) {
+        setIsStreamPlaying(false);
+        setStreamUrl("");
+        setStreamTitle("");
+        setHiddenIframeUrl(null);
+      }
+    }
+  };
 
   const handlePreviewTrack = (track: Soundscape) => {
     if (isStreamPlaying) {
@@ -287,12 +314,14 @@ const Music = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="music">
+        <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
           </TabsList>
+          
+          <Equalizer isActive={isAudioActive} className="mb-4" />
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
