@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -37,7 +36,6 @@ const Meditations = () => {
   
   const filteredMeditations = filterMeditations(processedMeditations, searchQuery, selectedCategory);
   
-  // Get guided meditations - no tag filtering needed
   const guidedMeditations = processedMeditations.filter(
     meditation => meditation.category === "Geleide Meditaties"
   );
@@ -126,6 +124,7 @@ const Meditations = () => {
                 setCurrentMeditation(med);
                 setSelectedGuidedMeditation(null);
               }}
+              hideAudioStatus={false}
             />
           ))}
           

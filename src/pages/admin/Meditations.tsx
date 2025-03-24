@@ -315,7 +315,11 @@ const AdminMeditations = () => {
                       </div>
                     </div>
                     <CardFooter className="p-3 bg-background">
-                      <AudioPlayer audioUrl={meditation.audioUrl} showControls={false} />
+                      <AudioPlayer 
+                        audioUrl={meditation.audioUrl} 
+                        showControls={false} 
+                        hideErrorMessage={true}
+                      />
                     </CardFooter>
                   </Card>
                 ))}

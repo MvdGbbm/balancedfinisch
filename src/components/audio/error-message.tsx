@@ -7,9 +7,19 @@ interface ErrorMessageProps {
   onRetry: () => void;
   isRetrying: boolean;
   customMessage?: string;
+  hideMessage?: boolean;
 }
 
-export function ErrorMessage({ onRetry, isRetrying, customMessage }: ErrorMessageProps) {
+export function ErrorMessage({ 
+  onRetry, 
+  isRetrying, 
+  customMessage, 
+  hideMessage = false 
+}: ErrorMessageProps) {
+  if (hideMessage) {
+    return null;
+  }
+  
   return (
     <div className="p-3 rounded-md bg-destructive/10 text-destructive">
       <div className="flex items-center gap-2 mb-2">

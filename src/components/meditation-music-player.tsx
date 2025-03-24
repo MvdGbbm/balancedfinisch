@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { Music } from "lucide-react";
@@ -103,6 +102,7 @@ export function MeditationMusicPlayer() {
       <MeditationPlayerContainer 
         isVisible={isPlayerVisible}
         selectedMeditation={selectedMeditation}
+        hideErrorMessage={false}
       />
     </div>
   );
