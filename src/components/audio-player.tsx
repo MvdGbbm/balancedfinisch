@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +20,7 @@ interface AudioPlayerProps {
   onPlayPauseChange?: (isPlaying: boolean) => void;
   nextAudioUrl?: string; // URL for the next track to crossfade
   onCrossfadeStart?: () => void; // Called when crossfade starts
+  isStream?: boolean; // Add isStream property for radio streams
 }
 
 export function AudioPlayer({ 
@@ -36,7 +36,8 @@ export function AudioPlayer({
   isPlayingExternal,
   onPlayPauseChange,
   nextAudioUrl,
-  onCrossfadeStart
+  onCrossfadeStart,
+  isStream = false // Default to false
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -59,10 +60,8 @@ export function AudioPlayer({
   const nextAudioRef = useRef<HTMLAudioElement | null>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
   
-  // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
   
-  // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
       if (isPlayingExternal && !isPlaying && isLoaded) {
@@ -80,12 +79,10 @@ export function AudioPlayer({
     }
   }, [isPlayingExternal, isPlaying, isLoaded]);
   
-  // Reset hasTransitionedToNext when audioUrl changes
   useEffect(() => {
     setHasTransitionedToNext(false);
   }, [audioUrl]);
   
-  // Set up crossfade when current track is near the end
   useEffect(() => {
     if (!nextAudioUrl || !isPlaying || isCrossfading) return;
     
@@ -94,27 +91,23 @@ export function AudioPlayer({
     
     if (!audio || !nextAudio || !isLoaded || duration === 0) return;
     
-    // Start crossfade when we're CROSSFADE_DURATION seconds from the end
+    if (isStream) return;
+    
     if (duration - currentTime <= CROSSFADE_DURATION && duration > CROSSFADE_DURATION) {
-      if (crossfadeTimeoutRef.current) return; // Prevent multiple crossfades
+      if (crossfadeTimeoutRef.current) return;
       
       setIsCrossfading(true);
       console.info("Starting crossfade");
       
-      // Preload next track
       nextAudio.volume = 0;
       nextAudio.currentTime = 0;
       
-      // Start playing next track and gradually increase volume
       nextAudio.play()
         .then(() => {
-          // Notify parent that crossfade has started
           if (onCrossfadeStart) onCrossfadeStart();
           
-          // Calculate how much time is left in current track
           const timeLeft = duration - currentTime;
           
-          // Gradually decrease volume of current track
           const fadeOutInterval = setInterval(() => {
             if (!audio) {
               clearInterval(fadeOutInterval);
@@ -129,7 +122,6 @@ export function AudioPlayer({
             }
           }, 100);
           
-          // Gradually increase volume of next track
           const fadeInInterval = setInterval(() => {
             if (!nextAudio) {
               clearInterval(fadeInInterval);
@@ -144,13 +136,10 @@ export function AudioPlayer({
             }
           }, 100);
           
-          // When current track ends, trigger onEnded and reset crossfade
           crossfadeTimeoutRef.current = window.setTimeout(() => {
             if (onEnded) {
               onEnded();
-              // Mark that we've transitioned to the next track
               setHasTransitionedToNext(true);
-              // Reset current time to show 0 for the new track
               setCurrentTime(0);
               setDuration(nextAudio.duration || 0);
             }
@@ -163,18 +152,21 @@ export function AudioPlayer({
           setIsCrossfading(false);
         });
     }
-  }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading]);
+  }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isStream]);
   
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
     const setAudioData = () => {
-      setDuration(audio.duration);
+      if (!isStream) {
+        setDuration(audio.duration);
+      } else {
+        setDuration(0);
+      }
       setIsLoaded(true);
       setLoadError(false);
       
-      // Auto-play when loaded if isPlayingExternal is true
       if (isPlayingExternal) {
         audio.play()
           .then(() => {
@@ -186,29 +178,26 @@ export function AudioPlayer({
       }
       
       toast({
-        title: "Audio geladen",
-        description: "De meditatie is klaar om af te spelen."
+        title: isStream ? "Stream geladen" : "Audio geladen",
+        description: isStream 
+          ? "De stream is klaar om af te spelen." 
+          : "De meditatie is klaar om af te spelen."
       });
     };
     
     const setAudioTime = () => {
-      // Only update current time if we haven't transitioned to the next track yet
-      // or if we're not currently crossfading
       if (!hasTransitionedToNext || !isCrossfading) {
         setCurrentTime(audio.currentTime);
       }
     };
     
     const handleEnded = () => {
-      // If we're crossfading, the crossfade handler will call onEnded
-      // Only trigger onEnded if we're not crossfading (e.g., no next track)
       if (!isCrossfading) {
         if (!isLooping) {
           setIsPlaying(false);
           if (onPlayPauseChange) onPlayPauseChange(false);
           if (onEnded) onEnded();
         } else {
-          // For looping, just restart the track
           audio.currentTime = 0;
           audio.play().catch(error => {
             console.error("Error restarting audio:", error);
@@ -253,15 +242,13 @@ export function AudioPlayer({
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
       
-      // Clear crossfade timeout if component unmounts
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
       }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, hasTransitionedToNext]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, hasTransitionedToNext, isStream]);
   
-  // Reset audio state when audioUrl changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -316,7 +303,6 @@ export function AudioPlayer({
       setIsPlaying(false);
       if (onPlayPauseChange) onPlayPauseChange(false);
       
-      // If we're in the middle of a crossfade, also pause the next track
       if (isCrossfading && nextAudioRef.current) {
         nextAudioRef.current.pause();
       }
@@ -331,7 +317,6 @@ export function AudioPlayer({
           setIsPlaying(true);
           if (onPlayPauseChange) onPlayPauseChange(true);
           
-          // If we're in the middle of a crossfade, also resume the next track
           if (isCrossfading && nextAudioRef.current) {
             nextAudioRef.current.play().catch(error => {
               console.error("Error resuming next audio:", error);
@@ -387,7 +372,6 @@ export function AudioPlayer({
     audio.currentTime = newTime;
     setCurrentTime(newTime);
     
-    // If we were crossfading but user seeks back, cancel crossfade
     if (isCrossfading && duration - newTime > CROSSFADE_DURATION) {
       setIsCrossfading(false);
       setHasTransitionedToNext(false);
@@ -408,7 +392,6 @@ export function AudioPlayer({
     
     const newVolume = newValue[0];
     
-    // If we're crossfading, adjust both volumes proportionally
     if (isCrossfading && nextAudioRef.current) {
       const currentRatio = audio.volume / volume;
       const nextRatio = nextAudioRef.current.volume / volume;
@@ -437,12 +420,10 @@ export function AudioPlayer({
     audio.currentTime = Math.min(Math.max(audio.currentTime + amount, 0), duration);
   };
   
-  // Display the current time based on crossfade state
   const displayCurrentTime = hasTransitionedToNext && isCrossfading && nextAudioRef.current 
     ? nextAudioRef.current.currentTime
     : currentTime;
     
-  // Display the duration based on crossfade state
   const displayDuration = hasTransitionedToNext && isCrossfading && nextAudioRef.current
     ? nextAudioRef.current.duration || 0
     : duration;
@@ -458,7 +439,7 @@ export function AudioPlayer({
       
       {loadError && (
         <div className="p-2 rounded-md bg-destructive/10 text-destructive text-center">
-          <p className="text-sm">Er is een probleem met het laden van de audio.</p>
+          <p className="text-sm">Er is een probleem met het laden van de {isStream ? "stream" : "audio"}.</p>
           <Button 
             variant="outline" 
             size="sm" 
@@ -495,13 +476,13 @@ export function AudioPlayer({
             onValueChange={handleProgressChange}
             className={cn(
               "audio-player-slider",
-              isCrossfading && "cursor-wait opacity-70"
+              (isCrossfading || isStream) && "cursor-wait opacity-70"
             )}
-            disabled={!isLoaded || isCrossfading}
+            disabled={!isLoaded || isCrossfading || isStream}
           />
         </div>
         <div className="text-xs w-10">
-          {formatTime(displayDuration)}
+          {isStream ? "LIVE" : formatTime(displayDuration)}
         </div>
       </div>
       
@@ -513,7 +494,7 @@ export function AudioPlayer({
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-full"
-              disabled={!isLoaded || isCrossfading}
+              disabled={!isLoaded || isCrossfading || isStream}
             >
               <SkipBack className="h-4 w-4" />
             </Button>
@@ -537,7 +518,7 @@ export function AudioPlayer({
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-full"
-              disabled={!isLoaded || isCrossfading}
+              disabled={!isLoaded || isCrossfading || isStream}
             >
               <SkipForward className="h-4 w-4" />
             </Button>

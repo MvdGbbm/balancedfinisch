@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -34,24 +33,21 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Edit, Trash2, FileAudio, Image, Tag, Music, Play, Radio } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, Play, Pause, Radio } from "lucide-react";
 
 import { Soundscape } from "@/lib/types";
 
 const AdminMusic = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
   
-  // Filter by music type
   const [activeTab, setActiveTab] = useState("music");
   
-  // Filter only music items (category "Muziek")
   const musicItems = soundscapes.filter(item => item.category === "Muziek");
   const radioItems = soundscapes.filter(item => item.category === "Radio");
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
   
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
@@ -112,7 +108,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: activeTab === "radio" ? "Radio" : "Muziek", // Set category based on active tab
+        category: activeTab === "radio" ? "Radio" : "Muziek",
         coverImageUrl,
         tags,
       });
@@ -121,7 +117,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: activeTab === "radio" ? "Radio" : "Muziek", // Set category based on active tab
+        category: activeTab === "radio" ? "Radio" : "Muziek",
         coverImageUrl,
         tags,
       });
@@ -131,13 +127,10 @@ const AdminMusic = () => {
     resetForm();
   };
   
-  // Update database entries if needed
   const updateDatabase = async () => {
     try {
-      // Check if we need to update the database
       for (const soundscape of soundscapes) {
         if (soundscape.category === "Radio" || soundscape.category === "Muziek") {
-          // Try to add to the database if it's not already there
           const { data, error } = await supabase
             .from('music_items')
             .select('id')
@@ -145,7 +138,6 @@ const AdminMusic = () => {
             .single();
           
           if (error && error.code === 'PGRST116') {
-            // Record doesn't exist, so insert it
             await supabase.from('music_items').insert({
               id: soundscape.id,
               title: soundscape.title,
@@ -153,7 +145,8 @@ const AdminMusic = () => {
               audio_url: soundscape.audioUrl,
               cover_image_url: soundscape.coverImageUrl || '',
               category: soundscape.category,
-              tags: soundscape.tags || []
+              tags: soundscape.tags || [],
+              artist: 'Unknown'
             });
             console.log(`Added ${soundscape.category} item to database: ${soundscape.title}`);
           }
@@ -164,7 +157,6 @@ const AdminMusic = () => {
     }
   };
   
-  // On component mount, update the database
   useEffect(() => {
     updateDatabase();
   }, []);
@@ -312,7 +304,6 @@ const AdminMusic = () => {
         </Tabs>
       </div>
       
-      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>

@@ -53,7 +53,8 @@ export function RadioStreamPlayer() {
           audioUrl: stream.audio_url,
           coverImageUrl: stream.cover_image_url || '',
           category: 'Radio',
-          tags: stream.tags || []
+          tags: stream.tags || [],
+          duration: 0 // Radio streams don't have a duration
         }));
         
         setStreams(formattedStreams);
