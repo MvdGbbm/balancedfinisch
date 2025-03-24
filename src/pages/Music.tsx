@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Equalizer as EqualizerIcon } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -317,8 +317,8 @@ const Music = () => {
         <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
-            <TabsTrigger value="radio">Streaming</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
+            <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
           
           <Equalizer isActive={isAudioActive} className="mb-4" />
@@ -366,58 +366,6 @@ const Music = () => {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">Geen muziek tracks gevonden</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="radio" className="space-y-4">
-            {isLoadingStreams ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            ) : radioStreams.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {radioStreams.map((stream) => (
-                  <Card key={stream.id} className="hover:border-primary/50 transition-colors">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
-                            <Link2 className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm">{stream.title}</h3>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStreamPlay(stream)}
-                            className="px-3"
-                          >
-                            <Play className="h-3.5 w-3.5 mr-1.5" />
-                            Afspelen
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleStreamStop}
-                            className="px-3"
-                            disabled={!hiddenIframeUrl}
-                          >
-                            <StopCircle className="h-3.5 w-3.5 mr-1.5" />
-                            Stop
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Geen radiolinks gevonden</p>
               </div>
             )}
           </TabsContent>
@@ -499,6 +447,58 @@ const Music = () => {
                 >
                   Maak je eerste afspeellijst
                 </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="radio" className="space-y-4">
+            {isLoadingStreams ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            ) : radioStreams.length > 0 ? (
+              <div className="grid grid-cols-1 gap-2">
+                {radioStreams.map((stream) => (
+                  <Card key={stream.id} className="hover:border-primary/50 transition-colors">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
+                            <Link2 className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm">{stream.title}</h3>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStreamPlay(stream)}
+                            className="px-3"
+                          >
+                            <Play className="h-3.5 w-3.5 mr-1.5" />
+                            Afspelen
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleStreamStop}
+                            className="px-3"
+                            disabled={!hiddenIframeUrl}
+                          >
+                            <StopCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Stop
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Geen radiolinks gevonden</p>
               </div>
             )}
           </TabsContent>
