@@ -100,7 +100,7 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <Equalizer isActive={isPlaying} className="mb-3" audioElement={audioRef.current} />
+      <Equalizer isActive={isPlaying} className="mb-2" audioElement={audioRef.current} />
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}

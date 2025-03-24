@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -17,7 +16,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
-  const numBars = 30; // Set to 30 bars as requested
+  const numBars = 30; // Changed from 32 to 30 bars as requested
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
@@ -219,12 +218,12 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         
         // Add different transition speeds for different frequency ranges
         // Lower frequencies (bass) tend to change more slowly than higher ones
-        const baseDuration = 100; // Faster for more responsive feel
+        const baseDuration = 120;
         const duration = index < numBars / 3 
-          ? baseDuration + 40  // Bass - slower transitions
+          ? baseDuration + 60  // Bass - slower transitions
           : index < (2 * numBars) / 3 
             ? baseDuration     // Mids - medium transitions
-            : baseDuration - 30; // Highs - faster transitions
+            : baseDuration - 40; // Highs - faster transitions
             
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
@@ -233,7 +232,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       // Faster frame rate for more responsive movement
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(animate);
-      }, 40) as unknown as number; // Reduced from 50ms to 40ms for quicker response
+      }, 50) as unknown as number; // Reduced from 80ms to 50ms for quicker response
     };
 
     // Start the animation
@@ -250,7 +249,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
 
   return (
     <div className={cn(
-      "relative flex items-end justify-center h-16 gap-[1px] p-2 bg-black/30 dark:bg-white/5 rounded-2xl overflow-hidden backdrop-blur-sm border border-white/10 dark:border-white/5 shadow-inner", 
+      "relative flex items-end justify-center h-20 gap-[1px] p-2 bg-card/30 rounded-md overflow-hidden", 
       className
     )}>
       {isActive && (!audioElement || audioElement.dataset.connected !== "true") && (
@@ -259,33 +258,22 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           <span>Simulatie</span>
         </div>
       )}
-      {Array.from({ length: numBars }).map((_, index) => {
-        // Calculate hue value to create a gradient across the bars
-        // From blue (210) to purple (270)
-        const hue = 210 + (index / numBars) * 60;
-        
-        return (
-          <div
-            key={index}
-            ref={el => (barsRef.current[index] = el)}
-            className={cn(
-              "w-full rounded-t-md transition-all ease-out",
-              isActive 
-                ? "shadow-lg"
-                : "opacity-40"
-            )}
-            style={{ 
-              height: "10%",
-              transitionDuration: "200ms",
-              background: isActive 
-                ? `linear-gradient(to top, hsla(${hue}, 80%, 40%, 0.8), hsla(${hue}, 90%, 55%, 0.9))`
-                : "rgba(100, 116, 139, 0.3)"
-            }}
-          />
-        );
-      })}
-      {/* Reflective surface effect */}
-      <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-b from-transparent to-white/5 pointer-events-none" />
+      {Array.from({ length: numBars }).map((_, index) => (
+        <div
+          key={index}
+          ref={el => (barsRef.current[index] = el)}
+          className={cn(
+            "w-full rounded-t-sm transition-all ease-in-out",
+            isActive 
+              ? "bg-gradient-to-t from-blue-700 to-blue-400" 
+              : "bg-blue-300/30"
+          )}
+          style={{ 
+            height: "10%",
+            transitionDuration: "200ms" 
+          }}
+        />
+      ))}
     </div>
   );
 }
