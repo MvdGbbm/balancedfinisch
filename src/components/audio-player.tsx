@@ -34,7 +34,6 @@ export function AudioPlayer({
   const [isLooping, setIsLooping] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
   const { toast } = useToast();
   
   const [randomQuote] = useState(() => {
@@ -69,25 +68,15 @@ export function AudioPlayer({
       }
     };
 
-    const handleError = (e: Event) => {
+    const handleError = (e) => {
       console.error("Error loading audio:", e);
       setLoadError(true);
       setIsLoaded(false);
-      
-      if (audioUrl.startsWith('http') && !isRetrying) {
-        setIsRetrying(true);
-        
-        setTimeout(() => {
-          audio.load();
-          setIsRetrying(false);
-        }, 1000);
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Fout bij laden",
-          description: "Kon de audio niet laden. Controleer of het bestand bestaat."
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Fout bij laden",
+        description: "Kon de audio niet laden. Controleer of het bestand bestaat."
+      });
     };
     
     audio.addEventListener("loadeddata", setAudioData);
@@ -104,7 +93,7 @@ export function AudioPlayer({
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying]);
+  }, [onEnded, volume, isLooping, toast]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -113,7 +102,6 @@ export function AudioPlayer({
     setCurrentTime(0);
     setIsLoaded(false);
     setLoadError(false);
-    setIsRetrying(false);
     
     audio.load();
   }, [audioUrl]);
@@ -175,23 +163,6 @@ export function AudioPlayer({
     setIsPlaying(!isPlaying);
   };
   
-  const handleRetry = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    setLoadError(false);
-    setIsRetrying(true);
-    
-    setTimeout(() => {
-      audio.load();
-      setIsRetrying(false);
-      toast({
-        title: "Opnieuw laden",
-        description: "Probeert audio opnieuw te laden."
-      });
-    }, 500);
-  };
-  
   const toggleLoop = () => {
     setIsLooping(!isLooping);
     toast({
@@ -243,16 +214,7 @@ export function AudioPlayer({
       
       {loadError && (
         <div className="p-2 rounded-md bg-destructive/10 text-destructive text-center">
-          <p className="text-sm">Er is een probleem met het laden van de audio.</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-1" 
-            onClick={handleRetry}
-            disabled={isRetrying}
-          >
-            {isRetrying ? "Opnieuw laden..." : "Opnieuw proberen"}
-          </Button>
+          <p className="text-sm">Er is een probleem met het laden van de audio. Controleer of de URL correct is.</p>
         </div>
       )}
       

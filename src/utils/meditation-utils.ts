@@ -1,46 +1,8 @@
-import { Meditation, Soundscape } from "@/lib/types";
+
+import { Meditation } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Cache voor URL's die al zijn verwerkt om dubbel werk te voorkomen
-const urlCache = new Map<string, string>();
-
-/**
- * Haalt een publieke URL op voor een bestand in Supabase storage
- */
-export const getPublicUrl = async (path: string, bucket = 'meditations'): Promise<string> => {
-  if (!path || path.startsWith('http')) {
-    return path;
-  }
-  
-  // Check cache eerst
-  const cacheKey = `${bucket}:${path}`;
-  if (urlCache.has(cacheKey)) {
-    return urlCache.get(cacheKey) as string;
-  }
-  
-  try {
-    const { data } = await supabase.storage
-      .from(bucket)
-      .getPublicUrl(path);
-    
-    if (data?.publicUrl) {
-      // Sla op in cache voor later gebruik
-      urlCache.set(cacheKey, data.publicUrl);
-      console.log(`Loaded URL from ${bucket} for path: ${path}`, data.publicUrl);
-      return data.publicUrl;
-    }
-    return path;
-  } catch (error) {
-    console.error(`Error getting public URL for ${path} from ${bucket}:`, error);
-    toast.error(`Kon bestand niet laden: ${path}`);
-    return path;
-  }
-};
-
-/**
- * Verwerkt meditatie URL's voor audio en afbeeldingen
- */
 export const processMeditationUrls = async (meditations: Meditation[]): Promise<Meditation[]> => {
   try {
     console.log("Processing meditation URLs...");
@@ -50,14 +12,30 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
         let audioUrl = meditation.audioUrl;
         let coverImageUrl = meditation.coverImageUrl;
         
-        // Verwerk audio URL
-        if (audioUrl && !audioUrl.startsWith('http')) {
-          audioUrl = await getPublicUrl(audioUrl);
+        if (!audioUrl.startsWith('http')) {
+          try {
+            const { data: audioData } = await supabase.storage
+              .from('meditations')
+              .getPublicUrl(audioUrl);
+            audioUrl = audioData.publicUrl;
+            console.log(`Loaded audio URL for ${meditation.title}:`, audioUrl);
+          } catch (error) {
+            console.error(`Error processing audio URL for ${meditation.title}:`, error);
+            toast.error(`Kon audio niet laden voor ${meditation.title}`);
+          }
         }
         
-        // Verwerk afbeelding URL
-        if (coverImageUrl && !coverImageUrl.startsWith('http')) {
-          coverImageUrl = await getPublicUrl(coverImageUrl);
+        if (!coverImageUrl.startsWith('http')) {
+          try {
+            const { data: imageData } = await supabase.storage
+              .from('meditations')
+              .getPublicUrl(coverImageUrl);
+            coverImageUrl = imageData.publicUrl;
+            console.log(`Loaded image URL for ${meditation.title}:`, coverImageUrl);
+          } catch (error) {
+            console.error(`Error processing cover image URL for ${meditation.title}:`, error);
+            toast.error(`Kon afbeelding niet laden voor ${meditation.title}`);
+          }
         }
         
         return {
@@ -73,46 +51,7 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
   } catch (error) {
     console.error("Error in processMeditationUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van meditaties");
-    return meditations; // Retourneer originele meditaties in geval van fout
-  }
-};
-
-/**
- * Verwerkt soundscape URL's voor audio en afbeeldingen
- */
-export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<Soundscape[]> => {
-  try {
-    console.log("Processing soundscape URLs...");
-    
-    const processed = await Promise.all(
-      soundscapes.map(async (soundscape) => {
-        let audioUrl = soundscape.audioUrl;
-        let coverImageUrl = soundscape.coverImageUrl;
-        
-        // Verwerk audio URL
-        if (audioUrl && !audioUrl.startsWith('http')) {
-          audioUrl = await getPublicUrl(audioUrl);
-        }
-        
-        // Verwerk afbeelding URL
-        if (coverImageUrl && !coverImageUrl.startsWith('http')) {
-          coverImageUrl = await getPublicUrl(coverImageUrl);
-        }
-        
-        return {
-          ...soundscape,
-          audioUrl,
-          coverImageUrl
-        };
-      })
-    );
-    
-    console.log("Processed soundscapes:", processed);
-    return processed;
-  } catch (error) {
-    console.error("Error in processSoundscapeUrls:", error);
-    toast.error("Er is een fout opgetreden bij het laden van soundscapes");
-    return soundscapes; // Retourneer originele soundscapes in geval van fout
+    return [];
   }
 };
 
