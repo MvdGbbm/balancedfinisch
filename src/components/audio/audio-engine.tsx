@@ -1,3 +1,4 @@
+
 import { RefObject, useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,7 +43,7 @@ const MAX_RETRY_ATTEMPTS = 3;
 // Global registry to track audio elements and their contexts
 const audioContextRegistry = new WeakMap<HTMLAudioElement, {
   context: AudioContext,
-  source: MediaElementSourceNode,
+  source: MediaElementAudioSourceNode,
   gainNode: GainNode
 }>();
 
