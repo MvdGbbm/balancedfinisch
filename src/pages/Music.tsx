@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { Equalizer } from "@/components/music/equalizer";
 
 interface RadioStream {
   id: string;
@@ -45,7 +45,9 @@ const Music = () => {
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const hiddenIframeRef = useRef<HTMLIFrameElement>(null);
   const [activeTab, setActiveTab] = useState<string>("music");
+  const [isAudioActive, setIsAudioActive] = useState(false);
   const visibleAudioRef = useRef<HTMLAudioElement | null>(null);
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -104,6 +106,10 @@ const Music = () => {
     }
   }, [currentTrack, currentTrackIndex, selectedPlaylist, soundscapes]);
 
+  useEffect(() => {
+    setIsAudioActive(isPlaying || isStreamPlaying);
+  }, [isPlaying, isStreamPlaying]);
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
@@ -134,6 +140,11 @@ const Music = () => {
     if (previewTrack?.id === track.id && isPlaying) {
       setPreviewTrack(null);
       setIsPlaying(false);
+      
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      
       toast({
         title: "Voorluisteren gestopt",
         description: `${track.title} is gestopt.`
@@ -141,6 +152,33 @@ const Music = () => {
     } else {
       setPreviewTrack(track);
       setIsPlaying(true);
+      
+      if (!previewAudioRef.current) {
+        previewAudioRef.current = new Audio(track.audioUrl);
+        previewAudioRef.current.volume = 0.8;
+        previewAudioRef.current.addEventListener('ended', () => {
+          setIsPlaying(false);
+          setPreviewTrack(null);
+        });
+      } else {
+        previewAudioRef.current.src = track.audioUrl;
+        previewAudioRef.current.load();
+      }
+      
+      const playPromise = previewAudioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Error playing audio:", error);
+          toast({
+            variant: "destructive",
+            title: "Fout bij afspelen",
+            description: "Kon de audio niet afspelen. Probeer het later opnieuw."
+          });
+          setIsPlaying(false);
+          setPreviewTrack(null);
+        });
+      }
+      
       toast({
         title: "Voorluisteren gestart",
         description: `${track.title} wordt nu afgespeeld.`
@@ -152,9 +190,14 @@ const Music = () => {
   };
 
   const handleStopPreview = () => {
-    if (previewTrack) {
+    if (previewTrack && isPlaying) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause();
+      }
+      
       setPreviewTrack(null);
       setIsPlaying(false);
+      
       toast({
         title: "Voorluisteren gestopt",
         description: "Het afspelen is gestopt."
@@ -330,70 +373,6 @@ const Music = () => {
   const handleAudioElementRef = (element: HTMLAudioElement | null) => {
     visibleAudioRef.current = element;
   };
-  
-  // Create a compact player component that shows either preview or playlist track
-  const CompactPlayer = () => {
-    const activeTrack = previewTrack || currentTrack;
-    
-    if (!activeTrack && !isStreamPlaying) return null;
-    
-    return (
-      <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-md z-10">
-        <div className="max-w-4xl mx-auto px-3 py-2">
-          <div className="flex items-center justify-between mb-1 text-sm">
-            <div className="font-medium truncate pr-2">
-              {isStreamPlaying ? (
-                <span>{streamTitle} <span className="text-xs text-primary">LIVE</span></span>
-              ) : selectedPlaylist ? (
-                <span>{selectedPlaylist.name}: <span className="text-primary">{activeTrack?.title}</span></span>
-              ) : (
-                <span>Speelt nu: <span className="text-primary">{activeTrack?.title}</span></span>
-              )}
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7 shrink-0" 
-              onClick={isStreamPlaying ? () => {
-                setIsStreamPlaying(false);
-                setStreamUrl("");
-                setStreamTitle("");
-              } : previewTrack ? handleStopPreview : () => {
-                setSelectedPlaylist(null);
-                setCurrentTrack(null);
-                setIsPlaying(false);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {isStreamPlaying ? (
-            <AudioPlayer 
-              audioUrl={streamUrl}
-              showControls={true}
-              isPlayingExternal={isStreamPlaying}
-              onPlayPauseChange={setIsStreamPlaying}
-              onAudioElementRef={handleAudioElementRef}
-              className="mb-0 py-1"
-            />
-          ) : activeTrack && (
-            <AudioPlayer 
-              audioUrl={activeTrack.audioUrl}
-              nextAudioUrl={nextTrack?.audioUrl}
-              showControls={true}
-              className="mb-0 py-1"
-              onEnded={handleTrackEnded}
-              onCrossfadeStart={handleCrossfadeStart}
-              isPlayingExternal={isPlaying}
-              onPlayPauseChange={setIsPlaying}
-              onAudioElementRef={handleAudioElementRef}
-            />
-          )}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <MobileLayout>
@@ -411,6 +390,38 @@ const Music = () => {
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
+          
+          <Equalizer isActive={isAudioActive} className="mb-4" audioElement={previewAudioRef.current || visibleAudioRef.current} />
+          
+          {isStreamPlaying && (
+            <div className="mb-6 bg-muted/30 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">
+                  {streamTitle} <span className="text-xs text-primary">LIVE</span>
+                </h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setIsStreamPlaying(false);
+                    setStreamUrl("");
+                    setStreamTitle("");
+                  }}
+                  className="h-8 w-8 p-0"
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
+              </div>
+              <AudioPlayer 
+                audioUrl={streamUrl} 
+                showControls={true}
+                title={streamTitle}
+                isPlayingExternal={isStreamPlaying}
+                onPlayPauseChange={setIsStreamPlaying}
+                onAudioElementRef={handleAudioElementRef}
+              />
+            </div>
+          )}
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
@@ -440,24 +451,27 @@ const Music = () => {
                       </div>
                       
                       <div className="flex justify-between mt-3">
-                        <Button 
-                          variant={previewTrack?.id === track.id && isPlaying ? "default" : "outline"}
-                          size="sm" 
-                          onClick={() => handlePreviewTrack(track)}
-                          className="flex items-center gap-1"
-                        >
-                          {previewTrack?.id === track.id && isPlaying ? (
-                            <>
-                              <Pause className="h-4 w-4" />
-                              Stop voorluisteren
-                            </>
-                          ) : (
-                            <>
-                              <Play className="h-4 w-4" />
-                              Voorluisteren
-                            </>
-                          )}
-                        </Button>
+                        {previewTrack?.id === track.id && isPlaying ? (
+                          <Button 
+                            variant="default"
+                            size="sm" 
+                            onClick={() => handlePreviewTrack(track)}
+                            className="flex items-center gap-1"
+                          >
+                            <Pause className="h-4 w-4" />
+                            Stop voorluisteren
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline"
+                            size="sm" 
+                            onClick={() => handlePreviewTrack(track)}
+                            className="flex items-center gap-1"
+                          >
+                            <Play className="h-4 w-4" />
+                            Voorluisteren
+                          </Button>
+                        )}
                         
                         <PlaylistSelector 
                           playlists={playlists}
@@ -618,8 +632,37 @@ const Music = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Permanently visible compact player */}
-        <CompactPlayer />
+        {selectedPlaylist && currentTrack && (
+          <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-sm">Speelt nu: {selectedPlaylist.name}</h4>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6" 
+                onClick={() => {
+                  setSelectedPlaylist(null);
+                  setCurrentTrack(null);
+                  setIsPlaying(false);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <AudioPlayer 
+              audioUrl={currentTrack.audioUrl}
+              nextAudioUrl={nextTrack?.audioUrl}
+              showControls={true}
+              title={currentTrack.title}
+              className="mb-0"
+              onEnded={handleTrackEnded}
+              onCrossfadeStart={handleCrossfadeStart}
+              isPlayingExternal={isPlaying}
+              onPlayPauseChange={setIsPlaying}
+              onAudioElementRef={handleAudioElementRef}
+            />
+          </div>
+        )}
         
         {hiddenIframeUrl && (
           <iframe 

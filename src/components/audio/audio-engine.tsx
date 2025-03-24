@@ -1,4 +1,3 @@
-
 import { RefObject, useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -136,6 +135,11 @@ export function useAudioEngine({
             setRetryAttempts(0);
             lastValidUrlRef.current = url;
             console.log("Audio playing successfully after canplay event");
+            
+            // Ensure volume is applied
+            if (audioElement.volume === 0) {
+              audioElement.volume = initialVolume;
+            }
           })
           .catch(error => {
             console.error("Error playing direct URL:", error);
@@ -157,6 +161,11 @@ export function useAudioEngine({
               setIsLoaded(true);
               setLoadError(false);
               lastValidUrlRef.current = url;
+              
+              // Ensure volume is applied
+              if (audioElement.volume === 0) {
+                audioElement.volume = initialVolume;
+              }
             })
             .catch(error => {
               console.error("Error playing after timeout:", error);
@@ -194,16 +203,38 @@ export function useAudioEngine({
     }
   };
 
+  // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
+      console.log("External play control changed:", isPlayingExternal, "Current playing state:", isPlaying);
+      
       if (isPlayingExternal && !isPlaying) {
-        playDirectly(audioUrl, audioRef.current);
+        // Need to start playing
+        if (isLoaded) {
+          console.log("Starting playback of already loaded audio");
+          audioRef.current.play()
+            .then(() => {
+              setIsPlaying(true);
+              if (onPlayPauseChange) onPlayPauseChange(true);
+            })
+            .catch(error => {
+              console.error("Error playing already loaded audio:", error);
+              setIsPlaying(false);
+              if (onPlayPauseChange) onPlayPauseChange(false);
+              if (onError) onError();
+            });
+        } else {
+          console.log("Loading and playing from URL:", audioUrl);
+          playDirectly(audioUrl, audioRef.current);
+        }
       } else if (!isPlayingExternal && isPlaying) {
+        // Need to pause
+        console.log("Pausing audio due to external control");
         audioRef.current.pause();
         setIsPlaying(false);
       }
     }
-  }, [isPlayingExternal, isPlaying, isLoaded, audioUrl]);
+  }, [isPlayingExternal, audioUrl]);
   
   useEffect(() => {
     if (!nextAudioUrl || !isPlaying || isCrossfading || isLiveStream) return;
@@ -502,6 +533,7 @@ export function useAudioEngine({
     const audio = audioRef.current;
     if (!audio) return;
     
+    // Reset states for new audio
     setCurrentTime(0);
     setIsLoaded(false);
     setLoadError(false);
@@ -514,9 +546,13 @@ export function useAudioEngine({
       crossfadeTimeoutRef.current = null;
     }
     
+    console.log("Audio URL changed, new URL:", audioUrl, "isPlayingExternal:", isPlayingExternal);
+    
     if (isPlayingExternal) {
+      // If we are explicitly told to play, use direct playback approach
       playDirectly(audioUrl, audio);
     } else {
+      // Just set the source but don't play yet
       audio.src = audioUrl;
       audio.load();
     }
@@ -563,9 +599,12 @@ export function useAudioEngine({
     }
   }, [isLooping, isLiveStream]);
 
+  // Toggle play/pause
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
+    
+    console.log("Toggle play called, current state:", isPlaying);
     
     if (isPlaying) {
       audio.pause();
@@ -584,6 +623,7 @@ export function useAudioEngine({
       if (!isLoaded) {
         playDirectly(audioUrl, audio);
       } else {
+        console.log("Playing already loaded audio");
         audio.play()
           .then(() => {
             setIsPlaying(true);
