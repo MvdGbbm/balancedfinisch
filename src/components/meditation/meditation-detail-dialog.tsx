@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
@@ -51,7 +50,6 @@ export const MeditationDetailDialog = ({
   const [showQuote, setShowQuote] = useState(true);
   const [randomQuote] = useState(getRandomQuote());
   
-  // Filter out the currently playing meditation from the list
   const filteredGuidedMeditations = guidedMeditations.filter(
     med => meditation && med.id !== meditation.id
   );
@@ -62,10 +60,8 @@ export const MeditationDetailDialog = ({
       setAudioUrl(url);
       console.log("Active audio URL in dialog:", url);
       
-      // Increment the key to force AudioPlayer remount when the source changes
       setAudioKey(prevKey => prevKey + 1);
       
-      // Reset playing state when dialog opens
       setIsPlaying(false);
     }
   }, [isOpen, meditation]);
@@ -87,27 +83,20 @@ export const MeditationDetailDialog = ({
     }
     
     try {
-      // Trim the URL
       url = url.trim();
       
-      // Check if URL has protocol, if not add https://
       if (!/^https?:\/\//i.test(url)) {
         url = 'https://' + url;
       }
       
-      // Validate URL
       const validatedUrl = new URL(url).toString();
       
-      // Log the validated URL for debugging
       console.log(`Playing ${linkType} link:`, validatedUrl);
       
-      // Set the new audio URL for the player
       setAudioUrl(validatedUrl);
       
-      // Increment the key to force AudioPlayer remount with new URL
       setAudioKey(prevKey => prevKey + 1);
       
-      // Start playing automatically
       setIsPlaying(true);
       
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
@@ -119,12 +108,10 @@ export const MeditationDetailDialog = ({
   
   if (!meditation) return null;
   
-  // Function to check if an audio URL is valid (not empty)
   const isValidAudioUrl = (url: string | undefined): boolean => {
     return !!url && url.trim() !== '';
   };
   
-  // Check if there's a valid audio URL
   const hasValidAudio = isValidAudioUrl(audioUrl);
   
   return (
@@ -143,12 +130,10 @@ export const MeditationDetailDialog = ({
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
           
-          {/* Display quote above buttons */}
           {showQuote && (
             <QuoteDisplay quote={randomQuote} />
           )}
           
-          {/* Vera and Marco buttons below the quote */}
           <div className="flex gap-2 mt-2">
             <Button
               variant="outline"
