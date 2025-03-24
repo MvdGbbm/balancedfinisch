@@ -8,7 +8,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Index from "./pages/Index";
 import Meditations from "./pages/Meditations";
 import Breathing from "./pages/Breathing";
-import Planner from "./pages/Planner";
+import Music from "./pages/Music";
 import Journal from "./pages/Journal";
 import Soundscapes from "./pages/Soundscapes";
 import DailyQuote from "./pages/DailyQuote";
@@ -31,7 +31,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/meditations" element={<Meditations />} />
             <Route path="/breathing" element={<Breathing />} />
-            <Route path="/planner" element={<Planner />} />
+            <Route path="/music" element={<Music />} />
             <Route path="/journal" element={<Journal />} />
             <Route path="/soundscapes" element={<Soundscapes />} />
             <Route path="/daily-quote" element={<DailyQuote />} />

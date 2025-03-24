@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sunrise, Clock, BookOpen, Music, Quote, Heart } from "lucide-react";
+import { Sunrise, BookOpen, Music, Quote, Heart } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -25,12 +26,12 @@ const features = [
     path: "/breathing"
   },
   {
-    title: "Planner",
-    description: "Plan je meditatiesessies voor consistent welzijn",
-    icon: Clock,
+    title: "Muziek",
+    description: "Ontdek rustgevende muziek voor meditatie en ontspanning",
+    icon: Music,
     color: "bg-amber-100 dark:bg-amber-900/30",
     textColor: "text-amber-600 dark:text-amber-300",
-    path: "/planner"
+    path: "/music"
   },
   {
     title: "Dagboek",

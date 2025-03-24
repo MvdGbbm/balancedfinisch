@@ -1,14 +1,16 @@
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Home, Sunrise, Clock, BookOpen, Music, Quote } from "lucide-react";
+import { Moon, Sun, Home, Sunrise, BookOpen, Music, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
 interface MobileLayoutProps {
   children: React.ReactNode;
   showNav?: boolean;
   className?: string;
 }
+
 export function MobileLayout({
   children,
   showNav = true,
@@ -33,9 +35,9 @@ export function MobileLayout({
     icon: Sunrise,
     label: "Ademhaling"
   }, {
-    path: "/planner",
-    icon: Clock,
-    label: "Planner"
+    path: "/music",
+    icon: Music,
+    label: "Muziek"
   }, {
     path: "/journal",
     icon: BookOpen,
@@ -49,6 +51,7 @@ export function MobileLayout({
     icon: Quote,
     label: "Quote"
   }];
+
   return <div className={cn("flex flex-col min-h-screen w-full bg-background", className)}>
       <header className="sticky top-0 z-40 w-full glass-morphism border-b py-3 px-4 backdrop-blur-lg transition-all">
         <div className="flex items-center justify-between">
