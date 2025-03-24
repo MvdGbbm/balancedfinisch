@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, Link } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,9 +11,15 @@ import { Soundscape } from "@/lib/types";
 import { Playlist, PlaylistTrack } from "@/components/playlist/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+
+interface RadioStream {
+  id: string;
+  title: string;
+  url: string;
+  description: string | null;
+  is_active: boolean;
+}
 
 const Music = () => {
   const { soundscapes } = useApp();
@@ -29,18 +34,17 @@ const Music = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [nextTrack, setNextTrack] = useState<Soundscape | null>(null);
   const [isCrossfading, setIsCrossfading] = useState(false);
-  const [showStreamDialog, setShowStreamDialog] = useState(false);
+  const [isStreamPlaying, setIsStreamPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
   const [streamTitle, setStreamTitle] = useState("");
-  const [isStreamPlaying, setIsStreamPlaying] = useState(false);
+  const [radioStreams, setRadioStreams] = useState<RadioStream[]>([]);
+  const [isLoadingStreams, setIsLoadingStreams] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  // Filter soundscapes to only "Muziek" category
   useEffect(() => {
     const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
     setMusicTracks(filteredTracks);
     
-    // Load playlists from localStorage on component mount
     const storedPlaylists = localStorage.getItem('musicPlaylists');
     if (storedPlaylists) {
       try {
@@ -51,12 +55,40 @@ const Music = () => {
     }
   }, [soundscapes]);
 
-  // Save playlists to localStorage when they change
+  useEffect(() => {
+    const fetchRadioStreams = async () => {
+      setIsLoadingStreams(true);
+      try {
+        const { data, error } = await supabase
+          .from('radio_streams')
+          .select('*')
+          .eq('is_active', true)
+          .order('title');
+        
+        if (error) {
+          throw error;
+        }
+        
+        setRadioStreams(data || []);
+      } catch (error) {
+        console.error("Error fetching radio streams:", error);
+        toast({
+          variant: "destructive",
+          title: "Fout bij laden",
+          description: "Kon de radiostreams niet laden."
+        });
+      } finally {
+        setIsLoadingStreams(false);
+      }
+    };
+    
+    fetchRadioStreams();
+  }, [toast]);
+
   useEffect(() => {
     localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
   }, [playlists]);
 
-  // Setup next track when playing a playlist
   useEffect(() => {
     if (selectedPlaylist && selectedPlaylist.tracks.length > 0 && currentTrack) {
       const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
@@ -70,7 +102,6 @@ const Music = () => {
   }, [currentTrack, currentTrackIndex, selectedPlaylist, soundscapes]);
 
   const handlePreviewTrack = (track: Soundscape) => {
-    // If we're playing a stream, stop it
     if (isStreamPlaying) {
       setIsStreamPlaying(false);
       setStreamUrl("");
@@ -80,40 +111,28 @@ const Music = () => {
     setPreviewTrack(track);
     setIsPlaying(true);
     
-    // Stop any currently playing playlist when previewing a track
     setSelectedPlaylist(null);
     setNextTrack(null);
   };
 
-  const handleStreamPlay = () => {
-    if (!streamUrl) {
-      toast({
-        variant: "destructive",
-        title: "Geen URL",
-        description: "Voer een geldige URL in"
-      });
-      return;
-    }
-    
-    // Stop any currently playing preview or playlist
+  const handleStreamPlay = (stream: RadioStream) => {
     setPreviewTrack(null);
     setSelectedPlaylist(null);
     setCurrentTrack(null);
     
-    // Start playing the stream
+    setStreamUrl(stream.url);
+    setStreamTitle(stream.title);
     setIsStreamPlaying(true);
-    setShowStreamDialog(false);
     
     toast({
       title: "Stream starten",
-      description: `"${streamTitle || 'Stream'}" wordt nu afgespeeld`
+      description: `"${stream.title}" wordt nu afgespeeld`
     });
   };
 
   const handleTrackEnded = () => {
     console.info("Track ended callback");
     
-    // If we're playing a playlist, move to the next track
     if (selectedPlaylist && selectedPlaylist.tracks.length > 0) {
       const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
       setCurrentTrackIndex(nextIndex);
@@ -123,7 +142,7 @@ const Music = () => {
       
       if (nextTrackObj) {
         setCurrentTrack(nextTrackObj);
-        setIsPlaying(true); // Keep playing
+        setIsPlaying(true);
         
         toast({
           title: "Volgende nummer",
@@ -139,7 +158,6 @@ const Music = () => {
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
-    // Stop any stream if playing
     if (isStreamPlaying) {
       setIsStreamPlaying(false);
       setStreamUrl("");
@@ -155,17 +173,14 @@ const Music = () => {
       return;
     }
     
-    // Stop any currently previewing track
     setPreviewTrack(null);
-    
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
     
-    // Play the first track in the playlist
     const firstTrackId = playlist.tracks[0].trackId;
     const track = soundscapes.find(s => s.id === firstTrackId) || null;
     setCurrentTrack(track);
-    setIsPlaying(true); // Auto-play immediately
+    setIsPlaying(true);
     
     toast({
       title: "Afspeellijst gestart",
@@ -174,7 +189,6 @@ const Music = () => {
   };
 
   const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
-    // Check if track already exists in playlist
     if (playlist.tracks.some(t => t.trackId === track.id)) {
       toast({
         title: "Track bestaat al in afspeellijst",
@@ -184,7 +198,6 @@ const Music = () => {
       return;
     }
     
-    // Add track to playlist
     const updatedPlaylist = {
       ...playlist,
       tracks: [
@@ -193,7 +206,6 @@ const Music = () => {
       ]
     };
     
-    // Update playlists array
     const updatedPlaylists = playlists.map(p => 
       p.id === playlist.id ? updatedPlaylist : p
     );
@@ -206,34 +218,27 @@ const Music = () => {
   };
 
   const handleRemoveFromPlaylist = (trackId: string, playlistId: string) => {
-    // Find the playlist
     const playlist = playlists.find(p => p.id === playlistId);
     if (!playlist) return;
     
-    // Create updated playlist with track removed
     const updatedPlaylist = {
       ...playlist,
       tracks: playlist.tracks.filter(t => t.trackId !== trackId)
     };
     
-    // Update playlists array
     const updatedPlaylists = playlists.map(p => 
       p.id === playlistId ? updatedPlaylist : p
     );
     
     setPlaylists(updatedPlaylists);
     
-    // If the currently playing playlist is affected
     if (selectedPlaylist?.id === playlistId) {
-      // If we're removing the current track
       if (selectedPlaylist.tracks[currentTrackIndex]?.trackId === trackId) {
-        // If this was the last track, stop playback
         if (updatedPlaylist.tracks.length === 0) {
           setSelectedPlaylist(null);
           setCurrentTrack(null);
           setIsPlaying(false);
         } else {
-          // Adjust currentTrackIndex if needed and continue playing
           const newIndex = Math.min(currentTrackIndex, updatedPlaylist.tracks.length - 1);
           setCurrentTrackIndex(newIndex);
           const newTrackId = updatedPlaylist.tracks[newIndex].trackId;
@@ -241,7 +246,6 @@ const Music = () => {
           setCurrentTrack(newTrack);
         }
       }
-      // Update the selectedPlaylist reference
       setSelectedPlaylist(updatedPlaylist);
     }
     
@@ -266,8 +270,7 @@ const Music = () => {
       description: `Afspeellijst '${name}' is aangemaakt`,
     });
   };
-  
-  // Get playlist tracks as Soundscape objects
+
   const getPlaylistTracks = (playlist: Playlist): Soundscape[] => {
     return playlist.tracks
       .map(track => soundscapes.find(s => s.id === track.trackId))
@@ -285,21 +288,13 @@ const Music = () => {
         </div>
 
         <Tabs defaultValue="music">
-          <TabsList className="grid grid-cols-2 mb-4">
+          <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
+            <TabsTrigger value="radio">Radio</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
           </TabsList>
           
           <TabsContent value="music" className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full mb-2"
-              onClick={() => setShowStreamDialog(true)}
-            >
-              <Radio className="h-4 w-4 mr-2" />
-              Radio of Stream URL afspelen
-            </Button>
-            
             {musicTracks.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {musicTracks.map((track) => (
@@ -346,6 +341,56 @@ const Music = () => {
             )}
           </TabsContent>
           
+          <TabsContent value="radio" className="space-y-4">
+            {isLoadingStreams ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+              </div>
+            ) : radioStreams.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {radioStreams.map((stream) => (
+                  <Card key={stream.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full bg-green-100 dark:bg-green-900/30 ${streamUrl === stream.url ? 'bg-primary/20' : ''}`}>
+                          <Radio className="h-5 w-5 text-green-600 dark:text-green-300" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium">{stream.title}</h3>
+                          {stream.description && (
+                            <p className="text-sm text-muted-foreground">{stream.description}</p>
+                          )}
+                        </div>
+                        <Button
+                          variant={streamUrl === stream.url && isStreamPlaying ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleStreamPlay(stream)}
+                          className="flex items-center gap-1"
+                        >
+                          {streamUrl === stream.url && isStreamPlaying ? (
+                            <>
+                              <Pause className="h-4 w-4" />
+                              Pauzeren
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" />
+                              Afspelen
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Geen radiostreams gevonden</p>
+              </div>
+            )}
+          </TabsContent>
+          
           <TabsContent value="playlists" className="space-y-4">
             <div className="flex justify-end">
               <Button onClick={() => setShowPlaylistCreator(true)}>
@@ -382,7 +427,6 @@ const Music = () => {
                           </Button>
                         </div>
                         
-                        {/* Show playlist tracks */}
                         {playlist.tracks.length > 0 && (
                           <div className="mt-3 space-y-2">
                             <h4 className="text-sm font-medium">Nummers:</h4>
@@ -429,7 +473,6 @@ const Music = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Preview Player */}
         {previewTrack && (
           <div className="mb-14">
             <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
@@ -443,23 +486,21 @@ const Music = () => {
           </div>
         )}
         
-        {/* Stream Player */}
         {isStreamPlaying && (
           <div className="mb-14">
             <h3 className="font-medium mb-2">
-              {streamTitle || "Stream"} <span className="text-xs text-primary">LIVE</span>
+              {streamTitle} <span className="text-xs text-primary">LIVE</span>
             </h3>
             <AudioPlayer 
               audioUrl={streamUrl} 
               showControls={true}
-              title={streamTitle || "Stream"}
+              title={streamTitle}
               isPlayingExternal={isStreamPlaying}
               onPlayPauseChange={setIsStreamPlaying}
             />
           </div>
         )}
         
-        {/* Playlist Player */}
         {selectedPlaylist && currentTrack && (
           <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
             <div className="flex items-center justify-between mb-2">
@@ -492,51 +533,6 @@ const Music = () => {
         )}
       </div>
       
-      {/* Stream URL Dialog */}
-      <Dialog open={showStreamDialog} onOpenChange={setShowStreamDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Radio of Stream URL afspelen</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="stream-title">Titel (optioneel)</Label>
-              <Input 
-                id="stream-title" 
-                placeholder="Bijvoorbeeld: Radio 538"
-                value={streamTitle}
-                onChange={(e) => setStreamTitle(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="stream-url">Stream URL</Label>
-              <Input 
-                id="stream-url" 
-                placeholder="http://..."
-                value={streamUrl}
-                onChange={(e) => setStreamUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                <Link className="h-3 w-3 inline mr-1" /> 
-                Voer een directe URL in naar een audiostream (mp3, aac, m3u8)
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStreamDialog(false)}>
-              Annuleren
-            </Button>
-            <Button onClick={handleStreamPlay}>
-              <Play className="h-4 w-4 mr-2" />
-              Afspelen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
       <CreatePlaylistDialog
         open={showPlaylistCreator}
         onOpenChange={setShowPlaylistCreator}
@@ -547,3 +543,4 @@ const Music = () => {
 };
 
 export default Music;
+
