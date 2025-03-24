@@ -1,8 +1,9 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Headphones, Quote, Waves, Music, Radio } from "lucide-react"; // Radio toegevoegd
+import { Headphones, Quote, Waves, Music } from "lucide-react";
 
 interface AdminMenuCardProps {
   title: string;
@@ -60,12 +61,6 @@ const Admin: React.FC = () => {
             description="Beheer muziekbibliotheek"
             icon={<Music className="h-5 w-5" />}
             href="/admin/music"
-          />
-          <AdminMenuCard
-            title="Radio Streams"
-            description="Beheer radiostreams"
-            icon={<Radio className="h-5 w-5" />}
-            href="/admin/streams"
           />
         </div>
       </div>
