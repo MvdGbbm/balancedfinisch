@@ -149,6 +149,46 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     }
   }, [reverbEnabled, reverbAmount, isInitialized]);
   
+  const setupAudioProcessing = async () => {
+    if (!audioContextRef.current || !audioRef.current) return;
+    
+    try {
+      sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+      
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.gain.value = masterVolume;
+      
+      filterNodeRef.current = audioContextRef.current.createBiquadFilter();
+      filterNodeRef.current.type = 'peaking';
+      filterNodeRef.current.frequency.value = currentBand.frequency;
+      filterNodeRef.current.gain.value = currentBand.gain;
+      filterNodeRef.current.Q.value = currentBand.q;
+      
+      convolverNodeRef.current = audioContextRef.current.createConvolver();
+      
+      dryGainNodeRef.current = audioContextRef.current.createGain();
+      wetGainNodeRef.current = audioContextRef.current.createGain();
+      
+      updateReverbMix();
+      
+      await generateImpulseResponse();
+      
+      sourceNodeRef.current.connect(filterNodeRef.current);
+      filterNodeRef.current.connect(dryGainNodeRef.current);
+      dryGainNodeRef.current.connect(gainNodeRef.current);
+      
+      sourceNodeRef.current.connect(convolverNodeRef.current);
+      convolverNodeRef.current.connect(wetGainNodeRef.current);
+      wetGainNodeRef.current.connect(gainNodeRef.current);
+      
+      gainNodeRef.current.connect(audioContextRef.current.destination);
+      
+      setIsInitialized(true);
+    } catch (error) {
+      console.error("Error setting up audio processing:", error);
+    }
+  };
+  
   const generateImpulseResponse = async () => {
     if (!audioContextRef.current || !convolverNodeRef.current) return;
     
@@ -212,6 +252,20 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     setReverbEnabled(false);
     setMasterVolume(1);
   };
+  
+  // Calculate the color for the slider thumb based on the gain value
+  const getSliderThumbColor = (value: number, max: number) => {
+    // Start with blue at 0 and gradually transition to green at max
+    const blueComponent = Math.max(0, 255 * (1 - value / max)).toFixed(0);
+    const greenComponent = Math.min(255, 100 + (155 * value / max)).toFixed(0);
+    return `rgb(0, ${greenComponent}, ${blueComponent})`;
+  };
+
+  // Custom slider thumb style with dynamic color
+  const sliderThumbStyle = {
+    backgroundColor: getSliderThumbColor(currentBand.gain, 10),
+    transition: 'background-color 0.3s ease'
+  };
 
   return (
     <div className={cn("p-3 bg-black/90 backdrop-blur-lg rounded-lg shadow-lg", className)}>
@@ -271,15 +325,22 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           <Slider
             value={[currentBand.gain]}
             min={0}
-            max={24}
+            max={10}
             step={0.5}
             disabled={!isActive || !isInitialized}
             onValueChange={handleBandChange}
             className="my-2"
+            // Custom styles for the interactive thumb
+            styles={{
+              thumb: {
+                backgroundColor: getSliderThumbColor(currentBand.gain, 10),
+                transition: 'background-color 0.3s ease'
+              }
+            }}
           />
           <div className="flex justify-between text-[10px] text-blue-300/60">
             <span>0 dB</span>
-            <span>24 dB</span>
+            <span>Meest effectief</span>
           </div>
         </div>
       </div>
@@ -298,7 +359,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           <Slider
             value={[reverbAmount]}
             min={0}
-            max={0.8}
+            max={1}
             step={0.01}
             disabled={!isActive || !isInitialized || !reverbEnabled}
             onValueChange={handleReverbAmountChange}
