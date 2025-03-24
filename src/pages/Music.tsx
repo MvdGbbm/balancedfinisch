@@ -429,7 +429,7 @@ const Music = () => {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-6 w-6"
                                     onClick={() => handleRemoveFromPlaylist(track.id, playlist.id)}
                                   >
                                     <Trash2 className="h-3 w-3 text-destructive" />
