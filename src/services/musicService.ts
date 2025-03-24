@@ -2,12 +2,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MusicItem, Playlist } from "@/lib/types";
 
-// Using "as any" to bypass type checking for tables that exist in the database
-// but are not defined in the TypeScript types
+// Helper type to work around TypeScript limitations with Supabase
+type SupabaseTable = any;
+
 // Fetch all music items
 export const fetchMusicItems = async (): Promise<MusicItem[]> => {
   const { data, error } = await supabase
-    .from("music_items" as any)
+    .from("music_items" as SupabaseTable)
     .select("*")
     .order("title");
 
@@ -22,7 +23,7 @@ export const fetchMusicItems = async (): Promise<MusicItem[]> => {
 // Fetch music item by ID
 export const fetchMusicItemById = async (id: string): Promise<MusicItem | null> => {
   const { data, error } = await supabase
-    .from("music_items" as any)
+    .from("music_items" as SupabaseTable)
     .select("*")
     .eq("id", id)
     .single();
@@ -38,7 +39,7 @@ export const fetchMusicItemById = async (id: string): Promise<MusicItem | null> 
 // Fetch all playlists
 export const fetchPlaylists = async (): Promise<Playlist[]> => {
   const { data: playlistsData, error: playlistsError } = await supabase
-    .from("playlists" as any)
+    .from("playlists" as SupabaseTable)
     .select("*")
     .order("title");
 
@@ -49,9 +50,9 @@ export const fetchPlaylists = async (): Promise<Playlist[]> => {
 
   // Get playlist items for each playlist
   const playlists = await Promise.all(
-    playlistsData.map(async (playlist) => {
+    playlistsData.map(async (playlist: any) => {
       const { data: playlistItemsData, error: playlistItemsError } = await supabase
-        .from("playlist_items" as any)
+        .from("playlist_items" as SupabaseTable)
         .select("*, music_item_id(*)")
         .eq("playlist_id", playlist.id)
         .order("position");
@@ -69,7 +70,7 @@ export const fetchPlaylists = async (): Promise<Playlist[]> => {
       return {
         ...playlist,
         tracks,
-      };
+      } as Playlist;
     })
   );
 
@@ -123,7 +124,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
   if (musicItem.id) {
     // Update existing music item
     query = supabase
-      .from("music_items" as any)
+      .from("music_items" as SupabaseTable)
       .update({
         title: musicItem.title,
         artist: musicItem.artist,
@@ -135,13 +136,13 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
         duration: musicItem.duration,
         waveform_data: musicItem.waveformData,
         updated_at: new Date().toISOString(),
-      } as any)
+      } as SupabaseTable)
       .eq("id", musicItem.id)
       .select();
   } else {
     // Create new music item
     query = supabase
-      .from("music_items" as any)
+      .from("music_items" as SupabaseTable)
       .insert({
         title: musicItem.title,
         artist: musicItem.artist,
@@ -152,7 +153,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
         tags: musicItem.tags,
         duration: musicItem.duration,
         waveform_data: musicItem.waveformData,
-      } as any)
+      } as SupabaseTable)
       .select();
   }
 
@@ -169,7 +170,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
 // Delete music item
 export const deleteMusicItem = async (id: string): Promise<boolean> => {
   const { error } = await supabase
-    .from("music_items" as any)
+    .from("music_items" as SupabaseTable)
     .delete()
     .eq("id", id);
 
@@ -189,13 +190,13 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   if (playlist.id) {
     // Update existing playlist
     const { data, error } = await supabase
-      .from("playlists" as any)
+      .from("playlists" as SupabaseTable)
       .update({
         title: playlist.title,
         description: playlist.description,
         cover_image_url: playlist.coverImageUrl,
         updated_at: new Date().toISOString(),
-      } as any)
+      } as SupabaseTable)
       .eq("id", playlist.id)
       .select();
     
@@ -208,12 +209,12 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   } else {
     // Create new playlist
     const { data, error } = await supabase
-      .from("playlists" as any)
+      .from("playlists" as SupabaseTable)
       .insert({
         title: playlist.title,
         description: playlist.description,
         cover_image_url: playlist.coverImageUrl,
-      } as any)
+      } as SupabaseTable)
       .select();
     
     if (error) {
@@ -228,7 +229,7 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   if (playlist.tracks && playlistData.id) {
     // First remove existing items
     await supabase
-      .from("playlist_items" as any)
+      .from("playlist_items" as SupabaseTable)
       .delete()
       .eq("playlist_id", playlistData.id);
     
@@ -241,8 +242,8 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
       }));
       
       const { error } = await supabase
-        .from("playlist_items" as any)
-        .insert(playlistItems as any);
+        .from("playlist_items" as SupabaseTable)
+        .insert(playlistItems as SupabaseTable);
       
       if (error) {
         console.error("Error updating playlist items:", error);
@@ -253,13 +254,13 @@ export const savePlaylist = async (playlist: Partial<Playlist>): Promise<Playlis
   return {
     ...playlistData,
     tracks: playlist.tracks || [],
-  };
+  } as Playlist;
 };
 
 // Delete playlist
 export const deletePlaylist = async (id: string): Promise<boolean> => {
   const { error } = await supabase
-    .from("playlists" as any)
+    .from("playlists" as SupabaseTable)
     .delete()
     .eq("id", id);
 
