@@ -27,9 +27,10 @@ export function MeditationPlayerContainer({
       setImageError(false);
       
       // Log the meditation details for debugging
-      console.log("Selected meditation:", selectedMeditation);
+      console.log("Selected meditation/stream:", selectedMeditation);
+      console.log("Is stream mode:", isStreamMode);
     }
-  }, [selectedMeditation]);
+  }, [selectedMeditation, isStreamMode]);
   
   if (!isVisible || !selectedMeditation) {
     return null;

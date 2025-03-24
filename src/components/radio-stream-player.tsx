@@ -45,6 +45,8 @@ export function RadioStreamPlayer() {
           return;
         }
         
+        console.log("Fetched radio streams:", data);
+        
         // Convert to expected format
         const formattedStreams = data.map(stream => ({
           id: stream.id,
@@ -107,6 +109,7 @@ export function RadioStreamPlayer() {
   const categories = Object.keys(streamsByCategory);
 
   const handleStreamSelect = (stream: Meditation) => {
+    console.log("Selected stream:", stream);
     setSelectedStream(stream);
     setIsPlayerVisible(true);
     toast({

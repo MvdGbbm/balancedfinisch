@@ -32,6 +32,9 @@ export function RadioStreamItem({ stream, isSelected, onSelect }: RadioStreamIte
           {stream.description && (
             <p className="text-sm text-muted-foreground line-clamp-2">{stream.description}</p>
           )}
+          <p className="text-xs text-muted-foreground opacity-70 mt-1">
+            Audio URL: {stream.audioUrl.substring(0, 30)}...
+          </p>
         </div>
         <Button 
           variant={isSelected ? "secondary" : "ghost"} 
