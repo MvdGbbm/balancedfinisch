@@ -29,6 +29,9 @@ const DailyQuote = () => {
     const todaysQuote = getQuoteForDate(today);
     const todaysGradient = getGradientForDate(today);
     
+    console.log("Today's quote:", todaysQuote);
+    console.log("Today's gradient:", todaysGradient);
+    
     setQuote(todaysQuote);
     setDate(today);
     setGradient(todaysGradient);
@@ -39,6 +42,9 @@ const DailyQuote = () => {
     const newQuote = getRandomQuote();
     const newDate = format(new Date(Date.now() + Math.random() * 7776000000), 'yyyy-MM-dd'); // Random date within 90 days
     const newGradient = getGradientForDate(newDate);
+    
+    console.log("New quote:", newQuote);
+    console.log("New gradient:", newGradient);
     
     setQuote(newQuote);
     setDate(newDate);
@@ -70,6 +76,9 @@ const DailyQuote = () => {
   // Format the date in Dutch
   const formattedDate = date ? format(new Date(date), 'd MMMM yyyy', { locale: nl }) : '';
   
+  // Ensure gradient has a fallback
+  const safeGradient = gradient || "bg-gradient-to-br from-blue-500 to-purple-600";
+  
   return (
     <MobileLayout>
       <div className="space-y-6 animate-fade-in">
@@ -83,7 +92,7 @@ const DailyQuote = () => {
         
         {quote ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh]">
-            <Card className={cn("w-full max-w-md mx-auto animate-scale-in overflow-hidden", gradient)}>
+            <Card className={cn("w-full max-w-md mx-auto animate-scale-in overflow-hidden", safeGradient)}>
               <CardContent className="p-8 backdrop-blur-sm bg-white/30 dark:bg-black/30">
                 <div className="text-center">
                   <p className="text-xl italic leading-relaxed mb-4">

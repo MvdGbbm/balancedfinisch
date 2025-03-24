@@ -20,8 +20,8 @@ interface AudioPlayerProps {
   showQuote?: boolean;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
-  nextAudioUrl?: string; // URL for the next track to crossfade
-  onCrossfadeStart?: () => void; // Called when crossfade starts
+  nextAudioUrl?: string;
+  onCrossfadeStart?: () => void;
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
@@ -79,6 +79,11 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   React.useEffect(() => {
     nextAudioRef.current = nextAudioElementRef.current;
   }, [nextAudioRef]);
+  
+  // Log the audio URL for debugging
+  React.useEffect(() => {
+    console.log(`AudioPlayer attempting to load: ${audioUrl}`);
+  }, [audioUrl]);
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>

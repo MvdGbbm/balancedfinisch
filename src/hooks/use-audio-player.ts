@@ -38,9 +38,11 @@ export const useAudioPlayer = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const nextAudioRef = useRef<HTMLAudioElement | null>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
+  const retryCountRef = useRef(0);
 
   // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
+  const MAX_RETRY_COUNT = 3;
 
   // Check if URL is potentially a live stream
   const checkIfLiveStream = (url: string) => {
@@ -52,10 +54,43 @@ export const useAudioPlayer = ({
            url.includes('icecast') || 
            url.includes('shoutcast');
   };
+  
+  // Validate and clean up the audioUrl
+  const validateAudioUrl = (url: string): string => {
+    if (!url) return '';
+    
+    // Remove any trailing or leading whitespace
+    url = url.trim();
+    
+    // Ensure URL has valid protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+      // If it's a relative path, add leading slash
+      if (!url.startsWith('/')) {
+        url = '/' + url;
+      }
+    }
+    
+    console.log("Validated audio URL:", url);
+    return url;
+  };
 
   // Play audio directly without preloading for external URLs
   const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
-    if (!audioElement) return;
+    if (!audioElement) {
+      console.error("Audio element not available");
+      return;
+    }
+    
+    // Validate URL
+    url = validateAudioUrl(url);
+    if (!url) {
+      console.error("Invalid audio URL");
+      setLoadError(true);
+      if (onError) onError();
+      return;
+    }
+    
+    console.log("Playing directly:", url);
     
     // Check if potentially a live stream
     const potentialLiveStream = checkIfLiveStream(url);
@@ -67,17 +102,25 @@ export const useAudioPlayer = ({
       setIsLiveStream(false);
     }
     
+    // Reset error state
+    setLoadError(false);
+    
+    // Set source and load
     audioElement.src = url;
     audioElement.load();
     
     // Set up event listeners for this direct play
     const onCanPlay = () => {
+      console.log("Audio can play now:", url);
+      
       audioElement.play()
         .then(() => {
+          console.log("Audio playing successfully:", url);
           setIsPlaying(true);
           if (onPlayPauseChange) onPlayPauseChange(true);
           setIsLoaded(true);
           setLoadError(false);
+          retryCountRef.current = 0; // Reset retry count on success
         })
         .catch(error => {
           console.error("Error playing direct URL:", error);
@@ -90,7 +133,8 @@ export const useAudioPlayer = ({
     audioElement.addEventListener('canplay', onCanPlay);
     
     // Error handling
-    const handleDirectError = () => {
+    const handleDirectError = (e: Event) => {
+      console.error("Direct play error:", e);
       setLoadError(true);
       if (onError) onError();
       audioElement.removeEventListener('error', handleDirectError);
@@ -102,6 +146,7 @@ export const useAudioPlayer = ({
   // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
+      console.log("External play control:", isPlayingExternal, "Current state:", isPlaying);
       if (isPlayingExternal && !isPlaying) {
         // Always use direct method for any URL
         playDirectly(audioUrl, audioRef.current);
@@ -110,7 +155,7 @@ export const useAudioPlayer = ({
         setIsPlaying(false);
       }
     }
-  }, [isPlayingExternal, isPlaying, isLoaded, audioUrl]);
+  }, [isPlayingExternal, audioUrl]);
 
   // Set up crossfade when current track is near the end
   useEffect(() => {
@@ -192,7 +237,11 @@ export const useAudioPlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
     
+    console.log("Setting up audio element for:", audioUrl);
+    
     const setAudioData = () => {
+      console.log("Audio data loaded for:", audioUrl, "Duration:", audio.duration);
+      
       if (audio.duration !== Infinity && !isNaN(audio.duration)) {
         setDuration(audio.duration);
         setIsLiveStream(false);
@@ -207,9 +256,12 @@ export const useAudioPlayer = ({
       
       // Auto-play when loaded if isPlayingExternal is true
       if (isPlayingExternal) {
+        console.log("Auto-playing after load:", audioUrl);
         audio.play()
           .then(() => {
             setIsPlaying(true);
+            if (onPlayPauseChange) onPlayPauseChange(true);
+            retryCountRef.current = 0; // Reset retry count on success
           })
           .catch(error => {
             console.error("Error auto-playing audio:", error);
@@ -227,6 +279,8 @@ export const useAudioPlayer = ({
     };
     
     const handleEnded = () => {
+      console.log("Audio ended:", audioUrl);
+      
       // If we're crossfading, the crossfade handler will call onEnded
       // Only trigger onEnded if we're not crossfading (e.g., no next track)
       if (!isCrossfading) {
@@ -245,18 +299,28 @@ export const useAudioPlayer = ({
     };
 
     const handleError = (e: Event) => {
-      console.error("Error loading audio:", e);
+      console.error("Error loading audio:", e, "URL:", audioUrl);
       setLoadError(true);
       setIsLoaded(false);
       
-      if (!isRetrying) {
+      if (retryCountRef.current < MAX_RETRY_COUNT) {
+        retryCountRef.current++;
         setIsRetrying(true);
         
-        // Try direct playback as fallback
+        console.log(`Retrying (${retryCountRef.current}/${MAX_RETRY_COUNT})...`);
+        
+        // Try direct playback as fallback with delay
         setTimeout(() => {
           try {
-            // Try direct playback again
-            playDirectly(audioUrl, audio);
+            // Try direct playback again with adjusted URL
+            const adjustedUrl = validateAudioUrl(audioUrl);
+            console.log("Retrying with adjusted URL:", adjustedUrl);
+            
+            if (adjustedUrl) {
+              playDirectly(adjustedUrl, audio);
+            } else {
+              throw new Error("Invalid URL after adjustment");
+            }
             setIsRetrying(false);
           } catch (error) {
             console.error("Error retrying direct playback:", error);
@@ -271,10 +335,13 @@ export const useAudioPlayer = ({
           }
         }, 1000);
       } else {
+        console.error("Maximum retry count reached");
+        setIsRetrying(false);
+        
         toast({
           variant: "destructive",
           title: "Fout bij laden",
-          description: "Kon de audio niet laden. Controleer of het bestand bestaat."
+          description: "Kon de audio niet laden na meerdere pogingen. Controleer of het bestand bestaat."
         });
         if (onError) onError();
       }
@@ -315,8 +382,13 @@ export const useAudioPlayer = ({
 
   // Reset audio state when audioUrl changes
   useEffect(() => {
+    console.log("Audio URL changed to:", audioUrl);
+    
     const audio = audioRef.current;
     if (!audio) return;
+    
+    // Clean up existing playback
+    audio.pause();
     
     setCurrentTime(0);
     setIsLoaded(false);
@@ -324,17 +396,33 @@ export const useAudioPlayer = ({
     setIsRetrying(false);
     setIsCrossfading(false);
     setIsLiveStream(checkIfLiveStream(audioUrl));
+    retryCountRef.current = 0;
     
     if (crossfadeTimeoutRef.current) {
       clearTimeout(crossfadeTimeoutRef.current);
       crossfadeTimeoutRef.current = null;
     }
     
-    // Always use direct playback method
+    // If URL is empty, don't try to play
+    if (!audioUrl) {
+      console.log("Empty audio URL, not attempting to play");
+      return;
+    }
+    
+    // Always use direct playback method when URL changes
     if (isPlayingExternal) {
-      playDirectly(audioUrl, audio);
+      console.log("External play requested for new URL:", audioUrl);
+      // Short delay to allow state to reset
+      setTimeout(() => {
+        playDirectly(audioUrl, audio);
+      }, 100);
     } else {
-      audio.load();
+      console.log("Loading new URL without autoplay:", audioUrl);
+      const validatedUrl = validateAudioUrl(audioUrl);
+      if (validatedUrl) {
+        audio.src = validatedUrl;
+        audio.load();
+      }
     }
   }, [audioUrl, isPlayingExternal]);
 
@@ -369,6 +457,8 @@ export const useAudioPlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
     
+    console.log("Toggle play, current state:", isPlaying);
+    
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
@@ -386,8 +476,10 @@ export const useAudioPlayer = ({
     } else {
       // Always use direct method to play
       if (!isLoaded) {
+        console.log("Not loaded yet, using direct play");
         playDirectly(audioUrl, audio);
       } else {
+        console.log("Already loaded, using regular play");
         audio.play()
           .then(() => {
             setIsPlaying(true);
@@ -421,16 +513,21 @@ export const useAudioPlayer = ({
     const audio = audioRef.current;
     if (!audio) return;
     
+    console.log("Manual retry requested for:", audioUrl);
+    
     setLoadError(false);
     setIsRetrying(true);
+    retryCountRef.current = 0; // Reset retry count for manual retry
     
     // Always use direct method
-    playDirectly(audioUrl, audio);
-    
-    toast({
-      title: "Opnieuw laden",
-      description: "Probeert audio opnieuw te laden."
-    });
+    setTimeout(() => {
+      playDirectly(audioUrl, audio);
+      
+      toast({
+        title: "Opnieuw laden",
+        description: "Probeert audio opnieuw te laden."
+      });
+    }, 100);
   };
 
   const toggleLoop = () => {

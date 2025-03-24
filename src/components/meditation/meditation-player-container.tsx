@@ -26,10 +26,16 @@ export function MeditationPlayerContainer({
       // Reset errors when meditation changes
       setAudioError(false);
       setImageError(false);
-      setIsPlaying(true); // Auto-play when meditation changes
+      setIsPlaying(false); // Don't auto-play initially, let user click play
       
       // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);
+      console.log("Audio URL:", selectedMeditation.audioUrl);
+      
+      // Short timeout before allowing play
+      setTimeout(() => {
+        setIsPlaying(true); // Now enable auto-play
+      }, 500);
     }
   }, [selectedMeditation]);
   
@@ -37,19 +43,16 @@ export function MeditationPlayerContainer({
     return null;
   }
   
-  // Check if the audioUrl exists and is valid
-  const hasValidAudio = selectedMeditation.audioUrl && 
-    (selectedMeditation.audioUrl.startsWith('http') || 
-    selectedMeditation.audioUrl.startsWith('/'));
+  // Check if the audioUrl exists and is valid, use more permissive checking
+  const hasValidAudio = !!selectedMeditation.audioUrl;
   
   // Check if the coverImageUrl exists and is valid
-  const hasValidImage = selectedMeditation.coverImageUrl && 
-    (selectedMeditation.coverImageUrl.startsWith('http') || 
-    selectedMeditation.coverImageUrl.startsWith('/'));
+  const hasValidImage = !!selectedMeditation.coverImageUrl;
   
   const handleAudioError = () => {
     setAudioError(true);
     setIsPlaying(false);
+    console.error("Audio error for:", selectedMeditation.audioUrl);
     toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
@@ -64,6 +67,13 @@ export function MeditationPlayerContainer({
       description: "Gestopt"
     });
   };
+  
+  const handleStartPlaying = () => {
+    setIsPlaying(true);
+    toast("De meditatie wordt afgespeeld", {
+      description: "Start"
+    });
+  };
 
   if (!hasValidAudio || audioError) {
     return (
@@ -72,6 +82,20 @@ export function MeditationPlayerContainer({
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
+            {selectedMeditation.audioUrl && (
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setAudioError(false);
+                    handleStartPlaying();
+                  }}
+                >
+                  Probeer opnieuw
+                </Button>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       </div>
@@ -82,15 +106,27 @@ export function MeditationPlayerContainer({
     <div className="mt-4">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-medium">Nu speelt: {selectedMeditation.title}</h3>
-        <Button 
-          variant="destructive"
-          size="sm"
-          onClick={handleStopPlaying}
-          className="flex items-center gap-1"
-        >
-          <StopCircle className="h-4 w-4" />
-          Stoppen
-        </Button>
+        {isPlaying ? (
+          <Button 
+            variant="destructive"
+            size="sm"
+            onClick={handleStopPlaying}
+            className="flex items-center gap-1"
+          >
+            <StopCircle className="h-4 w-4" />
+            Stoppen
+          </Button>
+        ) : (
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={handleStartPlaying}
+            className="flex items-center gap-1"
+          >
+            <StopCircle className="h-4 w-4" />
+            Start
+          </Button>
+        )}
       </div>
 
       {hasValidImage && !imageError && (
@@ -113,10 +149,8 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      {/* Removed the ToneEqualizer from here */}
-      
       <AudioPlayer 
-        audioUrl={selectedMeditation.audioUrl}
+        audioUrl={selectedMeditation.audioUrl || ''}
         title={selectedMeditation.title}
         showTitle
         showControls

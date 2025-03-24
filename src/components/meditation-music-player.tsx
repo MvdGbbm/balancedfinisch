@@ -30,11 +30,32 @@ export function MeditationMusicPlayer() {
     if (!selectedMeditation && categories.length > 0) {
       const firstCategory = categories[0];
       const firstMeditation = meditationsByCategory[firstCategory][0];
-      setSelectedMeditation(firstMeditation);
+      
+      // Log the available meditations for debugging
+      console.log("Available meditations:", meditations);
+      console.log("Setting default meditation:", firstMeditation);
+      
+      // Validate audio URL before setting
+      if (firstMeditation && firstMeditation.audioUrl) {
+        setSelectedMeditation(firstMeditation);
+        setIsPlayerVisible(true);
+      }
     }
   }, [categories, meditationsByCategory, selectedMeditation]);
 
   const handleMeditationSelect = (meditation: Meditation) => {
+    console.log("Selected meditation:", meditation);
+    
+    // Validate the meditation has an audio URL
+    if (!meditation.audioUrl) {
+      toast({
+        title: "Geen audio beschikbaar",
+        description: "Deze meditatie heeft geen audio.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedMeditation(meditation);
     setIsPlayerVisible(true);
     toast({
