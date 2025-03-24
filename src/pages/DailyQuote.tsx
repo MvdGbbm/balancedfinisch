@@ -135,7 +135,12 @@ const DailyQuote = () => {
                 onClick={() => setQuote(q)}
               >
                 <CardContent className="p-4">
-                  <p className="italic text-sm mb-1 text-white">{q.backgroundClass?.includes('from-white') ? 'text-gray-800' : 'text-white'}>"{q.text}"</p>
+                  <p className={cn(
+                    "italic text-sm mb-1",
+                    q.backgroundClass?.includes('from-white') ? 'text-gray-800' : 'text-white'
+                  )}>
+                    "{q.text}"
+                  </p>
                   <p className="text-right text-xs text-white/80">
                     — {q.author}
                   </p>
