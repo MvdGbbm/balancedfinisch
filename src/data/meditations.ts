@@ -1,3 +1,4 @@
+
 import { Meditation } from "@/lib/types";
 
 export const meditations: Meditation[] = [

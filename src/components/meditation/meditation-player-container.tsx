@@ -42,6 +42,12 @@ export function MeditationPlayerContainer({
         }
         
         try {
+          if (selectedMeditation.audioUrl.trim() === "") {
+            setAudioError(true);
+            setIsLoading(false);
+            return;
+          }
+          
           const isValid = await checkAudioCompatibility(selectedMeditation.audioUrl);
           if (!isValid) {
             console.error("Audio format not supported:", selectedMeditation.audioUrl);
@@ -56,7 +62,11 @@ export function MeditationPlayerContainer({
       };
       
       validateAudio();
-      setIsPlaying(true); // Auto-play when meditation changes
+      
+      // Don't auto-play immediately if there was a previous error
+      if (!audioError) {
+        setIsPlaying(true);
+      }
       
       // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);
@@ -69,11 +79,13 @@ export function MeditationPlayerContainer({
   
   // Check if the audioUrl exists and is valid
   const hasValidAudio = selectedMeditation.audioUrl && 
+    selectedMeditation.audioUrl.trim() !== "" &&
     (selectedMeditation.audioUrl.startsWith('http') || 
     selectedMeditation.audioUrl.startsWith('/'));
   
   // Check if the coverImageUrl exists and is valid
   const hasValidImage = selectedMeditation.coverImageUrl && 
+    selectedMeditation.coverImageUrl.trim() !== "" &&
     (selectedMeditation.coverImageUrl.startsWith('http') || 
     selectedMeditation.coverImageUrl.startsWith('/'));
   

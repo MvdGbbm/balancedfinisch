@@ -20,6 +20,7 @@ export function ErrorMessage({ onRetry, isRetrying }: ErrorMessageProps) {
         <li>De bestandsindeling wordt niet ondersteund</li>
         <li>Het audiobestand bestaat niet of is verwijderd</li>
         <li>Er is een probleem met je internetverbinding</li>
+        <li>De audio URL is leeg of ongeldig</li>
       </ul>
       <Button 
         variant="outline" 

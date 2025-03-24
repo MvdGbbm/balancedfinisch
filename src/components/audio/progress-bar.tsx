@@ -23,21 +23,26 @@ export function ProgressBar({
   className
 }: ProgressBarProps) {
   const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
+    if (isNaN(time) || time < 0) return "0:00";
     
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
+  
+  // Make sure we have valid values for the slider
+  const validDuration = isNaN(duration) || duration <= 0 ? 100 : duration;
+  const validCurrentTime = isNaN(currentTime) || currentTime < 0 ? 0 : 
+                         (currentTime > validDuration ? validDuration : currentTime);
 
   return (
     <div className={cn("w-full flex items-center space-x-2", className)}>
-      <div className="text-xs w-10 text-right">{formatTime(currentTime)}</div>
+      <div className="text-xs w-10 text-right">{formatTime(validCurrentTime)}</div>
       <div className="flex-grow">
         <Slider
-          value={[currentTime]}
+          value={[validCurrentTime]}
           min={0}
-          max={duration || 100}
+          max={validDuration}
           step={0.01}
           onValueChange={onProgressChange}
           className={cn(
@@ -48,7 +53,7 @@ export function ProgressBar({
         />
       </div>
       <div className="text-xs w-10">
-        {isLiveStream && duration === 0 ? "LIVE" : formatTime(duration)}
+        {isLiveStream && (duration === 0 || isNaN(duration)) ? "LIVE" : formatTime(validDuration)}
       </div>
     </div>
   );

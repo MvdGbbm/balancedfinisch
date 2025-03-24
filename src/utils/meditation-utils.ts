@@ -55,19 +55,29 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
  * Test of een audio URL geldig is en ondersteund
  */
 export const checkAudioCompatibility = async (url: string): Promise<boolean> => {
-  if (!url) return false;
+  if (!url || url.trim() === "") {
+    console.error("Empty URL provided to checkAudioCompatibility");
+    return false;
+  }
   
   try {
-    // Valide URL formaat?
-    new URL(url);
+    // Controleer of URL zelf geldig is
+    try {
+      new URL(url.startsWith('/') ? `https://example.com${url}` : url);
+    } catch (e) {
+      console.error("Invalid URL format:", url);
+      return false;
+    }
     
     // Voor lokale bestanden, accepteer alle
     if (url.startsWith('/')) {
+      console.log("Local file URL, accepting:", url);
       return true;
     }
     
     // Voor meditatie bestanden, altijd als compatibel beschouwen
     if (url.includes('meditation') || url.includes('meditatie')) {
+      console.log("Meditation audio file, accepting:", url);
       return true;
     }
     
@@ -77,6 +87,7 @@ export const checkAudioCompatibility = async (url: string): Promise<boolean> => 
     
     // Check of URL eindigt met ondersteund formaat
     if (supportedFormats.some(format => lowerUrl.endsWith(format))) {
+      console.log("Supported audio format detected:", url);
       return true;
     }
     
@@ -86,26 +97,40 @@ export const checkAudioCompatibility = async (url: string): Promise<boolean> => 
         lowerUrl.includes('live') || 
         lowerUrl.endsWith('.m3u8') || 
         lowerUrl.includes('icecast')) {
+      console.log("Streaming service URL detected:", url);
       return true;  
     }
     
     // Voor onbekende formaten, probeer een HEAD request
     try {
-      const response = await fetch(url, { method: 'HEAD' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(url, { 
+        method: 'HEAD',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
       const contentType = response.headers.get('content-type');
       
       if (contentType && contentType.includes('audio')) {
+        console.log("Content-Type confirmed as audio:", url);
         return true;
       }
+      
+      console.log("URL accessible but not confirmed as audio:", url, "Content-Type:", contentType);
     } catch (error) {
-      console.warn("Could not check Content-Type for URL:", url);
+      console.warn("Could not check Content-Type for URL:", url, error);
       // We vallen terug op een "best guess" aanpak als de HEAD request faalt
     }
     
-    // Als we hier komen, laten we toch true retourneren en de browser het laten proberen
+    // We accepteren de URL als het geen duidelijke andere content-type is
+    console.log("Accepting URL without confirmation:", url);
     return true;
   } catch (error) {
-    console.error("Invalid URL format:", url);
+    console.error("Error checking audio compatibility:", url, error);
     return false;
   }
 };
