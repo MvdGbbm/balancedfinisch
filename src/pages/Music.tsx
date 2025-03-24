@@ -389,7 +389,7 @@ const Music = () => {
                           <div className="p-2 rounded-full bg-primary/20">
                             <ListMusic className="h-5 w-5 text-primary" />
                           </div>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <h3 className="font-medium">{playlist.name}</h3>
                             <p className="text-sm text-muted-foreground">
                               {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
