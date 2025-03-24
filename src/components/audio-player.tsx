@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -321,10 +322,13 @@ export function AudioPlayer({
     }
     
     return () => {
-      audio.removeEventListener("loadeddata", handleAudioData);
-      audio.removeEventListener("timeupdate", handleAudioTime);
-      audio.removeEventListener("ended", handleAudioEnded);
-      audio.removeEventListener("error", handleAudioError);
+      // Properly clean up event listeners
+      if (audio) {
+        audio.removeEventListener("loadeddata", handleAudioData);
+        audio.removeEventListener("timeupdate", handleAudioTime);
+        audio.removeEventListener("ended", handleAudioEnded);
+        audio.removeEventListener("error", handleAudioError);
+      }
       
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
