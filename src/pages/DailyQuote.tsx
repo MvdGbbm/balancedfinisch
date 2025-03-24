@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -9,7 +10,6 @@ import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { getQuoteForDate, getGradientForDate, colorGradients } from "@/data/quotes";
 import { DailyQuote as DailyQuoteType } from "@/lib/types";
-import { QuoteDisplay } from "@/components/audio-player/quote-display";
 
 const DailyQuote = () => {
   const {
@@ -157,12 +157,21 @@ const DailyQuote = () => {
                 key={q.id} 
                 className={cn(
                   "neo-morphism cursor-pointer animate-slide-in", 
-                  quote?.id === q.id && "ring-2 ring-primary/50"
+                  quote?.id === q.id && "ring-2 ring-primary/50",
+                  q.backgroundClass || ""
                 )} 
                 onClick={() => setQuote(q)}
               >
                 <CardContent className="p-4">
-                  <QuoteDisplay quote={q} transparentBackground={false} />
+                  <p className={cn(
+                    "italic text-sm mb-1",
+                    q.backgroundClass?.includes('from-white') ? 'text-gray-800' : 'text-white'
+                  )}>
+                    "{q.text}"
+                  </p>
+                  <p className="text-right text-xs text-white/80">
+                    — {q.author}
+                  </p>
                 </CardContent>
               </Card>
             ))}

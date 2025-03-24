@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
@@ -199,7 +200,7 @@ export function MeditationPlayerContainer({
       
       {/* Daily quote display above Vera and Marco buttons */}
       <div className="mb-4">
-        <QuoteDisplay quote={randomQuote} transparentBackground={true} />
+        <QuoteDisplay quote={randomQuote} />
       </div>
       
       {/* Vera and Marco buttons */}
