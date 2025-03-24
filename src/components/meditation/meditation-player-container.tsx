@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
@@ -89,8 +90,17 @@ export function MeditationPlayerContainer({
       return;
     }
     
+    // Validate URL before opening
     try {
+      // Check if URL has protocol, if not add https://
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'https://' + url;
+      }
+      
+      // Validate URL
       new URL(url);
+      
+      // Open in new tab with security attributes
       window.open(url, '_blank', 'noopener,noreferrer');
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
     } catch (e) {
