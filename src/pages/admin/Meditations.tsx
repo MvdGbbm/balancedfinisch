@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -36,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, ListMusic, MoreVertical } from "lucide-react";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, ListMusic, MoreVertical, ExternalLink } from "lucide-react";
 
 import { Meditation } from "@/lib/types";
 
@@ -55,6 +54,8 @@ const AdminMeditations = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [veraLink, setVeraLink] = useState("");
+  const [marcoLink, setMarcoLink] = useState("");
   
   const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -69,6 +70,8 @@ const AdminMeditations = () => {
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
+    setVeraLink("");
+    setMarcoLink("");
   };
   
   const handleOpenNew = () => {
@@ -85,8 +88,9 @@ const AdminMeditations = () => {
     setDuration(meditation.duration);
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
-    // Only set tags if the meditation is not in the "Geleide Meditaties" category
     setTags(meditation.category === "Geleide Meditaties" ? [] : [...meditation.tags]);
+    setVeraLink(meditation.veraLink || "");
+    setMarcoLink(meditation.marcoLink || "");
     setIsDialogOpen(true);
   };
   
@@ -97,7 +101,6 @@ const AdminMeditations = () => {
   };
   
   const handleAddTag = () => {
-    // Don't add tags for guided meditations
     if (category === "Geleide Meditaties") return;
     
     if (tagInput && !tags.includes(tagInput)) {
@@ -116,7 +119,6 @@ const AdminMeditations = () => {
       return;
     }
     
-    // For guided meditations, we don't use tags
     const meditationTags = category === "Geleide Meditaties" ? [] : tags;
     
     if (currentMeditation) {
@@ -128,6 +130,8 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags: meditationTags,
+        veraLink,
+        marcoLink,
       });
     } else {
       addMeditation({
@@ -138,6 +142,8 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags: meditationTags,
+        veraLink,
+        marcoLink,
       });
     }
     
@@ -172,14 +178,12 @@ const AdminMeditations = () => {
     meditations
       .filter(m => m.category === editingCategory)
       .forEach(m => {
-        // If we're changing to or from "Geleide Meditaties", adjust tags accordingly
         let updatedTags = [...m.tags];
         if (updatedCategoryName === "Geleide Meditaties") {
-          updatedTags = []; // Remove all tags when changing to guided meditations
+          updatedTags = [];
         } else if (editingCategory === "Geleide Meditaties") {
-          updatedTags = [updatedCategoryName.toLowerCase()]; // Add new category as tag when changing from guided
+          updatedTags = [updatedCategoryName.toLowerCase()];
         } else {
-          // For other category changes, replace the old category tag with the new one
           updatedTags = [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()];
         }
         
@@ -367,7 +371,6 @@ const AdminMeditations = () => {
                     value={category} 
                     onValueChange={(val) => {
                       setCategory(val);
-                      // Clear tags if switching to guided meditations
                       if (val === "Geleide Meditaties") {
                         setTags([]);
                       }
@@ -417,7 +420,6 @@ const AdminMeditations = () => {
                 </div>
               </div>
               
-              {/* Only show tags section for non-guided meditations */}
               {category !== "Geleide Meditaties" && (
                 <div className="space-y-2">
                   <Label htmlFor="tags">Tags</Label>
@@ -498,6 +500,44 @@ const AdminMeditations = () => {
                     className="shrink-0"
                   >
                     <Image className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="veraLink">Vera Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="veraLink"
+                    placeholder="URL voor Vera link"
+                    value={veraLink}
+                    onChange={(e) => setVeraLink(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="marcoLink">Marco Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="marcoLink"
+                    placeholder="URL voor Marco link"
+                    value={marcoLink}
+                    onChange={(e) => setMarcoLink(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
