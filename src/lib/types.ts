@@ -1,4 +1,3 @@
-
 export interface Meditation {
   id: string;
   title: string;
@@ -21,29 +20,6 @@ export interface Soundscape {
   category: string;
   coverImageUrl: string;
   tags: string[];
-}
-
-export interface MusicItem {
-  id: string;
-  title: string;
-  artist: string;
-  description: string;
-  audioUrl: string;
-  coverImageUrl: string;
-  category: string;
-  tags: string[];
-  duration?: number;
-  waveformData?: any;
-  createdAt?: string;
-}
-
-export interface Playlist {
-  id: string;
-  title: string;
-  description?: string;
-  coverImageUrl?: string;
-  tracks: MusicItem[];
-  createdAt?: string;
 }
 
 export interface JournalEntry {

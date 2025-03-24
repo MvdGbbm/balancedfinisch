@@ -132,33 +132,6 @@ const Admin = () => {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2">
                 <Music className="h-5 w-5 text-primary" />
-                <span>Muziek</span>
-              </CardTitle>
-              <CardDescription>
-                Beheer de muziek content
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Voeg rustgevende muziek toe
-              </p>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={() => navigate("/admin/music")}
-                variant="outline"
-                className="w-full"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Bewerken
-              </Button>
-            </CardFooter>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2">
-                <Music className="h-5 w-5 text-primary" />
                 <span>Soundscapes</span>
               </CardTitle>
               <CardDescription>
