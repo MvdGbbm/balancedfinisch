@@ -1,3 +1,4 @@
+
 import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -26,20 +27,22 @@ const queryClient = new QueryClient();
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<Index />} />
-    <Route path="/meditations" element={<Meditations />} />
-    <Route path="/breathing" element={<Breathing />} />
-    <Route path="/music" element={<Music />} />
-    <Route path="/journal" element={<Journal />} />
-    <Route path="/soundscapes" element={<Soundscapes />} />
-    <Route path="/daily-quote" element={<DailyQuote />} />
-    <Route path="/admin" element={<Admin />} />
-    <Route path="/admin/meditations" element={<AdminMeditations />} />
-    <Route path="/admin/quotes" element={<AdminQuotes />} />
-    <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
-    <Route path="/admin/music" element={<AdminMusic />} />
-    <Route path="/admin/streams" element={<AdminStreams />} />
-    <Route path="*" element={<NotFound />} />
+    <>
+      <Route path="/" element={<Index />} />
+      <Route path="/meditations" element={<Meditations />} />
+      <Route path="/breathing" element={<Breathing />} />
+      <Route path="/music" element={<Music />} />
+      <Route path="/journal" element={<Journal />} />
+      <Route path="/soundscapes" element={<Soundscapes />} />
+      <Route path="/daily-quote" element={<DailyQuote />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/meditations" element={<AdminMeditations />} />
+      <Route path="/admin/quotes" element={<AdminQuotes />} />
+      <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
+      <Route path="/admin/music" element={<AdminMusic />} />
+      <Route path="/admin/streams" element={<AdminStreams />} />
+      <Route path="*" element={<NotFound />} />
+    </>
   )
 );
 
