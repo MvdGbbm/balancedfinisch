@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";

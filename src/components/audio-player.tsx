@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -57,7 +56,6 @@ export function AudioPlayer({
   const nextAudioRef = useRef<HTMLAudioElement | null>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
   
-  // Create next track audio element for crossfading
   useEffect(() => {
     if (enableCrossfade && nextTrackUrl) {
       nextAudioRef.current = new Audio(nextTrackUrl);
@@ -74,7 +72,6 @@ export function AudioPlayer({
     }
   }, [nextTrackUrl, enableCrossfade]);
   
-  // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
       if (isPlayingExternal && !isPlaying && isLoaded) {
@@ -101,7 +98,6 @@ export function AudioPlayer({
       setIsLoaded(true);
       setLoadError(false);
       
-      // Auto-play when loaded if isPlayingExternal is true
       if (isPlayingExternal) {
         audio.play()
           .then(() => {
@@ -121,43 +117,37 @@ export function AudioPlayer({
     const setAudioTime = () => {
       setCurrentTime(audio.currentTime);
       
-      // Start crossfading when we're within 10 seconds of the end
       if (enableCrossfade && nextTrackUrl && !isLooping && audio.duration > 0) {
         const timeRemaining = audio.duration - audio.currentTime;
         
-        if (timeRemaining <= 10 && timeRemaining > 0 && nextAudioRef.current && !crossfadeTimeoutRef.current) {
-          // Start next track and fade it in
+        if (timeRemaining <= 5 && timeRemaining > 0 && nextAudioRef.current && !crossfadeTimeoutRef.current) {
           const nextAudio = nextAudioRef.current;
           
-          // Reset to beginning and start playing
           nextAudio.currentTime = 0;
           
           nextAudio.play()
             .then(() => {
               console.log("Started playing next track for crossfade");
               
-              // Calculate fade duration based on remaining time
-              const fadeDuration = Math.min(timeRemaining * 1000, 10000);
-              const fadeSteps = 20;
+              const fadeDuration = Math.min(timeRemaining * 1000, 5000);
+              const fadeSteps = 25;
               const stepTime = fadeDuration / fadeSteps;
               let step = 0;
               
-              // Gradually fade out current track and fade in next track
               const fadeInterval = window.setInterval(() => {
                 step++;
                 const progress = step / fadeSteps;
                 
-                // Fade out current track
+                const easeOutProgress = 1 - Math.pow(1 - progress, 2);
+                
                 if (audio) {
-                  audio.volume = volume * (1 - progress);
+                  audio.volume = volume * (1 - easeOutProgress);
                 }
                 
-                // Fade in next track
                 if (nextAudio) {
-                  nextAudio.volume = volume * progress;
+                  nextAudio.volume = volume * easeOutProgress;
                 }
                 
-                // Complete fade
                 if (step >= fadeSteps) {
                   clearInterval(fadeInterval);
                   crossfadeTimeoutRef.current = null;
@@ -179,7 +169,6 @@ export function AudioPlayer({
         if (onPlayPauseChange) onPlayPauseChange(false);
         if (onEnded) onEnded();
         
-        // Clear any active crossfade
         if (crossfadeTimeoutRef.current) {
           clearInterval(crossfadeTimeoutRef.current);
           crossfadeTimeoutRef.current = null;
@@ -223,7 +212,6 @@ export function AudioPlayer({
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
       
-      // Clear any crossfade interval on cleanup
       if (crossfadeTimeoutRef.current) {
         clearInterval(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
@@ -242,7 +230,6 @@ export function AudioPlayer({
     
     audio.load();
     
-    // Clear any crossfade when audio URL changes
     if (crossfadeTimeoutRef.current) {
       clearInterval(crossfadeTimeoutRef.current);
       crossfadeTimeoutRef.current = null;
@@ -275,7 +262,6 @@ export function AudioPlayer({
     }
   }, [isLooping]);
   
-  // Set volume on main and next tracks
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -291,7 +277,6 @@ export function AudioPlayer({
       setIsPlaying(false);
       if (onPlayPauseChange) onPlayPauseChange(false);
       
-      // If crossfading, also pause the next track
       if (nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
         nextAudioRef.current.pause();
       }
@@ -306,7 +291,6 @@ export function AudioPlayer({
           setIsPlaying(true);
           if (onPlayPauseChange) onPlayPauseChange(true);
           
-          // If crossfading was active, resume the next track too
           if (nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
             nextAudioRef.current.play().catch(e => console.error("Error resuming next track:", e));
           }
@@ -360,12 +344,10 @@ export function AudioPlayer({
     audio.currentTime = newTime;
     setCurrentTime(newTime);
     
-    // If we've moved past the crossfade point, reset it
-    if (crossfadeTimeoutRef.current && (audio.duration - newTime) > 10) {
+    if (crossfadeTimeoutRef.current && (audio.duration - newTime) > 5) {
       clearInterval(crossfadeTimeoutRef.current);
       crossfadeTimeoutRef.current = null;
       
-      // Reset next track if it was playing
       if (nextAudioRef.current) {
         nextAudioRef.current.pause();
         nextAudioRef.current.currentTime = 0;
@@ -381,7 +363,6 @@ export function AudioPlayer({
     const newVolume = newValue[0];
     setVolume(newVolume);
     
-    // If we're in crossfade, adjust volumes proportionally
     if (crossfadeTimeoutRef.current && nextAudioRef.current) {
       const remainingTime = audio.duration - audio.currentTime;
       const fadeProgress = Math.max(0, Math.min(1, 1 - (remainingTime / 10)));
