@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, StopCircle, PlayCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -21,6 +23,7 @@ export function MeditationPlayerContainer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
+  const [randomQuote] = useState(getRandomQuote);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -195,20 +198,13 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <AudioPlayer 
-        key={playerKey}
-        audioUrl={currentAudioUrl || ''}
-        title={selectedMeditation.title}
-        showTitle
-        showControls
-        className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
-        onError={handleAudioError}
-        isPlayingExternal={isPlaying}
-        onPlayPauseChange={setIsPlaying}
-        ref={audioRef}
-      />
+      {/* Display quote above buttons */}
+      <div className="mb-4">
+        <QuoteDisplay quote={randomQuote} />
+      </div>
       
-      <div className="flex gap-2 mt-4">
+      {/* Vera and Marco buttons below the quote */}
+      <div className="flex gap-2 mb-4">
         <Button
           variant="outline"
           className={`flex-1 ${selectedMeditation.veraLink ? 
@@ -235,6 +231,19 @@ export function MeditationPlayerContainer({
           Marco
         </Button>
       </div>
+      
+      <AudioPlayer 
+        key={playerKey}
+        audioUrl={currentAudioUrl || ''}
+        title={selectedMeditation.title}
+        showTitle
+        showControls
+        className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
+        onError={handleAudioError}
+        isPlayingExternal={isPlaying}
+        onPlayPauseChange={setIsPlaying}
+        ref={audioRef}
+      />
     </div>
   );
 }

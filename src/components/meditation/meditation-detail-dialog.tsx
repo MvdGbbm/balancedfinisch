@@ -139,7 +139,12 @@ export const MeditationDetailDialog = ({
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
           
-          {/* Vera and Marco buttons at the bottom of the image */}
+          {/* Display quote above buttons */}
+          {showQuote && (
+            <QuoteDisplay quote={randomQuote} />
+          )}
+          
+          {/* Vera and Marco buttons below the quote */}
           <div className="flex gap-2 mt-2">
             <Button
               variant="outline"
