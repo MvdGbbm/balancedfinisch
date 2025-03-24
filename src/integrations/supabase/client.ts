@@ -26,3 +26,13 @@ export const getPublicUrl = (bucket: string, path: string) => {
     return null;
   }
 };
+
+// Helper to safely parse and validate streaming URLs
+export const validateStreamUrl = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
