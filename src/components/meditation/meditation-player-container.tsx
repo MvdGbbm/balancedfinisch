@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, StopCircle, PlayCircle } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -81,6 +81,22 @@ export function MeditationPlayerContainer({
     toast("De meditatie wordt afgespeeld", {
       description: "Start"
     });
+  };
+
+  // Handle external link navigation
+  const handleExternalLink = (linkType: 'vera' | 'marco') => {
+    const url = linkType === 'vera' 
+      ? selectedMeditation.veraLink 
+      : selectedMeditation.marcoLink;
+    
+    if (!url) {
+      toast.error(`Geen ${linkType === 'vera' ? 'Vera' : 'Marco'} link beschikbaar voor deze meditatie`);
+      return;
+    }
+    
+    // Open in new tab
+    window.open(url, '_blank');
+    toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
   };
 
   if (!hasValidAudio || audioError) {
@@ -169,6 +185,29 @@ export function MeditationPlayerContainer({
         onPlayPauseChange={setIsPlaying}
         ref={audioRef}
       />
+      
+      {/* External links buttons for Vera and Marco */}
+      <div className="flex gap-2 mt-4">
+        <Button
+          variant="outline"
+          className={`flex-1 ${selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'opacity-50'}`}
+          onClick={() => handleExternalLink('vera')}
+          disabled={!selectedMeditation.veraLink}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Vera
+        </Button>
+        
+        <Button
+          variant="outline"
+          className={`flex-1 ${selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'opacity-50'}`}
+          onClick={() => handleExternalLink('marco')}
+          disabled={!selectedMeditation.marcoLink}
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Marco
+        </Button>
+      </div>
     </div>
   );
 }
