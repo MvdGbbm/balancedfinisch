@@ -17,7 +17,6 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
-  const [selectedAudioSource, setSelectedAudioSource] = useState<'vera' | 'marco'>('vera');
   const [selectedGuidedMeditation, setSelectedGuidedMeditation] = useState<Meditation | null>(null);
   
   useEffect(() => {
@@ -59,69 +58,12 @@ const Meditations = () => {
     setCurrentSoundscapeId(soundscapeId);
   };
   
-  // Function to check if an audio source is available
-  const isAudioSourceAvailable = (meditation: Meditation, source: 'vera' | 'marco'): boolean => {
-    if (source === 'vera') {
-      return !!(meditation.veraLink || meditation.audioUrl);
-    } else {
-      return !!meditation.marcoLink;
-    }
-  };
-  
-  const handleAudioSourceChange = (source: 'vera' | 'marco') => {
-    console.log(`Changing audio source to: ${source}`);
-    
-    // Check if the selected audio source is available
-    if (selectedGuidedMeditation && !isAudioSourceAvailable(selectedGuidedMeditation, source)) {
-      toast.error(`${source === 'vera' ? 'Vera' : 'Marco'}'s versie is niet beschikbaar voor deze meditatie`);
-      return;
-    } else if (currentMeditationWithUrls && !isAudioSourceAvailable(currentMeditationWithUrls, source)) {
-      toast.error(`${source === 'vera' ? 'Vera' : 'Marco'}'s versie is niet beschikbaar voor deze meditatie`);
-      return;
-    }
-    
-    setSelectedAudioSource(source);
-    toast.success(`${source === 'vera' ? 'Vera' : 'Marco'} audio geselecteerd`);
-  };
-  
-  const handleGuidedMeditationSelect = (meditation: Meditation) => {
-    console.log("Selected guided meditation:", meditation);
-    
-    // Check if the selected audio source is available for this meditation
-    if (!isAudioSourceAvailable(meditation, selectedAudioSource)) {
-      // Try the other audio source
-      const otherSource = selectedAudioSource === 'vera' ? 'marco' : 'vera';
-      
-      if (isAudioSourceAvailable(meditation, otherSource)) {
-        toast.warning(`${selectedAudioSource === 'vera' ? 'Vera' : 'Marco'}'s versie is niet beschikbaar voor ${meditation.title}. ${otherSource === 'vera' ? 'Vera' : 'Marco'}'s versie wordt gebruikt.`);
-        setSelectedAudioSource(otherSource);
-      } else {
-        toast.error(`Geen audio beschikbaar voor deze meditatie`);
-        return;
-      }
-    }
-    
-    setSelectedGuidedMeditation(meditation);
-    toast.success(`Geleide meditatie "${meditation.title}" geselecteerd`);
-  };
-  
   const getActiveAudioUrl = () => {
     if (selectedGuidedMeditation) {
-      if (selectedAudioSource === 'vera') {
-        return selectedGuidedMeditation.veraLink || selectedGuidedMeditation.audioUrl || '';
-      } else if (selectedAudioSource === 'marco' && selectedGuidedMeditation.marcoLink) {
-        return selectedGuidedMeditation.marcoLink || '';
-      }
       return selectedGuidedMeditation.audioUrl || '';
     }
     
     if (!currentMeditationWithUrls) return '';
-    
-    if (selectedAudioSource === 'vera') {
-      return currentMeditationWithUrls.veraLink || currentMeditationWithUrls.audioUrl || '';
-    } else if (selectedAudioSource === 'marco') {
-      return currentMeditationWithUrls.marcoLink || '';
-    }
     
     return currentMeditationWithUrls.audioUrl || '';
   };
@@ -130,10 +72,9 @@ const Meditations = () => {
     // Log the current selection state when it changes
     if (currentMeditationWithUrls) {
       console.log("Current meditation:", currentMeditationWithUrls.title);
-      console.log("Audio source:", selectedAudioSource);
       console.log("Active URL:", getActiveAudioUrl());
     }
-  }, [currentMeditationWithUrls, selectedAudioSource]);
+  }, [currentMeditationWithUrls]);
   
   if (loading) {
     return (
@@ -172,30 +113,10 @@ const Meditations = () => {
                 setCurrentMeditation(med);
                 setSelectedGuidedMeditation(null);
                 
-                // If neither audio source is available, show a message
-                const veraAvailable = !!(med.veraLink || med.audioUrl);
-                const marcoAvailable = !!med.marcoLink;
-                
-                if (!veraAvailable && !marcoAvailable) {
+                // Check if audio is available
+                if (!med.audioUrl) {
                   toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
                   return;
-                }
-                
-                // Check if selected audio source is available
-                if (selectedAudioSource === 'marco' && !marcoAvailable) {
-                  if (veraAvailable) {
-                    toast.warning(`Marco's versie is niet beschikbaar voor ${med.title}. Vera's versie wordt gebruikt.`);
-                    setSelectedAudioSource('vera');
-                  } else {
-                    toast.error(`Geen audio beschikbaar voor deze meditatie`);
-                  }
-                } else if (selectedAudioSource === 'vera' && !veraAvailable) {
-                  if (marcoAvailable) {
-                    toast.warning(`Vera's versie is niet beschikbaar voor ${med.title}. Marco's versie wordt gebruikt.`);
-                    setSelectedAudioSource('marco');
-                  } else {
-                    toast.error(`Geen audio beschikbaar voor deze meditatie`);
-                  }
                 }
               }}
             />
@@ -220,11 +141,8 @@ const Meditations = () => {
         soundscapes={soundscapes}
         isOpen={currentMeditation !== null}
         onOpenChange={(open) => !open && setCurrentMeditation(null)}
-        selectedAudioSource={selectedAudioSource}
         currentSoundscapeId={currentSoundscapeId}
-        onAudioSourceChange={handleAudioSourceChange}
         onSoundscapeChange={handleSoundscapeChange}
-        getActiveAudioUrl={getActiveAudioUrl}
         guidedMeditations={guidedMeditations}
         onGuidedMeditationSelect={handleGuidedMeditationSelect}
       />
