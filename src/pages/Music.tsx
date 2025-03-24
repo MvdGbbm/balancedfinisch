@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -332,6 +331,36 @@ const Music = () => {
           
           <Equalizer isActive={isAudioActive} className="mb-4" audioElement={visibleAudioRef.current} />
           
+          {previewTrack && (
+            <div className="mb-6">
+              <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
+              <AudioPlayer 
+                audioUrl={previewTrack.audioUrl} 
+                showControls={true}
+                title={previewTrack.title}
+                isPlayingExternal={isPlaying}
+                onPlayPauseChange={setIsPlaying}
+                onAudioElementRef={handleAudioElementRef}
+              />
+            </div>
+          )}
+          
+          {isStreamPlaying && (
+            <div className="mb-6">
+              <h3 className="font-medium mb-2">
+                {streamTitle} <span className="text-xs text-primary">LIVE</span>
+              </h3>
+              <AudioPlayer 
+                audioUrl={streamUrl} 
+                showControls={true}
+                title={streamTitle}
+                isPlayingExternal={isStreamPlaying}
+                onPlayPauseChange={setIsStreamPlaying}
+                onAudioElementRef={handleAudioElementRef}
+              />
+            </div>
+          )}
+          
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
@@ -528,36 +557,6 @@ const Music = () => {
             )}
           </TabsContent>
         </Tabs>
-        
-        {previewTrack && (
-          <div className="mb-14">
-            <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
-            <AudioPlayer 
-              audioUrl={previewTrack.audioUrl} 
-              showControls={true}
-              title={previewTrack.title}
-              isPlayingExternal={isPlaying}
-              onPlayPauseChange={setIsPlaying}
-              onAudioElementRef={handleAudioElementRef}
-            />
-          </div>
-        )}
-        
-        {isStreamPlaying && (
-          <div className="mb-14">
-            <h3 className="font-medium mb-2">
-              {streamTitle} <span className="text-xs text-primary">LIVE</span>
-            </h3>
-            <AudioPlayer 
-              audioUrl={streamUrl} 
-              showControls={true}
-              title={streamTitle}
-              isPlayingExternal={isStreamPlaying}
-              onPlayPauseChange={setIsStreamPlaying}
-              onAudioElementRef={handleAudioElementRef}
-            />
-          </div>
-        )}
         
         {selectedPlaylist && currentTrack && (
           <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">

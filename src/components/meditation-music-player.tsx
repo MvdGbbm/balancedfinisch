@@ -90,6 +90,13 @@ export function MeditationMusicPlayer() {
       </div>
       
       <Tabs defaultValue={categories[0]} className="w-full">
+        {/* Player container is now placed before the category tabs */}
+        <MeditationPlayerContainer 
+          isVisible={isPlayerVisible}
+          selectedMeditation={selectedMeditation}
+          hideErrorMessage={false}
+        />
+        
         <MeditationCategoryTabs 
           categories={categories}
           meditationsByCategory={meditationsByCategory}
@@ -98,12 +105,6 @@ export function MeditationMusicPlayer() {
           onSelectMeditation={handleMeditationSelect}
         />
       </Tabs>
-      
-      <MeditationPlayerContainer 
-        isVisible={isPlayerVisible}
-        selectedMeditation={selectedMeditation}
-        hideErrorMessage={false}
-      />
     </div>
   );
 }
