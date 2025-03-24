@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +23,8 @@ const Music = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [showPlaylistCreator, setShowPlaylistCreator] = useState(false);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Filter soundscapes to only "Muziek" category
   useEffect(() => {
@@ -50,8 +52,21 @@ const Music = () => {
     setIsPlaying(true);
   };
 
-  const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
+  const handleTrackEnded = () => {
+    // If we're playing a playlist, move to the next track
+    if (selectedPlaylist && selectedPlaylist.tracks.length > 0) {
+      const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
+      setCurrentTrackIndex(nextIndex);
+      
+      const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
+      const nextTrack = soundscapes.find(s => s.id === nextTrackId) || null;
+      setCurrentTrack(nextTrack);
+      
+      toast({
+        title: "Volgende nummer",
+        description: `Nu speelt: ${nextTrack?.title}`
+      });
+    }
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
@@ -65,11 +80,17 @@ const Music = () => {
     }
     
     setSelectedPlaylist(playlist);
+    setCurrentTrackIndex(0);
     
     // Play the first track in the playlist
     const firstTrackId = playlist.tracks[0].trackId;
     const track = soundscapes.find(s => s.id === firstTrackId) || null;
     setCurrentTrack(track);
+    
+    toast({
+      title: "Afspeellijst gestart",
+      description: `${playlist.name} wordt nu afgespeeld`
+    });
   };
 
   const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
@@ -222,7 +243,7 @@ const Music = () => {
                             disabled={trackCount === 0}
                           >
                             <Play className="h-4 w-4 mr-1" />
-                            Afspelen
+                            Lijst afspelen
                           </Button>
                         </div>
                         
@@ -283,6 +304,7 @@ const Music = () => {
               showControls={true}
               title={currentTrack.title}
               className="mb-0"
+              onEnded={handleTrackEnded}
             />
           </div>
         )}
