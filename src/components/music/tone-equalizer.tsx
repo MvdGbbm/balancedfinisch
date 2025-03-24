@@ -1,9 +1,8 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Waves, Volume2, Reset } from "lucide-react";
+import { Waves, Volume2, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ToneEqualizerProps {
@@ -262,7 +261,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
             title="Reset all settings"
             disabled={!isActive || !isInitialized}
           >
-            <Reset className="h-3.5 w-3.5" />
+            <RefreshCw className="h-3.5 w-3.5" />
           </button>
           <Volume2 className="h-3 w-3 text-blue-400/70 ml-1" />
           <Slider
