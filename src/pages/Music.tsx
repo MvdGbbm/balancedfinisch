@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { TabView } from "@/components/music/tab-view";
@@ -11,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { 
   ListMusic, 
   Disc,
-  Waveform,
+  WaveformIcon,
   Search,
   PlusCircle,
   Play
@@ -33,7 +32,6 @@ const Music: React.FC = () => {
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [activeTab, setActiveTab] = useState("playlists");
   
-  // Update filtered tracks when search query changes
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredTracks(tracks);
@@ -52,7 +50,6 @@ const Music: React.FC = () => {
     }
   }, [searchQuery]);
   
-  // Update playlist tracks when selected playlist changes
   useEffect(() => {
     if (selectedPlaylist) {
       const tracks = getTracksForPlaylist(selectedPlaylist.id);
@@ -66,13 +63,11 @@ const Music: React.FC = () => {
     setCurrentTrack(track);
     setIsPlaying(true);
     
-    // If we're playing from a playlist, set up the queue
     if (selectedPlaylist) {
       const tracks = getTracksForPlaylist(selectedPlaylist.id);
       setQueue(tracks);
       setQueueIndex(tracks.findIndex(t => t.id === track.id));
     } else {
-      // If we're playing from search, just set the current track
       setQueue([track]);
       setQueueIndex(0);
     }
@@ -96,7 +91,6 @@ const Music: React.FC = () => {
     let nextIndex;
     
     if (isShuffle) {
-      // Choose a random track (but not the current one)
       nextIndex = Math.floor(Math.random() * queue.length);
       if (queue.length > 1) {
         while (nextIndex === queueIndex) {
@@ -104,7 +98,6 @@ const Music: React.FC = () => {
         }
       }
     } else {
-      // Go to the next track in order, or back to the beginning if at the end
       nextIndex = (queueIndex + 1) % queue.length;
     }
     
@@ -119,7 +112,6 @@ const Music: React.FC = () => {
     let prevIndex;
     
     if (isShuffle) {
-      // Choose a random track (but not the current one)
       prevIndex = Math.floor(Math.random() * queue.length);
       if (queue.length > 1) {
         while (prevIndex === queueIndex) {
@@ -127,7 +119,6 @@ const Music: React.FC = () => {
         }
       }
     } else {
-      // Go to the previous track in order, or to the end if at the beginning
       prevIndex = queueIndex === 0 ? queue.length - 1 : queueIndex - 1;
     }
     
@@ -140,7 +131,6 @@ const Music: React.FC = () => {
     setSelectedPlaylist(null);
   };
   
-  // Content for Playlists tab
   const playlistsTabContent = (
     <div className="space-y-4">
       {selectedPlaylist ? (
@@ -193,7 +183,6 @@ const Music: React.FC = () => {
     </div>
   );
   
-  // Content for Library tab
   const libraryTabContent = (
     <div className="space-y-4">
       <div className="sticky top-0 z-10 bg-background pb-2">
@@ -227,7 +216,6 @@ const Music: React.FC = () => {
     </div>
   );
   
-  // Content for Visualizer tab
   const visualizerTabContent = (
     <div className="space-y-4 pb-32">
       <AudioVisualizer audioElement={audioElement} />
