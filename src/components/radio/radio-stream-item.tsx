@@ -29,8 +29,13 @@ export function RadioStreamItem({ stream, isSelected, onSelect }: RadioStreamIte
         </div>
         <div className="flex-1">
           <h3 className="font-medium line-clamp-1">{stream.title}</h3>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm">
+              STREAM
+            </span>
+          </div>
           {stream.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2">{stream.description}</p>
+            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{stream.description}</p>
           )}
           <p className="text-xs text-muted-foreground opacity-70 mt-1">
             Audio URL: {stream.audioUrl.substring(0, 30)}...
