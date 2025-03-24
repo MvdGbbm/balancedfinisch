@@ -1,5 +1,5 @@
 
-import React, { useRef, forwardRef, useImperativeHandle } from "react";
+import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { ProgressBar } from "./audio-player/progress-bar";
@@ -42,29 +42,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const [randomQuote] = React.useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   
-  // Early return if no audioUrl is provided
-  if (!audioUrl) {
-    return (
-      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-        <div className="text-center py-3 text-muted-foreground">
-          <p>Geen audio URL opgegeven</p>
-        </div>
-        
-        {showQuote && (
-          <QuoteDisplay quote={randomQuote} />
-        )}
-      </div>
-    );
-  }
-  
-  // Log the audio URL for debugging
-  React.useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl}`);
-    if (audioUrl.includes('marco')) {
-      console.log('Marco audio detected:', audioUrl);
-    }
-  }, [audioUrl]);
-  
+  // Initialize all hooks unconditionally
   const {
     audioRef,
     nextAudioRef,
@@ -85,7 +63,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     handleVolumeChange,
     skipTime
   } = useAudioPlayer({
-    audioUrl,
+    audioUrl: audioUrl || "",
     onEnded,
     onError,
     isPlayingExternal,
@@ -95,13 +73,36 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     title
   });
   
+  // Log the audio URL for debugging
+  useEffect(() => {
+    console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
+    if (audioUrl?.includes('marco')) {
+      console.log('Marco audio detected:', audioUrl);
+    }
+  }, [audioUrl]);
+  
   // Expose the audio element ref to parent components
   useImperativeHandle(ref, () => audioRef.current!, []);
   
   // Connect the nextAudioRef to its element
-  React.useEffect(() => {
+  useEffect(() => {
     nextAudioRef.current = nextAudioElementRef.current;
   }, [nextAudioRef]);
+  
+  // Early return with placeholder if no audioUrl
+  if (!audioUrl) {
+    return (
+      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+        <div className="text-center py-3 text-muted-foreground">
+          <p>Geen audio URL opgegeven</p>
+        </div>
+        
+        {showQuote && (
+          <QuoteDisplay quote={randomQuote} />
+        )}
+      </div>
+    );
+  }
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
