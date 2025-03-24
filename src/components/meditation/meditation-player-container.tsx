@@ -12,11 +12,13 @@ import { checkAudioCompatibility } from "@/utils/meditation-utils";
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
   selectedMeditation: Meditation | null;
+  hideErrorMessage?: boolean;
 }
 
 export function MeditationPlayerContainer({ 
   isVisible, 
-  selectedMeditation 
+  selectedMeditation,
+  hideErrorMessage = false
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -136,7 +138,7 @@ export function MeditationPlayerContainer({
   }
 
   // Show error state with retry button
-  if (!hasValidAudio || audioError) {
+  if ((!hasValidAudio || audioError) && !hideErrorMessage) {
     return (
       <div className="mt-4">
         <Alert variant="destructive">
@@ -192,6 +194,7 @@ export function MeditationPlayerContainer({
         isPlayingExternal={isPlaying}
         onPlayPauseChange={setIsPlaying}
         onAudioElementRef={handleAudioElementRef}
+        hideErrorMessage={hideErrorMessage}
         key={`meditation-${selectedMeditation.id}-retry-${retryCount}`} // Force remount on retry
       />
     </div>
