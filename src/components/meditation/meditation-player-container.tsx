@@ -3,9 +3,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -21,6 +23,7 @@ export function MeditationPlayerContainer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
+  const [randomQuote] = useState(getRandomQuote());
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -194,6 +197,11 @@ export function MeditationPlayerContainer({
           </AlertDescription>
         </Alert>
       )}
+      
+      {/* Daily quote display above Vera and Marco buttons */}
+      <div className="mb-4">
+        <QuoteDisplay quote={randomQuote} />
+      </div>
       
       {/* Vera and Marco buttons */}
       <div className="flex gap-2 mb-4">

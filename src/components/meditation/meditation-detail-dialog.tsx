@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Music, ExternalLink } from "lucide-react";
+import { Music, ExternalLink, Quote } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
+import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -46,6 +48,7 @@ export const MeditationDetailDialog = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [equalizerVisible, setEqualizerVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [randomQuote] = useState(getRandomQuote());
   
   const filteredGuidedMeditations = guidedMeditations.filter(
     med => meditation && med.id !== meditation.id
@@ -126,6 +129,11 @@ export const MeditationDetailDialog = ({
             className="w-full h-80 bg-cover bg-center rounded-md"
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
+          
+          {/* Daily quote display above Vera and Marco buttons */}
+          <div className="mb-2">
+            <QuoteDisplay quote={randomQuote} />
+          </div>
           
           <div className="flex gap-2 mt-2">
             <Button
