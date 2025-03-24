@@ -13,7 +13,7 @@ import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Equalizer } from "@/components/music/equalizer";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
 
 interface RadioStream {
   id: string;
@@ -42,7 +42,7 @@ const Music = () => {
   const [streamTitle, setStreamTitle] = useState("");
   const [hiddenIframeUrl, setHiddenIframeUrl] = useState<string | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const hiddenIframeRef = useRef<HTMLIFrameElement>(null);
+  const hiddenIframeRef = useRef<HTMLIFrameElement | null>(null);
   const [activeTab, setActiveTab] = useState<string>("music");
   const [isAudioActive, setIsAudioActive] = useState(false);
 
@@ -344,7 +344,7 @@ const Music = () => {
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
           
-          <Equalizer isActive={isAudioActive} className="mb-4" audioRef={audioPlayerRef} />
+          <ToneEqualizer isActive={isAudioActive} className="mb-4" audioRef={audioPlayerRef} />
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (

@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Equalizer } from "@/components/music/equalizer";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -19,6 +19,7 @@ export function MeditationPlayerContainer({
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
     if (selectedMeditation) {
@@ -92,7 +93,7 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <Equalizer isActive={isPlaying} className="mb-2" />
+      <ToneEqualizer isActive={isPlaying} className="mb-2" audioRef={audioRef} />
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}
@@ -103,6 +104,7 @@ export function MeditationPlayerContainer({
         onError={handleAudioError}
         isPlayingExternal={isPlaying}
         onPlayPauseChange={setIsPlaying}
+        ref={audioRef}
       />
     </div>
   );
