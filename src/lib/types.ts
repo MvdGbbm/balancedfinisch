@@ -34,7 +34,7 @@ export interface DailyQuote {
   id: string;
   text: string;
   author: string;
-  date?: string;
+  backgroundClass?: string;
 }
 
 export interface PlannerEvent {

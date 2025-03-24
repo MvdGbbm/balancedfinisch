@@ -1,4 +1,3 @@
-
 import { DailyQuote } from "@/lib/types";
 
 export const quotes: DailyQuote[] = [
@@ -274,39 +273,45 @@ export const quotes: DailyQuote[] = [
   }
 ];
 
-// Color gradients for quote backgrounds
+// Color gradients for quote backgrounds - updated with more vibrant colors
 export const colorGradients = [
+  // Vibrant gradient backgrounds
+  "bg-gradient-to-br from-blue-500 to-purple-600",
+  "bg-gradient-to-br from-green-400 to-blue-500",
+  "bg-gradient-to-br from-purple-500 to-pink-500",
+  "bg-gradient-to-br from-yellow-400 to-orange-500",
+  "bg-gradient-to-br from-pink-500 to-red-500",
+  "bg-gradient-to-br from-indigo-500 to-blue-500",
+  "bg-gradient-to-br from-red-500 to-purple-500",
+  "bg-gradient-to-br from-teal-400 to-blue-500",
+  "bg-gradient-to-br from-orange-500 to-red-500",
+  "bg-gradient-to-br from-green-500 to-teal-400",
+  "bg-gradient-to-br from-rose-400 to-purple-500",
+  "bg-gradient-to-br from-amber-400 to-red-500",
+  "bg-gradient-to-br from-violet-500 to-indigo-500",
+  "bg-gradient-to-br from-cyan-500 to-blue-500",
+  "bg-gradient-to-br from-fuchsia-500 to-pink-500",
+  
+  // Add subtle variants for better text readability
+  "bg-gradient-to-br from-blue-400 to-purple-500 bg-opacity-90",
+  "bg-gradient-to-br from-green-400 to-teal-500 bg-opacity-90",
+  "bg-gradient-to-br from-rose-400 to-red-500 bg-opacity-90",
+  "bg-gradient-to-br from-violet-400 to-indigo-500 bg-opacity-90",
+  "bg-gradient-to-br from-amber-400 to-orange-500 bg-opacity-90",
+  
+  // Keep some softer gradients for variety
   "bg-gradient-to-br from-rose-100 to-teal-100",
   "bg-gradient-to-br from-amber-100 to-blue-100",
   "bg-gradient-to-br from-emerald-100 to-purple-100",
   "bg-gradient-to-br from-violet-100 to-yellow-100",
   "bg-gradient-to-br from-indigo-100 to-red-100",
-  "bg-gradient-to-br from-sky-100 to-orange-100",
-  "bg-gradient-to-br from-cyan-100 to-pink-100",
-  "bg-gradient-to-br from-blue-100 to-amber-100",
-  "bg-gradient-to-br from-teal-100 to-rose-100",
-  "bg-gradient-to-br from-green-100 to-blue-100",
-  "bg-gradient-to-br from-purple-100 to-yellow-100",
-  "bg-gradient-to-br from-indigo-200 to-pink-100",
-  "bg-gradient-to-br from-blue-200 to-green-100",
-  "bg-gradient-to-br from-teal-200 to-indigo-100",
-  "bg-gradient-to-br from-pink-100 to-blue-100",
-  "bg-gradient-to-br from-purple-200 to-cyan-100",
-  "bg-gradient-to-br from-amber-200 to-violet-100",
-  "bg-gradient-to-br from-lime-100 to-rose-100",
-  "bg-gradient-to-br from-fuchsia-100 to-blue-100",
-  "bg-gradient-to-br from-sky-200 to-indigo-100",
+  
   // Add dark mode friendly gradients
   "dark:bg-gradient-to-br dark:from-slate-800 dark:to-zinc-900",
   "dark:bg-gradient-to-br dark:from-zinc-800 dark:to-slate-900",
-  "dark:bg-gradient-to-br dark:from-gray-800 dark:to-stone-900",
-  "dark:bg-gradient-to-br dark:from-stone-800 dark:to-gray-900",
-  "dark:bg-gradient-to-br dark:from-neutral-800 dark:to-zinc-900",
-  "dark:bg-gradient-to-br dark:from-zinc-900 dark:to-slate-800",
-  "dark:bg-gradient-to-br dark:from-slate-900 dark:to-zinc-800",
-  "dark:bg-gradient-to-br dark:from-neutral-900 dark:to-stone-800",
-  "dark:bg-gradient-to-br dark:from-stone-900 dark:to-neutral-800",
-  "dark:bg-gradient-to-br dark:from-gray-900 dark:to-slate-800"
+  "dark:bg-gradient-to-br dark:from-blue-900 dark:to-purple-900",
+  "dark:bg-gradient-to-br dark:from-green-900 dark:to-teal-900",
+  "dark:bg-gradient-to-br dark:from-purple-900 dark:to-indigo-900"
 ];
 
 // Function to get a deterministic but random-looking gradient based on a date
@@ -322,5 +327,20 @@ export const getQuoteForDate = (date: string): DailyQuote => {
   // Create a simple hash from the date string
   const dateHash = date.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   // Use the hash to select a quote
-  return quotes[dateHash % quotes.length];
+  const selectedQuote = quotes[dateHash % quotes.length];
+  // Add the background gradient class to the quote
+  return {
+    ...selectedQuote,
+    backgroundClass: getGradientForDate(date)
+  };
+};
+
+// Modified random quote function to include background class
+export const getRandomQuote = (): DailyQuote => {
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
+  return {
+    ...quotes[randomIndex],
+    backgroundClass: colorGradients[randomGradientIndex]
+  };
 };

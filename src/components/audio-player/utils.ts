@@ -1,5 +1,5 @@
 
-import { quotes } from "@/data/quotes";
+import { quotes, colorGradients } from "@/data/quotes";
 
 export const formatTime = (time: number) => {
   if (isNaN(time)) return "0:00";
@@ -11,7 +11,11 @@ export const formatTime = (time: number) => {
 
 export const getRandomQuote = () => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
-  return quotes[randomIndex];
+  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
+  return {
+    ...quotes[randomIndex],
+    backgroundClass: colorGradients[randomGradientIndex]
+  };
 };
 
 export const validateAudioUrl = (url: string | undefined): string => {
