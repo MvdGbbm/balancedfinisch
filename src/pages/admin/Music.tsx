@@ -27,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, FileAudio, Image, Tag, Music } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 import { Soundscape } from "@/lib/types";
 
@@ -39,6 +40,7 @@ const AdminMusic = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -55,6 +57,7 @@ const AdminMusic = () => {
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
+    setIsPreviewPlaying(false);
   };
   
   const handleOpenNew = () => {
@@ -90,9 +93,22 @@ const AdminMusic = () => {
     setTags(tags.filter((t) => t !== tag));
   };
   
+  const handleAudioPreview = () => {
+    if (audioUrl) {
+      setIsPreviewPlaying(!isPreviewPlaying);
+    } else {
+      toast.error("Voer eerst een audio URL in om voor te luisteren");
+    }
+  };
+  
+  const handleAudioError = () => {
+    toast.error("Kon de audio niet laden. Controleer of de URL correct is.");
+    setIsPreviewPlaying(false);
+  };
+  
   const handleSave = () => {
     if (!title || !description || !audioUrl || !coverImageUrl) {
-      alert("Vul alle verplichte velden in");
+      toast.error("Vul alle verplichte velden in");
       return;
     }
     
@@ -105,6 +121,7 @@ const AdminMusic = () => {
         coverImageUrl,
         tags,
       });
+      toast.success("Muziek bijgewerkt");
     } else {
       addSoundscape({
         title,
@@ -114,10 +131,21 @@ const AdminMusic = () => {
         coverImageUrl,
         tags,
       });
+      toast.success("Nieuwe muziek toegevoegd");
     }
     
     setIsDialogOpen(false);
     resetForm();
+  };
+
+  const isValidUrl = (url: string) => {
+    if (!url) return false;
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
   
   return (
@@ -283,10 +311,17 @@ const AdminMusic = () => {
                     type="button" 
                     variant="outline"
                     className="shrink-0"
+                    onClick={handleAudioPreview}
                   >
-                    <FileAudio className="h-4 w-4" />
+                    {isPreviewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
                 </div>
+                {isValidUrl(audioUrl) && (
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Directe URL naar een online audio bestand
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -306,6 +341,12 @@ const AdminMusic = () => {
                     <Image className="h-4 w-4" />
                   </Button>
                 </div>
+                {isValidUrl(coverImageUrl) && (
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Directe URL naar een online afbeelding
+                  </div>
+                )}
               </div>
               
               {coverImageUrl && (
@@ -316,15 +357,21 @@ const AdminMusic = () => {
                     className="w-full h-full object-cover" 
                     onError={(e) => {
                       e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      toast.error("Kon de afbeelding niet laden. Controleer de URL.");
                     }}
                   />
                 </div>
               )}
               
-              {audioUrl && (
+              {audioUrl && isPreviewPlaying && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
-                  <AudioPlayer audioUrl={audioUrl} />
+                  <AudioPlayer 
+                    audioUrl={audioUrl} 
+                    isPlayingExternal={isPreviewPlaying}
+                    onPlayPauseChange={setIsPreviewPlaying}
+                    onError={handleAudioError}
+                  />
                 </div>
               )}
             </div>

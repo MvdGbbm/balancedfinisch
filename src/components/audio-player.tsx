@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -60,24 +59,65 @@ export function AudioPlayer({
   
   // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
+
+  // Play audio directly without preloading for external URLs
+  const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
+    if (!audioElement) return;
+    
+    audioElement.src = url;
+    audioElement.load();
+    
+    // Set up event listeners for this direct play
+    const onCanPlay = () => {
+      audioElement.play()
+        .then(() => {
+          setIsPlaying(true);
+          if (onPlayPauseChange) onPlayPauseChange(true);
+          setIsLoaded(true);
+          setLoadError(false);
+        })
+        .catch(error => {
+          console.error("Error playing direct URL:", error);
+          setLoadError(true);
+          if (onError) onError();
+        });
+      audioElement.removeEventListener('canplay', onCanPlay);
+    };
+    
+    audioElement.addEventListener('canplay', onCanPlay);
+    
+    // Error handling
+    const handleDirectError = () => {
+      setLoadError(true);
+      if (onError) onError();
+      audioElement.removeEventListener('error', handleDirectError);
+    };
+    
+    audioElement.addEventListener('error', handleDirectError);
+  };
   
   // Handle external play/pause control
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
-      if (isPlayingExternal && !isPlaying && isLoaded) {
-        audioRef.current.play()
-          .then(() => {
-            setIsPlaying(true);
-          })
-          .catch(error => {
-            console.error("Error playing audio:", error);
-          });
+      if (isPlayingExternal && !isPlaying) {
+        // If direct URL playback is requested, use the direct method
+        if (audioUrl.startsWith('http')) {
+          playDirectly(audioUrl, audioRef.current);
+        } else if (isLoaded) {
+          audioRef.current.play()
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(error => {
+              console.error("Error playing audio:", error);
+            });
+        }
       } else if (!isPlayingExternal && isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
       }
     }
-  }, [isPlayingExternal, isPlaying, isLoaded]);
+  }, [isPlayingExternal, isPlaying, isLoaded, audioUrl]);
   
   // Set up crossfade when current track is near the end
   useEffect(() => {
@@ -97,7 +137,8 @@ export function AudioPlayer({
       
       // Preload next track
       nextAudio.volume = 0;
-      nextAudio.currentTime = 0;
+      nextAudio.src = nextAudioUrl;
+      nextAudio.load();
       
       // Start playing next track and gradually increase volume
       nextAudio.play()
@@ -143,6 +184,8 @@ export function AudioPlayer({
             if (onEnded) onEnded();
             crossfadeTimeoutRef.current = null;
             setIsCrossfading(false);
+            // Reset the time to 0 for the new track
+            setCurrentTime(0);
           }, timeLeft * 1000);
         })
         .catch(error => {
@@ -208,9 +251,23 @@ export function AudioPlayer({
       if (audioUrl.startsWith('http') && !isRetrying) {
         setIsRetrying(true);
         
+        // For direct URLs, try using CORS proxy or direct playback as fallback
         setTimeout(() => {
-          audio.load();
-          setIsRetrying(false);
+          try {
+            // Try direct playback again
+            playDirectly(audioUrl, audio);
+            setIsRetrying(false);
+          } catch (error) {
+            console.error("Error retrying direct playback:", error);
+            setIsRetrying(false);
+            
+            toast({
+              variant: "destructive",
+              title: "Fout bij laden",
+              description: "Kon de audio niet laden. Controleer of de URL correct is."
+            });
+            if (onError) onError();
+          }
         }, 1000);
       } else {
         toast({
@@ -260,8 +317,13 @@ export function AudioPlayer({
       crossfadeTimeoutRef.current = null;
     }
     
-    audio.load();
-  }, [audioUrl]);
+    // If it's a direct URL, use direct playback method
+    if (audioUrl.startsWith('http') && isPlayingExternal) {
+      playDirectly(audioUrl, audio);
+    } else {
+      audio.load();
+    }
+  }, [audioUrl, isPlayingExternal]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -343,14 +405,19 @@ export function AudioPlayer({
     setLoadError(false);
     setIsRetrying(true);
     
-    setTimeout(() => {
-      audio.load();
-      setIsRetrying(false);
-      toast({
-        title: "Opnieuw laden",
-        description: "Probeert audio opnieuw te laden."
-      });
-    }, 500);
+    // For direct URLs, try the direct playback method
+    if (audioUrl.startsWith('http')) {
+      playDirectly(audioUrl, audio);
+    } else {
+      setTimeout(() => {
+        audio.load();
+        setIsRetrying(false);
+        toast({
+          title: "Opnieuw laden",
+          description: "Probeert audio opnieuw te laden."
+        });
+      }, 500);
+    }
   };
   
   const toggleLoop = () => {
@@ -420,8 +487,8 @@ export function AudioPlayer({
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-      <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />
-      {nextAudioUrl && <audio ref={nextAudioRef} src={nextAudioUrl} preload="metadata" crossOrigin="anonymous" />}
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
+      {nextAudioUrl && <audio ref={nextAudioRef} preload="metadata" crossOrigin="anonymous" />}
       
       {showTitle && title && (
         <h3 className="text-lg font-medium">{title}</h3>
