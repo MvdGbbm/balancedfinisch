@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -45,6 +44,7 @@ const Music = () => {
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -205,7 +205,6 @@ const Music = () => {
         });
       }
     } else if (isPreviewMode) {
-      // End preview mode after track completes
       setIsPlaying(false);
       setIsPreviewMode(false);
       setCurrentTrack(null);
@@ -678,7 +677,7 @@ const Music = () => {
         
         {hiddenIframeUrl && (
           <iframe 
-            ref={hiddenIframeRef}
+            ref={iframeRef}
             src={hiddenIframeUrl}
             style={{ display: 'none' }} 
             title="Radio Stream"
