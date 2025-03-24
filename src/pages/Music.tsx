@@ -4,7 +4,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,9 @@ const Music = () => {
   const handlePreviewTrack = (track: Soundscape) => {
     setPreviewTrack(track);
     setIsPlaying(true);
+    
+    // Stop any currently playing playlist when previewing a track
+    setSelectedPlaylist(null);
   };
 
   const handleTrackEnded = () => {
@@ -61,6 +64,7 @@ const Music = () => {
       const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
       const nextTrack = soundscapes.find(s => s.id === nextTrackId) || null;
       setCurrentTrack(nextTrack);
+      setIsPlaying(true); // Auto-play next track
       
       toast({
         title: "Volgende nummer",
@@ -79,6 +83,9 @@ const Music = () => {
       return;
     }
     
+    // Stop any currently previewing track
+    setPreviewTrack(null);
+    
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
     
@@ -86,6 +93,7 @@ const Music = () => {
     const firstTrackId = playlist.tracks[0].trackId;
     const track = soundscapes.find(s => s.id === firstTrackId) || null;
     setCurrentTrack(track);
+    setIsPlaying(true); // Auto-play immediately
     
     toast({
       title: "Afspeellijst gestart",
@@ -122,6 +130,52 @@ const Music = () => {
     toast({
       title: "Toegevoegd aan afspeellijst",
       description: `${track.title} is toegevoegd aan ${playlist.name}`,
+    });
+  };
+
+  const handleRemoveFromPlaylist = (trackId: string, playlistId: string) => {
+    // Find the playlist
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist) return;
+    
+    // Create updated playlist with track removed
+    const updatedPlaylist = {
+      ...playlist,
+      tracks: playlist.tracks.filter(t => t.trackId !== trackId)
+    };
+    
+    // Update playlists array
+    const updatedPlaylists = playlists.map(p => 
+      p.id === playlistId ? updatedPlaylist : p
+    );
+    
+    setPlaylists(updatedPlaylists);
+    
+    // If the currently playing playlist is affected
+    if (selectedPlaylist?.id === playlistId) {
+      // If we're removing the current track
+      if (selectedPlaylist.tracks[currentTrackIndex]?.trackId === trackId) {
+        // If this was the last track, stop playback
+        if (updatedPlaylist.tracks.length === 0) {
+          setSelectedPlaylist(null);
+          setCurrentTrack(null);
+          setIsPlaying(false);
+        } else {
+          // Adjust currentTrackIndex if needed and continue playing
+          const newIndex = Math.min(currentTrackIndex, updatedPlaylist.tracks.length - 1);
+          setCurrentTrackIndex(newIndex);
+          const newTrackId = updatedPlaylist.tracks[newIndex].trackId;
+          const newTrack = soundscapes.find(s => s.id === newTrackId) || null;
+          setCurrentTrack(newTrack);
+        }
+      }
+      // Update the selectedPlaylist reference
+      setSelectedPlaylist(updatedPlaylist);
+    }
+    
+    toast({
+      title: "Nummer verwijderd",
+      description: "Het nummer is verwijderd uit de afspeellijst."
     });
   };
 
@@ -253,9 +307,22 @@ const Music = () => {
                             <h4 className="text-sm font-medium">Nummers:</h4>
                             <div className="pl-2 space-y-1">
                               {getPlaylistTracks(playlist).map((track, index) => (
-                                <div key={track.id} className="flex items-center text-sm">
-                                  <span className="w-5 text-muted-foreground">{index + 1}.</span>
-                                  <span>{track.title}</span>
+                                <div 
+                                  key={track.id} 
+                                  className="flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted"
+                                >
+                                  <div className="flex items-center">
+                                    <span className="w-5 text-muted-foreground">{index + 1}.</span>
+                                    <span>{track.title}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleRemoveFromPlaylist(track.id, playlist.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
                                 </div>
                               ))}
                             </div>
@@ -289,6 +356,8 @@ const Music = () => {
               audioUrl={previewTrack.audioUrl} 
               showControls={true}
               title={previewTrack.title}
+              isPlayingExternal={isPlaying}
+              onPlayPauseChange={setIsPlaying}
             />
           </div>
         )}
@@ -298,6 +367,18 @@ const Music = () => {
           <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-medium text-sm">Speelt nu: {selectedPlaylist.name}</h4>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6" 
+                onClick={() => {
+                  setSelectedPlaylist(null);
+                  setCurrentTrack(null);
+                  setIsPlaying(false);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
             <AudioPlayer 
               audioUrl={currentTrack.audioUrl} 
@@ -305,6 +386,8 @@ const Music = () => {
               title={currentTrack.title}
               className="mb-0"
               onEnded={handleTrackEnded}
+              isPlayingExternal={isPlaying}
+              onPlayPauseChange={setIsPlaying}
             />
           </div>
         )}

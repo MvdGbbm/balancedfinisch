@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ interface AudioPlayerProps {
   onError?: () => void;
   customSoundscapeSelector?: React.ReactNode;
   showQuote?: boolean;
+  isPlayingExternal?: boolean;
+  onPlayPauseChange?: (isPlaying: boolean) => void;
 }
 
 export function AudioPlayer({ 
@@ -27,7 +30,9 @@ export function AudioPlayer({
   onEnded,
   onError,
   customSoundscapeSelector,
-  showQuote = false
+  showQuote = false,
+  isPlayingExternal,
+  onPlayPauseChange
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -46,6 +51,24 @@ export function AudioPlayer({
   
   const audioRef = useRef<HTMLAudioElement>(null);
   
+  // Handle external play/pause control
+  useEffect(() => {
+    if (isPlayingExternal !== undefined && audioRef.current) {
+      if (isPlayingExternal && !isPlaying && isLoaded) {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Error playing audio:", error);
+          });
+      } else if (!isPlayingExternal && isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  }, [isPlayingExternal, isPlaying, isLoaded]);
+  
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -54,6 +77,18 @@ export function AudioPlayer({
       setDuration(audio.duration);
       setIsLoaded(true);
       setLoadError(false);
+      
+      // Auto-play when loaded if isPlayingExternal is true
+      if (isPlayingExternal) {
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Error auto-playing audio:", error);
+          });
+      }
+      
       toast({
         title: "Audio geladen",
         description: "De meditatie is klaar om af te spelen."
@@ -67,6 +102,7 @@ export function AudioPlayer({
     const handleEnded = () => {
       if (!isLooping) {
         setIsPlaying(false);
+        if (onPlayPauseChange) onPlayPauseChange(false);
         if (onEnded) onEnded();
       }
     };
@@ -107,7 +143,7 @@ export function AudioPlayer({
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -153,6 +189,9 @@ export function AudioPlayer({
     
     if (isPlaying) {
       audio.pause();
+      setIsPlaying(false);
+      if (onPlayPauseChange) onPlayPauseChange(false);
+      
       toast({
         title: "Gepauzeerd",
         description: "De meditatie is gepauzeerd."
@@ -160,6 +199,9 @@ export function AudioPlayer({
     } else {
       audio.play()
         .then(() => {
+          setIsPlaying(true);
+          if (onPlayPauseChange) onPlayPauseChange(true);
+          
           toast({
             title: "Speelt nu",
             description: title ? `"${title}" speelt nu` : "De meditatie speelt nu"
@@ -174,8 +216,6 @@ export function AudioPlayer({
           });
         });
     }
-    
-    setIsPlaying(!isPlaying);
   };
   
   const handleRetry = () => {
