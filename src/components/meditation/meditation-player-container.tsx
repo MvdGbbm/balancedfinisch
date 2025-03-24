@@ -80,7 +80,7 @@ export function MeditationPlayerContainer({
       )}
       
       {imageError && (
-        <Alert className="mb-4" variant="warning">
+        <Alert className="mb-4" variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.
