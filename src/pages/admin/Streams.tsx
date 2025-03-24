@@ -3,8 +3,7 @@ import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
   Card, 
-  CardContent,
-  CardFooter
+  CardContent
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Radio, Edit, Trash2, Plus, ExternalLink, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface RadioStream {
   id: string;
@@ -33,10 +33,7 @@ interface RadioStream {
 }
 
 const AdminStreams = () => {
-  const [streams, setStreams] = useState<RadioStream[]>([]);
-  const [activeStreams, setActiveStreams] = useState<RadioStream[]>([]);
-  const [inactiveStreams, setInactiveStreams] = useState<RadioStream[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStream, setCurrentStream] = useState<RadioStream | null>(null);
   
@@ -46,35 +43,113 @@ const AdminStreams = () => {
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
   
-  useEffect(() => {
-    fetchStreams();
-  }, []);
-  
-  useEffect(() => {
-    setActiveStreams(streams.filter(stream => stream.is_active));
-    setInactiveStreams(streams.filter(stream => !stream.is_active));
-  }, [streams]);
-  
-  const fetchStreams = async () => {
-    setIsLoading(true);
-    try {
+  // Fetch streams with React Query
+  const { data: streams = [], isLoading } = useQuery({
+    queryKey: ['radioStreams'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('radio_streams')
         .select('*')
         .order('title');
       
-      if (error) {
-        throw error;
-      }
-      
-      setStreams(data || []);
-    } catch (error) {
-      console.error("Error fetching radio streams:", error);
-      toast.error("Kon de radiostreams niet laden");
-    } finally {
-      setIsLoading(false);
+      if (error) throw error;
+      return data || [];
     }
-  };
+  });
+  
+  // Derived state from streams data
+  const activeStreams = streams.filter(stream => stream.is_active);
+  const inactiveStreams = streams.filter(stream => !stream.is_active);
+  
+  // Mutations
+  const createStreamMutation = useMutation({
+    mutationFn: async (newStream: Omit<RadioStream, 'id'>) => {
+      const { data, error } = await supabase
+        .from('radio_streams')
+        .insert(newStream)
+        .select();
+      
+      if (error) throw error;
+      return data[0];
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+      toast.success("Nieuwe radiostream toegevoegd");
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      console.error("Error creating stream:", error);
+      toast.error("Kon de radiostream niet opslaan");
+    }
+  });
+  
+  const updateStreamMutation = useMutation({
+    mutationFn: async (stream: RadioStream) => {
+      const { error } = await supabase
+        .from('radio_streams')
+        .update({
+          title: stream.title,
+          url: stream.url,
+          description: stream.description,
+          is_active: stream.is_active
+        })
+        .eq('id', stream.id);
+      
+      if (error) throw error;
+      return stream;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+      toast.success("Radiostream bijgewerkt");
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      console.error("Error updating stream:", error);
+      toast.error("Kon de radiostream niet bijwerken");
+    }
+  });
+  
+  const deleteStreamMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('radio_streams')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+      toast.success("Radiostream verwijderd");
+    },
+    onError: (error) => {
+      console.error("Error deleting stream:", error);
+      toast.error("Kon de radiostream niet verwijderen");
+    }
+  });
+  
+  const toggleStreamActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string, isActive: boolean }) => {
+      const { error } = await supabase
+        .from('radio_streams')
+        .update({ is_active: isActive })
+        .eq('id', id);
+      
+      if (error) throw error;
+      return { id, isActive };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+      toast.success(`Radiostream ${data.isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
+    },
+    onError: (error) => {
+      console.error("Error updating stream status:", error);
+      toast.error("Kon de status niet bijwerken");
+    }
+  });
   
   const resetForm = () => {
     setTitle("");
@@ -100,45 +175,15 @@ const AdminStreams = () => {
   
   const handleDelete = async (id: string) => {
     if (window.confirm("Weet je zeker dat je deze radiostream wilt verwijderen?")) {
-      try {
-        const { error } = await supabase
-          .from('radio_streams')
-          .delete()
-          .eq('id', id);
-        
-        if (error) {
-          throw error;
-        }
-        
-        setStreams(streams.filter(stream => stream.id !== id));
-        toast.success("Radiostream verwijderd");
-      } catch (error) {
-        console.error("Error deleting stream:", error);
-        toast.error("Kon de radiostream niet verwijderen");
-      }
+      deleteStreamMutation.mutate(id);
     }
   };
   
   const handleToggleActive = async (stream: RadioStream) => {
-    try {
-      const { error } = await supabase
-        .from('radio_streams')
-        .update({ is_active: !stream.is_active })
-        .eq('id', stream.id);
-      
-      if (error) {
-        throw error;
-      }
-      
-      setStreams(streams.map(s => 
-        s.id === stream.id ? {...s, is_active: !stream.is_active} : s
-      ));
-      
-      toast.success(`Radiostream ${!stream.is_active ? 'geactiveerd' : 'gedeactiveerd'}`);
-    } catch (error) {
-      console.error("Error updating stream status:", error);
-      toast.error("Kon de status niet bijwerken");
-    }
+    toggleStreamActiveMutation.mutate({ 
+      id: stream.id, 
+      isActive: !stream.is_active 
+    });
   };
   
   const handleSave = async () => {
@@ -147,51 +192,23 @@ const AdminStreams = () => {
       return;
     }
     
-    try {
-      if (currentStream) {
-        // Update existing stream
-        const { error } = await supabase
-          .from('radio_streams')
-          .update({
-            title,
-            url,
-            description,
-            is_active: isActive
-          })
-          .eq('id', currentStream.id);
-        
-        if (error) throw error;
-        
-        setStreams(streams.map(stream => 
-          stream.id === currentStream.id 
-            ? { ...stream, title, url, description, is_active: isActive } 
-            : stream
-        ));
-        
-        toast.success("Radiostream bijgewerkt");
-      } else {
-        // Create new stream
-        const { data, error } = await supabase
-          .from('radio_streams')
-          .insert({
-            title,
-            url,
-            description,
-            is_active: isActive
-          })
-          .select();
-        
-        if (error) throw error;
-        
-        setStreams([...streams, data[0]]);
-        toast.success("Nieuwe radiostream toegevoegd");
-      }
-      
-      setIsDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error saving stream:", error);
-      toast.error("Kon de radiostream niet opslaan");
+    if (currentStream) {
+      // Update existing stream
+      updateStreamMutation.mutate({
+        ...currentStream,
+        title,
+        url,
+        description,
+        is_active: isActive
+      });
+    } else {
+      // Create new stream
+      createStreamMutation.mutate({
+        title,
+        url,
+        description,
+        is_active: isActive
+      });
     }
   };
   
@@ -232,7 +249,7 @@ const AdminStreams = () => {
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
               </div>
             ) : activeStreams.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {activeStreams.map((stream) => (
                   <StreamCard 
                     key={stream.id} 
@@ -259,7 +276,7 @@ const AdminStreams = () => {
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
               </div>
             ) : inactiveStreams.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {inactiveStreams.map((stream) => (
                   <StreamCard 
                     key={stream.id} 
@@ -363,9 +380,9 @@ interface StreamCardProps {
 const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onToggleActive }) => {
   return (
     <Card className={stream.is_active ? "" : "opacity-70"}>
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1">
             <div className="flex items-center">
               <Radio className="h-4 w-4 mr-2 text-primary" />
               <h3 className="font-medium">{stream.title}</h3>
@@ -386,7 +403,7 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => onToggleActive(stream)}
               title={stream.is_active ? "Deactiveren" : "Activeren"}
             >
@@ -395,7 +412,7 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => onEdit(stream)}
             >
               <Edit className="h-4 w-4" />
@@ -403,7 +420,7 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-7 w-7 text-muted-foreground hover:text-destructive"
               onClick={() => onDelete(stream.id)}
             >
               <Trash2 className="h-4 w-4" />

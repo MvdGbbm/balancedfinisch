@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Playlist, PlaylistTrack } from "@/components/playlist/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface RadioStream {
   id: string;
@@ -37,9 +39,33 @@ const Music = () => {
   const [isStreamPlaying, setIsStreamPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
   const [streamTitle, setStreamTitle] = useState("");
-  const [radioStreams, setRadioStreams] = useState<RadioStream[]>([]);
-  const [isLoadingStreams, setIsLoadingStreams] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+
+  // Fetch radio streams using React Query
+  const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
+    queryKey: ['activeRadioStreams'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('radio_streams')
+        .select('*')
+        .eq('is_active', true)
+        .order('title');
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    },
+    onError: (error) => {
+      console.error("Error fetching radio streams:", error);
+      toast({
+        variant: "destructive",
+        title: "Fout bij laden",
+        description: "Kon de radiostreams niet laden."
+      });
+    }
+  });
 
   useEffect(() => {
     const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
@@ -56,36 +82,6 @@ const Music = () => {
   }, [soundscapes]);
 
   useEffect(() => {
-    const fetchRadioStreams = async () => {
-      setIsLoadingStreams(true);
-      try {
-        const { data, error } = await supabase
-          .from('radio_streams')
-          .select('*')
-          .eq('is_active', true)
-          .order('title');
-        
-        if (error) {
-          throw error;
-        }
-        
-        setRadioStreams(data || []);
-      } catch (error) {
-        console.error("Error fetching radio streams:", error);
-        toast({
-          variant: "destructive",
-          title: "Fout bij laden",
-          description: "Kon de radiostreams niet laden."
-        });
-      } finally {
-        setIsLoadingStreams(false);
-      }
-    };
-    
-    fetchRadioStreams();
-  }, [toast]);
-
-  useEffect(() => {
     localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
   }, [playlists]);
 
@@ -95,7 +91,6 @@ const Music = () => {
       const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
       const nextTrackObj = soundscapes.find(s => s.id === nextTrackId) || null;
       setNextTrack(nextTrackObj);
-      console.info("Next track for crossfade:", nextIndex);
     } else {
       setNextTrack(null);
     }
@@ -116,10 +111,20 @@ const Music = () => {
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
+    if (isStreamPlaying && streamUrl === stream.url) {
+      // If clicking the same stream that's already playing, stop it
+      setIsStreamPlaying(false);
+      setStreamUrl("");
+      setStreamTitle("");
+      return;
+    }
+    
+    // Stop any music or preview tracks
     setPreviewTrack(null);
     setSelectedPlaylist(null);
     setCurrentTrack(null);
     
+    // Start the stream
     setStreamUrl(stream.url);
     setStreamTitle(stream.title);
     setIsStreamPlaying(true);
@@ -347,36 +352,32 @@ const Music = () => {
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
               </div>
             ) : radioStreams.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-2">
                 {radioStreams.map((stream) => (
-                  <Card key={stream.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-green-100 dark:bg-green-900/30 ${streamUrl === stream.url ? 'bg-primary/20' : ''}`}>
-                          <Radio className="h-5 w-5 text-green-600 dark:text-green-300" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{stream.title}</h3>
-                          {stream.description && (
-                            <p className="text-sm text-muted-foreground">{stream.description}</p>
-                          )}
+                  <Card key={stream.id} className={streamUrl === stream.url && isStreamPlaying ? "border-primary" : ""}>
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`p-2 rounded-full ${streamUrl === stream.url && isStreamPlaying ? 'bg-primary/20 text-primary' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300'}`}>
+                            <Radio className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-sm">{stream.title}</h3>
+                            {stream.description && (
+                              <p className="text-xs text-muted-foreground truncate">{stream.description}</p>
+                            )}
+                          </div>
                         </div>
                         <Button
                           variant={streamUrl === stream.url && isStreamPlaying ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleStreamPlay(stream)}
-                          className="flex items-center gap-1"
+                          className="px-3 ml-2"
                         >
                           {streamUrl === stream.url && isStreamPlaying ? (
-                            <>
-                              <Pause className="h-4 w-4" />
-                              Pauzeren
-                            </>
+                            "Afspelen"
                           ) : (
-                            <>
-                              <Play className="h-4 w-4" />
-                              Afspelen
-                            </>
+                            "Afspelen"
                           )}
                         </Button>
                       </div>
@@ -543,4 +544,3 @@ const Music = () => {
 };
 
 export default Music;
-
