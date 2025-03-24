@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -16,7 +17,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
-  const numBars = 23; // Changed from 30 to 23 bars
+  const numBars = 30; // Number of equalizer bars
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
