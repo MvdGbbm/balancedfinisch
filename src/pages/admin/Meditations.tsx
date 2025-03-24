@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -55,9 +56,12 @@ const AdminMeditations = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   
+  const [veraLink, setVeraLink] = useState("");
+  const [marcoLink, setMarcoLink] = useState("");
+  
+  const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [updatedCategoryName, setUpdatedCategoryName] = useState("");
-  const [newCategory, setNewCategory] = useState("");
   
   const resetForm = () => {
     setTitle("");
@@ -68,6 +72,8 @@ const AdminMeditations = () => {
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
+    setVeraLink("");
+    setMarcoLink("");
   };
   
   const handleOpenNew = () => {
@@ -84,7 +90,10 @@ const AdminMeditations = () => {
     setDuration(meditation.duration);
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
+    // Only set tags if the meditation is not in the "Geleide Meditaties" category
     setTags(meditation.category === "Geleide Meditaties" ? [] : [...meditation.tags]);
+    setVeraLink(meditation.veraLink || "");
+    setMarcoLink(meditation.marcoLink || "");
     setIsDialogOpen(true);
   };
   
@@ -95,6 +104,7 @@ const AdminMeditations = () => {
   };
   
   const handleAddTag = () => {
+    // Don't add tags for guided meditations
     if (category === "Geleide Meditaties") return;
     
     if (tagInput && !tags.includes(tagInput)) {
@@ -113,6 +123,7 @@ const AdminMeditations = () => {
       return;
     }
     
+    // For guided meditations, we don't use tags
     const meditationTags = category === "Geleide Meditaties" ? [] : tags;
     
     if (currentMeditation) {
@@ -124,6 +135,8 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags: meditationTags,
+        veraLink: veraLink || undefined,
+        marcoLink: marcoLink || undefined,
       });
     } else {
       addMeditation({
@@ -134,6 +147,8 @@ const AdminMeditations = () => {
         category,
         coverImageUrl,
         tags: meditationTags,
+        veraLink: veraLink || undefined,
+        marcoLink: marcoLink || undefined,
       });
     }
     
@@ -168,12 +183,14 @@ const AdminMeditations = () => {
     meditations
       .filter(m => m.category === editingCategory)
       .forEach(m => {
+        // If we're changing to or from "Geleide Meditaties", adjust tags accordingly
         let updatedTags = [...m.tags];
         if (updatedCategoryName === "Geleide Meditaties") {
-          updatedTags = [];
+          updatedTags = []; // Remove all tags when changing to guided meditations
         } else if (editingCategory === "Geleide Meditaties") {
-          updatedTags = [updatedCategoryName.toLowerCase()];
+          updatedTags = [updatedCategoryName.toLowerCase()]; // Add new category as tag when changing from guided
         } else {
+          // For other category changes, replace the old category tag with the new one
           updatedTags = [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()];
         }
         
@@ -361,6 +378,7 @@ const AdminMeditations = () => {
                     value={category} 
                     onValueChange={(val) => {
                       setCategory(val);
+                      // Clear tags if switching to guided meditations
                       if (val === "Geleide Meditaties") {
                         setTags([]);
                       }
@@ -410,6 +428,7 @@ const AdminMeditations = () => {
                 </div>
               </div>
               
+              {/* Only show tags section for non-guided meditations */}
               {category !== "Geleide Meditaties" && (
                 <div className="space-y-2">
                   <Label htmlFor="tags">Tags</Label>
@@ -461,7 +480,7 @@ const AdminMeditations = () => {
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
-                    placeholder="URL naar audio bestand"
+                    placeholder="URL naar audio bestand (optioneel)"
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
                   />
@@ -513,6 +532,48 @@ const AdminMeditations = () => {
                   <AudioPlayer audioUrl={audioUrl} />
                 </div>
               )}
+              
+              <div className="space-y-4 border-t pt-4 mt-4">
+                
+                
+                <div className="space-y-2">
+                  <Label htmlFor="veraLink">Vera Link (optioneel)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="veraLink"
+                      placeholder="URL voor Vera knop"
+                      value={veraLink}
+                      onChange={(e) => setVeraLink(e.target.value)}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="shrink-0"
+                    >
+                      <Link className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="marcoLink">Marco Link (optioneel)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="marcoLink"
+                      placeholder="URL voor Marco knop"
+                      value={marcoLink}
+                      onChange={(e) => setMarcoLink(e.target.value)}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="shrink-0"
+                    >
+                      <Link className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
