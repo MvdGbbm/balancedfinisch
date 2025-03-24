@@ -17,17 +17,17 @@ type FilterBand = {
   q: number;
 };
 
-// Healing frequencies in Hz
+// Healing frequencies in Hz with Dutch translations
 const HEALING_FREQUENCIES = [
-  { value: "174", label: "174 Hz - Pain Reduction" },
-  { value: "258", label: "258 Hz - Healing & Recovery" },
-  { value: "396", label: "396 Hz - Liberation" },
-  { value: "417", label: "417 Hz - Transformation" },
-  { value: "528", label: "528 Hz - Repair & DNA" },
-  { value: "639", label: "639 Hz - Connection" },
-  { value: "741", label: "741 Hz - Expression" },
-  { value: "852", label: "852 Hz - Intuition" },
-  { value: "963", label: "963 Hz - Awakening" },
+  { value: "174", label: "174 Hz - Pijnvermindering" },
+  { value: "258", label: "258 Hz - Genezing & Herstel" },
+  { value: "396", label: "396 Hz - Bevrijding" },
+  { value: "417", label: "417 Hz - Transformatie" },
+  { value: "528", label: "528 Hz - Reparatie & DNA" },
+  { value: "639", label: "639 Hz - Verbinding" },
+  { value: "741", label: "741 Hz - Expressie" },
+  { value: "852", label: "852 Hz - Intuïtie" },
+  { value: "963", label: "963 Hz - Ontwaking" },
 ];
 
 export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerProps) {
@@ -37,7 +37,6 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
   const [masterVolume, setMasterVolume] = useState(1);
   const [selectedFrequency, setSelectedFrequency] = useState("528");
   
-  // Audio processing nodes
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const filterNodeRef = useRef<BiquadFilterNode | null>(null);
@@ -46,14 +45,12 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
   const dryGainNodeRef = useRef<GainNode | null>(null);
   const wetGainNodeRef = useRef<GainNode | null>(null);
   
-  // Selected band state
   const [currentBand, setCurrentBand] = useState<FilterBand>({
     frequency: 528,
     gain: 0,
-    q: 2.5 // Sharper Q for more focused frequency enhancement
+    q: 2.5
   });
   
-  // Initialize audio context and nodes when activated
   useEffect(() => {
     if (!isActive || !audioRef?.current) {
       if (sourceNodeRef.current) {
@@ -61,14 +58,12 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
         sourceNodeRef.current = null;
       }
       
-      // Reset any processing setup
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         setIsInitialized(false);
       }
       return;
     }
 
-    // Create audio context on first activation
     if (!audioContextRef.current) {
       try {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -82,44 +77,34 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
       if (!audioContextRef.current || !audioRef.current) return;
       
       try {
-        // Create source node
         sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
         
-        // Create master gain node
         gainNodeRef.current = audioContextRef.current.createGain();
         gainNodeRef.current.gain.value = masterVolume;
         
-        // Create single filter node for the selected frequency
         filterNodeRef.current = audioContextRef.current.createBiquadFilter();
         filterNodeRef.current.type = 'peaking';
         filterNodeRef.current.frequency.value = currentBand.frequency;
         filterNodeRef.current.gain.value = currentBand.gain;
         filterNodeRef.current.Q.value = currentBand.q;
         
-        // Create reverb (convolver) node
         convolverNodeRef.current = audioContextRef.current.createConvolver();
         
-        // Create dry/wet nodes for reverb mix
         dryGainNodeRef.current = audioContextRef.current.createGain();
         wetGainNodeRef.current = audioContextRef.current.createGain();
         
-        // Set initial dry/wet mix
         updateReverbMix();
         
-        // Generate impulse response for reverb
         await generateImpulseResponse();
         
-        // Connect nodes - main path through filter
         sourceNodeRef.current.connect(filterNodeRef.current);
         filterNodeRef.current.connect(dryGainNodeRef.current);
         dryGainNodeRef.current.connect(gainNodeRef.current);
         
-        // Wet/reverb path 
         sourceNodeRef.current.connect(convolverNodeRef.current);
         convolverNodeRef.current.connect(wetGainNodeRef.current);
         wetGainNodeRef.current.connect(gainNodeRef.current);
         
-        // Final connection to output
         gainNodeRef.current.connect(audioContextRef.current.destination);
         
         setIsInitialized(true);
@@ -133,11 +118,9 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     }
     
     return () => {
-      // Cleanup will happen when component unmounts
     };
   }, [isActive, audioRef, isInitialized, currentBand]);
   
-  // Update filter settings when band changes
   useEffect(() => {
     if (!isInitialized || !filterNodeRef.current) return;
     
@@ -146,7 +129,6 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     filterNodeRef.current.Q.value = currentBand.q;
   }, [currentBand, isInitialized]);
   
-  // Update selected frequency when dropdown changes
   useEffect(() => {
     const freqValue = parseInt(selectedFrequency);
     setCurrentBand(prev => ({
@@ -155,65 +137,53 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     }));
   }, [selectedFrequency]);
   
-  // Update master volume
   useEffect(() => {
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = masterVolume;
     }
   }, [masterVolume]);
   
-  // Update reverb mix when enabled/disabled or amount changes
   useEffect(() => {
     if (isInitialized) {
       updateReverbMix();
     }
   }, [reverbEnabled, reverbAmount, isInitialized]);
   
-  // Generate impulse response for reverb
   const generateImpulseResponse = async () => {
     if (!audioContextRef.current || !convolverNodeRef.current) return;
     
     try {
       const sampleRate = audioContextRef.current.sampleRate;
-      const length = 2 * sampleRate; // 2 seconds
+      const length = 2 * sampleRate;
       const impulseResponse = audioContextRef.current.createBuffer(2, length, sampleRate);
       
-      // Fill buffer with white noise with exponential decay
       for (let channel = 0; channel < 2; channel++) {
         const channelData = impulseResponse.getChannelData(channel);
         
         for (let i = 0; i < length; i++) {
-          // Exponential decay for natural reverb sound
-          const decay = Math.exp(-i / (sampleRate * 0.5)); // 0.5 second decay
-          
-          // Random noise
+          const decay = Math.exp(-i / (sampleRate * 0.5));
           channelData[i] = (Math.random() * 2 - 1) * decay;
         }
       }
       
-      // Set the impulse response
       convolverNodeRef.current.buffer = impulseResponse;
     } catch (error) {
       console.error("Error generating impulse response:", error);
     }
   };
   
-  // Update dry/wet mix for reverb
   const updateReverbMix = () => {
     if (!dryGainNodeRef.current || !wetGainNodeRef.current) return;
     
     if (reverbEnabled) {
-      // Crossfade between dry and wet
-      dryGainNodeRef.current.gain.value = 1; // Keep dry signal at full volume
-      wetGainNodeRef.current.gain.value = reverbAmount; // Add reverb as an additional layer
+      dryGainNodeRef.current.gain.value = 1;
+      wetGainNodeRef.current.gain.value = reverbAmount;
     } else {
-      // Bypass reverb completely
       dryGainNodeRef.current.gain.value = 1;
       wetGainNodeRef.current.gain.value = 0;
     }
   };
   
-  // Handle band gain change
   const handleBandChange = (value: number[]) => {
     setCurrentBand(prev => ({
       ...prev,
@@ -221,22 +191,18 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     }));
   };
   
-  // Handle reverb amount change
   const handleReverbAmountChange = (value: number[]) => {
     setReverbAmount(value[0]);
   };
   
-  // Handle master volume change
   const handleVolumeChange = (value: number[]) => {
     setMasterVolume(value[0]);
   };
   
-  // Toggle reverb
   const handleReverbToggle = (checked: boolean) => {
     setReverbEnabled(checked);
   };
 
-  // Reset all controls to default
   const handleReset = () => {
     setCurrentBand(prev => ({
       ...prev,
@@ -252,13 +218,13 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <Waves className="h-3.5 w-3.5 text-blue-400" />
-          <span className="text-xs font-medium text-blue-400">Healing Frequencies</span>
+          <span className="text-xs font-medium text-blue-400">Helende Frequenties</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button 
             onClick={handleReset}
             className="p-1 rounded-full hover:bg-blue-900/30 text-blue-300/70"
-            title="Reset all settings"
+            title="Reset alle instellingen"
             disabled={!isActive || !isInitialized}
           >
             <RefreshCw className="h-3.5 w-3.5" />
@@ -282,7 +248,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
           disabled={!isActive || !isInitialized}
         >
           <SelectTrigger className="w-full h-8 text-xs bg-blue-950/50 border-blue-800/50 focus:ring-blue-700/50">
-            <SelectValue placeholder="Select frequency" />
+            <SelectValue placeholder="Selecteer frequentie" />
           </SelectTrigger>
           <SelectContent className="bg-blue-950 border-blue-800 text-blue-100">
             {HEALING_FREQUENCIES.map((freq) => (
@@ -294,31 +260,33 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
         </Select>
       </div>
 
-      {/* Single band EQ display */}
-      <div className="flex justify-center items-end mb-3">
-        <div className="flex flex-col items-center w-full">
+      <div className="mb-3">
+        <div className="flex flex-col">
+          <div className="flex justify-between mb-1">
+            <span className="text-xs text-blue-200 font-medium">{currentBand.frequency} Hz</span>
+            <span className="text-xs text-blue-300/70">
+              {Math.round(currentBand.gain * 10) / 10} dB
+            </span>
+          </div>
           <Slider
-            orientation="vertical"
             value={[currentBand.gain]}
-            min={-12}
-            max={12}
+            min={0}
+            max={24}
             step={0.5}
-            className="h-24"
             disabled={!isActive || !isInitialized}
             onValueChange={handleBandChange}
+            className="my-2"
           />
-          <div className="text-xs text-center text-blue-200 mt-1.5 font-medium">
-            {currentBand.frequency} Hz
-          </div>
-          <div className="text-[10px] text-center text-blue-300/70">
-            {currentBand.gain > 0 ? "+" : ""}{Math.round(currentBand.gain * 10) / 10} dB
+          <div className="flex justify-between text-[10px] text-blue-300/60">
+            <span>0 dB</span>
+            <span>24 dB</span>
           </div>
         </div>
       </div>
       
       <div className="flex items-center justify-between border-t border-blue-900/30 pt-1.5">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-blue-100/70">Reverb</span>
+          <span className="text-[10px] text-blue-100/70">Galm</span>
           <Switch 
             checked={reverbEnabled} 
             onCheckedChange={handleReverbToggle} 
