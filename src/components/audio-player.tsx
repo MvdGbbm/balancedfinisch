@@ -47,7 +47,6 @@ export function AudioPlayer({
   const [loadError, setLoadError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isCrossfading, setIsCrossfading] = useState(false);
-  const [hasTransitionedToNext, setHasTransitionedToNext] = useState(false);
   const { toast } = useToast();
   
   const [randomQuote] = useState(() => {
@@ -55,8 +54,8 @@ export function AudioPlayer({
     return quotes[randomIndex];
   });
   
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const nextAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const nextAudioRef = useRef<HTMLAudioElement>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
   
   // Constants for crossfade
@@ -79,11 +78,6 @@ export function AudioPlayer({
       }
     }
   }, [isPlayingExternal, isPlaying, isLoaded]);
-  
-  // Reset hasTransitionedToNext when audioUrl changes
-  useEffect(() => {
-    setHasTransitionedToNext(false);
-  }, [audioUrl]);
   
   // Set up crossfade when current track is near the end
   useEffect(() => {
@@ -146,14 +140,7 @@ export function AudioPlayer({
           
           // When current track ends, trigger onEnded and reset crossfade
           crossfadeTimeoutRef.current = window.setTimeout(() => {
-            if (onEnded) {
-              onEnded();
-              // Mark that we've transitioned to the next track
-              setHasTransitionedToNext(true);
-              // Reset current time to show 0 for the new track
-              setCurrentTime(0);
-              setDuration(nextAudio.duration || 0);
-            }
+            if (onEnded) onEnded();
             crossfadeTimeoutRef.current = null;
             setIsCrossfading(false);
           }, timeLeft * 1000);
@@ -192,11 +179,7 @@ export function AudioPlayer({
     };
     
     const setAudioTime = () => {
-      // Only update current time if we haven't transitioned to the next track yet
-      // or if we're not currently crossfading
-      if (!hasTransitionedToNext || !isCrossfading) {
-        setCurrentTime(audio.currentTime);
-      }
+      setCurrentTime(audio.currentTime);
     };
     
     const handleEnded = () => {
@@ -259,7 +242,7 @@ export function AudioPlayer({
         crossfadeTimeoutRef.current = null;
       }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, hasTransitionedToNext]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading]);
   
   // Reset audio state when audioUrl changes
   useEffect(() => {
@@ -271,7 +254,6 @@ export function AudioPlayer({
     setLoadError(false);
     setIsRetrying(false);
     setIsCrossfading(false);
-    setHasTransitionedToNext(false);
     
     if (crossfadeTimeoutRef.current) {
       clearTimeout(crossfadeTimeoutRef.current);
@@ -390,7 +372,6 @@ export function AudioPlayer({
     // If we were crossfading but user seeks back, cancel crossfade
     if (isCrossfading && duration - newTime > CROSSFADE_DURATION) {
       setIsCrossfading(false);
-      setHasTransitionedToNext(false);
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
@@ -437,16 +418,6 @@ export function AudioPlayer({
     audio.currentTime = Math.min(Math.max(audio.currentTime + amount, 0), duration);
   };
   
-  // Display the current time based on crossfade state
-  const displayCurrentTime = hasTransitionedToNext && isCrossfading && nextAudioRef.current 
-    ? nextAudioRef.current.currentTime
-    : currentTime;
-    
-  // Display the duration based on crossfade state
-  const displayDuration = hasTransitionedToNext && isCrossfading && nextAudioRef.current
-    ? nextAudioRef.current.duration || 0
-    : duration;
-  
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} src={audioUrl} preload="metadata" crossOrigin="anonymous" />
@@ -483,14 +454,12 @@ export function AudioPlayer({
       )}
       
       <div className="w-full flex items-center space-x-2">
-        <div className="text-xs w-10 text-right">
-          {hasTransitionedToNext ? "0:00" : formatTime(displayCurrentTime)}
-        </div>
+        <div className="text-xs w-10 text-right">{formatTime(currentTime)}</div>
         <div className="flex-grow">
           <Slider
-            value={[hasTransitionedToNext ? 0 : displayCurrentTime]}
+            value={[currentTime]}
             min={0}
-            max={displayDuration || 100}
+            max={duration || 100}
             step={0.01}
             onValueChange={handleProgressChange}
             className={cn(
@@ -500,9 +469,7 @@ export function AudioPlayer({
             disabled={!isLoaded || isCrossfading}
           />
         </div>
-        <div className="text-xs w-10">
-          {formatTime(displayDuration)}
-        </div>
+        <div className="text-xs w-10">{formatTime(duration)}</div>
       </div>
       
       {showControls && (
