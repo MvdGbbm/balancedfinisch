@@ -32,6 +32,18 @@ export interface MusicItem {
   coverImageUrl: string;
   category: string;
   tags: string[];
+  duration?: number;
+  waveformData?: any;
+  createdAt?: string;
+}
+
+export interface Playlist {
+  id: string;
+  title: string;
+  description?: string;
+  coverImageUrl?: string;
+  tracks: MusicItem[];
+  createdAt?: string;
 }
 
 export interface JournalEntry {
