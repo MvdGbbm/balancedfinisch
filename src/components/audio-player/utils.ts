@@ -30,3 +30,12 @@ export const validateAudioUrl = (url: string | undefined): string => {
   
   return url;
 };
+
+export const isStreamUrl = (url: string): boolean => {
+  return url.includes('stream') || 
+         url.includes('radio') || 
+         url.includes('live') || 
+         url.endsWith('.m3u8') || 
+         url.includes('icecast') || 
+         url.includes('shoutcast');
+};

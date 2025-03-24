@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -54,8 +55,10 @@ export const MeditationDetailDialog = ({
   const { toast: useToastFn } = useToast();
   const [audioUrl, setAudioUrl] = useState<string>("");
   const [audioKey, setAudioKey] = useState<number>(0); 
-  
-  // Move all hooks to the top level to avoid conditional hook calls
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [equalizerVisible, setEqualizerVisible] = useState(false);
+
+  // Get all hooks at the top level
   const [showSourceNotAvailableWarning, setShowSourceNotAvailableWarning] = useState(false);
   
   // Get the currently selected guided meditation ID
@@ -85,6 +88,9 @@ export const MeditationDetailDialog = ({
       setAudioUrl(url);
       console.log("Active audio URL in dialog:", url);
       console.log("Selected audio source:", selectedAudioSource);
+      
+      // Show equalizer only for Marco's audio
+      setEqualizerVisible(selectedAudioSource === 'marco');
       
       // Increment the key to force AudioPlayer remount when the source changes
       setAudioKey(prevKey => prevKey + 1);
@@ -146,6 +152,8 @@ export const MeditationDetailDialog = ({
     }
     
     onAudioSourceChange(source);
+    setEqualizerVisible(source === 'marco');
+    
     if (targetMeditation) {
       onGuidedMeditationSelect(targetMeditation);
     }
@@ -259,16 +267,25 @@ export const MeditationDetailDialog = ({
           
             {hasValidSelectedAudio ? (
               <AudioPlayer 
-                key={audioKey} // Force remount when audio changes
+                key={audioKey} 
                 audioUrl={audioUrl}
                 className="w-full bg-transparent border-none"
                 showTitle={false}
-                showQuote={true}
+                showQuote={!equalizerVisible}
+                ref={audioRef}
               />
             ) : (
               <div className="text-center py-4 text-gray-400 border border-gray-800 rounded-lg">
                 <p>Geen audio beschikbaar voor {selectedAudioSource === 'vera' ? 'Vera' : 'Marco'}</p>
               </div>
+            )}
+            
+            {equalizerVisible && hasValidSelectedAudio && (
+              <ToneEqualizer 
+                isActive={selectedAudioSource === 'marco'} 
+                audioRef={audioRef} 
+                className="mt-2 rounded-lg"
+              />
             )}
             
             <MixerPanel 
