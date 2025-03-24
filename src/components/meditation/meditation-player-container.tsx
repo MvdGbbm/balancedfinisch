@@ -90,18 +90,34 @@ export function MeditationPlayerContainer({
       return;
     }
     
-    // Validate URL before opening
     try {
+      // Trim the URL
+      url = url.trim();
+      
       // Check if URL has protocol, if not add https://
       if (!/^https?:\/\//i.test(url)) {
         url = 'https://' + url;
       }
       
       // Validate URL
-      new URL(url);
+      const validatedUrl = new URL(url);
+      
+      // Log the validated URL for debugging
+      console.log(`Opening ${linkType} link:`, validatedUrl.toString());
       
       // Open in new tab with security attributes
-      window.open(url, '_blank', 'noopener,noreferrer');
+      const newWindow = window.open(validatedUrl.toString(), '_blank');
+      
+      // Check if window was blocked by popup blocker
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        toast.error(`Popup blocker heeft voorkomen dat de ${linkType} link geopend werd`);
+        console.error("Popup blocked for URL:", validatedUrl.toString());
+        return;
+      }
+      
+      // Ensure proper security attributes
+      newWindow.opener = null;
+      
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
     } catch (e) {
       console.error(`Invalid URL for ${linkType}:`, url, e);
