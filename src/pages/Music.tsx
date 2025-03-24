@@ -341,71 +341,93 @@ const Music = () => {
     audioRef.current = element;
   };
 
-  const renderAudioPlayer = () => {
-    if (isStreamPlaying && streamUrl) {
+  const renderVisibleAudioPlayer = () => {
+    if (!isAudioActive && !currentTrack && !streamUrl && !hiddenIframeUrl) {
       return (
-        <div className="mb-2 bg-muted/30 rounded-lg p-2">
-          <div className="flex justify-between items-center mb-1">
-            <h3 className="font-medium text-sm">
-              {streamTitle} <span className="text-xs text-primary">LIVE</span>
-            </h3>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => {
-                setIsStreamPlaying(false);
-                setStreamUrl("");
-                setStreamTitle("");
-              }}
-              className="h-6 w-6 p-0"
-            >
-              <Square className="h-3 w-3" />
-            </Button>
+        <div className="mb-6 bg-card rounded-lg p-4 border shadow-sm">
+          <div className="flex items-center justify-center py-4">
+            <div className="text-center">
+              <MusicIcon className="mx-auto h-10 w-10 text-muted-foreground mb-2 opacity-50" />
+              <p className="text-muted-foreground">Selecteer muziek om af te spelen</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Gebruik de knoppen voorluisteren of speel een afspeellijst af
+              </p>
+            </div>
           </div>
-          <AudioPlayer 
-            audioUrl={streamUrl} 
-            showControls={true}
-            title={streamTitle}
-            isPlayingExternal={isStreamPlaying}
-            onPlayPauseChange={setIsStreamPlaying}
-            onAudioElementRef={handleAudioElementRef}
-            className="bg-card/30 rounded-md"
-          />
         </div>
       );
     }
 
-    if (currentTrack && isPlaying) {
-      return (
-        <div className="mb-2 bg-muted/30 rounded-lg p-2">
-          <div className="flex justify-between items-center mb-1">
-            <div className="flex items-center gap-2">
-              {currentTrack.coverImageUrl && (
+    return (
+      <div className="mb-6 bg-card rounded-lg p-4 border shadow-sm">
+        {currentTrack && isPlaying ? (
+          <div className="mb-3">
+            <div className="flex items-center gap-3">
+              {currentTrack.coverImageUrl ? (
                 <img 
                   src={currentTrack.coverImageUrl} 
                   alt={currentTrack.title} 
-                  className="h-6 w-6 rounded object-cover"
+                  className="h-14 w-14 rounded-md object-cover"
                 />
+              ) : (
+                <div className="h-14 w-14 rounded-md bg-primary/10 flex items-center justify-center">
+                  <MusicIcon className="h-6 w-6 text-primary" />
+                </div>
               )}
-              <div className="truncate max-w-[200px]">
-                <h3 className="font-medium text-sm">{currentTrack.title}</h3>
-                {selectedPlaylist && !isPreviewMode && (
-                  <p className="text-xs text-muted-foreground">{selectedPlaylist.name}</p>
-                )}
-                {isPreviewMode && (
-                  <p className="text-xs text-primary">Voorluisteren</p>
+              <div>
+                <h3 className="font-medium">{currentTrack.title}</h3>
+                {selectedPlaylist && !isPreviewMode ? (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <ListMusic className="h-3.5 w-3.5 mr-1.5" />
+                    {selectedPlaylist.name}
+                  </p>
+                ) : isPreviewMode ? (
+                  <p className="text-sm text-primary flex items-center">
+                    <Play className="h-3.5 w-3.5 mr-1.5" />
+                    Voorluisteren
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{currentTrack.description}</p>
                 )}
               </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleStopPlaying}
+                className="ml-auto"
+              >
+                <Square className="h-4 w-4 mr-1.5" />
+                Stop
+              </Button>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleStopPlaying}
-              className="h-6 w-6 p-0"
-            >
-              <Square className="h-3 w-3" />
-            </Button>
           </div>
+        ) : hiddenIframeUrl ? (
+          <div className="mb-3">
+            <div className="flex items-center gap-3">
+              <div className="h-14 w-14 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Radio className="h-6 w-6 text-green-600 dark:text-green-300" />
+              </div>
+              <div>
+                <h3 className="font-medium">Radio Stream</h3>
+                <p className="text-sm text-green-600 dark:text-green-400 flex items-center">
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                  Externe stream actief
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleStreamStop}
+                className="ml-auto"
+              >
+                <Square className="h-4 w-4 mr-1.5" />
+                Stop Stream
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {currentTrack && isPlaying ? (
           <AudioPlayer 
             audioUrl={currentTrack.audioUrl}
             nextAudioUrl={!isPreviewMode ? nextTrack?.audioUrl : undefined}
@@ -415,17 +437,19 @@ const Music = () => {
             isPlayingExternal={isPlaying}
             onPlayPauseChange={setIsPlaying}
             onAudioElementRef={handleAudioElementRef}
-            className="bg-card/30 rounded-md"
+            className="bg-muted/30 rounded-md"
           />
-        </div>
-      );
-    }
-
-    return (
-      <div className="mb-2 bg-muted/30 rounded-lg p-2">
-        <div className="flex items-center justify-center py-1">
-          <p className="text-sm text-muted-foreground">Geen audio geselecteerd</p>
-        </div>
+        ) : streamUrl && isStreamPlaying ? (
+          <AudioPlayer 
+            audioUrl={streamUrl} 
+            showControls={true}
+            title={streamTitle}
+            isPlayingExternal={isStreamPlaying}
+            onPlayPauseChange={setIsStreamPlaying}
+            onAudioElementRef={handleAudioElementRef}
+            className="bg-muted/30 rounded-md"
+          />
+        ) : null}
       </div>
     );
   };
@@ -447,9 +471,7 @@ const Music = () => {
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
           
-          <div className="mb-4">
-            {renderAudioPlayer()}
-          </div>
+          {renderVisibleAudioPlayer()}
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
