@@ -61,9 +61,8 @@ export function MeditationPlayerContainer({
 
   const handleStopPlaying = () => {
     setIsPlaying(false);
-    toast({
-      title: "Gestopt",
-      description: "De meditatie is gestopt met afspelen"
+    toast("De meditatie is gestopt met afspelen", {
+      description: "Gestopt"
     });
   };
 
