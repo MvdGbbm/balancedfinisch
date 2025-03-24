@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -49,8 +50,9 @@ export const MeditationDetailDialog = ({
   guidedMeditations,
   onGuidedMeditationSelect
 }: MeditationDetailDialogProps) => {
-  const { toast } = useToast();
+  const { toast: useToastFn } = useToast();
   const [audioUrl, setAudioUrl] = useState<string>("");
+  const [audioKey, setAudioKey] = useState<number>(0); // Add a key to force Audio player to remount
   
   useEffect(() => {
     if (isOpen) {
@@ -59,16 +61,19 @@ export const MeditationDetailDialog = ({
       console.log("Active audio URL in dialog:", url);
       console.log("Selected audio source:", selectedAudioSource);
       
+      // Increment the key to force AudioPlayer remount when the source changes
+      setAudioKey(prevKey => prevKey + 1);
+      
       // Check if Marco's link exists when Marco is selected
       if (selectedAudioSource === 'marco' && meditation && !meditation.marcoLink) {
-        toast({
+        useToastFn({
           title: "Marco's versie niet beschikbaar",
           description: "De meditatie van Marco is niet beschikbaar. We spelen de standaard versie af.",
           variant: "destructive"
         });
       }
     }
-  }, [isOpen, getActiveAudioUrl, selectedAudioSource, meditation, toast]);
+  }, [isOpen, getActiveAudioUrl, selectedAudioSource, meditation, useToastFn]);
   
   if (!meditation) return null;
   
@@ -97,10 +102,8 @@ export const MeditationDetailDialog = ({
     // Check if Marco's link exists when Marco is selected
     if (source === 'marco' && targetMeditation) {
       if (!targetMeditation.marcoLink) {
-        toast({
-          title: "Marco's versie niet beschikbaar",
-          description: "De meditatie van Marco is niet beschikbaar. We schakelen terug naar Vera's versie.",
-          variant: "destructive"
+        toast("Marco's versie niet beschikbaar", {
+          description: "De meditatie van Marco is niet beschikbaar. We schakelen terug naar Vera's versie."
         });
         // Default to Vera if Marco isn't available
         onAudioSourceChange('vera');
@@ -108,10 +111,8 @@ export const MeditationDetailDialog = ({
       }
     } else if (source === 'vera' && targetMeditation) {
       if (!targetMeditation.veraLink && !targetMeditation.audioUrl) {
-        toast({
-          title: "Vera's versie niet beschikbaar",
-          description: "De meditatie van Vera is niet beschikbaar.",
-          variant: "destructive"
+        toast("Vera's versie niet beschikbaar", {
+          description: "De meditatie van Vera is niet beschikbaar."
         });
         return;
       }
@@ -124,7 +125,10 @@ export const MeditationDetailDialog = ({
     
     // Update the audio URL immediately to reflect the change
     setTimeout(() => {
-      setAudioUrl(getActiveAudioUrl());
+      const newUrl = getActiveAudioUrl();
+      setAudioUrl(newUrl);
+      setAudioKey(prevKey => prevKey + 1);
+      console.log("Audio source changed to:", source, "New URL:", newUrl);
     }, 100);
   };
   
@@ -238,6 +242,7 @@ export const MeditationDetailDialog = ({
           
             {hasValidSelectedAudio ? (
               <AudioPlayer 
+                key={audioKey} // Force remount when audio changes
                 audioUrl={audioUrl}
                 className="w-full bg-transparent border-none"
                 showTitle={false}

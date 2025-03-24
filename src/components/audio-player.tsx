@@ -39,8 +39,9 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   nextAudioUrl,
   onCrossfadeStart
 }, ref) => {
-  const [randomQuote] = React.useState(getRandomQuote);
+  const [randomQuote] = useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
+  const [audioKey, setAudioKey] = useState(0); // Add a key to force remounting
   
   // Initialize all hooks unconditionally
   const {
@@ -79,6 +80,9 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     if (audioUrl?.includes('marco')) {
       console.log('Marco audio detected:', audioUrl);
     }
+    
+    // Reset player when URL changes
+    setAudioKey(prev => prev + 1);
   }, [audioUrl]);
   
   // Expose the audio element ref to parent components

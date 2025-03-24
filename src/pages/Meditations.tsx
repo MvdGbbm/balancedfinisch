@@ -110,7 +110,7 @@ const Meditations = () => {
       if (selectedAudioSource === 'vera') {
         return selectedGuidedMeditation.veraLink || selectedGuidedMeditation.audioUrl || '';
       } else if (selectedAudioSource === 'marco' && selectedGuidedMeditation.marcoLink) {
-        return selectedGuidedMeditation.marcoLink;
+        return selectedGuidedMeditation.marcoLink || '';
       }
       return selectedGuidedMeditation.audioUrl || '';
     }
@@ -119,8 +119,8 @@ const Meditations = () => {
     
     if (selectedAudioSource === 'vera') {
       return currentMeditationWithUrls.veraLink || currentMeditationWithUrls.audioUrl || '';
-    } else if (selectedAudioSource === 'marco' && currentMeditationWithUrls.marcoLink) {
-      return currentMeditationWithUrls.marcoLink;
+    } else if (selectedAudioSource === 'marco') {
+      return currentMeditationWithUrls.marcoLink || '';
     }
     
     return currentMeditationWithUrls.audioUrl || '';

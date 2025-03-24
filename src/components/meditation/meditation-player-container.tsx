@@ -19,6 +19,7 @@ export function MeditationPlayerContainer({
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playerKey, setPlayerKey] = useState(0); // Add key to force remounting
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -27,6 +28,9 @@ export function MeditationPlayerContainer({
       setAudioError(false);
       setImageError(false);
       setIsPlaying(false); // Don't auto-play initially, let user click play
+      
+      // Force AudioPlayer to remount when meditation changes
+      setPlayerKey(prevKey => prevKey + 1);
       
       // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);
@@ -154,6 +158,7 @@ export function MeditationPlayerContainer({
       )}
       
       <AudioPlayer 
+        key={playerKey} // Force remount when meditation changes
         audioUrl={selectedMeditation.audioUrl || ''}
         title={selectedMeditation.title}
         showTitle
