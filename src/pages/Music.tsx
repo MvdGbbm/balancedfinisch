@@ -382,7 +382,7 @@ const Music = () => {
                       <div className="flex justify-between mt-3">
                         <div className="flex gap-2">
                           <Button 
-                            variant="outline" 
+                            variant={previewTrack?.id === track.id && isPlaying ? "destructive" : "outline"}
                             size="sm" 
                             onClick={() => handlePreviewTrack(track)}
                             className="flex items-center gap-1"
