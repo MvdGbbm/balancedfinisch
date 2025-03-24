@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ListMusic } from "lucide-react";
+import { Plus, ListMusic, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +16,17 @@ interface PlaylistSelectorProps {
   playlists: Playlist[];
   onSelectPlaylist: (playlist: Playlist) => void;
   onCreateNew: () => void;
+  onRemove?: () => void;
+  showRemoveOption?: boolean;
 }
 
-export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: PlaylistSelectorProps) {
+export function PlaylistSelector({ 
+  playlists, 
+  onSelectPlaylist, 
+  onCreateNew, 
+  onRemove,
+  showRemoveOption = false 
+}: PlaylistSelectorProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -53,6 +61,16 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
           <Plus className="h-4 w-4 mr-1" />
           <span>Nieuwe afspeellijst...</span>
         </DropdownMenuItem>
+        
+        {showRemoveOption && onRemove && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onRemove} className="text-destructive">
+              <Trash2 className="h-4 w-4 mr-1" />
+              <span>Verwijderen</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
