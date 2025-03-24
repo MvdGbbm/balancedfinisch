@@ -21,6 +21,7 @@ interface AudioPlayerProps {
   onPlayPauseChange?: (isPlaying: boolean) => void;
   nextAudioUrl?: string; // URL for the next track to crossfade
   onCrossfadeStart?: () => void; // Called when crossfade starts
+  onAudioElementRef?: (element: HTMLAudioElement | null) => void; // Added missing prop
 }
 
 export function AudioPlayer({ 
@@ -36,7 +37,8 @@ export function AudioPlayer({
   isPlayingExternal,
   onPlayPauseChange,
   nextAudioUrl,
-  onCrossfadeStart
+  onCrossfadeStart,
+  onAudioElementRef
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -212,6 +214,11 @@ export function AudioPlayer({
     const audio = audioRef.current;
     if (!audio) return;
     
+    // Pass the audio element reference to the parent component if the callback exists
+    if (onAudioElementRef) {
+      onAudioElementRef(audio);
+    }
+    
     const setAudioData = () => {
       if (audio.duration !== Infinity && !isNaN(audio.duration)) {
         setDuration(audio.duration);
@@ -330,8 +337,13 @@ export function AudioPlayer({
         clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
       }
+      
+      // Clear the audio element reference when the component unmounts
+      if (onAudioElementRef) {
+        onAudioElementRef(null);
+      }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef]);
   
   // Reset audio state when audioUrl changes
   useEffect(() => {
