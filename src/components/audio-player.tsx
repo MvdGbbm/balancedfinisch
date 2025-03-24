@@ -135,10 +135,9 @@ export function AudioPlayer({
       duration,
       urlChecked,
       urlValid,
-      isEmptyUrl,
-      isPlayingExternal
+      isEmptyUrl
     });
-  }, [audioUrl, isPlaying, isLoaded, loadError, duration, urlChecked, urlValid, isEmptyUrl, isPlayingExternal]);
+  }, [audioUrl, isPlaying, isLoaded, loadError, duration, urlChecked, urlValid, isEmptyUrl]);
   
   // Check if we have any errors to display
   const hasError = loadError || (urlChecked && !urlValid && !isEmptyUrl);

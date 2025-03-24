@@ -47,7 +47,6 @@ const Music = () => {
   const [activeTab, setActiveTab] = useState<string>("music");
   const [isAudioActive, setIsAudioActive] = useState(false);
   const visibleAudioRef = useRef<HTMLAudioElement | null>(null);
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -140,11 +139,6 @@ const Music = () => {
     if (previewTrack?.id === track.id && isPlaying) {
       setPreviewTrack(null);
       setIsPlaying(false);
-      
-      if (previewAudioRef.current) {
-        previewAudioRef.current.pause();
-      }
-      
       toast({
         title: "Voorluisteren gestopt",
         description: `${track.title} is gestopt.`
@@ -152,33 +146,6 @@ const Music = () => {
     } else {
       setPreviewTrack(track);
       setIsPlaying(true);
-      
-      if (!previewAudioRef.current) {
-        previewAudioRef.current = new Audio(track.audioUrl);
-        previewAudioRef.current.volume = 0.8;
-        previewAudioRef.current.addEventListener('ended', () => {
-          setIsPlaying(false);
-          setPreviewTrack(null);
-        });
-      } else {
-        previewAudioRef.current.src = track.audioUrl;
-        previewAudioRef.current.load();
-      }
-      
-      const playPromise = previewAudioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Error playing audio:", error);
-          toast({
-            variant: "destructive",
-            title: "Fout bij afspelen",
-            description: "Kon de audio niet afspelen. Probeer het later opnieuw."
-          });
-          setIsPlaying(false);
-          setPreviewTrack(null);
-        });
-      }
-      
       toast({
         title: "Voorluisteren gestart",
         description: `${track.title} wordt nu afgespeeld.`
@@ -190,14 +157,9 @@ const Music = () => {
   };
 
   const handleStopPreview = () => {
-    if (previewTrack && isPlaying) {
-      if (previewAudioRef.current) {
-        previewAudioRef.current.pause();
-      }
-      
+    if (previewTrack) {
       setPreviewTrack(null);
       setIsPlaying(false);
-      
       toast({
         title: "Voorluisteren gestopt",
         description: "Het afspelen is gestopt."
@@ -391,7 +353,31 @@ const Music = () => {
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
           
-          <Equalizer isActive={isAudioActive} className="mb-4" audioElement={previewAudioRef.current || visibleAudioRef.current} />
+          <Equalizer isActive={isAudioActive} className="mb-4" audioElement={visibleAudioRef.current} />
+          
+          {previewTrack && (
+            <div className="mb-6 bg-muted/30 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-medium">Voorluisteren: <span className="text-primary">{previewTrack.title}</span></h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleStopPreview}
+                  className="h-8 w-8 p-0"
+                >
+                  <Square className="h-4 w-4" />
+                </Button>
+              </div>
+              <AudioPlayer 
+                audioUrl={previewTrack.audioUrl} 
+                showControls={true}
+                title={previewTrack.title}
+                isPlayingExternal={isPlaying}
+                onPlayPauseChange={setIsPlaying}
+                onAudioElementRef={handleAudioElementRef}
+              />
+            </div>
+          )}
           
           {isStreamPlaying && (
             <div className="mb-6 bg-muted/30 rounded-lg p-3">
@@ -451,27 +437,24 @@ const Music = () => {
                       </div>
                       
                       <div className="flex justify-between mt-3">
-                        {previewTrack?.id === track.id && isPlaying ? (
-                          <Button 
-                            variant="default"
-                            size="sm" 
-                            onClick={() => handlePreviewTrack(track)}
-                            className="flex items-center gap-1"
-                          >
-                            <Pause className="h-4 w-4" />
-                            Stop voorluisteren
-                          </Button>
-                        ) : (
-                          <Button 
-                            variant="outline"
-                            size="sm" 
-                            onClick={() => handlePreviewTrack(track)}
-                            className="flex items-center gap-1"
-                          >
-                            <Play className="h-4 w-4" />
-                            Voorluisteren
-                          </Button>
-                        )}
+                        <Button 
+                          variant={previewTrack?.id === track.id && isPlaying ? "default" : "outline"}
+                          size="sm" 
+                          onClick={() => handlePreviewTrack(track)}
+                          className="flex items-center gap-1"
+                        >
+                          {previewTrack?.id === track.id && isPlaying ? (
+                            <>
+                              <Pause className="h-4 w-4" />
+                              Stop voorluisteren
+                            </>
+                          ) : (
+                            <>
+                              <Play className="h-4 w-4" />
+                              Voorluisteren
+                            </>
+                          )}
+                        </Button>
                         
                         <PlaylistSelector 
                           playlists={playlists}
