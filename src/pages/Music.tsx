@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Square, Stop } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Square } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -270,11 +270,12 @@ const Music = () => {
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
-    if (isStreamPlaying) {
-      setIsStreamPlaying(false);
-      setStreamUrl("");
-      setStreamTitle("");
+    if (selectedPlaylist?.id === playlist.id && isPlaying) {
+      stopAllAudio();
+      return;
     }
+    
+    stopAllAudio();
     
     if (playlist.tracks.length === 0) {
       toast({
@@ -285,7 +286,6 @@ const Music = () => {
       return;
     }
     
-    setPreviewTrack(null);
     setSelectedPlaylist(playlist);
     setCurrentTrackIndex(0);
     
@@ -640,7 +640,7 @@ const Music = () => {
                           >
                             {isCurrentlyPlaying ? (
                               <>
-                                <Stop className="h-4 w-4 mr-1" />
+                                <Square className="h-4 w-4 mr-1" />
                                 Stop
                               </>
                             ) : (
