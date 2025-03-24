@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { 
   ListMusic, 
   Disc,
-  Waveform,
+  Music as MusicIcon,
   Search,
   PlusCircle,
   Play

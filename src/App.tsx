@@ -16,6 +16,7 @@ import Admin from "./pages/Admin";
 import AdminMeditations from "./pages/admin/Meditations";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminQuotes from "./pages/admin/Quotes";
+import AdminMusic from "./pages/admin/Music";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/admin/meditations" element={<AdminMeditations />} />
             <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
             <Route path="/admin/quotes" element={<AdminQuotes />} />
+            <Route path="/admin/music" element={<AdminMusic />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
