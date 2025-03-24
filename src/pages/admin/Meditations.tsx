@@ -130,7 +130,7 @@ const AdminMeditations = () => {
       updateMeditation(currentMeditation.id, {
         title,
         description,
-        audioUrl: audioUrl || "", // Make sure audioUrl is an empty string if not provided
+        audioUrl,
         duration,
         category,
         coverImageUrl,
@@ -142,7 +142,7 @@ const AdminMeditations = () => {
       addMeditation({
         title,
         description,
-        audioUrl: audioUrl || "", // Make sure audioUrl is an empty string if not provided
+        audioUrl,
         duration,
         category,
         coverImageUrl,
@@ -315,11 +315,7 @@ const AdminMeditations = () => {
                       </div>
                     </div>
                     <CardFooter className="p-3 bg-background">
-                      <AudioPlayer 
-                        audioUrl={meditation.audioUrl} 
-                        showControls={false} 
-                        hideErrorMessage={true}
-                      />
+                      <AudioPlayer audioUrl={meditation.audioUrl} showControls={false} />
                     </CardFooter>
                   </Card>
                 ))}
@@ -361,7 +357,6 @@ const AdminMeditations = () => {
                   placeholder="Titel van de meditatie"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  required
                 />
               </div>
               
@@ -373,7 +368,6 @@ const AdminMeditations = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  required
                 />
               </div>
               
@@ -389,7 +383,6 @@ const AdminMeditations = () => {
                         setTags([]);
                       }
                     }}
-                    required
                   >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Selecteer categorie" />
@@ -431,7 +424,6 @@ const AdminMeditations = () => {
                     placeholder="Duur in minuten"
                     value={duration}
                     onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
-                    required
                   />
                 </div>
               </div>
@@ -484,7 +476,7 @@ const AdminMeditations = () => {
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="audioUrl">Audio URL <span className="text-muted-foreground text-xs">(optioneel)</span></Label>
+                <Label htmlFor="audioUrl">Audio URL</Label>
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
@@ -510,7 +502,6 @@ const AdminMeditations = () => {
                     placeholder="URL naar afbeelding"
                     value={coverImageUrl}
                     onChange={(e) => setCoverImageUrl(e.target.value)}
-                    required
                   />
                   <Button 
                     type="button" 
@@ -538,19 +529,15 @@ const AdminMeditations = () => {
               {audioUrl && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
-                  <AudioPlayer 
-                    audioUrl={audioUrl} 
-                    onError={() => {
-                      console.log("Error loading audio preview");
-                      // Don't show any error message for preview
-                    }}
-                  />
+                  <AudioPlayer audioUrl={audioUrl} />
                 </div>
               )}
               
               <div className="space-y-4 border-t pt-4 mt-4">
+                
+                
                 <div className="space-y-2">
-                  <Label htmlFor="veraLink">Vera Link <span className="text-muted-foreground text-xs">(optioneel)</span></Label>
+                  <Label htmlFor="veraLink">Vera Link (optioneel)</Label>
                   <div className="flex gap-2">
                     <Input
                       id="veraLink"
@@ -569,7 +556,7 @@ const AdminMeditations = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="marcoLink">Marco Link <span className="text-muted-foreground text-xs">(optioneel)</span></Label>
+                  <Label htmlFor="marcoLink">Marco Link (optioneel)</Label>
                   <div className="flex gap-2">
                     <Input
                       id="marcoLink"

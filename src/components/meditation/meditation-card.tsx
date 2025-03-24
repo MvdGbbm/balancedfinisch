@@ -10,15 +10,9 @@ interface MeditationCardProps {
   meditation: Meditation;
   isSelected: boolean;
   onClick: (meditation: Meditation) => void;
-  hideAudioStatus?: boolean;
 }
 
-export const MeditationCard = ({ 
-  meditation, 
-  isSelected, 
-  onClick, 
-  hideAudioStatus = false 
-}: MeditationCardProps) => {
+export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCardProps) => {
   const [imageError, setImageError] = useState(false);
   
   const handlePlayClick = (e: React.MouseEvent) => {
@@ -77,7 +71,7 @@ export const MeditationCard = ({
               <Clock className="h-3 w-3 mr-1" />
               {meditation.duration} min
             </div>
-            {hasAudio && !hideAudioStatus && (
+            {hasAudio && (
               <Button 
                 size="icon" 
                 variant="ghost" 
