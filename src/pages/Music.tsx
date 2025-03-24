@@ -24,6 +24,7 @@ const Music = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [showPlaylistCreator, setShowPlaylistCreator] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [nextTrackUrl, setNextTrackUrl] = useState<string | undefined>(undefined);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Filter soundscapes to only "Muziek" category
@@ -46,6 +47,24 @@ const Music = () => {
   useEffect(() => {
     localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
   }, [playlists]);
+
+  // Update next track URL whenever current track or playlist changes
+  useEffect(() => {
+    if (selectedPlaylist && selectedPlaylist.tracks.length > 1 && currentTrack) {
+      const nextIndex = (currentTrackIndex + 1) % selectedPlaylist.tracks.length;
+      const nextTrackId = selectedPlaylist.tracks[nextIndex].trackId;
+      const nextTrack = soundscapes.find(s => s.id === nextTrackId);
+      
+      if (nextTrack) {
+        setNextTrackUrl(nextTrack.audioUrl);
+        console.log("Next track for crossfade:", nextTrack.title);
+      } else {
+        setNextTrackUrl(undefined);
+      }
+    } else {
+      setNextTrackUrl(undefined);
+    }
+  }, [selectedPlaylist, currentTrackIndex, currentTrack, soundscapes]);
 
   const handlePreviewTrack = (track: Soundscape) => {
     setPreviewTrack(track);
@@ -388,6 +407,8 @@ const Music = () => {
               onEnded={handleTrackEnded}
               isPlayingExternal={isPlaying}
               onPlayPauseChange={setIsPlaying}
+              nextTrackUrl={nextTrackUrl}
+              enableCrossfade={true}
             />
           </div>
         )}

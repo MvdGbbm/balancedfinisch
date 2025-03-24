@@ -19,6 +19,8 @@ interface AudioPlayerProps {
   showQuote?: boolean;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
+  nextTrackUrl?: string; // URL of the next track for crossfading
+  enableCrossfade?: boolean; // Whether to enable crossfading
 }
 
 export function AudioPlayer({ 
@@ -32,7 +34,9 @@ export function AudioPlayer({
   customSoundscapeSelector,
   showQuote = false,
   isPlayingExternal,
-  onPlayPauseChange
+  onPlayPauseChange,
+  nextTrackUrl,
+  enableCrossfade = false
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -50,6 +54,25 @@ export function AudioPlayer({
   });
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const nextAudioRef = useRef<HTMLAudioElement | null>(null);
+  const crossfadeTimeoutRef = useRef<number | null>(null);
+  
+  // Create next track audio element for crossfading
+  useEffect(() => {
+    if (enableCrossfade && nextTrackUrl) {
+      nextAudioRef.current = new Audio(nextTrackUrl);
+      nextAudioRef.current.volume = 0;
+      nextAudioRef.current.preload = "auto";
+      
+      return () => {
+        if (nextAudioRef.current) {
+          nextAudioRef.current.pause();
+          nextAudioRef.current.src = "";
+          nextAudioRef.current = null;
+        }
+      };
+    }
+  }, [nextTrackUrl, enableCrossfade]);
   
   // Handle external play/pause control
   useEffect(() => {
@@ -97,6 +120,57 @@ export function AudioPlayer({
     
     const setAudioTime = () => {
       setCurrentTime(audio.currentTime);
+      
+      // Start crossfading when we're within 10 seconds of the end
+      if (enableCrossfade && nextTrackUrl && !isLooping && audio.duration > 0) {
+        const timeRemaining = audio.duration - audio.currentTime;
+        
+        if (timeRemaining <= 10 && timeRemaining > 0 && nextAudioRef.current && !crossfadeTimeoutRef.current) {
+          // Start next track and fade it in
+          const nextAudio = nextAudioRef.current;
+          
+          // Reset to beginning and start playing
+          nextAudio.currentTime = 0;
+          
+          nextAudio.play()
+            .then(() => {
+              console.log("Started playing next track for crossfade");
+              
+              // Calculate fade duration based on remaining time
+              const fadeDuration = Math.min(timeRemaining * 1000, 10000);
+              const fadeSteps = 20;
+              const stepTime = fadeDuration / fadeSteps;
+              let step = 0;
+              
+              // Gradually fade out current track and fade in next track
+              const fadeInterval = window.setInterval(() => {
+                step++;
+                const progress = step / fadeSteps;
+                
+                // Fade out current track
+                if (audio) {
+                  audio.volume = volume * (1 - progress);
+                }
+                
+                // Fade in next track
+                if (nextAudio) {
+                  nextAudio.volume = volume * progress;
+                }
+                
+                // Complete fade
+                if (step >= fadeSteps) {
+                  clearInterval(fadeInterval);
+                  crossfadeTimeoutRef.current = null;
+                }
+              }, stepTime);
+              
+              crossfadeTimeoutRef.current = fadeInterval as unknown as number;
+            })
+            .catch(error => {
+              console.error("Error starting crossfade:", error);
+            });
+        }
+      }
     };
     
     const handleEnded = () => {
@@ -104,6 +178,12 @@ export function AudioPlayer({
         setIsPlaying(false);
         if (onPlayPauseChange) onPlayPauseChange(false);
         if (onEnded) onEnded();
+        
+        // Clear any active crossfade
+        if (crossfadeTimeoutRef.current) {
+          clearInterval(crossfadeTimeoutRef.current);
+          crossfadeTimeoutRef.current = null;
+        }
       }
     };
 
@@ -142,8 +222,14 @@ export function AudioPlayer({
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
+      
+      // Clear any crossfade interval on cleanup
+      if (crossfadeTimeoutRef.current) {
+        clearInterval(crossfadeTimeoutRef.current);
+        crossfadeTimeoutRef.current = null;
+      }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, enableCrossfade, nextTrackUrl]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -155,6 +241,12 @@ export function AudioPlayer({
     setIsRetrying(false);
     
     audio.load();
+    
+    // Clear any crossfade when audio URL changes
+    if (crossfadeTimeoutRef.current) {
+      clearInterval(crossfadeTimeoutRef.current);
+      crossfadeTimeoutRef.current = null;
+    }
   }, [audioUrl]);
   
   useEffect(() => {
@@ -183,6 +275,13 @@ export function AudioPlayer({
     }
   }, [isLooping]);
   
+  // Set volume on main and next tracks
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+    }
+  }, [volume]);
+  
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -191,6 +290,11 @@ export function AudioPlayer({
       audio.pause();
       setIsPlaying(false);
       if (onPlayPauseChange) onPlayPauseChange(false);
+      
+      // If crossfading, also pause the next track
+      if (nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
+        nextAudioRef.current.pause();
+      }
       
       toast({
         title: "Gepauzeerd",
@@ -201,6 +305,11 @@ export function AudioPlayer({
         .then(() => {
           setIsPlaying(true);
           if (onPlayPauseChange) onPlayPauseChange(true);
+          
+          // If crossfading was active, resume the next track too
+          if (nextAudioRef.current && nextAudioRef.current.currentTime > 0) {
+            nextAudioRef.current.play().catch(e => console.error("Error resuming next track:", e));
+          }
           
           toast({
             title: "Speelt nu",
@@ -250,6 +359,19 @@ export function AudioPlayer({
     const newTime = newValue[0];
     audio.currentTime = newTime;
     setCurrentTime(newTime);
+    
+    // If we've moved past the crossfade point, reset it
+    if (crossfadeTimeoutRef.current && (audio.duration - newTime) > 10) {
+      clearInterval(crossfadeTimeoutRef.current);
+      crossfadeTimeoutRef.current = null;
+      
+      // Reset next track if it was playing
+      if (nextAudioRef.current) {
+        nextAudioRef.current.pause();
+        nextAudioRef.current.currentTime = 0;
+        nextAudioRef.current.volume = 0;
+      }
+    }
   };
   
   const handleVolumeChange = (newValue: number[]) => {
@@ -257,8 +379,18 @@ export function AudioPlayer({
     if (!audio) return;
     
     const newVolume = newValue[0];
-    audio.volume = newVolume;
     setVolume(newVolume);
+    
+    // If we're in crossfade, adjust volumes proportionally
+    if (crossfadeTimeoutRef.current && nextAudioRef.current) {
+      const remainingTime = audio.duration - audio.currentTime;
+      const fadeProgress = Math.max(0, Math.min(1, 1 - (remainingTime / 10)));
+      
+      audio.volume = newVolume * (1 - fadeProgress);
+      nextAudioRef.current.volume = newVolume * fadeProgress;
+    } else {
+      audio.volume = newVolume;
+    }
   };
   
   const formatTime = (time: number) => {
