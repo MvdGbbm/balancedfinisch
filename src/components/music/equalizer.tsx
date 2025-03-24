@@ -18,6 +18,9 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
   const numBars = 38; // 38 bars for the equalizer
+  
+  // New: Store previous values for smoother transitions
+  const previousValuesRef = useRef<number[]>(Array(numBars).fill(15));
 
   useEffect(() => {
     if (!audioElement) return;
@@ -114,79 +117,92 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
 
     const generateHeights = () => {
       if (analyzerRef.current && dataArrayRef.current && audioElement && audioElement.dataset.connected === "true") {
+        // Reduce sensitivity by adjusting the smoothingTimeConstant (if not already set)
+        if (analyzerRef.current.smoothingTimeConstant < 0.8) {
+          analyzerRef.current.smoothingTimeConstant = 0.8; // Increased from 0.65 for smoother transitions
+        }
+        
         analyzerRef.current.getByteFrequencyData(dataArrayRef.current);
         
         const frequencyData = dataArrayRef.current;
         const frequencyBands = [];
         
-        // Enhanced bass frequency mapping - use logarithmic scale for better low frequency representation
+        // Improved frequency mapping with reduced sensitivity
         for (let i = 0; i < numBars; i++) {
-          // Improved frequency scaling for better bass response
-          // Using a more pronounced logarithmic scale to emphasize low frequencies
-          const scale = Math.pow(frequencyData.length, (i / numBars) * 0.8) / 8;
+          // More balanced logarithmic scale
+          const scale = Math.pow(frequencyData.length, (i / numBars) * 0.7) / 10;
           const index = Math.min(Math.floor(scale), frequencyData.length - 1);
           
           let sum = 0;
           let count = 0;
-          // Wider range for low frequencies to capture more data
-          const range = i < numBars / 3 ? 5 : 3;
+          // Wider range for smoother averaging
+          const range = i < numBars / 3 ? 6 : 4;
           
           for (let j = Math.max(0, index - range); j <= Math.min(frequencyData.length - 1, index + range); j++) {
             const weight = 1.0 - Math.abs(j - index) / (range + 1);
-            sum += Math.pow(frequencyData[j] / 255, 1.3) * 255 * weight;
+            // Reduce power factor for less dramatic peaks
+            sum += Math.pow(frequencyData[j] / 255, 1.1) * 255 * weight;
             count += weight;
           }
           
           const value = count > 0 ? sum / count : 0;
           
-          // Enhanced bass boost with progressive scaling
-          // First 1/4 of bars get significant bass boost, gradually decreasing
+          // More balanced boost factors
           let boost = 1.0;
           if (i < numBars / 6) {
-            boost = 2.2; // Significant boost for the lowest frequencies
+            boost = 1.7; // Reduced from 2.2 for less extreme bass
           } else if (i < numBars / 3) {
-            boost = 1.8; // Medium boost for low-mid frequencies
+            boost = 1.4; // Reduced from 1.8
           } else if (i < numBars / 2) {
-            boost = 1.2; // Slight boost for mid frequencies
+            boost = 1.1; // Reduced from 1.2
           } else if (i > (numBars * 3) / 4) {
-            boost = 1.15; // Small boost for high frequencies
+            boost = 1.1; // Slightly reduced
           }
           
           const boostedValue = value * boost;
           
-          // Ensure minimum height for better visualization and cap maximum to avoid distortion
-          frequencyBands.push(Math.max(8, Math.min(100, (boostedValue / 255) * 100)));
+          // Apply damping factor to avoid too dramatic changes
+          const dampingFactor = 0.7; // Lower = more damping
+          const minHeight = 10; // Slightly higher minimum for better visual
+          const rawHeight = Math.max(minHeight, Math.min(95, (boostedValue / 255) * 100));
+          
+          // Apply smoothing with previous values
+          const smoothedHeight = (rawHeight * dampingFactor) + 
+                               (previousValuesRef.current[i] * (1 - dampingFactor));
+          
+          previousValuesRef.current[i] = smoothedHeight;
+          frequencyBands.push(smoothedHeight);
         }
         
         return frequencyBands;
       } else {
-        // Simulation mode with improved bass response
+        // Improved simulation mode with less dramatic movements
         let heights = Array(numBars).fill(0).map((_, i) => {
-          // Generate more responsive bass patterns in simulation
+          // Generate smoother patterns
           if (i < numBars / 6) {
-            return Math.random() * 0.9 + 0.3; // More variation in bass frequencies
+            return Math.random() * 0.6 + 0.2; // Less variation
           } else if (i < numBars / 3) {
-            return Math.random() * 0.8 + 0.2;
+            return Math.random() * 0.5 + 0.2;
           } else {
-            return Math.random() * 0.7 + 0.1;
+            return Math.random() * 0.4 + 0.1;
           }
         });
         
-        // Enhanced bass boost for simulation
+        // More moderate boost for simulation
         for (let i = 0; i < numBars; i++) {
           if (i < numBars / 6) {
-            heights[i] *= 1.8; // Heavy bass emphasis
+            heights[i] *= 1.5; // Reduced from 1.8
           } else if (i < numBars / 3) {
-            heights[i] *= 1.4; // Moderate bass emphasis
+            heights[i] *= 1.2; // Reduced from 1.4
           } else if (i < numBars / 2) {
-            heights[i] *= 0.9;
+            heights[i] *= 0.8; // Slightly reduced
           } else if (i > (numBars * 3) / 4) {
-            heights[i] *= 1.3;
+            heights[i] *= 1.1; // Reduced from 1.3
           }
         }
         
-        // Smoothing to make it more natural looking
-        for (let i = 0; i < 3; i++) {
+        // Apply more smoothing passes for a more natural look
+        for (let i = 0; i < 4; i++) {
           const newHeights = [...heights];
           for (let j = 1; j < heights.length - 1; j++) {
             newHeights[j] = (heights[j-1] + heights[j] * 2 + heights[j+1]) / 4;
@@ -194,7 +210,16 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           heights = newHeights;
         }
         
-        return heights.map(h => Math.floor(h * 92) + 8);
+        // Apply smoothing with previous values for simulation too
+        for (let i = 0; i < numBars; i++) {
+          const rawHeight = Math.floor(heights[i] * 80) + 10;
+          const dampingFactor = 0.6; // Higher damping for simulation
+          heights[i] = (rawHeight * dampingFactor) + 
+                      (previousValuesRef.current[i] * (1 - dampingFactor));
+          previousValuesRef.current[i] = heights[i];
+        }
+        
+        return heights;
       }
     };
 
@@ -206,21 +231,22 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         
         const height = heights[index];
         
-        // Bass frequencies (lower index) get longer transition times for more "weight"
-        const baseDuration = 100;
+        // Slower transitions for all frequencies for more stability
+        const baseDuration = 150; // Increased from 100
         const duration = index < numBars / 4 
-          ? baseDuration + 50 // Even slower for deep bass
+          ? baseDuration + 80 // Even slower for deep bass (up from 50)
           : index < numBars / 2 
-            ? baseDuration + 20
+            ? baseDuration + 40 // Increased from 20
             : baseDuration;
         
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
       });
       
+      // Slower frame rate for less CPU usage and smoother appearance
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(animate);
-      }, 40) as unknown as number;
+      }, 60) as unknown as number; // Increased from 40ms for slower updates
     };
 
     animate();
