@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ interface RadioStream {
   description: string | null;
   is_active: boolean;
   position: number | null;
+  cover_image_url?: string | null;
 }
 
 const Music = () => {
@@ -340,9 +342,17 @@ const Music = () => {
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
-                          <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
-                        </div>
+                        {track.coverImageUrl ? (
+                          <img 
+                            src={track.coverImageUrl} 
+                            alt={track.title}
+                            className="h-12 w-12 rounded-md object-cover"
+                          />
+                        ) : (
+                          <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
+                            <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                          </div>
+                        )}
                         <div className="flex-1">
                           <h3 className="font-medium">{track.title}</h3>
                           <p className="text-sm text-muted-foreground">{track.description}</p>
@@ -470,14 +480,19 @@ const Music = () => {
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
-                            <Link2 className="h-4 w-4" />
-                          </div>
+                          {stream.cover_image_url ? (
+                            <img 
+                              src={stream.cover_image_url} 
+                              alt={stream.title}
+                              className="h-10 w-10 rounded-md object-cover"
+                            />
+                          ) : (
+                            <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
+                              <Link2 className="h-4 w-4" />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm">{stream.title}</h3>
-                            {stream.description && (
-                              <p className="text-xs text-muted-foreground">{stream.description}</p>
-                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">

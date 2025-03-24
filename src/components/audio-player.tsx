@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { quotes } from "@/data/quotes";
 import { useAudioEngine } from "./audio/audio-engine";
@@ -52,28 +52,38 @@ export function AudioPlayer({
   
   // Check audio URL before attempting to play
   const [urlChecked, setUrlChecked] = useState(false);
+  const [urlValid, setUrlValid] = useState(true);
   
-  React.useEffect(() => {
+  useEffect(() => {
     const validateAudioUrl = async () => {
       if (!audioUrl) {
         console.error("No audio URL provided");
+        setUrlValid(false);
+        setUrlChecked(true);
+        if (onError) onError();
         return;
       }
       
       try {
+        console.log("Checking audio compatibility for:", audioUrl);
         const isCompatible = await checkAudioCompatibility(audioUrl);
+        setUrlValid(isCompatible);
+        
         if (!isCompatible) {
           console.error("Audio format not supported:", audioUrl);
           toast.error("Dit audioformaat wordt niet ondersteund");
           if (onError) onError();
         }
-        setUrlChecked(true);
       } catch (error) {
         console.error("Error checking audio compatibility:", error);
+        setUrlValid(false);
+        if (onError) onError();
+      } finally {
         setUrlChecked(true);
       }
     };
     
+    setUrlChecked(false);
     validateAudioUrl();
   }, [audioUrl, onError]);
   
@@ -104,21 +114,28 @@ export function AudioPlayer({
     isLooping: false, // Initial looping state
     onAudioElementRef,
     onEnded,
-    onError,
+    onError: () => {
+      if (onError) onError();
+    },
     nextAudioUrl,
     onCrossfadeStart,
   });
   
   // Log the current audio state for debugging
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("Audio player state:", {
       audioUrl,
       isPlaying,
       isLoaded,
       loadError,
-      duration
+      duration,
+      urlChecked,
+      urlValid
     });
-  }, [audioUrl, isPlaying, isLoaded, loadError, duration]);
+  }, [audioUrl, isPlaying, isLoaded, loadError, duration, urlChecked, urlValid]);
+  
+  // Check if we have any errors to display
+  const hasError = loadError || (urlChecked && !urlValid);
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
@@ -129,8 +146,19 @@ export function AudioPlayer({
         <h3 className="text-lg font-medium">{title}</h3>
       )}
       
-      {loadError && (
-        <ErrorMessage onRetry={handleRetry} isRetrying={isRetrying} />
+      {hasError && (
+        <ErrorMessage 
+          onRetry={() => {
+            if (!urlValid) {
+              setUrlChecked(false);
+              setUrlValid(true);
+              setTimeout(() => validateAudioUrl(), 500);
+            } else {
+              handleRetry();
+            }
+          }} 
+          isRetrying={isRetrying} 
+        />
       )}
       
       {showQuote && (
@@ -144,7 +172,7 @@ export function AudioPlayer({
       <ProgressBar
         currentTime={currentTime}
         duration={duration}
-        isLoaded={isLoaded}
+        isLoaded={isLoaded && !hasError}
         isCrossfading={isCrossfading}
         isLiveStream={isLiveStream}
         onProgressChange={handleProgressChange}
@@ -154,8 +182,8 @@ export function AudioPlayer({
         <div className="flex items-center justify-between">
           <PlayerControls
             isPlaying={isPlaying}
-            isLoaded={isLoaded}
-            loadError={loadError}
+            isLoaded={isLoaded && !hasError}
+            loadError={hasError}
             isLooping={isLooping}
             isCrossfading={isCrossfading}
             isLiveStream={isLiveStream}
@@ -172,4 +200,32 @@ export function AudioPlayer({
       )}
     </div>
   );
+  
+  async function validateAudioUrl() {
+    if (!audioUrl) {
+      console.error("No audio URL provided");
+      setUrlValid(false);
+      setUrlChecked(true);
+      if (onError) onError();
+      return;
+    }
+    
+    try {
+      console.log("Checking audio compatibility for:", audioUrl);
+      const isCompatible = await checkAudioCompatibility(audioUrl);
+      setUrlValid(isCompatible);
+      
+      if (!isCompatible) {
+        console.error("Audio format not supported:", audioUrl);
+        toast.error("Dit audioformaat wordt niet ondersteund");
+        if (onError) onError();
+      }
+    } catch (error) {
+      console.error("Error checking audio compatibility:", error);
+      setUrlValid(false);
+      if (onError) onError();
+    } finally {
+      setUrlChecked(true);
+    }
+  }
 }

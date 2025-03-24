@@ -1,3 +1,4 @@
+
 import { RefObject, useEffect, useRef, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,6 +38,10 @@ export interface AudioEngineState {
 }
 
 const CROSSFADE_DURATION = 5;
+const MAX_RETRY_ATTEMPTS = 3;
+
+// Track existing audio contexts globally to prevent duplicate connections
+const connectedAudioElements = new WeakMap();
 
 export function useAudioEngine({
   audioUrl,
@@ -60,12 +65,16 @@ export function useAudioEngine({
   const [isRetrying, setIsRetrying] = useState(false);
   const [isCrossfading, setIsCrossfading] = useState(false);
   const [isLiveStream, setIsLiveStream] = useState(false);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   
   const { toast } = useToast();
   
   const audioRef = useRef<HTMLAudioElement>(null);
   const nextAudioRef = useRef<HTMLAudioElement>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
+  const lastValidUrlRef = useRef<string | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const checkIfLiveStream = (url: string) => {
     return url.includes('radio') || 
@@ -77,7 +86,17 @@ export function useAudioEngine({
   };
 
   const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
-    if (!audioElement) return;
+    if (!audioElement) {
+      console.error("No audio element available");
+      return;
+    }
+    
+    if (!url) {
+      console.error("No URL provided for playback");
+      setLoadError(true);
+      if (onError) onError();
+      return;
+    }
     
     const potentialLiveStream = checkIfLiveStream(url);
     if (potentialLiveStream) {
@@ -88,41 +107,81 @@ export function useAudioEngine({
     }
     
     try {
+      // Stop any current playback
+      audioElement.pause();
+      
+      // Reset the audio element
       audioElement.src = url;
       audioElement.load();
       
       console.log("Setting audio source to:", url);
       
       const onCanPlay = () => {
+        if (!audioElement) return;
+        
         audioElement.play()
           .then(() => {
             setIsPlaying(true);
             if (onPlayPauseChange) onPlayPauseChange(true);
             setIsLoaded(true);
             setLoadError(false);
+            setRetryAttempts(0);
+            lastValidUrlRef.current = url;
             console.log("Audio playing successfully after canplay event");
           })
           .catch(error => {
             console.error("Error playing direct URL:", error);
-            setLoadError(true);
-            if (onError) onError();
+            handlePlaybackError();
           });
         audioElement.removeEventListener('canplay', onCanPlay);
       };
       
       audioElement.addEventListener('canplay', onCanPlay);
       
+      // Set a timeout in case canplay never fires
+      const timeoutId = setTimeout(() => {
+        if (!isLoaded) {
+          console.warn("Canplay event never fired, trying to play anyway");
+          audioElement.play()
+            .then(() => {
+              setIsPlaying(true);
+              if (onPlayPauseChange) onPlayPauseChange(true);
+              setIsLoaded(true);
+              setLoadError(false);
+              lastValidUrlRef.current = url;
+            })
+            .catch(error => {
+              console.error("Error playing after timeout:", error);
+              handlePlaybackError();
+            });
+        }
+      }, 5000);
+      
       const handleDirectError = (e: Event) => {
         console.error(`Error loading audio for URL ${url}:`, e);
-        setLoadError(true);
-        if (onError) onError();
         audioElement.removeEventListener('error', handleDirectError);
+        clearTimeout(timeoutId);
+        handlePlaybackError();
       };
       
       audioElement.addEventListener('error', handleDirectError);
+      
+      // Clean up event listeners if unmounted
+      return () => {
+        audioElement.removeEventListener('canplay', onCanPlay);
+        audioElement.removeEventListener('error', handleDirectError);
+        clearTimeout(timeoutId);
+      };
     } catch (error) {
       console.error("Exception during playDirectly:", error);
+      handlePlaybackError();
+    }
+    
+    function handlePlaybackError() {
       setLoadError(true);
+      setIsLoaded(false);
+      setIsPlaying(false);
+      if (onPlayPauseChange) onPlayPauseChange(false);
       if (onError) onError();
     }
   };
@@ -204,12 +263,49 @@ export function useAudioEngine({
     }
   }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isLiveStream]);
   
+  // Set up audio context and connect gain node
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
     if (onAudioElementRef) {
       onAudioElementRef(audio);
+    }
+    
+    // Check if we've already set up audio processing for this element
+    if (connectedAudioElements.has(audio)) {
+      console.log("Audio element already has context, skipping setup");
+      return;
+    }
+    
+    try {
+      // Create a new audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = audioContext;
+      
+      // Create gain node to control volume without affecting the analyzer
+      const gainNode = audioContext.createGain();
+      gainNode.gain.value = 0.5; // Set to 50% of original volume
+      gainNodeRef.current = gainNode;
+      
+      // Create media element source
+      const source = audioContext.createMediaElementSource(audio);
+      
+      // Connect the source to the gain node and then to the destination
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Mark this audio element as connected
+      connectedAudioElements.set(audio, { 
+        context: audioContext, 
+        source, 
+        gainNode 
+      });
+      
+      console.log("Successfully set up audio processing chain");
+    } catch (error) {
+      console.error("Error creating audio processing chain:", error);
+      // Even if we have an error, we should still be able to play audio directly
     }
     
     const setAudioData = () => {
@@ -224,6 +320,7 @@ export function useAudioEngine({
       
       setIsLoaded(true);
       setLoadError(false);
+      setRetryAttempts(0);
       
       if (isPlayingExternal) {
         audio.play()
@@ -266,13 +363,23 @@ export function useAudioEngine({
       setLoadError(true);
       setIsLoaded(false);
       
-      if (!isRetrying) {
+      // Try using the last valid URL if available and different from current
+      if (lastValidUrlRef.current && lastValidUrlRef.current !== audioUrl) {
+        console.log("Trying last valid URL:", lastValidUrlRef.current);
+        setTimeout(() => {
+          playDirectly(lastValidUrlRef.current!, audio);
+        }, 1000);
+        return;
+      }
+      
+      if (retryAttempts < MAX_RETRY_ATTEMPTS) {
         setIsRetrying(true);
+        setRetryAttempts(prev => prev + 1);
         
         setTimeout(() => {
           try {
             if (audioUrl && (audioUrl.startsWith('http') || audioUrl.startsWith('/'))) {
-              console.log("Attempting fallback playback for:", audioUrl);
+              console.log("Attempting retry playback for:", audioUrl);
               playDirectly(audioUrl, audio);
             } else {
               console.error("Invalid URL for retry:", audioUrl);
@@ -299,8 +406,9 @@ export function useAudioEngine({
         toast({
           variant: "destructive",
           title: "Fout bij laden",
-          description: "Kon de audio niet laden. Controleer of het bestand bestaat."
+          description: "Kon de audio niet laden na meerdere pogingen. Controleer of het bestand bestaat."
         });
+        setIsRetrying(false);
         if (onError) onError();
       }
     };
@@ -336,8 +444,31 @@ export function useAudioEngine({
       if (onAudioElementRef) {
         onAudioElementRef(null);
       }
+      
+      // Note: We don't clean up the audio context here anymore
+      // This would be done when the component is fully unmounted
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef]);
+  }, [onEnded, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef, retryAttempts, volume]);
+  
+  // Clean up audio context when component is unmounted
+  useEffect(() => {
+    return () => {
+      // Clean up audio processing when component unmounts
+      const audio = audioRef.current;
+      if (audio && connectedAudioElements.has(audio)) {
+        try {
+          const { context, source, gainNode } = connectedAudioElements.get(audio);
+          if (source) source.disconnect();
+          if (gainNode) gainNode.disconnect();
+          if (context) context.close();
+          connectedAudioElements.delete(audio);
+          console.log("Cleaned up audio context on unmount");
+        } catch (error) {
+          console.error("Error cleaning up audio context:", error);
+        }
+      }
+    };
+  }, []);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -358,9 +489,25 @@ export function useAudioEngine({
     if (isPlayingExternal) {
       playDirectly(audioUrl, audio);
     } else {
+      audio.src = audioUrl;
       audio.load();
     }
   }, [audioUrl, isPlayingExternal]);
+  
+  // Update volume through gain node if available
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    // Apply gain node if available
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = 0.5; // Keep at 50%
+      audio.volume = volume; // Set volume on audio element
+    } else {
+      // Fall back to regular volume control
+      audio.volume = volume * 0.5; // Apply 50% reduction
+    }
+  }, [volume]);
   
   useEffect(() => {
     const audio = audioRef.current;
@@ -443,6 +590,7 @@ export function useAudioEngine({
     console.log("Retrying audio playback for URL:", audioUrl);
     setLoadError(false);
     setIsRetrying(true);
+    setRetryAttempts(0);
     
     audio.pause();
     audio.removeAttribute('src');
@@ -510,18 +658,28 @@ export function useAudioEngine({
     if (!audio) return;
     
     const newVolume = newValue[0];
+    setVolume(newVolume);
+    
+    if (gainNodeRef.current) {
+      // Volume is controlled through the gain node (which is already at 50%)
+      audio.volume = newVolume;
+    } else {
+      // Apply 50% reduction directly
+      audio.volume = newVolume * 0.5;
+    }
     
     if (isCrossfading && nextAudioRef.current) {
       const currentRatio = audio.volume / volume;
       const nextRatio = nextAudioRef.current.volume / volume;
       
-      audio.volume = newVolume * currentRatio;
-      nextAudioRef.current.volume = newVolume * nextRatio;
-    } else {
-      audio.volume = newVolume;
+      if (gainNodeRef.current) {
+        audio.volume = newVolume * currentRatio;
+        nextAudioRef.current.volume = newVolume * nextRatio;
+      } else {
+        audio.volume = newVolume * currentRatio * 0.5;
+        nextAudioRef.current.volume = newVolume * nextRatio * 0.5;
+      }
     }
-    
-    setVolume(newVolume);
   };
   
   const skipTime = (amount: number) => {
