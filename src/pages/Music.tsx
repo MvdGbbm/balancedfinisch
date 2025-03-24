@@ -134,11 +134,32 @@ const Music = () => {
       setStreamTitle("");
     }
     
+    if (previewTrack?.id === track.id && isPlaying) {
+      setPreviewTrack(null);
+      setIsPlaying(false);
+      
+      toast({
+        title: "Voorluisteren gestopt",
+        description: `${track.title} is gestopt met afspelen`
+      });
+      return;
+    }
+    
     setPreviewTrack(track);
     setIsPlaying(true);
     
     setSelectedPlaylist(null);
     setNextTrack(null);
+  };
+
+  const handleStopPreview = () => {
+    setPreviewTrack(null);
+    setIsPlaying(false);
+    
+    toast({
+      title: "Voorluisteren gestopt",
+      description: "De muziek is gestopt"
+    });
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
@@ -345,15 +366,37 @@ const Music = () => {
                       </div>
                       
                       <div className="flex justify-between mt-3">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handlePreviewTrack(track)}
-                          className="flex items-center gap-1"
-                        >
-                          <Play className="h-4 w-4" />
-                          Voorluisteren
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handlePreviewTrack(track)}
+                            className="flex items-center gap-1"
+                          >
+                            {previewTrack?.id === track.id && isPlaying ? (
+                              <>
+                                <StopCircle className="h-4 w-4" />
+                                Stoppen
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-4 w-4" />
+                                Voorluisteren
+                              </>
+                            )}
+                          </Button>
+                          {previewTrack?.id === track.id && isPlaying && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={handleStopPreview}
+                              className="flex items-center gap-1"
+                            >
+                              <StopCircle className="h-4 w-4" />
+                              Stoppen
+                            </Button>
+                          )}
+                        </div>
                         
                         <PlaylistSelector 
                           playlists={playlists}

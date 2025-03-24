@@ -125,6 +125,7 @@ export type Database = {
       }
       radio_streams: {
         Row: {
+          cover_image_url: string | null
           created_at: string
           description: string | null
           id: string
@@ -135,6 +136,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -145,6 +147,7 @@ export type Database = {
           url: string
         }
         Update: {
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           id?: string
