@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Square } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Square, Stop } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -129,12 +129,33 @@ const Music = () => {
     }
   };
 
-  const handlePreviewTrack = (track: Soundscape) => {
+  const stopAllAudio = () => {
+    console.log("Stopping all audio playback");
+    
+    if (previewTrack && previewAudioRef.current) {
+      previewAudioRef.current.pause();
+      setPreviewTrack(null);
+      setIsPlaying(false);
+    }
+    
     if (isStreamPlaying) {
       setIsStreamPlaying(false);
       setStreamUrl("");
       setStreamTitle("");
     }
+    
+    if (hiddenIframeUrl) {
+      setHiddenIframeUrl(null);
+    }
+    
+    if (selectedPlaylist && visibleAudioRef.current) {
+      visibleAudioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handlePreviewTrack = (track: Soundscape) => {
+    stopAllAudio();
     
     if (previewTrack?.id === track.id && isPlaying) {
       setPreviewTrack(null);
@@ -151,6 +172,8 @@ const Music = () => {
     } else {
       setPreviewTrack(track);
       setIsPlaying(true);
+      setSelectedPlaylist(null);
+      setNextTrack(null);
       
       if (!previewAudioRef.current) {
         previewAudioRef.current = new Audio(track.audioUrl);
@@ -183,9 +206,6 @@ const Music = () => {
         description: `${track.title} wordt nu afgespeeld.`
       });
     }
-    
-    setSelectedPlaylist(null);
-    setNextTrack(null);
   };
 
   const handleStopPreview = () => {
@@ -470,7 +490,7 @@ const Music = () => {
               }}
               className="h-6 w-6 p-0"
             >
-              <Square className="h-3 w-3" />
+              <Square className="h-3 w-6 p-0"
             </Button>
           </div>
           <AudioPlayer 
@@ -597,27 +617,38 @@ const Music = () => {
               <div className="grid grid-cols-1 gap-4">
                 {playlists.map((playlist) => {
                   const trackCount = playlist.tracks.length;
+                  const isCurrentlyPlaying = selectedPlaylist?.id === playlist.id && isPlaying;
+                  
                   return (
                     <Card key={playlist.id}>
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-primary/20">
+                          <div className={`p-2 rounded-full ${isCurrentlyPlaying ? 'bg-primary/30' : 'bg-primary/20'}`}>
                             <ListMusic className="h-5 w-5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium">{playlist.name}</h3>
+                            <h3 className={`font-medium ${isCurrentlyPlaying ? 'text-primary' : ''}`}>{playlist.name}</h3>
                             <p className="text-sm text-muted-foreground">
                               {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
                             </p>
                           </div>
                           <Button
-                            variant="default"
+                            variant={isCurrentlyPlaying ? "secondary" : "default"}
                             size="sm"
                             onClick={() => handlePlayPlaylist(playlist)}
                             disabled={trackCount === 0}
                           >
-                            <Play className="h-4 w-4 mr-1" />
-                            Lijst afspelen
+                            {isCurrentlyPlaying ? (
+                              <>
+                                <Stop className="h-4 w-4 mr-1" />
+                                Stop
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-4 w-4 mr-1" />
+                                Lijst afspelen
+                              </>
+                            )}
                           </Button>
                         </div>
                         
@@ -628,11 +659,15 @@ const Music = () => {
                               {getPlaylistTracks(playlist).map((track, index) => (
                                 <div 
                                   key={track.id} 
-                                  className="flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted"
+                                  className={`flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted ${
+                                    isCurrentlyPlaying && currentTrackIndex === index ? 'bg-primary/10' : ''
+                                  }`}
                                 >
                                   <div className="flex items-center">
                                     <span className="w-5 text-muted-foreground">{index + 1}.</span>
-                                    <span>{track.title}</span>
+                                    <span className={isCurrentlyPlaying && currentTrackIndex === index ? 'text-primary' : ''}>
+                                      {track.title}
+                                    </span>
                                   </div>
                                   <Button
                                     variant="ghost"
