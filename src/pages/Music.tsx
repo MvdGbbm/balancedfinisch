@@ -502,8 +502,12 @@ const Music = () => {
                             />
                             <AudioPlayer 
                               audioUrl={currentTrack.audioUrl}
-                              title={currentTrack.title}
+                              nextAudioUrl={nextTrack?.audioUrl}
                               showControls={true}
+                              title={currentTrack.title}
+                              className="mb-0"
+                              onEnded={handleTrackEnded}
+                              onCrossfadeStart={handleCrossfadeStart}
                               isPlayingExternal={isPlaying}
                               onPlayPauseChange={setIsPlaying}
                               ref={audioPlayerRef}
@@ -625,43 +629,6 @@ const Music = () => {
               title={streamTitle}
               isPlayingExternal={isStreamPlaying}
               onPlayPauseChange={setIsStreamPlaying}
-            />
-          </div>
-        )}
-        
-        {selectedPlaylist && currentTrack && (
-          <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-sm">Speelt nu: {selectedPlaylist.name}</h4>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-6 w-6" 
-                onClick={() => {
-                  setSelectedPlaylist(null);
-                  setCurrentTrack(null);
-                  setIsPlaying(false);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <ToneEqualizer 
-              isActive={isPlaying} 
-              className="mb-2" 
-              audioRef={audioPlayerRef} 
-            />
-            <AudioPlayer 
-              audioUrl={currentTrack.audioUrl}
-              nextAudioUrl={nextTrack?.audioUrl}
-              showControls={true}
-              title={currentTrack.title}
-              className="mb-0"
-              onEnded={handleTrackEnded}
-              onCrossfadeStart={handleCrossfadeStart}
-              isPlayingExternal={isPlaying}
-              onPlayPauseChange={setIsPlaying}
-              ref={audioPlayerRef}
             />
           </div>
         )}
