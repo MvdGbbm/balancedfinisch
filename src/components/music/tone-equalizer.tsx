@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
@@ -55,11 +54,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
   useEffect(() => {
     if (!isActive || !audioRef?.current) {
       if (sourceNodeRef.current) {
-        try {
-          sourceNodeRef.current.disconnect();
-        } catch (error) {
-          console.error("Error disconnecting source node:", error);
-        }
+        sourceNodeRef.current.disconnect();
         sourceNodeRef.current = null;
       }
       
@@ -78,18 +73,53 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
       }
     }
 
-    if (!isInitialized) {
+    const setupAudioProcessing = async () => {
+      if (!audioContextRef.current || !audioRef.current) return;
+      
       try {
-        setupAudioProcessing();
+        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
+        
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.gain.value = masterVolume;
+        
+        filterNodeRef.current = audioContextRef.current.createBiquadFilter();
+        filterNodeRef.current.type = 'peaking';
+        filterNodeRef.current.frequency.value = currentBand.frequency;
+        filterNodeRef.current.gain.value = currentBand.gain;
+        filterNodeRef.current.Q.value = currentBand.q;
+        
+        convolverNodeRef.current = audioContextRef.current.createConvolver();
+        
+        dryGainNodeRef.current = audioContextRef.current.createGain();
+        wetGainNodeRef.current = audioContextRef.current.createGain();
+        
+        updateReverbMix();
+        
+        await generateImpulseResponse();
+        
+        sourceNodeRef.current.connect(filterNodeRef.current);
+        filterNodeRef.current.connect(dryGainNodeRef.current);
+        dryGainNodeRef.current.connect(gainNodeRef.current);
+        
+        sourceNodeRef.current.connect(convolverNodeRef.current);
+        convolverNodeRef.current.connect(wetGainNodeRef.current);
+        wetGainNodeRef.current.connect(gainNodeRef.current);
+        
+        gainNodeRef.current.connect(audioContextRef.current.destination);
+        
+        setIsInitialized(true);
       } catch (error) {
-        console.error("Error in setup:", error);
+        console.error("Error setting up audio processing:", error);
       }
+    };
+    
+    if (!isInitialized) {
+      setupAudioProcessing();
     }
     
     return () => {
-      // Cleanup function
     };
-  }, [isActive, audioRef, isInitialized]);
+  }, [isActive, audioRef, isInitialized, currentBand]);
   
   useEffect(() => {
     if (!isInitialized || !filterNodeRef.current) return;
@@ -119,20 +149,10 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     }
   }, [reverbEnabled, reverbAmount, isInitialized]);
   
-  const setupAudioProcessing = () => {
-    if (!audioContextRef.current || !audioRef?.current) return;
+  const setupAudioProcessing = async () => {
+    if (!audioContextRef.current || !audioRef.current) return;
     
     try {
-      // Make sure the audio element isn't already connected
-      if (sourceNodeRef.current) {
-        try {
-          sourceNodeRef.current.disconnect();
-        } catch (error) {
-          console.error("Error disconnecting existing source node:", error);
-        }
-        sourceNodeRef.current = null;
-      }
-      
       sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
       
       gainNodeRef.current = audioContextRef.current.createGain();
@@ -151,7 +171,7 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
       
       updateReverbMix();
       
-      generateImpulseResponse();
+      await generateImpulseResponse();
       
       sourceNodeRef.current.connect(filterNodeRef.current);
       filterNodeRef.current.connect(dryGainNodeRef.current);
@@ -166,11 +186,10 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
       setIsInitialized(true);
     } catch (error) {
       console.error("Error setting up audio processing:", error);
-      throw error;
     }
   };
   
-  const generateImpulseResponse = () => {
+  const generateImpulseResponse = async () => {
     if (!audioContextRef.current || !convolverNodeRef.current) return;
     
     try {
@@ -240,6 +259,12 @@ export function ToneEqualizer({ isActive, className, audioRef }: ToneEqualizerPr
     const blueComponent = Math.max(0, 255 * (1 - value / max)).toFixed(0);
     const greenComponent = Math.min(255, 100 + (155 * value / max)).toFixed(0);
     return `rgb(0, ${greenComponent}, ${blueComponent})`;
+  };
+
+  // Custom slider thumb style with dynamic color
+  const sliderThumbStyle = {
+    backgroundColor: getSliderThumbColor(currentBand.gain, 10),
+    transition: 'background-color 0.3s ease'
   };
 
   return (
