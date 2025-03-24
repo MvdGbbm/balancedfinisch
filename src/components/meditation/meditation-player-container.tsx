@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,6 +19,7 @@ export function MeditationPlayerContainer({
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
     if (selectedMeditation) {
@@ -57,6 +58,10 @@ export function MeditationPlayerContainer({
     toast.error("Kon de afbeelding niet laden. Controleer de URL.");
   };
 
+  const handleAudioElementRef = (element: HTMLAudioElement | null) => {
+    audioRef.current = element;
+  };
+
   if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
@@ -92,7 +97,7 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <Equalizer isActive={isPlaying} className="mb-2" />
+      <Equalizer isActive={isPlaying} className="mb-2" audioElement={audioRef.current} />
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}
@@ -103,6 +108,7 @@ export function MeditationPlayerContainer({
         onError={handleAudioError}
         isPlayingExternal={isPlaying}
         onPlayPauseChange={setIsPlaying}
+        onAudioElementRef={handleAudioElementRef}
       />
     </div>
   );

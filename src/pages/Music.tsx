@@ -45,6 +45,7 @@ const Music = () => {
   const hiddenIframeRef = useRef<HTMLIFrameElement>(null);
   const [activeTab, setActiveTab] = useState<string>("music");
   const [isAudioActive, setIsAudioActive] = useState(false);
+  const visibleAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -306,6 +307,10 @@ const Music = () => {
       .filter((track): track is Soundscape => track !== undefined);
   };
 
+  const handleAudioElementRef = (element: HTMLAudioElement | null) => {
+    visibleAudioRef.current = element;
+  };
+
   return (
     <MobileLayout>
       <div className="space-y-6">
@@ -323,7 +328,7 @@ const Music = () => {
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
           
-          <Equalizer isActive={isAudioActive} className="mb-4" />
+          <Equalizer isActive={isAudioActive} className="mb-4" audioElement={visibleAudioRef.current} />
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
@@ -518,6 +523,7 @@ const Music = () => {
               title={previewTrack.title}
               isPlayingExternal={isPlaying}
               onPlayPauseChange={setIsPlaying}
+              onAudioElementRef={handleAudioElementRef}
             />
           </div>
         )}
@@ -533,6 +539,7 @@ const Music = () => {
               title={streamTitle}
               isPlayingExternal={isStreamPlaying}
               onPlayPauseChange={setIsStreamPlaying}
+              onAudioElementRef={handleAudioElementRef}
             />
           </div>
         )}
@@ -564,6 +571,7 @@ const Music = () => {
               onCrossfadeStart={handleCrossfadeStart}
               isPlayingExternal={isPlaying}
               onPlayPauseChange={setIsPlaying}
+              onAudioElementRef={handleAudioElementRef}
             />
           </div>
         )}
