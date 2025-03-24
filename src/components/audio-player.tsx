@@ -164,7 +164,7 @@ export function AudioPlayer({
         <h3 className="text-lg font-medium">{title}</h3>
       )}
       
-      {hasError && !hideErrorMessage && (
+      {hasError && (
         <ErrorMessage 
           onRetry={() => {
             if (!urlValid) {

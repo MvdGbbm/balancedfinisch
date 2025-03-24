@@ -138,7 +138,7 @@ export function MeditationPlayerContainer({
   }
 
   // Show error state with retry button
-  if ((!hasValidAudio || audioError) && !hideErrorMessage) {
+  if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
         <Alert variant="destructive">
@@ -194,8 +194,8 @@ export function MeditationPlayerContainer({
         isPlayingExternal={isPlaying}
         onPlayPauseChange={setIsPlaying}
         onAudioElementRef={handleAudioElementRef}
-        hideErrorMessage={hideErrorMessage}
         key={`meditation-${selectedMeditation.id}-retry-${retryCount}`} // Force remount on retry
+        hideErrorMessage={hideErrorMessage}
       />
     </div>
   );
