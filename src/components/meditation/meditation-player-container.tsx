@@ -102,7 +102,12 @@ export function MeditationPlayerContainer({
         </Alert>
       )}
       
-      <Equalizer isActive={isPlaying} className="mb-2" audioElement={audioRef.current} />
+      <Equalizer 
+        isActive={isPlaying} 
+        className="mb-2" 
+        audioElement={audioRef.current}
+        key={selectedMeditation.id} // Add key to force re-mounting when meditation changes
+      />
       
       <AudioPlayer 
         audioUrl={selectedMeditation.audioUrl}
@@ -115,6 +120,19 @@ export function MeditationPlayerContainer({
         onPlayPauseChange={setIsPlaying}
         onAudioElementRef={handleAudioElementRef}
       />
+      
+      {onDelete && selectedMeditation && (
+        <div className="mt-4">
+          <Button 
+            variant="destructive" 
+            className="w-full"
+            onClick={() => onDelete(selectedMeditation)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Verwijderen
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

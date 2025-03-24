@@ -23,7 +23,16 @@ import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminMusic from "./pages/admin/Music";
 import AdminStreams from "./pages/admin/Streams";
 
-const queryClient = new QueryClient();
+// Create a client with default options
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -51,7 +60,7 @@ const App = () => (
     <ThemeProvider defaultTheme="light" storageKey="balanced-mind-theme">
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <Sonner position="top-right" closeButton />
         <RouterProvider router={router} />
       </TooltipProvider>
     </ThemeProvider>

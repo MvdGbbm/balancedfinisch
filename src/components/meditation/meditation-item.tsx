@@ -28,11 +28,23 @@ export function MeditationItem({
     >
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded bg-cover bg-center overflow-hidden">
-          <img 
-            src="/lovable-uploads/2baf5e4f-17db-4f18-bd89-8263321b640c.png" 
-            alt="Muziek" 
-            className="w-full h-full object-cover"
-          />
+          {meditation.coverImageUrl ? (
+            <img 
+              src={meditation.coverImageUrl} 
+              alt={meditation.title} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback to default image on error
+                e.currentTarget.src = "/lovable-uploads/2baf5e4f-17db-4f18-bd89-8263321b640c.png";
+              }}
+            />
+          ) : (
+            <img 
+              src="/lovable-uploads/2baf5e4f-17db-4f18-bd89-8263321b640c.png" 
+              alt="Muziek" 
+              className="w-full h-full object-cover"
+            />
+          )}
         </div>
         <div>
           <h3 className="font-medium line-clamp-1">{meditation.title}</h3>
