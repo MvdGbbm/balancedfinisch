@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2 } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -41,7 +40,6 @@ const Music = () => {
   const [streamTitle, setStreamTitle] = useState("");
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fetch radio streams using React Query
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
     queryFn: async () => {
@@ -57,13 +55,15 @@ const Music = () => {
       
       return data || [];
     },
-    onError: (error) => {
-      console.error("Error fetching radio streams:", error);
-      toast({
-        variant: "destructive",
-        title: "Fout bij laden",
-        description: "Kon de radiostreams niet laden."
-      });
+    meta: {
+      onError: (error: Error) => {
+        console.error("Error fetching radio streams:", error);
+        toast({
+          variant: "destructive",
+          title: "Fout bij laden",
+          description: "Kon de radiostreams niet laden."
+        });
+      }
     }
   });
 
@@ -111,27 +111,11 @@ const Music = () => {
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
-    if (isStreamPlaying && streamUrl === stream.url) {
-      // If clicking the same stream that's already playing, stop it
-      setIsStreamPlaying(false);
-      setStreamUrl("");
-      setStreamTitle("");
-      return;
-    }
-    
-    // Stop any music or preview tracks
-    setPreviewTrack(null);
-    setSelectedPlaylist(null);
-    setCurrentTrack(null);
-    
-    // Start the stream
-    setStreamUrl(stream.url);
-    setStreamTitle(stream.title);
-    setIsStreamPlaying(true);
+    window.open(stream.url, '_blank');
     
     toast({
-      title: "Stream starten",
-      description: `"${stream.title}" wordt nu afgespeeld`
+      title: "Link geopend",
+      description: `"${stream.title}" is geopend in een nieuw tabblad`
     });
   };
 
@@ -295,7 +279,7 @@ const Music = () => {
         <Tabs defaultValue="music">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
-            <TabsTrigger value="radio">Radio</TabsTrigger>
+            <TabsTrigger value="radio">Radio Links</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
           </TabsList>
           
@@ -354,12 +338,12 @@ const Music = () => {
             ) : radioStreams.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {radioStreams.map((stream) => (
-                  <Card key={stream.id} className={streamUrl === stream.url && isStreamPlaying ? "border-primary" : ""}>
+                  <Card key={stream.id} className="hover:border-primary/50 transition-colors">
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className={`p-2 rounded-full ${streamUrl === stream.url && isStreamPlaying ? 'bg-primary/20 text-primary' : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300'}`}>
-                            <Radio className="h-4 w-4" />
+                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
+                            <Link2 className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm">{stream.title}</h3>
@@ -369,16 +353,13 @@ const Music = () => {
                           </div>
                         </div>
                         <Button
-                          variant={streamUrl === stream.url && isStreamPlaying ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
                           onClick={() => handleStreamPlay(stream)}
                           className="px-3 ml-2"
                         >
-                          {streamUrl === stream.url && isStreamPlaying ? (
-                            "Afspelen"
-                          ) : (
-                            "Afspelen"
-                          )}
+                          <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                          Openen
                         </Button>
                       </div>
                     </CardContent>
@@ -387,7 +368,7 @@ const Music = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Geen radiostreams gevonden</p>
+                <p className="text-muted-foreground">Geen radiolinks gevonden</p>
               </div>
             )}
           </TabsContent>

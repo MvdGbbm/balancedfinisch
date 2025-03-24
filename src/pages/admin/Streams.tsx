@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
   Card, 
@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Radio, Edit, Trash2, Plus, ExternalLink, Check, X } from "lucide-react";
+import { Link2, Edit, Trash2, ExternalLink, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -74,13 +74,13 @@ const AdminStreams = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Nieuwe radiostream toegevoegd");
+      toast.success("Nieuwe radiolink toegevoegd");
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      console.error("Error creating stream:", error);
-      toast.error("Kon de radiostream niet opslaan");
+      console.error("Error creating link:", error);
+      toast.error("Kon de radiolink niet opslaan");
     }
   });
   
@@ -101,13 +101,13 @@ const AdminStreams = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Radiostream bijgewerkt");
+      toast.success("Radiolink bijgewerkt");
       setIsDialogOpen(false);
       resetForm();
     },
     onError: (error) => {
-      console.error("Error updating stream:", error);
-      toast.error("Kon de radiostream niet bijwerken");
+      console.error("Error updating link:", error);
+      toast.error("Kon de radiolink niet bijwerken");
     }
   });
   
@@ -123,11 +123,11 @@ const AdminStreams = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Radiostream verwijderd");
+      toast.success("Radiolink verwijderd");
     },
     onError: (error) => {
-      console.error("Error deleting stream:", error);
-      toast.error("Kon de radiostream niet verwijderen");
+      console.error("Error deleting link:", error);
+      toast.error("Kon de radiolink niet verwijderen");
     }
   });
   
@@ -143,10 +143,10 @@ const AdminStreams = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success(`Radiostream ${data.isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
+      toast.success(`Radiolink ${data.isActive ? 'geactiveerd' : 'gedeactiveerd'}`);
     },
     onError: (error) => {
-      console.error("Error updating stream status:", error);
+      console.error("Error updating link status:", error);
       toast.error("Kon de status niet bijwerken");
     }
   });
@@ -174,7 +174,7 @@ const AdminStreams = () => {
   };
   
   const handleDelete = async (id: string) => {
-    if (window.confirm("Weet je zeker dat je deze radiostream wilt verwijderen?")) {
+    if (window.confirm("Weet je zeker dat je deze radiolink wilt verwijderen?")) {
       deleteStreamMutation.mutate(id);
     }
   };
@@ -226,21 +226,21 @@ const AdminStreams = () => {
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Radiostreams Beheren</h1>
+          <h1 className="text-2xl font-bold">Radiolinks Beheren</h1>
           <Button onClick={handleOpenNew}>
-            <Radio className="h-4 w-4 mr-2" />
-            Nieuwe Stream
+            <Link2 className="h-4 w-4 mr-2" />
+            Nieuwe Link
           </Button>
         </div>
         
         <p className="text-muted-foreground">
-          Beheer radiostreams die gebruikers kunnen afspelen in de muziekspeler
+          Beheer radiolinks die gebruikers kunnen openen vanuit de muziekspeler
         </p>
         
         <Tabs defaultValue="active" className="mt-6">
           <TabsList className="mb-4">
-            <TabsTrigger value="active">Actieve Streams ({activeStreams.length})</TabsTrigger>
-            <TabsTrigger value="inactive">Inactieve Streams ({inactiveStreams.length})</TabsTrigger>
+            <TabsTrigger value="active">Actieve Links ({activeStreams.length})</TabsTrigger>
+            <TabsTrigger value="inactive">Inactieve Links ({inactiveStreams.length})</TabsTrigger>
           </TabsList>
           
           <TabsContent value="active">
@@ -262,9 +262,9 @@ const AdminStreams = () => {
               </div>
             ) : (
               <div className="text-center py-8 bg-muted/30 rounded-lg">
-                <p className="text-muted-foreground">Geen actieve radiostreams gevonden</p>
+                <p className="text-muted-foreground">Geen actieve radiolinks gevonden</p>
                 <Button variant="outline" className="mt-2" onClick={handleOpenNew}>
-                  Stream toevoegen
+                  Link toevoegen
                 </Button>
               </div>
             )}
@@ -289,7 +289,7 @@ const AdminStreams = () => {
               </div>
             ) : (
               <div className="text-center py-8 bg-muted/30 rounded-lg">
-                <p className="text-muted-foreground">Geen inactieve radiostreams gevonden</p>
+                <p className="text-muted-foreground">Geen inactieve radiolinks gevonden</p>
               </div>
             )}
           </TabsContent>
@@ -301,10 +301,10 @@ const AdminStreams = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {currentStream ? "Radiostream Bewerken" : "Nieuwe Radiostream"}
+              {currentStream ? "Radiolink Bewerken" : "Nieuwe Radiolink"}
             </DialogTitle>
             <DialogDescription>
-              Vul de details in voor de radiostream
+              Vul de details in voor de radiolink
             </DialogDescription>
           </DialogHeader>
           
@@ -313,24 +313,24 @@ const AdminStreams = () => {
               <Label htmlFor="title">Titel</Label>
               <Input
                 id="title"
-                placeholder="Naam van de radiostream"
+                placeholder="Naam van de radiolink"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="url">Stream URL</Label>
+              <Label htmlFor="url">Link URL</Label>
               <Input
                 id="url"
-                placeholder="URL naar de audiostream (bijv. https://voorbeeld.com/stream.mp3)"
+                placeholder="URL naar de website of audio (bijv. https://voorbeeld.com)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
               {isValidUrl(url) && (
                 <div className="text-xs text-muted-foreground flex items-center mt-1">
                   <ExternalLink className="h-3 w-3 mr-1" />
-                  URL naar een audio stream
+                  Geldige URL
                 </div>
               )}
             </div>
@@ -339,7 +339,7 @@ const AdminStreams = () => {
               <Label htmlFor="description">Beschrijving (optioneel)</Label>
               <Textarea
                 id="description"
-                placeholder="Korte beschrijving van de radiostream"
+                placeholder="Korte beschrijving van de radiolink"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={2}
@@ -384,7 +384,7 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <div className="flex items-center">
-              <Radio className="h-4 w-4 mr-2 text-primary" />
+              <Link2 className="h-4 w-4 mr-2 text-primary" />
               <h3 className="font-medium">{stream.title}</h3>
               {!stream.is_active && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-sm">Inactief</span>}
             </div>
