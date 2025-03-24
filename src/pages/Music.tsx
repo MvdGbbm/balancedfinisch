@@ -38,7 +38,9 @@ const Music = () => {
   const [isStreamPlaying, setIsStreamPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
   const [streamTitle, setStreamTitle] = useState("");
+  const [hiddenIframeUrl, setHiddenIframeUrl] = useState<string | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const hiddenIframeRef = useRef<HTMLIFrameElement>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -111,11 +113,11 @@ const Music = () => {
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
-    window.open(stream.url, '_blank');
+    setHiddenIframeUrl(stream.url);
     
     toast({
-      title: "Link geopend",
-      description: `"${stream.title}" is geopend in een nieuw tabblad`
+      title: "Radio link geopend",
+      description: `"${stream.title}" speelt nu in de achtergrond`
     });
   };
 
@@ -358,8 +360,8 @@ const Music = () => {
                           onClick={() => handleStreamPlay(stream)}
                           className="px-3 ml-2"
                         >
-                          <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
-                          Openen
+                          <Play className="h-3.5 w-3.5 mr-1.5" />
+                          Afspelen
                         </Button>
                       </div>
                     </CardContent>
@@ -512,6 +514,15 @@ const Music = () => {
               onPlayPauseChange={setIsPlaying}
             />
           </div>
+        )}
+        
+        {hiddenIframeUrl && (
+          <iframe 
+            ref={hiddenIframeRef}
+            src={hiddenIframeUrl}
+            style={{ display: 'none' }} 
+            title="Radio Stream"
+          />
         )}
       </div>
       

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
@@ -19,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link2, Edit, Trash2, ExternalLink, Check, X } from "lucide-react";
+import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -222,19 +221,31 @@ const AdminStreams = () => {
     }
   };
   
+  const isValidAudioUrl = (url: string) => {
+    if (!isValidUrl(url)) return false;
+    
+    // Basic check for common audio streaming formats and services
+    const lowercaseUrl = url.toLowerCase();
+    const audioExtensions = ['.mp3', '.aac', '.ogg', '.m3u', '.m3u8', '.pls', '.xspf'];
+    const streamingServices = ['icecast', 'shoutcast', 'radio', 'stream', 'listen', 'audio'];
+    
+    return audioExtensions.some(ext => lowercaseUrl.includes(ext)) || 
+           streamingServices.some(service => lowercaseUrl.includes(service));
+  };
+  
   return (
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Radiolinks Beheren</h1>
           <Button onClick={handleOpenNew}>
-            <Link2 className="h-4 w-4 mr-2" />
-            Nieuwe Link
+            <Radio className="h-4 w-4 mr-2" />
+            Nieuwe Radiolink
           </Button>
         </div>
         
         <p className="text-muted-foreground">
-          Beheer radiolinks die gebruikers kunnen openen vanuit de muziekspeler
+          Beheer radiolinks die gebruikers kunnen afspelen vanuit de muziekspeler
         </p>
         
         <Tabs defaultValue="active" className="mt-6">
@@ -304,7 +315,7 @@ const AdminStreams = () => {
               {currentStream ? "Radiolink Bewerken" : "Nieuwe Radiolink"}
             </DialogTitle>
             <DialogDescription>
-              Vul de details in voor de radiolink
+              Vul de details in voor de radiolink. De link zal in de achtergrond worden afgespeeld.
             </DialogDescription>
           </DialogHeader>
           
@@ -320,17 +331,19 @@ const AdminStreams = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="url">Link URL</Label>
+              <Label htmlFor="url">Radio Stream URL</Label>
               <Input
                 id="url"
-                placeholder="URL naar de website of audio (bijv. https://voorbeeld.com)"
+                placeholder="URL naar de radiostream (bijv. https://voorbeeld.com/stream)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
               {isValidUrl(url) && (
-                <div className="text-xs text-muted-foreground flex items-center mt-1">
+                <div className={`text-xs flex items-center mt-1 ${isValidAudioUrl(url) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                   <ExternalLink className="h-3 w-3 mr-1" />
-                  Geldige URL
+                  {isValidAudioUrl(url) 
+                    ? "Lijkt een geldige audio stream URL" 
+                    : "Geldige URL, maar mogelijk geen audio stream"}
                 </div>
               )}
             </div>
@@ -384,7 +397,7 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <div className="flex items-center">
-              <Link2 className="h-4 w-4 mr-2 text-primary" />
+              <Radio className="h-4 w-4 mr-2 text-primary" />
               <h3 className="font-medium">{stream.title}</h3>
               {!stream.is_active && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded-sm">Inactief</span>}
             </div>
