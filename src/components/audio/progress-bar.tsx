@@ -47,7 +47,8 @@ export function ProgressBar({
           onValueChange={onProgressChange}
           className={cn(
             "audio-player-slider",
-            (isCrossfading || isLiveStream) && "cursor-wait opacity-70"
+            (isCrossfading || isLiveStream) && "cursor-wait opacity-70",
+            !isLoaded && "opacity-50"
           )}
           disabled={!isLoaded || isCrossfading || isLiveStream}
         />

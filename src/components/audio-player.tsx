@@ -53,16 +53,19 @@ export function AudioPlayer({
   // Check audio URL before attempting to play
   const [urlChecked, setUrlChecked] = useState(false);
   const [urlValid, setUrlValid] = useState(true);
+  const [isEmptyUrl, setIsEmptyUrl] = useState(false);
   
   useEffect(() => {
     const validateAudioUrl = async () => {
-      if (!audioUrl) {
-        console.error("No audio URL provided");
+      if (!audioUrl || audioUrl.trim() === '') {
+        console.log("Empty audio URL provided");
+        setIsEmptyUrl(true);
         setUrlValid(false);
         setUrlChecked(true);
-        if (onError) onError();
         return;
       }
+      
+      setIsEmptyUrl(false);
       
       try {
         console.log("Checking audio compatibility for:", audioUrl);
@@ -71,7 +74,6 @@ export function AudioPlayer({
         
         if (!isCompatible) {
           console.error("Audio format not supported:", audioUrl);
-          toast.error("Dit audioformaat wordt niet ondersteund");
           if (onError) onError();
         }
       } catch (error) {
@@ -130,12 +132,26 @@ export function AudioPlayer({
       loadError,
       duration,
       urlChecked,
-      urlValid
+      urlValid,
+      isEmptyUrl
     });
-  }, [audioUrl, isPlaying, isLoaded, loadError, duration, urlChecked, urlValid]);
+  }, [audioUrl, isPlaying, isLoaded, loadError, duration, urlChecked, urlValid, isEmptyUrl]);
   
   // Check if we have any errors to display
-  const hasError = loadError || (urlChecked && !urlValid);
+  const hasError = loadError || (urlChecked && !urlValid && !isEmptyUrl);
+  
+  // If it's an empty URL, show a placeholder instead of an error
+  if (isEmptyUrl) {
+    return (
+      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+        <div className="flex items-center justify-center h-16 bg-muted/30 rounded-md">
+          <p className="text-muted-foreground text-sm">
+            Geen audio beschikbaar
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
@@ -157,7 +173,8 @@ export function AudioPlayer({
               handleRetry();
             }
           }} 
-          isRetrying={isRetrying} 
+          isRetrying={isRetrying}
+          customMessage={isEmptyUrl ? "Geen audio URL opgegeven" : undefined}
         />
       )}
       
@@ -202,13 +219,15 @@ export function AudioPlayer({
   );
   
   async function validateAudioUrl() {
-    if (!audioUrl) {
-      console.error("No audio URL provided");
+    if (!audioUrl || audioUrl.trim() === '') {
+      console.log("Empty audio URL provided");
+      setIsEmptyUrl(true);
       setUrlValid(false);
       setUrlChecked(true);
-      if (onError) onError();
       return;
     }
+    
+    setIsEmptyUrl(false);
     
     try {
       console.log("Checking audio compatibility for:", audioUrl);
@@ -217,7 +236,6 @@ export function AudioPlayer({
       
       if (!isCompatible) {
         console.error("Audio format not supported:", audioUrl);
-        toast.error("Dit audioformaat wordt niet ondersteund");
         if (onError) onError();
       }
     } catch (error) {

@@ -6,14 +6,17 @@ import { AlertTriangle } from "lucide-react";
 interface ErrorMessageProps {
   onRetry: () => void;
   isRetrying: boolean;
+  customMessage?: string;
 }
 
-export function ErrorMessage({ onRetry, isRetrying }: ErrorMessageProps) {
+export function ErrorMessage({ onRetry, isRetrying, customMessage }: ErrorMessageProps) {
   return (
     <div className="p-3 rounded-md bg-destructive/10 text-destructive">
       <div className="flex items-center gap-2 mb-2">
         <AlertTriangle className="h-4 w-4" />
-        <p className="text-sm font-medium">Er is een probleem met het laden van de audio.</p>
+        <p className="text-sm font-medium">
+          {customMessage || "Er is een probleem met het laden van de audio."}
+        </p>
       </div>
       <p className="text-xs mb-2">Mogelijke oorzaken:</p>
       <ul className="text-xs list-disc pl-4 mb-2 space-y-1">
