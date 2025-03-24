@@ -39,8 +39,12 @@ export interface AudioEngineState {
 const CROSSFADE_DURATION = 5;
 const MAX_RETRY_ATTEMPTS = 3;
 
-// Track existing audio contexts globally to prevent duplicate connections
-const connectedAudioElements = new WeakMap();
+// Global registry to track audio elements and their contexts
+const audioContextRegistry = new WeakMap<HTMLAudioElement, {
+  context: AudioContext,
+  source: MediaElementSourceNode,
+  gainNode: GainNode
+}>();
 
 export function useAudioEngine({
   audioUrl,
@@ -275,40 +279,43 @@ export function useAudioEngine({
       onAudioElementRef(audio);
     }
     
-    // Check if we've already set up audio processing for this element
-    if (connectedAudioElements.has(audio)) {
-      console.log("Audio element already has context, skipping setup");
-      return;
-    }
-    
-    try {
-      // Create a new audio context
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      audioContextRef.current = audioContext;
+    // Check if we already have a context for this audio element
+    if (!audioContextRegistry.has(audio)) {
+      try {
+        // Create audio context only if it doesn't exist yet
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = audioContext;
+        
+        // Create gain node to control volume
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.5; // Set to 50% of original volume
+        gainNodeRef.current = gainNode;
+        
+        // Create media element source
+        const source = audioContext.createMediaElementSource(audio);
+        
+        // Connect the source to the gain node and then to the destination
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Register this audio element with its context
+        audioContextRegistry.set(audio, { 
+          context: audioContext, 
+          source, 
+          gainNode 
+        });
+        
+        console.log("Successfully set up audio processing chain");
+      } catch (error) {
+        console.error("Error creating audio processing chain:", error);
+        // Even if we have an error, we should still be able to play audio directly
+      }
+    } else {
+      console.log("Audio element already has context, reusing existing one");
       
-      // Create gain node to control volume without affecting the analyzer
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = 0.5; // Set to 50% of original volume
+      // Retrieve existing elements
+      const { gainNode } = audioContextRegistry.get(audio)!;
       gainNodeRef.current = gainNode;
-      
-      // Create media element source
-      const source = audioContext.createMediaElementSource(audio);
-      
-      // Connect the source to the gain node and then to the destination
-      source.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // Mark this audio element as connected
-      connectedAudioElements.set(audio, { 
-        context: audioContext, 
-        source, 
-        gainNode 
-      });
-      
-      console.log("Successfully set up audio processing chain");
-    } catch (error) {
-      console.error("Error creating audio processing chain:", error);
-      // Even if we have an error, we should still be able to play audio directly
     }
     
     const setAudioData = () => {
@@ -466,18 +473,22 @@ export function useAudioEngine({
     };
   }, [onEnded, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream, onAudioElementRef, retryAttempts, volume]);
   
-  // Clean up audio context when component is unmounted
+  // Clean up audio context when component is fully unmounted
   useEffect(() => {
     return () => {
-      // Clean up audio processing when component unmounts
+      // Only clean up audio contexts when the component is fully unmounted
       const audio = audioRef.current;
-      if (audio && connectedAudioElements.has(audio)) {
+      if (audio && audioContextRegistry.has(audio)) {
         try {
-          const { context, source, gainNode } = connectedAudioElements.get(audio);
-          if (source) source.disconnect();
-          if (gainNode) gainNode.disconnect();
-          if (context) context.close();
-          connectedAudioElements.delete(audio);
+          const { context } = audioContextRegistry.get(audio)!;
+          
+          // We keep the connections but close the context
+          if (context.state !== 'closed') {
+            context.close();
+          }
+          
+          // Remove from registry
+          audioContextRegistry.delete(audio);
           console.log("Cleaned up audio context on unmount");
         } catch (error) {
           console.error("Error cleaning up audio context:", error);
@@ -515,13 +526,13 @@ export function useAudioEngine({
     const audio = audioRef.current;
     if (!audio) return;
     
-    // Apply gain node if available
+    // Apply volume settings
     if (gainNodeRef.current) {
       gainNodeRef.current.gain.value = 0.5; // Keep at 50%
-      audio.volume = volume; // Set volume on audio element
+      audio.volume = volume; // Set volume on audio element directly
     } else {
-      // Fall back to regular volume control
-      audio.volume = volume * 0.5; // Apply 50% reduction
+      // Fall back to regular volume control with 50% reduction
+      audio.volume = volume * 0.5;
     }
   }, [volume]);
   
