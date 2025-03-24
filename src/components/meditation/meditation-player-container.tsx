@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
@@ -19,28 +18,23 @@ export function MeditationPlayerContainer({
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playerKey, setPlayerKey] = useState(0); // Add key to force remounting
+  const [playerKey, setPlayerKey] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
     if (selectedMeditation) {
-      // Reset errors when meditation changes
       setAudioError(false);
       setImageError(false);
-      setIsPlaying(false); // Don't auto-play initially, let user click play
-      
-      // Force AudioPlayer to remount when meditation changes
+      setIsPlaying(false);
       setPlayerKey(prevKey => prevKey + 1);
       
-      // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);
       console.log("Audio URL:", selectedMeditation.audioUrl);
       console.log("Marco link:", selectedMeditation.marcoLink);
       console.log("Vera link:", selectedMeditation.veraLink);
       
-      // Short timeout before allowing play
       setTimeout(() => {
-        setIsPlaying(true); // Now enable auto-play
+        setIsPlaying(true);
       }, 500);
     }
   }, [selectedMeditation]);
@@ -49,12 +43,10 @@ export function MeditationPlayerContainer({
     return null;
   }
   
-  // Check if the audioUrl exists and is valid, use more permissive checking
   const hasValidAudio = !!selectedMeditation.audioUrl || 
                         !!selectedMeditation.veraLink || 
                         !!selectedMeditation.marcoLink;
   
-  // Check if the coverImageUrl exists and is valid
   const hasValidImage = !!selectedMeditation.coverImageUrl;
   
   const handleAudioError = () => {
@@ -83,20 +75,28 @@ export function MeditationPlayerContainer({
     });
   };
 
-  // Handle external link navigation
   const handleExternalLink = (linkType: 'vera' | 'marco') => {
-    const url = linkType === 'vera' 
-      ? selectedMeditation.veraLink 
-      : selectedMeditation.marcoLink;
+    let url = '';
+    
+    if (linkType === 'vera') {
+      url = selectedMeditation.veraLink || '';
+    } else {
+      url = selectedMeditation.marcoLink || '';
+    }
     
     if (!url) {
       toast.error(`Geen ${linkType === 'vera' ? 'Vera' : 'Marco'} link beschikbaar voor deze meditatie`);
       return;
     }
     
-    // Open in new tab
-    window.open(url, '_blank');
-    toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
+    try {
+      new URL(url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} link geopend in nieuw tabblad`);
+    } catch (e) {
+      console.error(`Invalid URL for ${linkType}:`, url, e);
+      toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
+    }
   };
 
   if (!hasValidAudio || audioError) {
@@ -174,7 +174,7 @@ export function MeditationPlayerContainer({
       )}
       
       <AudioPlayer 
-        key={playerKey} // Force remount when meditation changes
+        key={playerKey}
         audioUrl={selectedMeditation.audioUrl || ''}
         title={selectedMeditation.title}
         showTitle
@@ -186,13 +186,13 @@ export function MeditationPlayerContainer({
         ref={audioRef}
       />
       
-      {/* External links buttons for Vera and Marco */}
       <div className="flex gap-2 mt-4">
         <Button
           variant="outline"
           className={`flex-1 ${selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'opacity-50'}`}
           onClick={() => handleExternalLink('vera')}
           disabled={!selectedMeditation.veraLink}
+          type="button"
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Vera
@@ -203,6 +203,7 @@ export function MeditationPlayerContainer({
           className={`flex-1 ${selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'opacity-50'}`}
           onClick={() => handleExternalLink('marco')}
           disabled={!selectedMeditation.marcoLink}
+          type="button"
         >
           <ExternalLink className="h-4 w-4 mr-2" />
           Marco
