@@ -126,7 +126,7 @@ export function MeditationPlayerContainer({
   // Show loading state
   if (isLoading && !audioError) {
     return (
-      <div className="mt-4 p-4 text-center">
+      <div className="mt-4 p-3 text-center">
         <div className="animate-spin inline-block w-6 h-6 border-2 border-current border-t-transparent text-primary rounded-full mb-2" 
              role="status" aria-label="loading">
           <span className="sr-only">Laden...</span>
@@ -160,20 +160,20 @@ export function MeditationPlayerContainer({
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-3">
       {hasValidImage && !imageError && (
-        <div className="mb-4">
+        <div className="mb-3">
           <img 
             src={selectedMeditation.coverImageUrl}
             alt={selectedMeditation.title}
-            className="w-full h-48 object-cover rounded-lg"
+            className="w-full h-40 object-cover rounded-lg"
             onError={handleImageError}
           />
         </div>
       )}
       
       {imageError && (
-        <Alert className="mb-4" variant="default">
+        <Alert className="mb-3" variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.

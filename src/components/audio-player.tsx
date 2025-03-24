@@ -146,8 +146,8 @@ export function AudioPlayer({
   // If it's an empty URL, show a placeholder instead of an error
   if (isEmptyUrl) {
     return (
-      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-        <div className="flex items-center justify-center h-16 bg-muted/30 rounded-md">
+      <div className={cn("w-full space-y-2 rounded-lg p-2 bg-card/50 shadow-sm", className)}>
+        <div className="flex items-center justify-center h-12 bg-muted/30 rounded-md">
           <p className="text-muted-foreground text-sm">
             Geen audio beschikbaar
           </p>
@@ -157,7 +157,7 @@ export function AudioPlayer({
   }
   
   return (
-    <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+    <div className={cn("w-full space-y-2 rounded-lg p-2 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
       {nextAudioUrl && <audio ref={nextAudioRef} preload="metadata" crossOrigin="anonymous" />}
       

@@ -373,7 +373,7 @@ const Music = () => {
     visibleAudioRef.current = element;
   };
 
-  const renderMiniPlayer = () => {
+  const renderAudioPlayer = () => {
     if (isStreamPlaying && streamUrl) {
       return (
         <div className="mb-2 bg-muted/30 rounded-lg p-2">
@@ -488,7 +488,13 @@ const Music = () => {
       );
     }
 
-    return null;
+    return (
+      <div className="mb-2 bg-muted/30 rounded-lg p-2">
+        <div className="flex items-center justify-center py-1">
+          <p className="text-sm text-muted-foreground">Geen audio geselecteerd</p>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -501,14 +507,16 @@ const Music = () => {
           </p>
         </div>
 
-        {renderMiniPlayer()}
-
         <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="music">Muziek</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
+          
+          <div className="mb-4">
+            {renderAudioPlayer()}
+          </div>
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
