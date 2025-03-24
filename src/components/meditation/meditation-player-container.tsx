@@ -111,7 +111,7 @@ export function MeditationPlayerContainer({
       setCurrentAudioUrl(validatedUrl);
       // Force audio player to remount with new URL
       setPlayerKey(prevKey => prevKey + 1);
-      // Start playing
+      // Start playing automatically
       setIsPlaying(true);
       
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);

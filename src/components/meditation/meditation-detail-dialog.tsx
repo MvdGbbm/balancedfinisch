@@ -45,6 +45,7 @@ export const MeditationDetailDialog = ({
   const [audioKey, setAudioKey] = useState<number>(0); 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [equalizerVisible, setEqualizerVisible] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   // Filter out the currently playing meditation from the list
   const filteredGuidedMeditations = guidedMeditations.filter(
@@ -59,6 +60,9 @@ export const MeditationDetailDialog = ({
       
       // Increment the key to force AudioPlayer remount when the source changes
       setAudioKey(prevKey => prevKey + 1);
+      
+      // Reset playing state when dialog opens
+      setIsPlaying(false);
     }
   }, [isOpen, meditation]);
   
@@ -98,6 +102,9 @@ export const MeditationDetailDialog = ({
       
       // Increment the key to force AudioPlayer remount with new URL
       setAudioKey(prevKey => prevKey + 1);
+      
+      // Start playing automatically
+      setIsPlaying(true);
       
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
     } catch (e) {
@@ -166,6 +173,8 @@ export const MeditationDetailDialog = ({
                 showTitle={false}
                 showQuote={!equalizerVisible}
                 ref={audioRef}
+                isPlayingExternal={isPlaying}
+                onPlayPauseChange={setIsPlaying}
               />
             ) : (
               <div className="text-center py-4 text-gray-400 border border-gray-800 rounded-lg">
