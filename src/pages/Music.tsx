@@ -4,7 +4,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, Link } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,9 +12,6 @@ import { Soundscape } from "@/lib/types";
 import { Playlist, PlaylistTrack } from "@/components/playlist/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 
 const Music = () => {
   const { soundscapes } = useApp();
@@ -29,10 +26,6 @@ const Music = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [nextTrack, setNextTrack] = useState<Soundscape | null>(null);
   const [isCrossfading, setIsCrossfading] = useState(false);
-  const [showStreamDialog, setShowStreamDialog] = useState(false);
-  const [streamUrl, setStreamUrl] = useState("");
-  const [streamTitle, setStreamTitle] = useState("");
-  const [isStreamPlaying, setIsStreamPlaying] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Filter soundscapes to only "Muziek" category
@@ -70,44 +63,12 @@ const Music = () => {
   }, [currentTrack, currentTrackIndex, selectedPlaylist, soundscapes]);
 
   const handlePreviewTrack = (track: Soundscape) => {
-    // If we're playing a stream, stop it
-    if (isStreamPlaying) {
-      setIsStreamPlaying(false);
-      setStreamUrl("");
-      setStreamTitle("");
-    }
-    
     setPreviewTrack(track);
     setIsPlaying(true);
     
     // Stop any currently playing playlist when previewing a track
     setSelectedPlaylist(null);
     setNextTrack(null);
-  };
-
-  const handleStreamPlay = () => {
-    if (!streamUrl) {
-      toast({
-        variant: "destructive",
-        title: "Geen URL",
-        description: "Voer een geldige URL in"
-      });
-      return;
-    }
-    
-    // Stop any currently playing preview or playlist
-    setPreviewTrack(null);
-    setSelectedPlaylist(null);
-    setCurrentTrack(null);
-    
-    // Start playing the stream
-    setIsStreamPlaying(true);
-    setShowStreamDialog(false);
-    
-    toast({
-      title: "Stream starten",
-      description: `"${streamTitle || 'Stream'}" wordt nu afgespeeld`
-    });
   };
 
   const handleTrackEnded = () => {
@@ -139,13 +100,6 @@ const Music = () => {
   };
 
   const handlePlayPlaylist = (playlist: Playlist) => {
-    // Stop any stream if playing
-    if (isStreamPlaying) {
-      setIsStreamPlaying(false);
-      setStreamUrl("");
-      setStreamTitle("");
-    }
-    
     if (playlist.tracks.length === 0) {
       toast({
         title: "Lege afspeellijst",
@@ -291,15 +245,6 @@ const Music = () => {
           </TabsList>
           
           <TabsContent value="music" className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full mb-2"
-              onClick={() => setShowStreamDialog(true)}
-            >
-              <Radio className="h-4 w-4 mr-2" />
-              Radio of Stream URL afspelen
-            </Button>
-            
             {musicTracks.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {musicTracks.map((track) => (
@@ -443,22 +388,6 @@ const Music = () => {
           </div>
         )}
         
-        {/* Stream Player */}
-        {isStreamPlaying && (
-          <div className="mb-14">
-            <h3 className="font-medium mb-2">
-              {streamTitle || "Stream"} <span className="text-xs text-primary">LIVE</span>
-            </h3>
-            <AudioPlayer 
-              audioUrl={streamUrl} 
-              showControls={true}
-              title={streamTitle || "Stream"}
-              isPlayingExternal={isStreamPlaying}
-              onPlayPauseChange={setIsStreamPlaying}
-            />
-          </div>
-        )}
-        
         {/* Playlist Player */}
         {selectedPlaylist && currentTrack && (
           <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
@@ -491,51 +420,6 @@ const Music = () => {
           </div>
         )}
       </div>
-      
-      {/* Stream URL Dialog */}
-      <Dialog open={showStreamDialog} onOpenChange={setShowStreamDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Radio of Stream URL afspelen</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="stream-title">Titel (optioneel)</Label>
-              <Input 
-                id="stream-title" 
-                placeholder="Bijvoorbeeld: Radio 538"
-                value={streamTitle}
-                onChange={(e) => setStreamTitle(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="stream-url">Stream URL</Label>
-              <Input 
-                id="stream-url" 
-                placeholder="http://..."
-                value={streamUrl}
-                onChange={(e) => setStreamUrl(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                <Link className="h-3 w-3 inline mr-1" /> 
-                Voer een directe URL in naar een audiostream (mp3, aac, m3u8)
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStreamDialog(false)}>
-              Annuleren
-            </Button>
-            <Button onClick={handleStreamPlay}>
-              <Play className="h-4 w-4 mr-2" />
-              Afspelen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       <CreatePlaylistDialog
         open={showPlaylistCreator}

@@ -17,14 +17,12 @@ export function MeditationPlayerContainer({
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   
   useEffect(() => {
     if (selectedMeditation) {
       // Reset errors when meditation changes
       setAudioError(false);
       setImageError(false);
-      setIsPlaying(true); // Auto-play when meditation changes
       
       // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);
@@ -47,7 +45,6 @@ export function MeditationPlayerContainer({
   
   const handleAudioError = () => {
     setAudioError(true);
-    setIsPlaying(false);
     toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
@@ -98,8 +95,6 @@ export function MeditationPlayerContainer({
         showControls
         className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
         onError={handleAudioError}
-        isPlayingExternal={isPlaying}
-        onPlayPauseChange={setIsPlaying}
       />
     </div>
   );
