@@ -366,12 +366,12 @@ const Music = () => {
                 {musicTracks.map((track) => (
                   <Card 
                     key={track.id} 
-                    className={`transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
+                    className={`transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''} bg-background/30 backdrop-blur-sm border-muted`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
-                          <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                        <div className="p-2 rounded-full bg-blue-100/10 dark:bg-blue-900/20">
+                          <MusicIcon className="h-5 w-5 text-blue-500 dark:text-blue-300" />
                         </div>
                         <div className="flex-1">
                           <h3 className="font-medium">{track.title}</h3>
@@ -385,7 +385,7 @@ const Music = () => {
                             variant={previewTrack?.id === track.id && isPlaying ? "destructive" : "outline"}
                             size="sm" 
                             onClick={() => handlePreviewTrack(track)}
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
                           >
                             {previewTrack?.id === track.id && isPlaying ? (
                               <>
@@ -526,7 +526,7 @@ const Music = () => {
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
+                          <div className="p-2 rounded-full bg-green-100/10 dark:bg-green-900/20 text-green-600 dark:text-green-300">
                             <Link2 className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
