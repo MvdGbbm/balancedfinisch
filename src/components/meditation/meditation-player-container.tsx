@@ -3,34 +3,33 @@ import React, { useState, useEffect } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Radio } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
   selectedMeditation: Meditation | null;
-  isStreamMode?: boolean;
 }
 
 export function MeditationPlayerContainer({ 
   isVisible, 
-  selectedMeditation,
-  isStreamMode = false 
+  selectedMeditation 
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   
   useEffect(() => {
     if (selectedMeditation) {
       // Reset errors when meditation changes
       setAudioError(false);
       setImageError(false);
+      setIsPlaying(true); // Auto-play when meditation changes
       
       // Log the meditation details for debugging
-      console.log("Selected meditation/stream:", selectedMeditation);
-      console.log("Is stream mode:", isStreamMode);
+      console.log("Selected meditation:", selectedMeditation);
     }
-  }, [selectedMeditation, isStreamMode]);
+  }, [selectedMeditation]);
   
   if (!isVisible || !selectedMeditation) {
     return null;
@@ -48,6 +47,7 @@ export function MeditationPlayerContainer({
   
   const handleAudioError = () => {
     setAudioError(true);
+    setIsPlaying(false);
     toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
@@ -62,7 +62,7 @@ export function MeditationPlayerContainer({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Geen audio beschikbaar voor deze {isStreamMode ? "stream" : "meditatie"}. Probeer een andere {isStreamMode ? "stream" : "meditatie"} te selecteren.
+            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
           </AlertDescription>
         </Alert>
       </div>
@@ -86,7 +86,7 @@ export function MeditationPlayerContainer({
         <Alert className="mb-4" variant="default">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Kon de afbeelding niet laden. De {isStreamMode ? "stream" : "meditatie"} is nog steeds beschikbaar.
+            Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.
           </AlertDescription>
         </Alert>
       )}
@@ -96,9 +96,10 @@ export function MeditationPlayerContainer({
         title={selectedMeditation.title}
         showTitle
         showControls
-        isStream={isStreamMode}
         className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
         onError={handleAudioError}
+        isPlayingExternal={isPlaying}
+        onPlayPauseChange={setIsPlaying}
       />
     </div>
   );
