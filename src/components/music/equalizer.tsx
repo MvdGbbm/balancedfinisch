@@ -17,7 +17,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
-  const numBars = 32; // Increased from 24 to 32 bars for more detailed visualization
+  const numBars = 32; // Keep the same number of bars
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
@@ -70,8 +70,8 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       try {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         analyzerRef.current = audioContextRef.current.createAnalyser();
-        analyzerRef.current.fftSize = 1024; // Increased from 256 for more detailed frequency data
-        analyzerRef.current.smoothingTimeConstant = 0.7; // Slightly reduced smoothing for more responsive visualization
+        analyzerRef.current.fftSize = 1024; // Keep the same FFT size
+        analyzerRef.current.smoothingTimeConstant = 0.85; // Increased from 0.7 for smoother transitions
         
         const bufferLength = analyzerRef.current.frequencyBinCount;
         dataArrayRef.current = new Uint8Array(bufferLength);
@@ -135,53 +135,50 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       if (analyzerRef.current && dataArrayRef.current && audioElement && audioElement.dataset.connected === "true") {
         analyzerRef.current.getByteFrequencyData(dataArrayRef.current);
         
-        // Apply frequency weighting for more natural visualization
-        // Human hearing is more sensitive in mid-range frequencies
+        // Apply frequency weighting for more natural visualization with reduced sensitivity
         const frequencyData = dataArrayRef.current;
         const frequencyBands = []; 
         
         // Log scale distribution of frequency bins to better match human hearing
         for (let i = 0; i < numBars; i++) {
           // Calculate exponential position in the frequency range
-          // This gives more bins to lower frequencies, similar to how we hear
           const scale = Math.pow(frequencyData.length, i / numBars) / 10;
           const index = Math.min(Math.floor(scale), frequencyData.length - 1);
           
           // Collect weighted values from nearby frequency bins for smoother visualization
           let sum = 0;
           let count = 0;
-          const range = 3; // Look at a few bins in either direction for averaging
+          const range = 5; // Increased from 3 to 5 for more averaging (smoother)
           
           for (let j = Math.max(0, index - range); j <= Math.min(frequencyData.length - 1, index + range); j++) {
             // Apply exponential weighting to increase sensitivity
             const weight = 1.0 - Math.abs(j - index) / (range + 1);
-            sum += Math.pow(frequencyData[j] / 255, 1.2) * 255 * weight; // Exponential scaling for more dynamic range
+            sum += Math.pow(frequencyData[j] / 255, 1.2) * 255 * weight * 0.7; // Added 0.7 multiplier to reduce overall sensitivity
             count += weight;
           }
           
           const value = count > 0 ? sum / count : 0;
           
-          // Boost low frequencies slightly (bass boost)
-          const bassBoost = i < numBars / 4 ? 1.3 : 1.0;
-          // Boost high frequencies slightly (treble boost)
-          const trebleBoost = i > (numBars * 3) / 4 ? 1.2 : 1.0;
+          // Reduced boosting factors for less dramatic movement
+          const bassBoost = i < numBars / 4 ? 1.1 : 1.0; // Reduced from 1.3 to 1.1
+          const trebleBoost = i > (numBars * 3) / 4 ? 1.1 : 1.0; // Reduced from 1.2 to 1.1
           
           const boostedValue = value * bassBoost * trebleBoost;
           
-          // Convert to percentage (10-100%) with 10% minimum height
-          frequencyBands.push(Math.max(10, Math.min(100, (boostedValue / 255) * 100)));
+          // Convert to percentage (15-80%) with 15% minimum height, reduced from 10-100%
+          frequencyBands.push(Math.max(15, Math.min(80, (boostedValue / 255) * 65 + 15)));
         }
         
         return frequencyBands;
       } else {
-        // Fallback: Generate simulated responsive heights
-        let heights = Array(numBars).fill(0).map(() => Math.random() * 0.7 + 0.1);
+        // Fallback: Generate simulated less reactive heights
+        let heights = Array(numBars).fill(0).map(() => Math.random() * 0.5 + 0.15); // Reduced range for less dramatic movement
         
         // Simulate frequency response patterns (more bass, mid falloff, some treble)
         for (let i = 0; i < numBars; i++) {
           // Bass boost for first quarter
           if (i < numBars / 4) {
-            heights[i] *= 1.5;
+            heights[i] *= 1.3;
           }
           // Mid cut
           else if (i < numBars / 2) {
@@ -189,12 +186,12 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           }
           // Some high frequency emphasis
           else if (i > (numBars * 3) / 4) {
-            heights[i] *= 1.2;
+            heights[i] *= 1.1;
           }
         }
         
         // Smooth the values for a more natural pattern
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) { // Increased from 3 to 5 smoothing passes
           const newHeights = [...heights];
           for (let j = 1; j < heights.length - 1; j++) {
             // Each bar is influenced by its neighbors (smoothing)
@@ -203,8 +200,8 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           heights = newHeights;
         }
         
-        // Scale to appropriate percentage range (10% to 100%)
-        return heights.map(h => Math.floor(h * 90) + 10);
+        // Scale to appropriate percentage range (15% to 75%) - reduced from 10% to 100%
+        return heights.map(h => Math.floor(h * 60) + 15);
       }
     };
 
@@ -219,21 +216,21 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         
         // Add different transition speeds for different frequency ranges
         // Lower frequencies (bass) tend to change more slowly than higher ones
-        const baseDuration = 120;
+        const baseDuration = 180; // Increased from 120ms for slower transitions
         const duration = index < numBars / 3 
-          ? baseDuration + 60  // Bass - slower transitions
+          ? baseDuration + 70  // Bass - slower transitions
           : index < (2 * numBars) / 3 
             ? baseDuration     // Mids - medium transitions
-            : baseDuration - 40; // Highs - faster transitions
+            : baseDuration - 30; // Highs - faster transitions
             
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
       });
       
-      // Faster frame rate for more responsive movement
+      // Slower frame rate for less responsive movement
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(animate);
-      }, 50) as unknown as number; // Reduced from 80ms to 50ms for quicker response
+      }, 70) as unknown as number; // Increased from 50ms to 70ms for less frequent updates
     };
 
     // Start the animation
@@ -272,7 +269,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
               : "bg-blue-300/30"
           )}
           style={{ 
-            height: "10%",
+            height: "15%", // Increased minimum height from 10% to 15%
             transitionDuration: "200ms" 
           }}
         />
