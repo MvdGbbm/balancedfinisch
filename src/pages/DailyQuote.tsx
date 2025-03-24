@@ -1,16 +1,10 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Share2, Calendar } from "lucide-react";
+import { ArrowRight, CalendarPlus, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { nl } from "date-fns/locale";
-import { getQuoteForDate, getGradientForDate } from "@/data/quotes";
-import { DailyQuote as DailyQuoteType } from "@/lib/types";
-
 const DailyQuote = () => {
   const {
     dailyQuotes,
@@ -18,45 +12,16 @@ const DailyQuote = () => {
     getRandomQuote,
     saveDailyQuoteToCalendar
   } = useApp();
-  
-  const [quote, setQuote] = useState<DailyQuoteType | null>(currentQuote);
-  const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [gradient, setGradient] = useState<string>("");
-  
-  // Initialize with today's quote and gradient
-  useEffect(() => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const todaysQuote = getQuoteForDate(today);
-    const todaysGradient = getGradientForDate(today);
-    
-    console.log("Today's quote:", todaysQuote);
-    console.log("Today's gradient:", todaysGradient);
-    
-    setQuote(todaysQuote);
-    setDate(today);
-    setGradient(todaysGradient);
-  }, []);
-  
+  const [quote, setQuote] = useState(currentQuote);
   const getNextQuote = () => {
-    // Use the app's random quote function but also generate a new gradient
     const newQuote = getRandomQuote();
-    const newDate = format(new Date(Date.now() + Math.random() * 7776000000), 'yyyy-MM-dd'); // Random date within 90 days
-    const newGradient = getGradientForDate(newDate);
-    
-    console.log("New quote:", newQuote);
-    console.log("New gradient:", newGradient);
-    
     setQuote(newQuote);
-    setDate(newDate);
-    setGradient(newGradient);
   };
-  
-  const handleSaveToJournal = () => {
+  const handleSaveToCalendar = () => {
     if (quote) {
       saveDailyQuoteToCalendar(quote);
     }
   };
-  
   const handleShare = () => {
     if (quote) {
       if (navigator.share) {
@@ -72,33 +37,23 @@ const DailyQuote = () => {
       }
     }
   };
-  
-  // Format the date in Dutch
-  const formattedDate = date ? format(new Date(date), 'd MMMM yyyy', { locale: nl }) : '';
-  
-  // Ensure gradient has a fallback
-  const safeGradient = gradient || "bg-gradient-to-br from-blue-500 to-purple-600";
-  
-  return (
-    <MobileLayout>
+  return <MobileLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold mb-1">Quote van de Dag</h1>
-          <p className="text-muted-foreground flex items-center justify-center gap-1">
-            <Calendar className="h-4 w-4" />
-            <span>{formattedDate}</span>
+          <h1 className="text-2xl font-bold mb-1">Selecteer jouw Quote van de Dag</h1>
+          <p className="text-muted-foreground">
+            Laat je inspireren door wijze woorden
           </p>
         </div>
         
-        {quote ? (
-          <div className="flex flex-col items-center justify-center min-h-[40vh]">
-            <Card className={cn("w-full max-w-md mx-auto animate-scale-in overflow-hidden", safeGradient)}>
-              <CardContent className="p-8 backdrop-blur-sm bg-white/30 dark:bg-black/30">
+        {quote ? <div className="flex flex-col items-center justify-center min-h-[40vh]">
+            <Card className="glass-morphism w-full max-w-md mx-auto animate-scale-in">
+              <CardContent className="p-6">
                 <div className="text-center">
                   <p className="text-xl italic leading-relaxed mb-4">
                     "{quote.text}"
                   </p>
-                  <p className="text-right text-foreground/90 font-medium">
+                  <p className="text-right text-muted-foreground">
                     — {quote.author}
                   </p>
                 </div>
@@ -106,8 +61,8 @@ const DailyQuote = () => {
             </Card>
             
             <div className="flex justify-center gap-3 mt-8">
-              <Button onClick={handleSaveToJournal} variant="outline" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
+              <Button onClick={handleSaveToCalendar} variant="outline" className="flex items-center gap-2">
+                <CalendarPlus className="h-4 w-4" />
                 <span>Opslaan in Dagboek</span>
               </Button>
               
@@ -121,38 +76,24 @@ const DailyQuote = () => {
               <span>Volgende</span>
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
-          </div>
-        ) : (
-          <div className="text-center py-10 text-muted-foreground">
+          </div> : <div className="text-center py-10 text-muted-foreground">
             <p>Geen quote beschikbaar.</p>
-          </div>
-        )}
+          </div>}
         
         <div className="mt-8">
           <h2 className="text-lg font-medium mb-3">Eerder getoonde quotes</h2>
           <div className="space-y-3">
-            {dailyQuotes.slice(0, 5).map(q => (
-              <Card 
-                key={q.id} 
-                className={cn(
-                  "neo-morphism cursor-pointer animate-slide-in", 
-                  quote?.id === q.id && "ring-2 ring-primary/50"
-                )} 
-                onClick={() => setQuote(q)}
-              >
+            {dailyQuotes.slice(0, 5).map(q => <Card key={q.id} className={cn("neo-morphism cursor-pointer animate-slide-in", quote?.id === q.id && "ring-2 ring-primary/50")} onClick={() => setQuote(q)}>
                 <CardContent className="p-4">
                   <p className="italic text-sm mb-1">"{q.text}"</p>
                   <p className="text-right text-xs text-muted-foreground">
                     — {q.author}
                   </p>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </div>
-    </MobileLayout>
-  );
+    </MobileLayout>;
 };
-
 export default DailyQuote;

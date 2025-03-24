@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -20,8 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { toast } from "sonner";
+import { useApp } from "@/context/AppContext";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -33,8 +32,6 @@ interface MeditationDetailDialogProps {
   onAudioSourceChange: (source: 'vera' | 'marco') => void;
   onSoundscapeChange: (soundscapeId: string) => void;
   getActiveAudioUrl: () => string;
-  guidedMeditations: Meditation[];
-  onGuidedMeditationSelect: (meditation: Meditation) => void;
 }
 
 export const MeditationDetailDialog = ({
@@ -46,101 +43,57 @@ export const MeditationDetailDialog = ({
   currentSoundscapeId,
   onAudioSourceChange,
   onSoundscapeChange,
-  getActiveAudioUrl,
-  guidedMeditations,
-  onGuidedMeditationSelect
+  getActiveAudioUrl
 }: MeditationDetailDialogProps) => {
-  const { toast: useToastFn } = useToast();
-  const [audioUrl, setAudioUrl] = useState<string>("");
-  const [audioKey, setAudioKey] = useState<number>(0); // Add a key to force Audio player to remount
-  
-  useEffect(() => {
-    if (isOpen) {
-      const url = getActiveAudioUrl();
-      setAudioUrl(url);
-      console.log("Active audio URL in dialog:", url);
-      console.log("Selected audio source:", selectedAudioSource);
-      
-      // Increment the key to force AudioPlayer remount when the source changes
-      setAudioKey(prevKey => prevKey + 1);
-      
-      // Check if Marco's link exists when Marco is selected
-      if (selectedAudioSource === 'marco' && meditation && !meditation.marcoLink) {
-        useToastFn({
-          title: "Marco's versie niet beschikbaar",
-          description: "De meditatie van Marco is niet beschikbaar. We spelen de standaard versie af.",
-          variant: "destructive"
-        });
-      }
-    }
-  }, [isOpen, getActiveAudioUrl, selectedAudioSource, meditation, useToastFn]);
+  const { meditations } = useApp();
+  const [selectedVeraMeditationId, setSelectedVeraMeditationId] = useState<string | null>(null);
+  const [selectedMarcoMeditationId, setSelectedMarcoMeditationId] = useState<string | null>(null);
   
   if (!meditation) return null;
   
-  // Get the currently selected guided meditation ID
-  const getCurrentGuidedMeditationId = () => {
-    // If we're playing a guided meditation, we need to exclude it from the dropdown
-    const currentAudioUrl = getActiveAudioUrl();
-    const currentGuidedMeditation = guidedMeditations.find(
-      med => med.audioUrl === currentAudioUrl || 
-             med.veraLink === currentAudioUrl || 
-             med.marcoLink === currentAudioUrl
-    );
-    return currentGuidedMeditation?.id || '';
-  };
+  // Filter meditations that have vera or marco links
+  const veraMeditations = meditations.filter(m => m.veraLink);
+  const marcoMeditations = meditations.filter(m => m.marcoLink);
   
-  const currentGuidedMeditationId = getCurrentGuidedMeditationId();
-  
-  // Filter out the currently playing meditation from the list
-  const filteredGuidedMeditations = guidedMeditations.filter(
-    med => med.id !== currentGuidedMeditationId
-  );
-  
-  const handleSelectSource = (source: 'vera' | 'marco', meditation?: Meditation) => {
-    const targetMeditation = meditation || null;
-    
-    // Check if Marco's link exists when Marco is selected
-    if (source === 'marco' && targetMeditation) {
-      if (!targetMeditation.marcoLink) {
-        toast("Marco's versie niet beschikbaar", {
-          description: "De meditatie van Marco is niet beschikbaar. We schakelen terug naar Vera's versie."
-        });
-        // Default to Vera if Marco isn't available
-        onAudioSourceChange('vera');
-        return;
+  // Set current meditation as selected by default if it has the appropriate links
+  React.useEffect(() => {
+    if (meditation) {
+      if (meditation.veraLink) {
+        setSelectedVeraMeditationId(meditation.id);
       }
-    } else if (source === 'vera' && targetMeditation) {
-      if (!targetMeditation.veraLink && !targetMeditation.audioUrl) {
-        toast("Vera's versie niet beschikbaar", {
-          description: "De meditatie van Vera is niet beschikbaar."
-        });
-        return;
+      if (meditation.marcoLink) {
+        setSelectedMarcoMeditationId(meditation.id);
       }
     }
-    
-    onAudioSourceChange(source);
-    if (targetMeditation) {
-      onGuidedMeditationSelect(targetMeditation);
+  }, [meditation]);
+  
+  const handleVeraMeditationChange = (meditationId: string) => {
+    setSelectedVeraMeditationId(meditationId);
+    if (selectedAudioSource === 'vera') {
+      onAudioSourceChange('vera');
     }
-    
-    // Update the audio URL immediately to reflect the change
-    setTimeout(() => {
-      const newUrl = getActiveAudioUrl();
-      setAudioUrl(newUrl);
-      setAudioKey(prevKey => prevKey + 1);
-      console.log("Audio source changed to:", source, "New URL:", newUrl);
-    }, 100);
   };
   
-  // Function to check if an audio URL is valid (not empty)
-  const isValidAudioUrl = (url: string | undefined): boolean => {
-    return !!url && url.trim() !== '';
+  const handleMarcoMeditationChange = (meditationId: string) => {
+    setSelectedMarcoMeditationId(meditationId);
+    if (selectedAudioSource === 'marco') {
+      onAudioSourceChange('marco');
+    }
   };
   
-  // Check if the selected source has a valid URL
-  const hasValidSelectedAudio = selectedAudioSource === 'vera' 
-    ? isValidAudioUrl(meditation.veraLink) || isValidAudioUrl(meditation.audioUrl)
-    : isValidAudioUrl(meditation.marcoLink);
+  // Get the actual meditation objects
+  const selectedVeraMeditation = veraMeditations.find(m => m.id === selectedVeraMeditationId) || meditation;
+  const selectedMarcoMeditation = marcoMeditations.find(m => m.id === selectedMarcoMeditationId) || meditation;
+  
+  // Get active audio based on selected source and meditation
+  const getCurrentAudioUrl = () => {
+    if (selectedAudioSource === 'vera' && selectedVeraMeditation?.veraLink) {
+      return selectedVeraMeditation.veraLink;
+    } else if (selectedAudioSource === 'marco' && selectedMarcoMeditation?.marcoLink) {
+      return selectedMarcoMeditation.marcoLink;
+    }
+    return meditation.audioUrl || '';
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -159,100 +112,102 @@ export const MeditationDetailDialog = ({
           />
           
           <div className="grid grid-cols-1 gap-3">
-            {/* Audio source selection buttons with dropdown menus */}
-            <div className="flex gap-2 items-center justify-between mt-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant={selectedAudioSource === 'vera' ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 rounded-full justify-between",
-                      selectedAudioSource === 'vera' 
-                        ? "bg-blue-500 hover:bg-blue-600 text-white" 
-                        : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
-                    )}
-                    disabled={!isValidAudioUrl(meditation.veraLink) && !isValidAudioUrl(meditation.audioUrl)}
-                  >
-                    <div className="flex items-center">
+            {/* Audio source selection with dropdowns */}
+            <div className="space-y-2">
+              <div className="flex gap-2 items-center justify-between mt-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant={selectedAudioSource === 'vera' ? "default" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "flex-1 rounded-full",
+                        selectedAudioSource === 'vera' 
+                          ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                          : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
+                      )}
+                    >
                       <Music className="h-4 w-4 mr-2" />
                       Vera
-                    </div>
-                    <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
-                  {filteredGuidedMeditations.length > 0 ? (
-                    filteredGuidedMeditations.map((guidedMeditation) => (
-                      <DropdownMenuItem 
-                        key={guidedMeditation.id}
-                        className="hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => handleSelectSource('vera', guidedMeditation)}
-                      >
-                        {guidedMeditation.title}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
+                    {veraMeditations.length > 0 ? (
+                      veraMeditations.map((med) => (
+                        <DropdownMenuItem 
+                          key={med.id}
+                          className={cn(
+                            "cursor-pointer hover:bg-gray-800",
+                            selectedVeraMeditationId === med.id && "bg-blue-900"
+                          )}
+                          onClick={() => handleVeraMeditationChange(med.id)}
+                        >
+                          {med.title}
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem disabled>
+                        Geen Vera meditaties beschikbaar
                       </DropdownMenuItem>
-                    ))
-                  ) : (
-                    <DropdownMenuItem disabled>
-                      Geen geleide meditaties beschikbaar
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant={selectedAudioSource === 'marco' ? "default" : "outline"}
-                    size="sm"
-                    className={cn(
-                      "flex-1 rounded-full justify-between",
-                      selectedAudioSource === 'marco' 
-                        ? "bg-purple-500 hover:bg-purple-600 text-white" 
-                        : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
                     )}
-                    disabled={!isValidAudioUrl(meditation.marcoLink)}
-                  >
-                    <div className="flex items-center">
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant={selectedAudioSource === 'marco' ? "default" : "outline"}
+                      size="sm"
+                      className={cn(
+                        "flex-1 rounded-full",
+                        selectedAudioSource === 'marco' 
+                          ? "bg-purple-500 hover:bg-purple-600 text-white" 
+                          : "bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
+                      )}
+                    >
                       <Music className="h-4 w-4 mr-2" />
                       Marco
-                    </div>
-                    <ChevronDown className="h-4 w-4 ml-2 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
-                  {filteredGuidedMeditations.length > 0 ? (
-                    filteredGuidedMeditations.map((guidedMeditation) => (
-                      <DropdownMenuItem 
-                        key={guidedMeditation.id}
-                        className="hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => handleSelectSource('marco', guidedMeditation)}
-                      >
-                        {guidedMeditation.title}
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-gray-900 border-gray-700 text-white">
+                    {marcoMeditations.length > 0 ? (
+                      marcoMeditations.map((med) => (
+                        <DropdownMenuItem 
+                          key={med.id}
+                          className={cn(
+                            "cursor-pointer hover:bg-gray-800",
+                            selectedMarcoMeditationId === med.id && "bg-purple-900"
+                          )}
+                          onClick={() => handleMarcoMeditationChange(med.id)}
+                        >
+                          {med.title}
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem disabled>
+                        Geen Marco meditaties beschikbaar
                       </DropdownMenuItem>
-                    ))
-                  ) : (
-                    <DropdownMenuItem disabled>
-                      Geen geleide meditaties beschikbaar
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              {/* Display active meditation title */}
+              <div className="text-center text-sm text-gray-400 mt-1">
+                {selectedAudioSource === 'vera' 
+                  ? `Vera: ${selectedVeraMeditation.title}` 
+                  : `Marco: ${selectedMarcoMeditation.title}`}
+              </div>
             </div>
           
-            {hasValidSelectedAudio ? (
-              <AudioPlayer 
-                key={audioKey} // Force remount when audio changes
-                audioUrl={audioUrl}
-                className="w-full bg-transparent border-none"
-                showTitle={false}
-                showQuote={true}
-              />
-            ) : (
-              <div className="text-center py-4 text-gray-400 border border-gray-800 rounded-lg">
-                <p>Geen audio beschikbaar voor {selectedAudioSource === 'vera' ? 'Vera' : 'Marco'}</p>
-              </div>
-            )}
+            <AudioPlayer 
+              audioUrl={getCurrentAudioUrl()}
+              className="w-full bg-transparent border-none"
+              showTitle={false}
+              showQuote={true}
+            />
             
             <MixerPanel 
               soundscapes={soundscapes} 
