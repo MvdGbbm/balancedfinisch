@@ -1,34 +1,139 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface EqualizerProps {
   isActive: boolean;
   className?: string;
+  audioRef?: React.RefObject<HTMLAudioElement>;
 }
 
-export function Equalizer({ isActive, className }: EqualizerProps) {
+export function Equalizer({ isActive, className, audioRef }: EqualizerProps) {
   const barsRef = useRef<(HTMLDivElement | null)[]>([]);
   const animationRef = useRef<number | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const numBars = 12;
+  const [isAudioConnected, setIsAudioConnected] = useState(false);
 
+  // Setup audio analyzer when active and audioRef is provided
   useEffect(() => {
-    if (!isActive) {
+    if (!isActive || !audioRef?.current) {
+      // Reset bars when inactive
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
         animationRef.current = null;
       }
-      
-      // Reset all bars to minimal height when inactive
+
       barsRef.current.forEach(bar => {
         if (bar) bar.style.height = "15%";
       });
       
+      // Clean up audio nodes
+      if (sourceNodeRef.current) {
+        sourceNodeRef.current.disconnect();
+        sourceNodeRef.current = null;
+      }
+      
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        setIsAudioConnected(false);
+      }
+      
       return;
     }
 
-    // Function to generate a more natural looking spectrum analyzer
-    // Heights will vary more gradually between neighboring bars
+    // Setup audio context and analyzer on first activation
+    if (!audioContextRef.current) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+        analyserRef.current = audioContextRef.current.createAnalyser();
+        analyserRef.current.fftSize = 64; // Smaller FFT size for better performance
+        analyserRef.current.smoothingTimeConstant = 0.8; // Smooth transitions
+      } catch (error) {
+        console.error("Error creating AudioContext:", error);
+        return;
+      }
+    }
+
+    // Connect to audio element if not already connected
+    if (audioRef.current && !isAudioConnected) {
+      try {
+        // Disconnect any existing source
+        if (sourceNodeRef.current) {
+          sourceNodeRef.current.disconnect();
+        }
+        
+        // Create and connect new source
+        sourceNodeRef.current = audioContextRef.current!.createMediaElementSource(audioRef.current);
+        sourceNodeRef.current.connect(analyserRef.current!);
+        analyserRef.current!.connect(audioContextRef.current!.destination);
+        setIsAudioConnected(true);
+      } catch (error) {
+        console.error("Error connecting audio:", error);
+        // Fall back to simulated equalizer if we can't connect to the audio
+        startSimulatedEqualizer();
+        return;
+      }
+    }
+
+    // Start animation loop
+    const animate = () => {
+      if (!analyserRef.current || !isAudioConnected) {
+        startSimulatedEqualizer();
+        return;
+      }
+
+      try {
+        // Get frequency data
+        const bufferLength = analyserRef.current.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserRef.current.getByteFrequencyData(dataArray);
+
+        // Map frequency data to bar heights
+        const barWidth = Math.floor(bufferLength / numBars);
+        
+        barsRef.current.forEach((bar, index) => {
+          if (!bar) return;
+
+          // Calculate average value for the frequency range this bar represents
+          let sum = 0;
+          const startFreq = index * barWidth;
+          for (let i = 0; i < barWidth; i++) {
+            sum += dataArray[startFreq + i];
+          }
+          
+          // Get average and convert to percentage height (15% minimum, 95% maximum)
+          const average = sum / barWidth;
+          const height = 15 + (average / 255) * 80;
+          
+          // Add different transition speeds for more natural movement
+          const duration = 100 + (index % 3) * 50; // 100-200ms transitions
+          bar.style.transitionDuration = `${duration}ms`;
+          bar.style.height = `${height}%`;
+        });
+
+        // Continue animation loop
+        animationRef.current = requestAnimationFrame(animate);
+      } catch (error) {
+        console.error("Error in equalizer animation:", error);
+        startSimulatedEqualizer();
+      }
+    };
+
+    // Start the animation
+    animate();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    };
+  }, [isActive, audioRef, isAudioConnected, numBars]);
+
+  // Fallback to simulated equalizer when audio analysis fails
+  const startSimulatedEqualizer = () => {
     const generateSmoothHeights = () => {
       // Start with random seed values
       let heights = Array(numBars).fill(0).map(() => Math.random() * 0.5 + 0.15);
@@ -47,7 +152,7 @@ export function Equalizer({ isActive, className }: EqualizerProps) {
       return heights.map(h => Math.floor(h * 80) + 15);
     };
 
-    const animate = () => {
+    const animateSimulated = () => {
       const heights = generateSmoothHeights();
       
       barsRef.current.forEach((bar, index) => {
@@ -64,21 +169,13 @@ export function Equalizer({ isActive, className }: EqualizerProps) {
       
       // Slower frame rate for more natural movement
       animationRef.current = setTimeout(() => {
-        requestAnimationFrame(animate);
+        requestAnimationFrame(animateSimulated);
       }, 180) as unknown as number;
     };
 
-    // Start the animation
-    animate();
-
-    return () => {
-      if (animationRef.current) {
-        clearTimeout(animationRef.current);
-        cancelAnimationFrame(animationRef.current);
-        animationRef.current = null;
-      }
-    };
-  }, [isActive, numBars]);
+    // Start simulated animation
+    animateSimulated();
+  };
 
   return (
     <div className={cn("flex items-end justify-center h-16 gap-1 p-2 bg-card/30 rounded-md", className)}>

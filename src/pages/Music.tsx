@@ -344,7 +344,7 @@ const Music = () => {
             <TabsTrigger value="radio">Streaming</TabsTrigger>
           </TabsList>
           
-          <Equalizer isActive={isAudioActive} className="mb-4" />
+          <Equalizer isActive={isAudioActive} className="mb-4" audioRef={audioPlayerRef} />
           
           <TabsContent value="music" className="space-y-4">
             {musicTracks.length > 0 ? (
@@ -550,6 +550,7 @@ const Music = () => {
               title={previewTrack.title}
               isPlayingExternal={isPlaying}
               onPlayPauseChange={setIsPlaying}
+              ref={audioPlayerRef}
             />
           </div>
         )}

@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ interface AudioPlayerProps {
   onCrossfadeStart?: () => void; // Called when crossfade starts
 }
 
-export function AudioPlayer({ 
+export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
   audioUrl, 
   showControls = true, 
   showTitle = false,
@@ -37,7 +36,7 @@ export function AudioPlayer({
   onPlayPauseChange,
   nextAudioUrl,
   onCrossfadeStart
-}: AudioPlayerProps) {
+}, ref) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -58,6 +57,9 @@ export function AudioPlayer({
   const audioRef = useRef<HTMLAudioElement>(null);
   const nextAudioRef = useRef<HTMLAudioElement>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
+  
+  // Expose the audio element ref to parent components
+  useImperativeHandle(ref, () => audioRef.current!, []);
   
   // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
@@ -641,4 +643,7 @@ export function AudioPlayer({
       )}
     </div>
   );
-}
+});
+
+AudioPlayer.displayName = "AudioPlayer";
+
