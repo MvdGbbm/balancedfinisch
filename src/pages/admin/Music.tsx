@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
@@ -27,22 +26,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause, StopCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
 
 import { Soundscape } from "@/lib/types";
 
 const AdminMusic = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
   
-  // Filter only music items (category "Muziek")
   const musicItems = soundscapes.filter(item => item.category === "Muziek");
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
@@ -117,7 +116,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: "Muziek", // Always set category to "Muziek"
+        category: "Muziek",
         coverImageUrl,
         tags,
       });
@@ -127,7 +126,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: "Muziek", // Always set category to "Muziek"
+        category: "Muziek",
         coverImageUrl,
         tags,
       });
@@ -220,7 +219,6 @@ const AdminMusic = () => {
         </div>
       </div>
       
-      {/* Add/Edit Music Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -313,7 +311,7 @@ const AdminMusic = () => {
                     className="shrink-0"
                     onClick={handleAudioPreview}
                   >
-                    {isPreviewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isPreviewPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
                 </div>
                 {isValidUrl(audioUrl) && (
@@ -366,11 +364,13 @@ const AdminMusic = () => {
               {audioUrl && isPreviewPlaying && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
+                  <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
                   <AudioPlayer 
                     audioUrl={audioUrl} 
                     isPlayingExternal={isPreviewPlaying}
                     onPlayPauseChange={setIsPreviewPlaying}
                     onError={handleAudioError}
+                    ref={audioRef}
                   />
                 </div>
               )}

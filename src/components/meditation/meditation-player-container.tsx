@@ -3,9 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, StopCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
+import { Button } from "@/components/ui/button";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -58,6 +59,14 @@ export function MeditationPlayerContainer({
     toast.error("Kon de afbeelding niet laden. Controleer de URL.");
   };
 
+  const handleStopPlaying = () => {
+    setIsPlaying(false);
+    toast({
+      title: "Gestopt",
+      description: "De meditatie is gestopt met afspelen"
+    });
+  };
+
   if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
@@ -73,6 +82,19 @@ export function MeditationPlayerContainer({
 
   return (
     <div className="mt-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-medium">Nu speelt: {selectedMeditation.title}</h3>
+        <Button 
+          variant="destructive"
+          size="sm"
+          onClick={handleStopPlaying}
+          className="flex items-center gap-1"
+        >
+          <StopCircle className="h-4 w-4" />
+          Stoppen
+        </Button>
+      </div>
+
       {hasValidImage && !imageError && (
         <div className="mb-4">
           <img 
