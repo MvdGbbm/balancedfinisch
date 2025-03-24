@@ -36,6 +36,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import { 
   Music, 
   Plus, 
@@ -48,7 +54,8 @@ import {
   Pause, 
   Clock,
   FileAudio,
-  Image
+  Image,
+  Link
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
@@ -83,6 +90,9 @@ const AdminMusic = () => {
   const [isAudioProcessing, setIsAudioProcessing] = useState(false);
   const [previewAudio] = useState(new Audio());
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadMethod, setUploadMethod] = useState<"file" | "url">("file");
+  const [externalAudioUrl, setExternalAudioUrl] = useState("");
+  const [externalCoverUrl, setExternalCoverUrl] = useState("");
   
   // Audio file upload refs
   const audioFileRef = useRef<HTMLInputElement>(null);
@@ -171,6 +181,109 @@ const AdminMusic = () => {
       // Create local preview URL
       const objectUrl = URL.createObjectURL(file);
       setCoverImageUrl(objectUrl);
+    }
+  };
+  
+  const handleExternalUrlChange = async () => {
+    if (!externalAudioUrl) {
+      toast({
+        title: "Error",
+        description: "Please enter an audio URL",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsAudioProcessing(true);
+    setUploadProgress(10);
+    
+    try {
+      // Create temporary audio to get duration and check URL validity
+      const audio = new Audio(externalAudioUrl);
+      audio.crossOrigin = "anonymous";
+      
+      // Add event listener for errors
+      const errorPromise = new Promise((_, reject) => {
+        audio.onerror = () => reject(new Error("Failed to load audio from URL"));
+      });
+      
+      // Wait for either metadata to load or an error to occur
+      const durationPromise = calculateAudioDuration(audio);
+      const duration = await Promise.race([durationPromise, errorPromise]) as number;
+      
+      setUploadProgress(50);
+      
+      // Generate waveform data if possible
+      let waveformData;
+      try {
+        waveformData = await generateWaveformData(externalAudioUrl);
+      } catch (error) {
+        console.warn("Couldn't generate waveform data:", error);
+        waveformData = Array(100).fill(0.1); // Fallback to flat line
+      }
+      
+      setUploadProgress(90);
+      
+      setAudioUrl(externalAudioUrl);
+      setPreviewUrl(externalAudioUrl);
+      
+      if (externalCoverUrl) {
+        setCoverImageUrl(externalCoverUrl);
+      }
+      
+      // Create music item but don't save it yet
+      const newMusic: Partial<MusicItem> = {
+        id: editingId || undefined,
+        title: form.getValues("title"),
+        artist: form.getValues("artist"),
+        description: form.getValues("description"),
+        audioUrl: externalAudioUrl,
+        coverImageUrl: externalCoverUrl || undefined,
+        category: form.getValues("category"),
+        tags: form.getValues("tags") ? form.getValues("tags").split(",").map(tag => tag.trim()) : [],
+        duration: Math.round(duration),
+        waveformData: waveformData,
+      };
+      
+      const savedMusic = await saveMusicItem(newMusic);
+      
+      if (savedMusic) {
+        // Update the music list
+        if (editingId) {
+          setMusicList(prev => prev.map(m => m.id === editingId ? savedMusic : m));
+        } else {
+          setMusicList(prev => [...prev, savedMusic]);
+        }
+        
+        // Reset form and state
+        form.reset();
+        setIsEditing(false);
+        setEditingId(null);
+        setExternalAudioUrl("");
+        setExternalCoverUrl("");
+        setAudioUrl("");
+        setCoverImageUrl("");
+        setPreviewUrl(null);
+        setIsPlaying(false);
+        
+        toast({
+          title: "Success",
+          description: `Music "${savedMusic.title}" has been saved.`,
+        });
+      }
+      
+      setUploadProgress(100);
+    } catch (error) {
+      console.error("Error processing external audio URL:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process audio URL. Make sure it's a valid and accessible audio file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAudioProcessing(false);
+      setIsUploadDialogOpen(false);
+      setUploadProgress(0);
     }
   };
   
@@ -666,90 +779,156 @@ const AdminMusic = () => {
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Audio Bestanden Uploaden</DialogTitle>
+            <DialogTitle>Audio Toevoegen</DialogTitle>
             <DialogDescription>
-              Upload het audiobestand en een optionele cover afbeelding
+              Upload een audiobestand of gebruik een externe URL
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Audio Bestand (MP3, WAV)</label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="file" 
-                  ref={audioFileRef}
-                  accept="audio/*"
-                  onChange={handleAudioFileChange}
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => audioFileRef.current?.click()}
-                >
-                  <FileAudio className="h-4 w-4" />
-                </Button>
-              </div>
-              {audioFile && (
-                <p className="text-xs text-muted-foreground">
-                  Geselecteerd: {audioFile.name} ({Math.round(audioFile.size / 1024)} KB)
-                </p>
-              )}
-            </div>
+          <Tabs defaultValue="file" onValueChange={(value) => setUploadMethod(value as "file" | "url")}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="file">Bestand Uploaden</TabsTrigger>
+              <TabsTrigger value="url">URL Gebruiken</TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Cover Afbeelding (Optioneel)</label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="file" 
-                  ref={coverImageRef}
-                  accept="image/*"
-                  onChange={handleCoverImageChange}
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => coverImageRef.current?.click()}
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
+            <TabsContent value="file" className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Audio Bestand (MP3, WAV)</label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="file" 
+                    ref={audioFileRef}
+                    accept="audio/*"
+                    onChange={handleAudioFileChange}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => audioFileRef.current?.click()}
+                  >
+                    <FileAudio className="h-4 w-4" />
+                  </Button>
+                </div>
+                {audioFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Geselecteerd: {audioFile.name} ({Math.round(audioFile.size / 1024)} KB)
+                  </p>
+                )}
               </div>
-              {coverImageFile && (
-                <p className="text-xs text-muted-foreground">
-                  Geselecteerd: {coverImageFile.name} ({Math.round(coverImageFile.size / 1024)} KB)
-                </p>
-              )}
               
-              {coverImageUrl && (
-                <div className="mt-2">
-                  <img 
-                    src={coverImageUrl} 
-                    alt="Cover Preview" 
-                    className="h-20 w-20 object-cover rounded-md"
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cover Afbeelding (Optioneel)</label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="file" 
+                    ref={coverImageRef}
+                    accept="image/*"
+                    onChange={handleCoverImageChange}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => coverImageRef.current?.click()}
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                </div>
+                {coverImageFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Geselecteerd: {coverImageFile.name} ({Math.round(coverImageFile.size / 1024)} KB)
+                  </p>
+                )}
+                
+                {coverImageUrl && (
+                  <div className="mt-2">
+                    <img 
+                      src={coverImageUrl} 
+                      alt="Cover Preview" 
+                      className="h-20 w-20 object-cover rounded-md"
+                    />
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="url" className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Audio URL</label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="url" 
+                    placeholder="https://example.com/audio.mp3"
+                    value={externalAudioUrl}
+                    onChange={(e) => setExternalAudioUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    title="Preview"
+                    onClick={() => {
+                      if (externalAudioUrl) {
+                        setPreviewUrl(externalAudioUrl);
+                        setIsPlaying(true);
+                      }
+                    }}
+                    disabled={!externalAudioUrl}
+                  >
+                    <Play className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Voer de directe URL naar een MP3 of WAV bestand in
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cover Afbeelding URL (Optioneel)</label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="url" 
+                    placeholder="https://example.com/cover.jpg"
+                    value={externalCoverUrl}
+                    onChange={(e) => setExternalCoverUrl(e.target.value)}
+                    className="flex-1"
                   />
                 </div>
-              )}
-            </div>
-            
-            {isAudioProcessing && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Verwerking ({uploadProgress}%)</label>
-                <div className="w-full bg-muted rounded-full h-2.5">
-                  <div 
-                    className="bg-primary h-2.5 rounded-full" 
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Audio wordt verwerkt, even geduld...
-                </p>
+                
+                {externalCoverUrl && (
+                  <div className="mt-2">
+                    <img 
+                      src={externalCoverUrl} 
+                      alt="Cover Preview" 
+                      className="h-20 w-20 object-cover rounded-md"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://placehold.co/200x200?text=Error';
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </TabsContent>
+          </Tabs>
+          
+          {isAudioProcessing && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Verwerking ({uploadProgress}%)</label>
+              <div className="w-full bg-muted rounded-full h-2.5">
+                <div 
+                  className="bg-primary h-2.5 rounded-full" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Audio wordt verwerkt, even geduld...
+              </p>
+            </div>
+          )}
           
           <DialogFooter>
             <Button 
@@ -762,10 +941,12 @@ const AdminMusic = () => {
             </Button>
             <Button 
               type="button" 
-              onClick={processAudioFile}
-              disabled={!audioFile || isAudioProcessing}
+              onClick={uploadMethod === "file" ? processAudioFile : handleExternalUrlChange}
+              disabled={(uploadMethod === "file" && !audioFile) || 
+                      (uploadMethod === "url" && !externalAudioUrl) || 
+                      isAudioProcessing}
             >
-              {isAudioProcessing ? "Verwerken..." : "Uploaden"}
+              {isAudioProcessing ? "Verwerken..." : "Toevoegen"}
             </Button>
           </DialogFooter>
         </DialogContent>
