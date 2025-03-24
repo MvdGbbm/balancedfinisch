@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, Volume, VolumeX } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2 } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +38,7 @@ const Music = () => {
   const [isStreamPlaying, setIsStreamPlaying] = useState(false);
   const [streamUrl, setStreamUrl] = useState("");
   const [streamTitle, setStreamTitle] = useState("");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
@@ -111,23 +111,11 @@ const Music = () => {
   };
 
   const handleStreamPlay = (stream: RadioStream) => {
-    if (previewTrack) {
-      setPreviewTrack(null);
-      setIsPlaying(false);
-    }
-    
-    if (selectedPlaylist) {
-      setSelectedPlaylist(null);
-      setCurrentTrack(null);
-    }
-    
-    setStreamUrl(stream.url);
-    setStreamTitle(stream.title);
-    setIsStreamPlaying(true);
+    window.open(stream.url, '_blank');
     
     toast({
-      title: "Radio stream geselecteerd",
-      description: `"${stream.title}" wordt nu afgespeeld`
+      title: "Link geopend",
+      description: `"${stream.title}" is geopend in een nieuw tabblad`
     });
   };
 
@@ -278,17 +266,6 @@ const Music = () => {
       .filter((track): track is Soundscape => track !== undefined);
   };
 
-  const handleStreamStop = () => {
-    setIsStreamPlaying(false);
-    setStreamUrl("");
-    setStreamTitle("");
-    
-    toast({
-      title: "Radio gestopt",
-      description: "De radio stream is gestopt"
-    });
-  };
-
   return (
     <MobileLayout>
       <div className="space-y-6">
@@ -361,12 +338,12 @@ const Music = () => {
             ) : radioStreams.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
                 {radioStreams.map((stream) => (
-                  <Card key={stream.id} className={`hover:border-primary/50 transition-colors ${isStreamPlaying && streamUrl === stream.url ? 'ring-2 ring-primary' : ''}`}>
+                  <Card key={stream.id} className="hover:border-primary/50 transition-colors">
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
                           <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
-                            <Radio className="h-4 w-4" />
+                            <Link2 className="h-4 w-4" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm">{stream.title}</h3>
@@ -376,23 +353,13 @@ const Music = () => {
                           </div>
                         </div>
                         <Button
-                          variant={isStreamPlaying && streamUrl === stream.url ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
-                          onClick={() => {
-                            if (isStreamPlaying && streamUrl === stream.url) {
-                              handleStreamStop();
-                            } else {
-                              handleStreamPlay(stream);
-                            }
-                          }}
+                          onClick={() => handleStreamPlay(stream)}
                           className="px-3 ml-2"
                         >
-                          {isStreamPlaying && streamUrl === stream.url ? (
-                            <VolumeX className="h-3.5 w-3.5 mr-1.5" />
-                          ) : (
-                            <Volume className="h-3.5 w-3.5 mr-1.5" />
-                          )}
-                          {isStreamPlaying && streamUrl === stream.url ? "Stop" : "Luister"}
+                          <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                          Openen
                         </Button>
                       </div>
                     </CardContent>
@@ -416,59 +383,62 @@ const Music = () => {
             
             {playlists.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
-                {playlists.map((playlist) => (
-                  <Card key={playlist.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-primary/20">
-                          <ListMusic className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium">{playlist.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {playlist.tracks.length} {playlist.tracks.length === 1 ? 'nummer' : 'nummers'}
-                          </p>
-                        </div>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handlePlayPlaylist(playlist)}
-                          disabled={playlist.tracks.length === 0}
-                        >
-                          <Play className="h-4 w-4 mr-1" />
-                          Lijst afspelen
-                        </Button>
-                      </div>
-                      
-                      {playlist.tracks.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          <h4 className="text-sm font-medium">Nummers:</h4>
-                          <div className="pl-2 space-y-1">
-                            {getPlaylistTracks(playlist).map((track, index) => (
-                              <div 
-                                key={track.id} 
-                                className="flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted"
-                              >
-                                <div className="flex items-center">
-                                  <span className="w-5 text-muted-foreground">{index + 1}.</span>
-                                  <span>{track.title}</span>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => handleRemoveFromPlaylist(track.id, playlist.id)}
-                                >
-                                  <Trash2 className="h-3 w-3 text-destructive" />
-                                </Button>
-                              </div>
-                            ))}
+                {playlists.map((playlist) => {
+                  const trackCount = playlist.tracks.length;
+                  return (
+                    <Card key={playlist.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-primary/20">
+                            <ListMusic className="h-5 w-5 text-primary" />
                           </div>
+                          <div className="flex-1">
+                            <h3 className="font-medium">{playlist.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
+                            </p>
+                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handlePlayPlaylist(playlist)}
+                            disabled={trackCount === 0}
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Lijst afspelen
+                          </Button>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                        
+                        {playlist.tracks.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            <h4 className="text-sm font-medium">Nummers:</h4>
+                            <div className="pl-2 space-y-1">
+                              {getPlaylistTracks(playlist).map((track, index) => (
+                                <div 
+                                  key={track.id} 
+                                  className="flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted"
+                                >
+                                  <div className="flex items-center">
+                                    <span className="w-5 text-muted-foreground">{index + 1}.</span>
+                                    <span>{track.title}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleRemoveFromPlaylist(track.id, playlist.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-destructive" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -498,10 +468,10 @@ const Music = () => {
           </div>
         )}
         
-        {isStreamPlaying && streamUrl && (
+        {isStreamPlaying && (
           <div className="mb-14">
             <h3 className="font-medium mb-2">
-              {streamTitle} <span className="text-xs text-primary animate-pulse">LIVE</span>
+              {streamTitle} <span className="text-xs text-primary">LIVE</span>
             </h3>
             <AudioPlayer 
               audioUrl={streamUrl} 
@@ -549,11 +519,6 @@ const Music = () => {
         open={showPlaylistCreator}
         onOpenChange={setShowPlaylistCreator}
         onSubmit={handleCreatePlaylist}
-      />
-
-      <audio 
-        ref={audioRef}
-        style={{ display: 'none' }} 
       />
     </MobileLayout>
   );
