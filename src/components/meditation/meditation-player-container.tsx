@@ -206,8 +206,10 @@ export function MeditationPlayerContainer({
         isPlayingExternal={isPlaying}
         onPlayPauseChange={setIsPlaying}
         ref={audioRef}
+        showQuote={true}
       />
       
+      {/* Moved Vera and Marco buttons below the AudioPlayer which now shows the quote */}
       <div className="flex gap-2 mt-4">
         <Button
           variant="outline"

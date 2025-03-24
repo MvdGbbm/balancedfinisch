@@ -139,31 +139,6 @@ export const MeditationDetailDialog = ({
             style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
           />
           
-          {/* Vera and Marco buttons at the bottom of the image */}
-          <div className="flex gap-2 mt-2">
-            <Button
-              variant="outline"
-              className={`flex-1 ${meditation.veraLink ? (audioUrl === meditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-blue-600 hover:text-white') : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('vera')}
-              disabled={!meditation.veraLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Vera
-            </Button>
-            
-            <Button
-              variant="outline"
-              className={`flex-1 ${meditation.marcoLink ? (audioUrl === meditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'hover:bg-purple-600 hover:text-white') : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('marco')}
-              disabled={!meditation.marcoLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Marco
-            </Button>
-          </div>
-          
           <div className="grid grid-cols-1 gap-3">
             {hasValidAudio ? (
               <AudioPlayer 
@@ -181,6 +156,31 @@ export const MeditationDetailDialog = ({
                 <p>Geen audio beschikbaar voor deze meditatie</p>
               </div>
             )}
+            
+            {/* Moved the Vera and Marco buttons below the quote (which is inside AudioPlayer) */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className={`flex-1 ${meditation.veraLink ? (audioUrl === meditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-blue-600 hover:text-white') : 'opacity-50 bg-transparent'}`}
+                onClick={() => handlePlayExternalLink('vera')}
+                disabled={!meditation.veraLink}
+                type="button"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Vera
+              </Button>
+              
+              <Button
+                variant="outline"
+                className={`flex-1 ${meditation.marcoLink ? (audioUrl === meditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'hover:bg-purple-600 hover:text-white') : 'opacity-50 bg-transparent'}`}
+                onClick={() => handlePlayExternalLink('marco')}
+                disabled={!meditation.marcoLink}
+                type="button"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Marco
+              </Button>
+            </div>
             
             {equalizerVisible && hasValidAudio && (
               <ToneEqualizer 
