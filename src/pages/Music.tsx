@@ -340,9 +340,12 @@ const Music = () => {
       .filter((track): track is Soundscape => track !== undefined);
   };
 
+  const shouldShowPlayer = isPlaying || isStreamPlaying || hiddenIframeUrl;
+  const currentPlayingTrack = previewTrack || currentTrack;
+
   return (
     <MobileLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-32">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Ontspannende Muziek</h1>
           <p className="text-muted-foreground">
@@ -351,7 +354,7 @@ const Music = () => {
         </div>
 
         <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid grid-cols-3 mb-4">
+          <TabsList className="grid grid-cols-3 mb-4 sticky top-0 z-30 bg-background">
             <TabsTrigger value="music">Muziek</TabsTrigger>
             <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
             <TabsTrigger value="radio">Streaming</TabsTrigger>
@@ -492,28 +495,6 @@ const Music = () => {
                             </div>
                           </div>
                         )}
-                        
-                        {isCurrentPlaylist && currentTrack && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <ToneEqualizer 
-                              isActive={isPlaying} 
-                              className="bg-black/50 mb-2" 
-                              audioRef={audioPlayerRef} 
-                            />
-                            <AudioPlayer 
-                              audioUrl={currentTrack.audioUrl}
-                              nextAudioUrl={nextTrack?.audioUrl}
-                              showControls={true}
-                              title={currentTrack.title}
-                              className="mb-0"
-                              onEnded={handleTrackEnded}
-                              onCrossfadeStart={handleCrossfadeStart}
-                              isPlayingExternal={isPlaying}
-                              onPlayPauseChange={setIsPlaying}
-                              ref={audioPlayerRef}
-                            />
-                          </div>
-                        )}
                       </CardContent>
                     </Card>
                   );
@@ -588,60 +569,59 @@ const Music = () => {
             )}
           </TabsContent>
         </Tabs>
-        
-        {previewTrack && (
-          <div className="mb-14">
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-medium">Voorluisteren: {previewTrack.title}</h3>
+      </div>
+      
+      {shouldShowPlayer && currentPlayingTrack && (
+        <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-40 animate-slide-up">
+          <div className="mx-auto max-w-4xl px-4 py-2">
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="font-medium text-sm">
+                {selectedPlaylist ? `${selectedPlaylist.name}: ${currentPlayingTrack.title}` : currentPlayingTrack.title}
+              </h3>
               <Button 
-                variant="destructive"
-                size="sm"
-                onClick={handleStopPreview}
+                variant="ghost" 
+                size="sm" 
+                className="h-7 w-7 p-0 rounded-full" 
+                onClick={previewTrack ? handleStopPreview : () => {
+                  setIsPlaying(false);
+                  setCurrentTrack(null);
+                  setSelectedPlaylist(null);
+                }}
               >
-                <StopCircle className="h-4 w-4 mr-1" />
-                Stoppen
+                <X className="h-4 w-4" />
               </Button>
             </div>
+            
             <ToneEqualizer 
-              isActive={isPlaying} 
-              className="mb-2" 
+              isActive={isAudioActive} 
+              className="mb-1" 
               audioRef={audioPlayerRef} 
             />
+            
             <AudioPlayer 
-              audioUrl={previewTrack.audioUrl} 
+              audioUrl={currentPlayingTrack.audioUrl}
+              nextAudioUrl={nextTrack?.audioUrl}
               showControls={true}
-              title={previewTrack.title}
+              title={currentPlayingTrack.title}
+              className="mb-0"
+              onEnded={handleTrackEnded}
+              onCrossfadeStart={handleCrossfadeStart}
               isPlayingExternal={isPlaying}
               onPlayPauseChange={setIsPlaying}
               ref={audioPlayerRef}
             />
           </div>
-        )}
-        
-        {isStreamPlaying && (
-          <div className="mb-14">
-            <h3 className="font-medium mb-2">
-              {streamTitle} <span className="text-xs text-primary">LIVE</span>
-            </h3>
-            <AudioPlayer 
-              audioUrl={streamUrl} 
-              showControls={true}
-              title={streamTitle}
-              isPlayingExternal={isStreamPlaying}
-              onPlayPauseChange={setIsStreamPlaying}
-            />
-          </div>
-        )}
-        
-        {hiddenIframeUrl && (
-          <iframe 
-            ref={hiddenIframeRef}
-            src={hiddenIframeUrl}
-            style={{ display: 'none' }} 
-            title="Radio Stream"
-          />
-        )}
-      </div>
+        </div>
+      )}
+      
+      {hiddenIframeUrl && (
+        <iframe 
+          ref={hiddenIframeRef}
+          src={hiddenIframeUrl}
+          style={{ display: 'none' }} 
+          title="Radio Stream"
+        />
+      )}
       
       <CreatePlaylistDialog
         open={showPlaylistCreator}
