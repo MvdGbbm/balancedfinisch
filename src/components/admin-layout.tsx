@@ -2,7 +2,7 @@
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Lock, FileMusic, Music, Quote, Home, Radio, Waves, Headphones } from "lucide-react";
+import { Moon, Sun, Lock, FileMusic, Music, Quote, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,11 +19,10 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
   const navItems = [
     { path: "/", icon: Home, label: "Frontend" },
     { path: "/admin", icon: Lock, label: "Admin" },
-    { path: "/admin/meditations", icon: Headphones, label: "Meditaties" },
-    { path: "/admin/soundscapes", icon: Waves, label: "Geluiden" },
+    { path: "/admin/meditations", icon: FileMusic, label: "Meditaties" },
+    { path: "/admin/soundscapes", icon: FileMusic, label: "Geluiden" },
     { path: "/admin/music", icon: Music, label: "Muziek" },
     { path: "/admin/quotes", icon: Quote, label: "Quotes" },
-    { path: "/admin/streams", icon: Radio, label: "Streams" },
   ];
 
   return (

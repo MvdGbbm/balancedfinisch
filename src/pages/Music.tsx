@@ -22,7 +22,6 @@ interface RadioStream {
   description: string | null;
   is_active: boolean;
   position: number | null;
-  cover_image_url: string | null;
 }
 
 const Music = () => {
@@ -471,16 +470,9 @@ const Music = () => {
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
-                          {stream.cover_image_url ? (
-                            <div 
-                              className="h-10 w-10 rounded-md bg-cover bg-center flex-shrink-0 border"
-                              style={{ backgroundImage: `url(${stream.cover_image_url})` }}
-                            />
-                          ) : (
-                            <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
-                              <Link2 className="h-4 w-4" />
-                            </div>
-                          )}
+                          <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300">
+                            <Link2 className="h-4 w-4" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm">{stream.title}</h3>
                           </div>
@@ -601,3 +593,5 @@ const Music = () => {
 };
 
 export default Music;
+
+
