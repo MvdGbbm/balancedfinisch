@@ -4,85 +4,128 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic } from "lucide-react";
+import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
+import { useToast } from "@/hooks/use-toast";
+import { Soundscape } from "@/lib/types";
+import { Playlist, PlaylistTrack } from "@/components/playlist/types";
+import { PlaylistSelector } from "@/components/playlist/playlist-selector";
+import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 
 const Music = () => {
   const { soundscapes } = useApp();
-  const [currentTrack, setCurrentTrack] = useState<any>(null);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const { toast } = useToast();
+  const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
+  const [previewTrack, setPreviewTrack] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  const [showPlaylistCreator, setShowPlaylistCreator] = useState(false);
 
+  // Filter soundscapes to only "Muziek" category
   useEffect(() => {
-    if (soundscapes.length > 0) {
-      // Extract unique categories
-      const uniqueCategories = [...new Set(soundscapes.map(item => item.category))];
-      setCategories(uniqueCategories);
-      
-      // Set default active category if available
-      if (uniqueCategories.length > 0) {
-        setActiveCategory(uniqueCategories[0]);
+    const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
+    setMusicTracks(filteredTracks);
+    
+    // Load playlists from localStorage on component mount
+    const storedPlaylists = localStorage.getItem('musicPlaylists');
+    if (storedPlaylists) {
+      try {
+        setPlaylists(JSON.parse(storedPlaylists));
+      } catch (error) {
+        console.error("Error parsing playlists:", error);
       }
     }
   }, [soundscapes]);
 
+  // Save playlists to localStorage when they change
   useEffect(() => {
-    // Clean up audio on component unmount
-    return () => {
-      if (audio) {
-        audio.pause();
-        audio.src = "";
-      }
-    };
-  }, [audio]);
+    localStorage.setItem('musicPlaylists', JSON.stringify(playlists));
+  }, [playlists]);
 
-  const handlePlayTrack = (track: any) => {
-    if (audio) {
-      audio.pause();
-    }
-
-    const newAudio = new Audio(track.audioUrl);
-    
-    newAudio.addEventListener('ended', () => {
-      setIsPlaying(false);
-    });
-    
-    newAudio.addEventListener('canplaythrough', () => {
-      newAudio.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(err => {
-          console.error("Error playing audio:", err);
-        });
-    });
-    
-    setAudio(newAudio);
-    setCurrentTrack(track);
+  const handlePreviewTrack = (track: Soundscape) => {
+    setPreviewTrack(track);
+    setIsPlaying(true);
   };
 
   const togglePlayPause = () => {
-    if (!audio) return;
-    
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(err => {
-          console.error("Error playing audio:", err);
-        });
-    }
+    setIsPlaying(!isPlaying);
   };
 
-  const filteredTracks = activeCategory === "all" 
-    ? soundscapes 
-    : soundscapes.filter(track => track.category === activeCategory);
+  const handlePlayPlaylist = (playlist: Playlist) => {
+    if (playlist.tracks.length === 0) {
+      toast({
+        title: "Lege afspeellijst",
+        description: "Deze afspeellijst bevat geen nummers.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSelectedPlaylist(playlist);
+    
+    // Play the first track in the playlist
+    const firstTrackId = playlist.tracks[0].trackId;
+    const track = soundscapes.find(s => s.id === firstTrackId) || null;
+    setCurrentTrack(track);
+  };
+
+  const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
+    // Check if track already exists in playlist
+    if (playlist.tracks.some(t => t.trackId === track.id)) {
+      toast({
+        title: "Track bestaat al in afspeellijst",
+        description: `${track.title} is al toegevoegd aan ${playlist.name}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Add track to playlist
+    const updatedPlaylist = {
+      ...playlist,
+      tracks: [
+        ...playlist.tracks,
+        { trackId: track.id, added: new Date().toISOString() }
+      ]
+    };
+    
+    // Update playlists array
+    const updatedPlaylists = playlists.map(p => 
+      p.id === playlist.id ? updatedPlaylist : p
+    );
+    
+    setPlaylists(updatedPlaylists);
+    toast({
+      title: "Toegevoegd aan afspeellijst",
+      description: `${track.title} is toegevoegd aan ${playlist.name}`,
+    });
+  };
+
+  const handleCreatePlaylist = (name: string) => {
+    const newPlaylist: Playlist = {
+      id: `playlist-${Date.now()}`,
+      name,
+      tracks: [],
+      createdAt: new Date().toISOString()
+    };
+    
+    setPlaylists([...playlists, newPlaylist]);
+    setShowPlaylistCreator(false);
+    toast({
+      title: "Afspeellijst aangemaakt",
+      description: `Afspeellijst '${name}' is aangemaakt`,
+    });
+  };
+  
+  // Get playlist tracks as Soundscape objects
+  const getPlaylistTracks = (playlist: Playlist): Soundscape[] => {
+    return playlist.tracks
+      .map(track => soundscapes.find(s => s.id === track.trackId))
+      .filter((track): track is Soundscape => track !== undefined);
+  };
 
   return (
     <MobileLayout>
@@ -94,31 +137,47 @@ const Music = () => {
           </p>
         </div>
 
-        <Tabs defaultValue={categories[0] || "all"} value={activeCategory} onValueChange={setActiveCategory}>
-          <TabsList className="grid grid-cols-2 mb-4 sm:grid-cols-4">
-            {categories.map(category => (
-              <TabsTrigger key={category} value={category}>
-                {category}
-              </TabsTrigger>
-            ))}
+        <Tabs defaultValue="music">
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="music">Muziek</TabsTrigger>
+            <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
           </TabsList>
           
-          <TabsContent value={activeCategory} className="space-y-4">
-            {filteredTracks.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {filteredTracks.map((track) => (
+          <TabsContent value="music" className="space-y-4">
+            {musicTracks.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {musicTracks.map((track) => (
                   <Card 
                     key={track.id} 
-                    className={`cursor-pointer transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
-                    onClick={() => handlePlayTrack(track)}
+                    className={`transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''}`}
                   >
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
-                        <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 ${currentTrack?.id === track.id ? 'bg-primary/20' : ''}`}>
+                          <MusicIcon className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-medium">{track.title}</h3>
+                          <p className="text-sm text-muted-foreground">{track.description}</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium">{track.title}</h3>
-                        <p className="text-sm text-muted-foreground">{track.description}</p>
+                      
+                      <div className="flex justify-between mt-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handlePreviewTrack(track)}
+                          className="flex items-center gap-1"
+                        >
+                          <Play className="h-4 w-4" />
+                          Voorluisteren
+                        </Button>
+                        
+                        <PlaylistSelector 
+                          playlists={playlists}
+                          onSelectPlaylist={(playlist) => handleAddToPlaylist(track, playlist)}
+                          onCreateNew={() => setShowPlaylistCreator(true)}
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -126,29 +185,114 @@ const Music = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Geen tracks gevonden in deze categorie</p>
+                <p className="text-muted-foreground">Geen muziek tracks gevonden</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="playlists" className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setShowPlaylistCreator(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nieuwe afspeellijst
+              </Button>
+            </div>
+            
+            {playlists.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {playlists.map((playlist) => {
+                  const trackCount = playlist.tracks.length;
+                  return (
+                    <Card key={playlist.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-primary/20">
+                            <ListMusic className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-medium">{playlist.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
+                            </p>
+                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handlePlayPlaylist(playlist)}
+                            disabled={trackCount === 0}
+                          >
+                            <Play className="h-4 w-4 mr-1" />
+                            Afspelen
+                          </Button>
+                        </div>
+                        
+                        {/* Show playlist tracks */}
+                        {playlist.tracks.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            <h4 className="text-sm font-medium">Nummers:</h4>
+                            <div className="pl-2 space-y-1">
+                              {getPlaylistTracks(playlist).map((track, index) => (
+                                <div key={track.id} className="flex items-center text-sm">
+                                  <span className="w-5 text-muted-foreground">{index + 1}.</span>
+                                  <span>{track.title}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Geen afspeellijsten gevonden</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => setShowPlaylistCreator(true)}
+                >
+                  Maak je eerste afspeellijst
+                </Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
         
-        {currentTrack && (
-          <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 flex items-center gap-3 animate-slide-up">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="h-10 w-10 rounded-full" 
-              onClick={togglePlayPause}
-            >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-            </Button>
-            <div className="flex-1">
-              <h3 className="font-medium text-sm">{currentTrack.title}</h3>
-              <p className="text-xs text-muted-foreground">{currentTrack.category}</p>
+        {/* Preview Player */}
+        {previewTrack && (
+          <div className="mb-14">
+            <h3 className="font-medium mb-2">Voorluisteren: {previewTrack.title}</h3>
+            <AudioPlayer 
+              audioUrl={previewTrack.audioUrl} 
+              showControls={true}
+              title={previewTrack.title}
+            />
+          </div>
+        )}
+        
+        {/* Playlist Player */}
+        {selectedPlaylist && currentTrack && (
+          <div className="fixed bottom-16 left-0 right-0 bg-background border-t p-4 animate-slide-up z-10">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-sm">Speelt nu: {selectedPlaylist.name}</h4>
             </div>
+            <AudioPlayer 
+              audioUrl={currentTrack.audioUrl} 
+              showControls={true}
+              title={currentTrack.title}
+              className="mb-0"
+            />
           </div>
         )}
       </div>
+      
+      <CreatePlaylistDialog
+        open={showPlaylistCreator}
+        onOpenChange={setShowPlaylistCreator}
+        onSubmit={handleCreatePlaylist}
+      />
     </MobileLayout>
   );
 };
