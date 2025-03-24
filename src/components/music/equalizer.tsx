@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { AudioWaveform } from "lucide-react";
@@ -16,7 +17,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const [audioElementId, setAudioElementId] = useState<string | null>(null);
-  const numBars = 38; // Changed from 30 to 38 bars for the equalizer
+  const numBars = 38; // 38 bars for the equalizer
 
   useEffect(() => {
     if (!audioElement) return;
@@ -118,13 +119,17 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         const frequencyData = dataArrayRef.current;
         const frequencyBands = [];
         
+        // Enhanced bass frequency mapping - use logarithmic scale for better low frequency representation
         for (let i = 0; i < numBars; i++) {
-          const scale = Math.pow(frequencyData.length, i / numBars) / 10;
+          // Improved frequency scaling for better bass response
+          // Using a more pronounced logarithmic scale to emphasize low frequencies
+          const scale = Math.pow(frequencyData.length, (i / numBars) * 0.8) / 8;
           const index = Math.min(Math.floor(scale), frequencyData.length - 1);
           
           let sum = 0;
           let count = 0;
-          const range = 3;
+          // Wider range for low frequencies to capture more data
+          const range = i < numBars / 3 ? 5 : 3;
           
           for (let j = Math.max(0, index - range); j <= Math.min(frequencyData.length - 1, index + range); j++) {
             const weight = 1.0 - Math.abs(j - index) / (range + 1);
@@ -134,21 +139,45 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           
           const value = count > 0 ? sum / count : 0;
           
-          const bassBoost = i < numBars / 4 ? 1.2 : 1.0;
-          const trebleBoost = i > (numBars * 3) / 4 ? 1.15 : 1.0;
+          // Enhanced bass boost with progressive scaling
+          // First 1/4 of bars get significant bass boost, gradually decreasing
+          let boost = 1.0;
+          if (i < numBars / 6) {
+            boost = 2.2; // Significant boost for the lowest frequencies
+          } else if (i < numBars / 3) {
+            boost = 1.8; // Medium boost for low-mid frequencies
+          } else if (i < numBars / 2) {
+            boost = 1.2; // Slight boost for mid frequencies
+          } else if (i > (numBars * 3) / 4) {
+            boost = 1.15; // Small boost for high frequencies
+          }
           
-          const boostedValue = value * bassBoost * trebleBoost;
+          const boostedValue = value * boost;
           
+          // Ensure minimum height for better visualization and cap maximum to avoid distortion
           frequencyBands.push(Math.max(8, Math.min(100, (boostedValue / 255) * 100)));
         }
         
         return frequencyBands;
       } else {
-        let heights = Array(numBars).fill(0).map(() => Math.random() * 0.7 + 0.1);
+        // Simulation mode with improved bass response
+        let heights = Array(numBars).fill(0).map((_, i) => {
+          // Generate more responsive bass patterns in simulation
+          if (i < numBars / 6) {
+            return Math.random() * 0.9 + 0.3; // More variation in bass frequencies
+          } else if (i < numBars / 3) {
+            return Math.random() * 0.8 + 0.2;
+          } else {
+            return Math.random() * 0.7 + 0.1;
+          }
+        });
         
+        // Enhanced bass boost for simulation
         for (let i = 0; i < numBars; i++) {
-          if (i < numBars / 4) {
-            heights[i] *= 1.5;
+          if (i < numBars / 6) {
+            heights[i] *= 1.8; // Heavy bass emphasis
+          } else if (i < numBars / 3) {
+            heights[i] *= 1.4; // Moderate bass emphasis
           } else if (i < numBars / 2) {
             heights[i] *= 0.9;
           } else if (i > (numBars * 3) / 4) {
@@ -156,6 +185,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           }
         }
         
+        // Smoothing to make it more natural looking
         for (let i = 0; i < 3; i++) {
           const newHeights = [...heights];
           for (let j = 1; j < heights.length - 1; j++) {
@@ -176,12 +206,13 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         
         const height = heights[index];
         
+        // Bass frequencies (lower index) get longer transition times for more "weight"
         const baseDuration = 100;
-        const duration = index < numBars / 3 
-          ? baseDuration + 30
-          : index < (2 * numBars) / 3 
-            ? baseDuration
-            : baseDuration - 20;
+        const duration = index < numBars / 4 
+          ? baseDuration + 50 // Even slower for deep bass
+          : index < numBars / 2 
+            ? baseDuration + 20
+            : baseDuration;
         
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
@@ -224,7 +255,12 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           className={cn(
             "relative w-full rounded-t-md transition-all ease-out",
             isActive 
-              ? "bg-gradient-to-t from-blue-700 via-blue-500 to-purple-400" 
+              // Enhanced gradient with more blue in lower frequencies 
+              ? index < numBars / 4
+                ? "bg-gradient-to-t from-blue-800 via-blue-600 to-blue-400" 
+                : index < numBars / 2
+                  ? "bg-gradient-to-t from-blue-700 via-blue-500 to-blue-300"
+                  : "bg-gradient-to-t from-blue-700 via-blue-500 to-purple-400"
               : "bg-blue-400/20"
           )}
           style={{ 
@@ -245,7 +281,13 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
             key={`reflection-${index}`}
             className={cn(
               "absolute bottom-0 rounded-b-md transition-all ease-out",
-              isActive ? "bg-gradient-to-b from-blue-700/50 via-blue-500/30 to-purple-400/10" : "bg-blue-400/5"
+              isActive 
+                ? index < numBars / 4
+                  ? "bg-gradient-to-b from-blue-800/50 via-blue-600/30 to-blue-400/10"
+                  : index < numBars / 2
+                    ? "bg-gradient-to-b from-blue-700/50 via-blue-500/30 to-blue-300/10"
+                    : "bg-gradient-to-b from-blue-700/50 via-blue-500/30 to-purple-400/10"
+                : "bg-blue-400/5"
             )}
             style={{
               left: `${(index / numBars) * 100}%`,
