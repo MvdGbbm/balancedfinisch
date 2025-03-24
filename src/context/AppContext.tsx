@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Meditation, Soundscape, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +54,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
+export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   // State
   const [meditationsData, setMeditations] = useState<Meditation[]>(sampleMeditations);
   const [soundscapesData, setSoundscapes] = useState<Soundscape[]>(soundscapes);
@@ -458,7 +459,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-}
+};
 
 export function useApp() {
   const context = useContext(AppContext);
