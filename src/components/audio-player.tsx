@@ -26,6 +26,7 @@ interface AudioPlayerProps {
   nextAudioUrl?: string; // URL for the next track to crossfade
   onCrossfadeStart?: () => void; // Called when crossfade starts
   onAudioElementRef?: (element: HTMLAudioElement | null) => void;
+  hideErrorMessage?: boolean;
 }
 
 export function AudioPlayer({ 
@@ -42,7 +43,8 @@ export function AudioPlayer({
   onPlayPauseChange,
   nextAudioUrl,
   onCrossfadeStart,
-  onAudioElementRef
+  onAudioElementRef,
+  hideErrorMessage = false
 }: AudioPlayerProps) {
   // Initialize with a random quote
   const [randomQuote] = useState(() => {
@@ -175,6 +177,7 @@ export function AudioPlayer({
           }} 
           isRetrying={isRetrying}
           customMessage={isEmptyUrl ? "Geen audio URL opgegeven" : undefined}
+          hideMessage={hideErrorMessage}
         />
       )}
       

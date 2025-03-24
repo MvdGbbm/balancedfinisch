@@ -12,11 +12,13 @@ import { checkAudioCompatibility } from "@/utils/meditation-utils";
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
   selectedMeditation: Meditation | null;
+  hideErrorMessage?: boolean;
 }
 
 export function MeditationPlayerContainer({ 
   isVisible, 
-  selectedMeditation 
+  selectedMeditation,
+  hideErrorMessage = false
 }: MeditationPlayerContainerProps) {
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -193,6 +195,7 @@ export function MeditationPlayerContainer({
         onPlayPauseChange={setIsPlaying}
         onAudioElementRef={handleAudioElementRef}
         key={`meditation-${selectedMeditation.id}-retry-${retryCount}`} // Force remount on retry
+        hideErrorMessage={hideErrorMessage}
       />
     </div>
   );
