@@ -63,90 +63,6 @@ export function AudioPlayer({
   const crossfadeTimeoutRef = useRef<number | null>(null);
   
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
-
-  const handleAudioData = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    if (!isStream) {
-      setDuration(audio.duration);
-    } else {
-      setDuration(0);
-    }
-    setIsLoaded(true);
-    setLoadError(false);
-    setLazyLoaded(true);
-    
-    if (isPlayingExternal) {
-      audio.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(error => {
-          console.error("Error auto-playing audio:", error);
-        });
-    }
-    
-    toast({
-      title: isStream ? "Stream geladen" : "Audio geladen",
-      description: isStream 
-        ? "De stream is klaar om af te spelen." 
-        : "De meditatie is klaar om af te spelen."
-    });
-  };
-  
-  const handleAudioTime = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    if (!hasTransitionedToNext || !isCrossfading) {
-      setCurrentTime(audio.currentTime);
-    }
-  };
-  
-  const handleAudioEnded = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    if (!isCrossfading) {
-      if (!isLooping) {
-        setIsPlaying(false);
-        if (onPlayPauseChange) onPlayPauseChange(false);
-        if (onEnded) onEnded();
-      } else {
-        audio.currentTime = 0;
-        audio.play().catch(error => {
-          console.error("Error restarting audio:", error);
-        });
-      }
-    }
-  };
-  
-  const handleAudioError = (e: Event) => {
-    console.error("Error loading audio:", e);
-    setLoadError(true);
-    setIsLoaded(false);
-    setLazyLoaded(false);
-    
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    if (audioUrl.startsWith('http') && !isRetrying) {
-      setIsRetrying(true);
-      
-      setTimeout(() => {
-        audio.load();
-        setIsRetrying(false);
-      }, 1000);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Fout bij laden",
-        description: "Kon de audio niet laden. Controleer of het bestand bestaat."
-      });
-      if (onError) onError();
-    }
-  };
   
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
@@ -245,14 +161,109 @@ export function AudioPlayer({
     }
   }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isStream]);
   
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    // For regular audio files, load immediately
+    // For streams, don't load until play is requested
+    if (!isStream) {
+      loadAudioFile();
+    }
+    
+    return () => {
+      audio.removeEventListener("loadeddata", setAudioData);
+      audio.removeEventListener("timeupdate", setAudioTime);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+      
+      if (crossfadeTimeoutRef.current) {
+        clearTimeout(crossfadeTimeoutRef.current);
+        crossfadeTimeoutRef.current = null;
+      }
+    };
+  }, [audioUrl, isStream]);
+  
   const loadAudioFile = () => {
     const audio = audioRef.current;
     if (!audio) return;
     
-    audio.addEventListener("loadeddata", handleAudioData);
-    audio.addEventListener("timeupdate", handleAudioTime);
-    audio.addEventListener("ended", handleAudioEnded);
-    audio.addEventListener("error", handleAudioError);
+    const setAudioData = () => {
+      if (!isStream) {
+        setDuration(audio.duration);
+      } else {
+        setDuration(0);
+      }
+      setIsLoaded(true);
+      setLoadError(false);
+      setLazyLoaded(true);
+      
+      if (isPlayingExternal) {
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Error auto-playing audio:", error);
+          });
+      }
+      
+      toast({
+        title: isStream ? "Stream geladen" : "Audio geladen",
+        description: isStream 
+          ? "De stream is klaar om af te spelen." 
+          : "De meditatie is klaar om af te spelen."
+      });
+    };
+    
+    const setAudioTime = () => {
+      if (!hasTransitionedToNext || !isCrossfading) {
+        setCurrentTime(audio.currentTime);
+      }
+    };
+    
+    const handleEnded = () => {
+      if (!isCrossfading) {
+        if (!isLooping) {
+          setIsPlaying(false);
+          if (onPlayPauseChange) onPlayPauseChange(false);
+          if (onEnded) onEnded();
+        } else {
+          audio.currentTime = 0;
+          audio.play().catch(error => {
+            console.error("Error restarting audio:", error);
+          });
+        }
+      }
+    };
+
+    const handleError = (e: Event) => {
+      console.error("Error loading audio:", e);
+      setLoadError(true);
+      setIsLoaded(false);
+      setLazyLoaded(false);
+      
+      if (audioUrl.startsWith('http') && !isRetrying) {
+        setIsRetrying(true);
+        
+        setTimeout(() => {
+          audio.load();
+          setIsRetrying(false);
+        }, 1000);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Fout bij laden",
+          description: "Kon de audio niet laden. Controleer of het bestand bestaat."
+        });
+        if (onError) onError();
+      }
+    };
+    
+    audio.addEventListener("loadeddata", setAudioData);
+    audio.addEventListener("timeupdate", setAudioTime);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
     
     audio.volume = volume;
     audio.loop = isLooping;
@@ -310,32 +321,6 @@ export function AudioPlayer({
       if (onError) onError();
     }, { once: true });
   };
-  
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    
-    // For regular audio files, load immediately
-    // For streams, don't load until play is requested
-    if (!isStream) {
-      loadAudioFile();
-    }
-    
-    return () => {
-      // Properly clean up event listeners
-      if (audio) {
-        audio.removeEventListener("loadeddata", handleAudioData);
-        audio.removeEventListener("timeupdate", handleAudioTime);
-        audio.removeEventListener("ended", handleAudioEnded);
-        audio.removeEventListener("error", handleAudioError);
-      }
-      
-      if (crossfadeTimeoutRef.current) {
-        clearTimeout(crossfadeTimeoutRef.current);
-        crossfadeTimeoutRef.current = null;
-      }
-    };
-  }, [audioUrl, isStream]);
   
   useEffect(() => {
     const audio = audioRef.current;
