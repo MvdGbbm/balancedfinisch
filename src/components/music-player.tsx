@@ -22,6 +22,7 @@ import {
   Shuffle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface MusicPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   tracks: MusicItem[];
@@ -74,14 +75,24 @@ export function MusicPlayer({
   
   // Set initial playlist and track
   useEffect(() => {
-    if (tracks.length > 0) {
-      setPlaylist(tracks, initialTrack || tracks[0]);
+    if (tracks && tracks.length > 0) {
+      console.log("Setting tracks in MusicPlayer:", tracks);
+      console.log("Initial track:", initialTrack);
       
-      if (autoPlay) {
-        play();
+      try {
+        setPlaylist(tracks, initialTrack || tracks[0]);
+        
+        if (autoPlay) {
+          setTimeout(() => {
+            play();
+          }, 100);
+        }
+      } catch (error) {
+        console.error("Error initializing audio player:", error);
+        toast.error("Er ging iets mis bij het laden van de muziek");
       }
     }
-  }, []);
+  }, [tracks, initialTrack, autoPlay, setPlaylist, play]);
   
   // Handle search
   const filteredTracks = tracks.filter(track => 
@@ -153,7 +164,7 @@ export function MusicPlayer({
               <div className="p-4 max-h-full overflow-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-medium text-lg">Afspeellijst</h3>
-                  <Command className="w-full max-w-md rounded-lg border">
+                  <Command className="w-full max-w-md rounded-lg border" onMouseEnter={() => setIsSearchOpen(true)}>
                     <CommandInput
                       placeholder="Zoek nummers..."
                       value={searchQuery}

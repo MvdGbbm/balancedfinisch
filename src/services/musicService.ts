@@ -121,20 +121,24 @@ export const uploadCoverImage = async (file: File): Promise<string | null> => {
 export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<MusicItem | null> => {
   let query;
   
+  const itemToSave = {
+    title: musicItem.title,
+    artist: musicItem.artist,
+    description: musicItem.description,
+    audio_url: musicItem.audioUrl,
+    cover_image_url: musicItem.coverImageUrl,
+    category: musicItem.category,
+    tags: musicItem.tags,
+    duration: musicItem.duration,
+    waveform_data: musicItem.waveformData,
+  } as SupabaseTable;
+  
   if (musicItem.id) {
     // Update existing music item
     query = supabase
       .from("music_items" as SupabaseTable)
       .update({
-        title: musicItem.title,
-        artist: musicItem.artist,
-        description: musicItem.description,
-        audio_url: musicItem.audioUrl,
-        cover_image_url: musicItem.coverImageUrl,
-        category: musicItem.category,
-        tags: musicItem.tags,
-        duration: musicItem.duration,
-        waveform_data: musicItem.waveformData,
+        ...itemToSave,
         updated_at: new Date().toISOString(),
       } as SupabaseTable)
       .eq("id", musicItem.id)
@@ -143,17 +147,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
     // Create new music item
     query = supabase
       .from("music_items" as SupabaseTable)
-      .insert({
-        title: musicItem.title,
-        artist: musicItem.artist,
-        description: musicItem.description,
-        audio_url: musicItem.audioUrl,
-        cover_image_url: musicItem.coverImageUrl,
-        category: musicItem.category,
-        tags: musicItem.tags,
-        duration: musicItem.duration,
-        waveform_data: musicItem.waveformData,
-      } as SupabaseTable)
+      .insert(itemToSave)
       .select();
   }
 
@@ -164,7 +158,7 @@ export const saveMusicItem = async (musicItem: Partial<MusicItem>): Promise<Musi
     return null;
   }
 
-  return data[0] as MusicItem;
+  return mapDatabaseToMusicItem(data[0]);
 };
 
 // Delete music item
@@ -270,4 +264,21 @@ export const deletePlaylist = async (id: string): Promise<boolean> => {
   }
 
   return true;
+};
+
+// Helper function to map database fields to MusicItem
+const mapDatabaseToMusicItem = (item: any): MusicItem => {
+  return {
+    id: item.id,
+    title: item.title,
+    artist: item.artist,
+    description: item.description || "",
+    audioUrl: item.audio_url,
+    coverImageUrl: item.cover_image_url || "",
+    category: item.category || "",
+    tags: item.tags || [],
+    duration: item.duration,
+    waveformData: item.waveform_data,
+    createdAt: item.created_at
+  };
 };

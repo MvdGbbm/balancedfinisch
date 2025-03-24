@@ -4,7 +4,6 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { MusicPlayer } from "@/components/music-player";
 import { fetchMusicItems, fetchPlaylists } from "@/services/musicService";
 import { MusicItem, Playlist } from "@/lib/types";
@@ -33,18 +32,20 @@ const Music = () => {
           fetchPlaylists()
         ]);
         
+        console.log("Loaded music data:", musicData);
         setMusicItems(musicData);
         setPlaylists(playlistsData);
         
         // Set initial track
         if (musicData.length > 0 && !selectedTrack) {
+          console.log("Setting initial track:", musicData[0]);
           setSelectedTrack(musicData[0]);
         }
       } catch (error) {
         console.error("Error loading music data:", error);
         toast({
-          title: "Error",
-          description: "Failed to load music data",
+          title: "Fout",
+          description: "Kon de muziekgegevens niet laden",
           variant: "destructive",
         });
       } finally {
@@ -72,12 +73,14 @@ const Music = () => {
   
   // Handle track selection
   const handleTrackSelect = (track: MusicItem) => {
+    console.log("Selected track:", track);
     setSelectedTrack(track);
     setSelectedPlaylist(null);
   };
   
   // Handle playlist selection
   const handlePlaylistSelect = (playlist: Playlist) => {
+    console.log("Selected playlist:", playlist);
     setSelectedPlaylist(playlist);
     if (playlist.tracks.length > 0) {
       setSelectedTrack(playlist.tracks[0]);
@@ -96,6 +99,9 @@ const Music = () => {
     
     return musicItems.filter(item => item.category === selectedTab);
   };
+
+  // Get current tracks for the player
+  const currentTracks = getPlayerTracks();
   
   return (
     <MobileLayout>
@@ -112,11 +118,21 @@ const Music = () => {
         {/* Music Player */}
         <Card className="neo-morphism mb-6">
           <CardContent className="p-0">
-            <MusicPlayer 
-              tracks={getPlayerTracks()} 
-              initialTrack={selectedTrack || undefined}
-              autoPlay={false}
-            />
+            {currentTracks.length > 0 ? (
+              <MusicPlayer 
+                tracks={currentTracks} 
+                initialTrack={selectedTrack || undefined}
+                autoPlay={false}
+              />
+            ) : isLoading ? (
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                Muziek wordt geladen...
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                Geen muziek beschikbaar. Voeg muziek toe via de beheermodule.
+              </div>
+            )}
           </CardContent>
         </Card>
         

@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MusicItem } from "@/lib/types";
 import { formatTime } from "@/utils/audioUtils";
+import { toast } from "sonner";
 
 interface AudioPlayerState {
   currentTrack: MusicItem | null;
@@ -59,6 +60,7 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.src = '';
         audioRef.current = null;
       }
     };
@@ -78,18 +80,27 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
     
     // Update audio source
     audio.src = currentTrack.audioUrl;
+    
+    // Load without autoplay initially
     audio.load();
     
     // Auto-play when track changes
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => setIsPlaying(true))
-        .catch((err) => {
-          console.error("Playback failed:", err);
-          setIsPlaying(false);
-          setError("Failed to play audio");
-        });
+    const playTrack = async () => {
+      try {
+        setIsLoading(true);
+        await audio.play();
+        setIsPlaying(true);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Playback failed:", err);
+        setIsPlaying(false);
+        setError("Afspelen mislukt: controleer of de audio URL geldig is");
+        toast.error("Afspelen mislukt: controleer of de audio URL geldig is");
+      }
+    };
+    
+    if (isPlaying) {
+      playTrack();
     }
     
     // Event listeners for audio
@@ -107,22 +118,24 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
       next();
     };
     
-    const onError = () => {
+    const onError = (e: ErrorEvent) => {
+      console.error("Audio error:", e);
       setIsLoading(false);
-      setError("Error loading audio");
+      setError("Fout bij het laden van audio");
       setIsPlaying(false);
+      toast.error("Fout bij het laden van audio");
     };
     
     audio.addEventListener("loadedmetadata", onLoadedMetadata);
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
-    audio.addEventListener("error", onError);
+    audio.addEventListener("error", onError as EventListener);
     
     return () => {
       audio.removeEventListener("loadedmetadata", onLoadedMetadata);
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("error", onError);
+      audio.removeEventListener("error", onError as EventListener);
     };
   }, [currentTrack]);
   
@@ -131,10 +144,14 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
     if (!audioRef.current) return;
     
     if (isPlaying) {
-      audioRef.current.play().catch((err) => {
-        console.error("Playback failed:", err);
-        setIsPlaying(false);
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.error("Playback failed:", err);
+          setIsPlaying(false);
+          toast.error("Afspelen mislukt");
+        });
+      }
     } else {
       audioRef.current.pause();
     }
@@ -148,9 +165,24 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
   }, [volume, isMuted]);
   
   // Play/pause controls
-  const play = () => setIsPlaying(true);
+  const play = () => {
+    if (currentTrack) {
+      setIsPlaying(true);
+    } else if (playlist.length > 0) {
+      setCurrentTrack(playlist[0]);
+      setIsPlaying(true);
+    }
+  };
+  
   const pause = () => setIsPlaying(false);
-  const toggle = () => setIsPlaying(!isPlaying);
+  const toggle = () => {
+    if (currentTrack) {
+      setIsPlaying(!isPlaying);
+    } else if (playlist.length > 0) {
+      setCurrentTrack(playlist[0]);
+      setIsPlaying(true);
+    }
+  };
   
   // Seek control
   const seek = (time: number) => {
@@ -179,6 +211,11 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
     if (!currentTrack || playlist.length === 0) return;
     
     const currentIndex = playlist.findIndex(track => track.id === currentTrack.id);
+    if (currentIndex === -1 && playlist.length > 0) {
+      setCurrentTrack(playlist[0]);
+      return;
+    }
+    
     const nextIndex = (currentIndex + 1) % playlist.length;
     setCurrentTrack(playlist[nextIndex]);
   };
@@ -193,23 +230,37 @@ export const useAudioPlayer = (): [AudioPlayerState, AudioPlayerControls] => {
     }
     
     const currentIndex = playlist.findIndex(track => track.id === currentTrack.id);
+    if (currentIndex === -1 && playlist.length > 0) {
+      setCurrentTrack(playlist[0]);
+      return;
+    }
+    
     const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
     setCurrentTrack(playlist[prevIndex]);
   };
   
   // Play specific track
   const playTrack = (track: MusicItem) => {
+    console.log("Playing track:", track);
     setCurrentTrack(track);
     setIsPlaying(true);
   };
   
   // Set playlist
   const setPlaylist = (tracks: MusicItem[], startWithTrack?: MusicItem) => {
+    if (!tracks || tracks.length === 0) {
+      console.warn("Attempting to set empty playlist");
+      return;
+    }
+    
+    console.log("Setting playlist:", tracks);
     setPlaylistState(tracks);
     
     if (startWithTrack) {
+      console.log("Starting with track:", startWithTrack);
       setCurrentTrack(startWithTrack);
     } else if (tracks.length > 0 && (!currentTrack || !tracks.some(t => t.id === currentTrack.id))) {
+      console.log("Starting with first track:", tracks[0]);
       setCurrentTrack(tracks[0]);
     }
   };
