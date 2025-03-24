@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Play, Pause, Volume2, SkipBack, SkipForward, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ export function AudioPlayer({
   const [loadError, setLoadError] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isCrossfading, setIsCrossfading] = useState(false);
+  const [isLiveStream, setIsLiveStream] = useState(false);
   const { toast } = useToast();
   
   const [randomQuote] = useState(() => {
@@ -60,9 +62,30 @@ export function AudioPlayer({
   // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
 
+  // Check if URL is potentially a live stream
+  const checkIfLiveStream = (url: string) => {
+    // Common live stream indicators
+    return url.includes('radio') || 
+           url.includes('stream') || 
+           url.includes('live') || 
+           url.endsWith('.m3u8') || 
+           url.includes('icecast') || 
+           url.includes('shoutcast');
+  };
+
   // Play audio directly without preloading for external URLs
   const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
     if (!audioElement) return;
+    
+    // Check if potentially a live stream
+    const potentialLiveStream = checkIfLiveStream(url);
+    if (potentialLiveStream) {
+      setIsLiveStream(true);
+      // For live streams, we don't expect duration info
+      setDuration(0);
+    } else {
+      setIsLiveStream(false);
+    }
     
     audioElement.src = url;
     audioElement.load();
@@ -100,18 +123,8 @@ export function AudioPlayer({
   useEffect(() => {
     if (isPlayingExternal !== undefined && audioRef.current) {
       if (isPlayingExternal && !isPlaying) {
-        // If direct URL playback is requested, use the direct method
-        if (audioUrl.startsWith('http')) {
-          playDirectly(audioUrl, audioRef.current);
-        } else if (isLoaded) {
-          audioRef.current.play()
-            .then(() => {
-              setIsPlaying(true);
-            })
-            .catch(error => {
-              console.error("Error playing audio:", error);
-            });
-        }
+        // Always use direct method for any URL
+        playDirectly(audioUrl, audioRef.current);
       } else if (!isPlayingExternal && isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
@@ -121,7 +134,7 @@ export function AudioPlayer({
   
   // Set up crossfade when current track is near the end
   useEffect(() => {
-    if (!nextAudioUrl || !isPlaying || isCrossfading) return;
+    if (!nextAudioUrl || !isPlaying || isCrossfading || isLiveStream) return;
     
     const audio = audioRef.current;
     const nextAudio = nextAudioRef.current;
@@ -193,14 +206,22 @@ export function AudioPlayer({
           setIsCrossfading(false);
         });
     }
-  }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading]);
+  }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isLiveStream]);
   
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
     const setAudioData = () => {
-      setDuration(audio.duration);
+      if (audio.duration !== Infinity && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+        setIsLiveStream(false);
+      } else {
+        // Infinite duration indicates a stream
+        setIsLiveStream(true);
+        setDuration(0);
+      }
+      
       setIsLoaded(true);
       setLoadError(false);
       
@@ -217,7 +238,7 @@ export function AudioPlayer({
       
       toast({
         title: "Audio geladen",
-        description: "De meditatie is klaar om af te spelen."
+        description: isLiveStream ? "Live stream is klaar om af te spelen." : "De audio is klaar om af te spelen."
       });
     };
     
@@ -248,10 +269,10 @@ export function AudioPlayer({
       setLoadError(true);
       setIsLoaded(false);
       
-      if (audioUrl.startsWith('http') && !isRetrying) {
+      if (!isRetrying) {
         setIsRetrying(true);
         
-        // For direct URLs, try using CORS proxy or direct playback as fallback
+        // Try direct playback as fallback
         setTimeout(() => {
           try {
             // Try direct playback again
@@ -280,6 +301,7 @@ export function AudioPlayer({
     };
     
     audio.addEventListener("loadeddata", setAudioData);
+    audio.addEventListener("loadedmetadata", setAudioData); // Added for streams
     audio.addEventListener("timeupdate", setAudioTime);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
@@ -287,11 +309,21 @@ export function AudioPlayer({
     audio.volume = volume;
     audio.loop = isLooping;
     
+    // Special event for live streams
+    audio.addEventListener("progress", () => {
+      // For live streams, we might not get duration
+      if (audio.duration === Infinity || isNaN(audio.duration)) {
+        setIsLiveStream(true);
+      }
+    });
+    
     return () => {
       audio.removeEventListener("loadeddata", setAudioData);
+      audio.removeEventListener("loadedmetadata", setAudioData);
       audio.removeEventListener("timeupdate", setAudioTime);
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("error", handleError);
+      audio.removeEventListener("progress", () => {});
       
       // Clear crossfade timeout if component unmounts
       if (crossfadeTimeoutRef.current) {
@@ -299,7 +331,7 @@ export function AudioPlayer({
         crossfadeTimeoutRef.current = null;
       }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream]);
   
   // Reset audio state when audioUrl changes
   useEffect(() => {
@@ -311,14 +343,15 @@ export function AudioPlayer({
     setLoadError(false);
     setIsRetrying(false);
     setIsCrossfading(false);
+    setIsLiveStream(checkIfLiveStream(audioUrl));
     
     if (crossfadeTimeoutRef.current) {
       clearTimeout(crossfadeTimeoutRef.current);
       crossfadeTimeoutRef.current = null;
     }
     
-    // If it's a direct URL, use direct playback method
-    if (audioUrl.startsWith('http') && isPlayingExternal) {
+    // Always use direct playback method
+    if (isPlayingExternal) {
       playDirectly(audioUrl, audio);
     } else {
       audio.load();
@@ -327,7 +360,7 @@ export function AudioPlayer({
   
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || isLiveStream) return;
     
     audio.loop = isLooping;
     
@@ -349,7 +382,7 @@ export function AudioPlayer({
         clearInterval(intervalId);
       };
     }
-  }, [isLooping]);
+  }, [isLooping, isLiveStream]);
   
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -367,34 +400,39 @@ export function AudioPlayer({
       
       toast({
         title: "Gepauzeerd",
-        description: "De meditatie is gepauzeerd."
+        description: "De audio is gepauzeerd."
       });
     } else {
-      audio.play()
-        .then(() => {
-          setIsPlaying(true);
-          if (onPlayPauseChange) onPlayPauseChange(true);
-          
-          // If we're in the middle of a crossfade, also resume the next track
-          if (isCrossfading && nextAudioRef.current) {
-            nextAudioRef.current.play().catch(error => {
-              console.error("Error resuming next audio:", error);
+      // Always use direct method to play
+      if (!isLoaded) {
+        playDirectly(audioUrl, audio);
+      } else {
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+            if (onPlayPauseChange) onPlayPauseChange(true);
+            
+            // If we're in the middle of a crossfade, also resume the next track
+            if (isCrossfading && nextAudioRef.current) {
+              nextAudioRef.current.play().catch(error => {
+                console.error("Error resuming next audio:", error);
+              });
+            }
+            
+            toast({
+              title: "Speelt nu",
+              description: title ? `"${title}" speelt nu` : "De audio speelt nu"
             });
-          }
-          
-          toast({
-            title: "Speelt nu",
-            description: title ? `"${title}" speelt nu` : "De meditatie speelt nu"
+          })
+          .catch(error => {
+            console.error("Error playing audio:", error);
+            toast({
+              variant: "destructive",
+              title: "Fout bij afspelen",
+              description: "Kon de audio niet afspelen. Probeer het later opnieuw."
+            });
           });
-        })
-        .catch(error => {
-          console.error("Error playing audio:", error);
-          toast({
-            variant: "destructive",
-            title: "Fout bij afspelen",
-            description: "Kon de audio niet afspelen. Probeer het later opnieuw."
-          });
-        });
+      }
     }
   };
   
@@ -405,32 +443,26 @@ export function AudioPlayer({
     setLoadError(false);
     setIsRetrying(true);
     
-    // For direct URLs, try the direct playback method
-    if (audioUrl.startsWith('http')) {
-      playDirectly(audioUrl, audio);
-    } else {
-      setTimeout(() => {
-        audio.load();
-        setIsRetrying(false);
-        toast({
-          title: "Opnieuw laden",
-          description: "Probeert audio opnieuw te laden."
-        });
-      }, 500);
-    }
+    // Always use direct method
+    playDirectly(audioUrl, audio);
+    
+    toast({
+      title: "Opnieuw laden",
+      description: "Probeert audio opnieuw te laden."
+    });
   };
   
   const toggleLoop = () => {
     setIsLooping(!isLooping);
     toast({
       title: !isLooping ? "Herhalen aan" : "Herhalen uit",
-      description: !isLooping ? "De meditatie zal blijven herhalen" : "De meditatie zal stoppen na afloop"
+      description: !isLooping ? "De audio zal blijven herhalen" : "De audio zal stoppen na afloop"
     });
   };
   
   const handleProgressChange = (newValue: number[]) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || isLiveStream) return;
     
     const newTime = newValue[0];
     audio.currentTime = newTime;
@@ -480,7 +512,7 @@ export function AudioPlayer({
   
   const skipTime = (amount: number) => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || isLiveStream) return;
     
     audio.currentTime = Math.min(Math.max(audio.currentTime + amount, 0), duration);
   };
@@ -531,12 +563,14 @@ export function AudioPlayer({
             onValueChange={handleProgressChange}
             className={cn(
               "audio-player-slider",
-              isCrossfading && "cursor-wait opacity-70"
+              (isCrossfading || isLiveStream) && "cursor-wait opacity-70"
             )}
-            disabled={!isLoaded || isCrossfading}
+            disabled={!isLoaded || isCrossfading || isLiveStream}
           />
         </div>
-        <div className="text-xs w-10">{formatTime(duration)}</div>
+        <div className="text-xs w-10">
+          {isLiveStream ? "LIVE" : formatTime(duration)}
+        </div>
       </div>
       
       {showControls && (
@@ -547,7 +581,7 @@ export function AudioPlayer({
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-full"
-              disabled={!isLoaded || isCrossfading}
+              disabled={!isLoaded || isCrossfading || isLiveStream}
             >
               <SkipBack className="h-4 w-4" />
             </Button>
@@ -571,7 +605,7 @@ export function AudioPlayer({
               size="icon"
               variant="ghost"
               className="h-8 w-8 rounded-full"
-              disabled={!isLoaded || isCrossfading}
+              disabled={!isLoaded || isCrossfading || isLiveStream}
             >
               <SkipForward className="h-4 w-4" />
             </Button>
@@ -585,7 +619,7 @@ export function AudioPlayer({
                   "h-8 w-8 rounded-full transition-colors",
                   isLooping && "bg-primary text-primary-foreground"
                 )}
-                disabled={!isLoaded}
+                disabled={!isLoaded || isLiveStream}
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
