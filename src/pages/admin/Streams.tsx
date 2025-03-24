@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { 
@@ -19,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play, GripVertical } from "lucide-react";
+import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play, GripVertical, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -43,6 +42,8 @@ const AdminStreams = () => {
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [pendingOrderChanges, setPendingOrderChanges] = useState(false);
+  const [reorderedStreams, setReorderedStreams] = useState<RadioStream[]>([]);
   
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ['radioStreams'],
@@ -62,7 +63,6 @@ const AdminStreams = () => {
   
   const createStreamMutation = useMutation({
     mutationFn: async (newStream: Omit<RadioStream, 'id' | 'position'>) => {
-      // Get the max position to place the new item at the end
       const maxPosition = streams.length > 0 
         ? Math.max(...streams.map(s => s.position || 0)) + 1 
         : 0;
@@ -154,6 +154,29 @@ const AdminStreams = () => {
     }
   });
   
+  const saveOrderMutation = useMutation({
+    mutationFn: async (streamsToUpdate: RadioStream[]) => {
+      const updatePromises = streamsToUpdate.map((stream, index) => 
+        supabase
+          .from('radio_streams')
+          .update({ position: index })
+          .eq('id', stream.id)
+      );
+      
+      await Promise.all(updatePromises);
+      return streamsToUpdate;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
+      toast.success("Volgorde van streaming links opgeslagen");
+      setPendingOrderChanges(false);
+    },
+    onError: (error) => {
+      console.error("Error saving stream order:", error);
+      toast.error("Kon de volgorde niet opslaan");
+    }
+  });
+  
   const resetForm = () => {
     setTitle("");
     setUrl("");
@@ -213,6 +236,11 @@ const AdminStreams = () => {
     }
   };
   
+  const handleSaveOrder = () => {
+    if (!pendingOrderChanges || reorderedStreams.length === 0) return;
+    saveOrderMutation.mutate(reorderedStreams);
+  };
+  
   const isValidUrl = (url: string) => {
     if (!url) return false;
     try {
@@ -237,48 +265,28 @@ const AdminStreams = () => {
   const handleDragEnd = async (result: any) => {
     const { destination, source } = result;
     
-    // If dropped outside a droppable area or in the same position
     if (!destination || (destination.index === source.index)) {
       return;
     }
     
-    // Create a copy of the streams array
-    const updatedStreams = Array.from(streams);
+    const updatedStreams = Array.from(activeStreams);
     
-    // Remove the dragged item from its original position
     const [reorderedItem] = updatedStreams.splice(source.index, 1);
     
-    // Insert the dragged item at the new position
     updatedStreams.splice(destination.index, 0, reorderedItem);
     
-    // Update position values for all streams
-    const updatePromises = updatedStreams.map((stream, index) => 
-      supabase
-        .from('radio_streams')
-        .update({ position: index })
-        .eq('id', stream.id)
-    );
+    const updatedStreamsWithPositions = updatedStreams.map((stream, index) => ({
+      ...stream,
+      position: index
+    }));
     
-    try {
-      // Optimistically update the UI first for better UX
-      queryClient.setQueryData(['radioStreams'], updatedStreams.map((stream, index) => ({
-        ...stream,
-        position: index
-      })));
-      
-      // Then perform the actual database updates
-      await Promise.all(updatePromises);
-      
-      // Verify updates with a fresh query
-      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-      toast.success("Streaming links gereorganiseerd");
-    } catch (error) {
-      console.error("Error reordering streams:", error);
-      toast.error("Kon de streaming links niet reorganiseren");
-      
-      // Revert to original data on error
-      queryClient.invalidateQueries({ queryKey: ['radioStreams'] });
-    }
+    setReorderedStreams(updatedStreamsWithPositions);
+    setPendingOrderChanges(true);
+    
+    queryClient.setQueryData(['radioStreams'], [
+      ...updatedStreamsWithPositions,
+      ...inactiveStreams
+    ]);
   };
   
   return (
@@ -286,10 +294,22 @@ const AdminStreams = () => {
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Streaming Beheren</h1>
-          <Button onClick={handleOpenNew}>
-            <Radio className="h-4 w-4 mr-2" />
-            Nieuwe Streaming Link
-          </Button>
+          <div className="flex gap-2">
+            {pendingOrderChanges && (
+              <Button 
+                onClick={handleSaveOrder}
+                variant="outline"
+                className="flex items-center gap-1.5"
+              >
+                <Save className="h-4 w-4" />
+                Volgorde Opslaan
+              </Button>
+            )}
+            <Button onClick={handleOpenNew}>
+              <Radio className="h-4 w-4 mr-2" />
+              Nieuwe Streaming Link
+            </Button>
+          </div>
         </div>
         
         <p className="text-muted-foreground">
@@ -308,45 +328,52 @@ const AdminStreams = () => {
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
               </div>
             ) : activeStreams.length > 0 ? (
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="radio-streams">
-                  {(provided) => (
-                    <div 
-                      {...provided.droppableProps} 
-                      ref={provided.innerRef} 
-                      className="space-y-2"
-                    >
-                      {activeStreams.map((stream, index) => (
-                        <Draggable 
-                          key={stream.id} 
-                          draggableId={stream.id} 
-                          index={index}
-                        >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="relative group"
-                            >
-                              <div className="absolute left-0 top-0 bottom-0 flex items-center pl-1 opacity-0 group-hover:opacity-50">
-                                <GripVertical className="h-5 w-5 text-muted-foreground" />
+              <div className="relative">
+                {pendingOrderChanges && (
+                  <div className="absolute right-0 top-0 -mt-12">
+                    <p className="text-xs text-amber-500 italic">Niet-opgeslagen wijzigingen</p>
+                  </div>
+                )}
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="radio-streams">
+                    {(provided) => (
+                      <div 
+                        {...provided.droppableProps} 
+                        ref={provided.innerRef} 
+                        className="space-y-2"
+                      >
+                        {activeStreams.map((stream, index) => (
+                          <Draggable 
+                            key={stream.id} 
+                            draggableId={stream.id} 
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="relative group"
+                              >
+                                <div className="absolute left-0 top-0 bottom-0 flex items-center pl-1 opacity-0 group-hover:opacity-50">
+                                  <GripVertical className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                                <StreamCard 
+                                  stream={stream} 
+                                  onEdit={handleEdit} 
+                                  onDelete={handleDelete}
+                                  onToggleActive={handleToggleActive}
+                                />
                               </div>
-                              <StreamCard 
-                                stream={stream} 
-                                onEdit={handleEdit} 
-                                onDelete={handleDelete}
-                                onToggleActive={handleToggleActive}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </div>
             ) : (
               <div className="text-center py-8 bg-muted/30 rounded-lg">
                 <p className="text-muted-foreground">Geen actieve streaming links gevonden</p>
