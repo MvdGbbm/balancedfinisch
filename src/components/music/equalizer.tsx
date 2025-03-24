@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { AudioWaveform } from "lucide-react";
 
 interface EqualizerProps {
   isActive: boolean;
@@ -15,7 +16,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const numBars = 24; // Increased from 12 to 24 bars
+  const numBars = 32; // Increased from 24 to 32 bars for more detailed visualization
 
   // Setup audio analyzer if audio element is provided
   useEffect(() => {
@@ -25,8 +26,8 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       analyzerRef.current = audioContextRef.current.createAnalyser();
-      analyzerRef.current.fftSize = 256; // More detailed frequency data
-      analyzerRef.current.smoothingTimeConstant = 0.8; // Smoother transitions
+      analyzerRef.current.fftSize = 1024; // Increased from 256 for more detailed frequency data
+      analyzerRef.current.smoothingTimeConstant = 0.7; // Slightly reduced smoothing for more responsive visualization
       
       const bufferLength = analyzerRef.current.frequencyBinCount;
       dataArrayRef.current = new Uint8Array(bufferLength);
@@ -78,30 +79,66 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       if (analyzerRef.current && dataArrayRef.current && audioElement) {
         analyzerRef.current.getByteFrequencyData(dataArrayRef.current);
         
-        // Map frequency data to our number of bars
+        // Apply frequency weighting for more natural visualization
+        // Human hearing is more sensitive in mid-range frequencies
         const frequencyData = dataArrayRef.current;
-        const step = Math.floor(frequencyData.length / numBars);
+        const frequencyBands = []; 
         
-        return Array(numBars).fill(0).map((_, i) => {
-          // Get average of frequency range for this bar
-          let sum = 0;
-          for (let j = 0; j < step; j++) {
-            const index = i * step + j;
-            if (index < frequencyData.length) {
-              sum += frequencyData[index];
-            }
-          }
-          const average = sum / step;
+        // Log scale distribution of frequency bins to better match human hearing
+        for (let i = 0; i < numBars; i++) {
+          // Calculate exponential position in the frequency range
+          // This gives more bins to lower frequencies, similar to how we hear
+          const scale = Math.pow(frequencyData.length, i / numBars) / 10;
+          const index = Math.min(Math.floor(scale), frequencyData.length - 1);
           
-          // Convert to percentage (0-100%) with 15% minimum height
-          return Math.max(15, Math.min(95, (average / 255) * 95));
-        });
+          // Collect weighted values from nearby frequency bins for smoother visualization
+          let sum = 0;
+          let count = 0;
+          const range = 3; // Look at a few bins in either direction for averaging
+          
+          for (let j = Math.max(0, index - range); j <= Math.min(frequencyData.length - 1, index + range); j++) {
+            // Apply exponential weighting to increase sensitivity
+            const weight = 1.0 - Math.abs(j - index) / (range + 1);
+            sum += Math.pow(frequencyData[j] / 255, 1.2) * 255 * weight; // Exponential scaling for more dynamic range
+            count += weight;
+          }
+          
+          const value = count > 0 ? sum / count : 0;
+          
+          // Boost low frequencies slightly (bass boost)
+          const bassBoost = i < numBars / 4 ? 1.3 : 1.0;
+          // Boost high frequencies slightly (treble boost)
+          const trebleBoost = i > (numBars * 3) / 4 ? 1.2 : 1.0;
+          
+          const boostedValue = value * bassBoost * trebleBoost;
+          
+          // Convert to percentage (10-100%) with 10% minimum height
+          frequencyBands.push(Math.max(10, Math.min(100, (boostedValue / 255) * 100)));
+        }
+        
+        return frequencyBands;
       } else {
         // Fallback: Generate simulated responsive heights
-        let heights = Array(numBars).fill(0).map(() => Math.random() * 0.6 + 0.15);
+        let heights = Array(numBars).fill(0).map(() => Math.random() * 0.7 + 0.1);
+        
+        // Simulate frequency response patterns (more bass, mid falloff, some treble)
+        for (let i = 0; i < numBars; i++) {
+          // Bass boost for first quarter
+          if (i < numBars / 4) {
+            heights[i] *= 1.5;
+          }
+          // Mid cut
+          else if (i < numBars / 2) {
+            heights[i] *= 0.8;
+          }
+          // Some high frequency emphasis
+          else if (i > (numBars * 3) / 4) {
+            heights[i] *= 1.2;
+          }
+        }
         
         // Smooth the values for a more natural pattern
-        for (let i = 0; i < 3; i++) { // Increased smoothing passes for better effect
+        for (let i = 0; i < 3; i++) {
           const newHeights = [...heights];
           for (let j = 1; j < heights.length - 1; j++) {
             // Each bar is influenced by its neighbors (smoothing)
@@ -110,8 +147,8 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           heights = newHeights;
         }
         
-        // Scale to appropriate percentage range (15% to 95%)
-        return heights.map(h => Math.floor(h * 80) + 15);
+        // Scale to appropriate percentage range (10% to 100%)
+        return heights.map(h => Math.floor(h * 90) + 10);
       }
     };
 
@@ -124,8 +161,15 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
         // Apply the height from our generator
         const height = heights[index];
         
-        // Add different transition speeds for more natural movement
-        const duration = 200 + (index % 5) * 40; // 200-360ms transitions
+        // Add different transition speeds for different frequency ranges
+        // Lower frequencies (bass) tend to change more slowly than higher ones
+        const baseDuration = 120;
+        const duration = index < numBars / 3 
+          ? baseDuration + 60  // Bass - slower transitions
+          : index < (2 * numBars) / 3 
+            ? baseDuration     // Mids - medium transitions
+            : baseDuration - 40; // Highs - faster transitions
+            
         bar.style.transitionDuration = `${duration}ms`;
         bar.style.height = `${height}%`;
       });
@@ -133,7 +177,7 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
       // Faster frame rate for more responsive movement
       animationRef.current = setTimeout(() => {
         requestAnimationFrame(animate);
-      }, 80) as unknown as number; // Reduced from 180ms to 80ms for quicker response
+      }, 50) as unknown as number; // Reduced from 80ms to 50ms for quicker response
     };
 
     // Start the animation
@@ -149,7 +193,16 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
   }, [isActive, numBars, audioElement]);
 
   return (
-    <div className={cn("flex items-end justify-center h-16 gap-[2px] p-2 bg-card/30 rounded-md", className)}>
+    <div className={cn(
+      "relative flex items-end justify-center h-20 gap-[1px] p-2 bg-card/30 rounded-md overflow-hidden", 
+      className
+    )}>
+      {isActive && !audioElement && (
+        <div className="absolute top-1 right-1 text-xs text-muted-foreground flex items-center opacity-50">
+          <AudioWaveform className="h-3 w-3 mr-1" />
+          <span>Simulatie</span>
+        </div>
+      )}
       {Array.from({ length: numBars }).map((_, index) => (
         <div
           key={index}
@@ -157,11 +210,13 @@ export function Equalizer({ isActive, className, audioElement }: EqualizerProps)
           className={cn(
             "w-full rounded-t-sm transition-all ease-in-out",
             isActive 
-              ? "bg-gradient-to-t from-blue-700 to-blue-400" 
+              ? index % 2 === 0 
+                ? "bg-gradient-to-t from-blue-700 to-blue-400" 
+                : "bg-gradient-to-t from-indigo-700 to-indigo-400"
               : "bg-blue-300/30"
           )}
           style={{ 
-            height: "15%",
+            height: "10%",
             transitionDuration: "200ms" 
           }}
         />
