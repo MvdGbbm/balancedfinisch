@@ -211,7 +211,9 @@ export function MeditationPlayerContainer({
       <div className="flex gap-2 mt-4">
         <Button
           variant="outline"
-          className={`flex-1 ${selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'opacity-50'}`}
+          className={`flex-1 ${selectedMeditation.veraLink ? 
+            (currentAudioUrl === selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-blue-600 hover:text-white') 
+            : 'opacity-50 bg-transparent'}`}
           onClick={() => handlePlayExternalLink('vera')}
           disabled={!selectedMeditation.veraLink}
           type="button"
@@ -222,7 +224,9 @@ export function MeditationPlayerContainer({
         
         <Button
           variant="outline"
-          className={`flex-1 ${selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'opacity-50'}`}
+          className={`flex-1 ${selectedMeditation.marcoLink ? 
+            (currentAudioUrl === selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'hover:bg-purple-600 hover:text-white') 
+            : 'opacity-50 bg-transparent'}`}
           onClick={() => handlePlayExternalLink('marco')}
           disabled={!selectedMeditation.marcoLink}
           type="button"
