@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 
 import { Soundscape } from "@/lib/types";
