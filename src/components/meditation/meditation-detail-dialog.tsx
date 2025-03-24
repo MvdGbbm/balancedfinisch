@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -48,6 +49,27 @@ export const MeditationDetailDialog = ({
   guidedMeditations,
   onGuidedMeditationSelect
 }: MeditationDetailDialogProps) => {
+  const { toast } = useToast();
+  const [audioUrl, setAudioUrl] = useState<string>("");
+  
+  useEffect(() => {
+    if (isOpen) {
+      const url = getActiveAudioUrl();
+      setAudioUrl(url);
+      console.log("Active audio URL in dialog:", url);
+      console.log("Selected audio source:", selectedAudioSource);
+      
+      // Check if Marco's link exists when Marco is selected
+      if (selectedAudioSource === 'marco' && meditation && !meditation.marcoLink) {
+        toast({
+          title: "Marco's versie niet beschikbaar",
+          description: "De meditatie van Marco is niet beschikbaar. We spelen de standaard versie af.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [isOpen, getActiveAudioUrl, selectedAudioSource, meditation, toast]);
+  
   if (!meditation) return null;
   
   // Get the currently selected guided meditation ID
@@ -68,6 +90,31 @@ export const MeditationDetailDialog = ({
   const filteredGuidedMeditations = guidedMeditations.filter(
     med => med.id !== currentGuidedMeditationId
   );
+  
+  const handleSelectSource = (source: 'vera' | 'marco', meditation?: Meditation) => {
+    const targetMeditation = meditation || null;
+    
+    // Check if Marco's link exists when Marco is selected
+    if (source === 'marco' && targetMeditation && !targetMeditation.marcoLink) {
+      toast({
+        title: "Marco's versie niet beschikbaar",
+        description: "De meditatie van Marco is niet beschikbaar. We schakelen terug naar Vera's versie.",
+        variant: "destructive"
+      });
+      // Default to Vera if Marco isn't available
+      onAudioSourceChange('vera');
+    } else {
+      onAudioSourceChange(source);
+      if (targetMeditation) {
+        onGuidedMeditationSelect(targetMeditation);
+      }
+      
+      // Update the audio URL immediately to reflect the change
+      setTimeout(() => {
+        setAudioUrl(getActiveAudioUrl());
+      }, 100);
+    }
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -113,10 +160,7 @@ export const MeditationDetailDialog = ({
                       <DropdownMenuItem 
                         key={guidedMeditation.id}
                         className="hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => {
-                          onAudioSourceChange('vera');
-                          onGuidedMeditationSelect(guidedMeditation);
-                        }}
+                        onClick={() => handleSelectSource('vera', guidedMeditation)}
                       >
                         {guidedMeditation.title}
                       </DropdownMenuItem>
@@ -154,10 +198,7 @@ export const MeditationDetailDialog = ({
                       <DropdownMenuItem 
                         key={guidedMeditation.id}
                         className="hover:bg-gray-800 focus:bg-gray-800"
-                        onClick={() => {
-                          onAudioSourceChange('marco');
-                          onGuidedMeditationSelect(guidedMeditation);
-                        }}
+                        onClick={() => handleSelectSource('marco', guidedMeditation)}
                       >
                         {guidedMeditation.title}
                       </DropdownMenuItem>
@@ -172,7 +213,7 @@ export const MeditationDetailDialog = ({
             </div>
           
             <AudioPlayer 
-              audioUrl={getActiveAudioUrl()}
+              audioUrl={audioUrl}
               className="w-full bg-transparent border-none"
               showTitle={false}
               showQuote={true}

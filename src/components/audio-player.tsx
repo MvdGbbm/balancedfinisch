@@ -42,6 +42,14 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const [randomQuote] = React.useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   
+  // Log the audio URL for debugging
+  React.useEffect(() => {
+    console.log(`AudioPlayer attempting to load: ${audioUrl}`);
+    if (audioUrl.includes('marco')) {
+      console.log('Marco audio detected:', audioUrl);
+    }
+  }, [audioUrl]);
+  
   const {
     audioRef,
     nextAudioRef,
@@ -79,11 +87,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   React.useEffect(() => {
     nextAudioRef.current = nextAudioElementRef.current;
   }, [nextAudioRef]);
-  
-  // Log the audio URL for debugging
-  React.useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl}`);
-  }, [audioUrl]);
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>

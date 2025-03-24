@@ -60,12 +60,35 @@ const Meditations = () => {
   };
   
   const handleAudioSourceChange = (source: 'vera' | 'marco') => {
+    console.log(`Changing audio source to: ${source}`);
+    
+    // Check if Marco's audio is available
+    if (source === 'marco' && selectedGuidedMeditation) {
+      if (!selectedGuidedMeditation.marcoLink) {
+        toast.error("Marco's versie is niet beschikbaar voor deze meditatie");
+        return;
+      }
+    } else if (source === 'marco' && currentMeditationWithUrls) {
+      if (!currentMeditationWithUrls.marcoLink) {
+        toast.error("Marco's versie is niet beschikbaar voor deze meditatie");
+        return;
+      }
+    }
+    
     setSelectedAudioSource(source);
     toast.success(`${source === 'vera' ? 'Vera' : 'Marco'} audio geselecteerd`);
   };
   
   const handleGuidedMeditationSelect = (meditation: Meditation) => {
+    console.log("Selected guided meditation:", meditation);
     setSelectedGuidedMeditation(meditation);
+    
+    // Check if Marco is selected but Marco's audio isn't available
+    if (selectedAudioSource === 'marco' && !meditation.marcoLink) {
+      toast.warning(`Marco's versie is niet beschikbaar voor ${meditation.title}. Vera's versie wordt gebruikt.`);
+      setSelectedAudioSource('vera');
+    }
+    
     toast.success(`Geleide meditatie "${meditation.title}" geselecteerd`);
   };
   
@@ -76,7 +99,7 @@ const Meditations = () => {
       } else if (selectedAudioSource === 'marco' && selectedGuidedMeditation.marcoLink) {
         return selectedGuidedMeditation.marcoLink;
       }
-      return selectedGuidedMeditation.audioUrl;
+      return selectedGuidedMeditation.audioUrl || '';
     }
     
     if (!currentMeditationWithUrls) return '';
@@ -87,8 +110,17 @@ const Meditations = () => {
       return currentMeditationWithUrls.marcoLink;
     }
     
-    return currentMeditationWithUrls.audioUrl;
+    return currentMeditationWithUrls.audioUrl || '';
   };
+  
+  useEffect(() => {
+    // Log the current selection state when it changes
+    if (currentMeditationWithUrls) {
+      console.log("Current meditation:", currentMeditationWithUrls.title);
+      console.log("Audio source:", selectedAudioSource);
+      console.log("Active URL:", getActiveAudioUrl());
+    }
+  }, [currentMeditationWithUrls, selectedAudioSource]);
   
   if (loading) {
     return (
@@ -123,8 +155,15 @@ const Meditations = () => {
               meditation={meditation}
               isSelected={currentMeditation?.id === meditation.id}
               onClick={(med) => {
+                console.log("Selected meditation card:", med.title);
                 setCurrentMeditation(med);
                 setSelectedGuidedMeditation(null);
+                
+                // Check if Marco is selected but Marco's audio isn't available
+                if (selectedAudioSource === 'marco' && !med.marcoLink) {
+                  toast.warning(`Marco's versie is niet beschikbaar voor ${med.title}. Vera's versie wordt gebruikt.`);
+                  setSelectedAudioSource('vera');
+                }
               }}
             />
           ))}

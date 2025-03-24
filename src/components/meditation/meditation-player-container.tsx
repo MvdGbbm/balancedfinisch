@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, StopCircle } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +31,8 @@ export function MeditationPlayerContainer({
       // Log the meditation details for debugging
       console.log("Selected meditation:", selectedMeditation);
       console.log("Audio URL:", selectedMeditation.audioUrl);
+      console.log("Marco link:", selectedMeditation.marcoLink);
+      console.log("Vera link:", selectedMeditation.veraLink);
       
       // Short timeout before allowing play
       setTimeout(() => {
@@ -44,7 +46,9 @@ export function MeditationPlayerContainer({
   }
   
   // Check if the audioUrl exists and is valid, use more permissive checking
-  const hasValidAudio = !!selectedMeditation.audioUrl;
+  const hasValidAudio = !!selectedMeditation.audioUrl || 
+                        !!selectedMeditation.veraLink || 
+                        !!selectedMeditation.marcoLink;
   
   // Check if the coverImageUrl exists and is valid
   const hasValidImage = !!selectedMeditation.coverImageUrl;
@@ -123,7 +127,7 @@ export function MeditationPlayerContainer({
             onClick={handleStartPlaying}
             className="flex items-center gap-1"
           >
-            <StopCircle className="h-4 w-4" />
+            <PlayCircle className="h-4 w-4" />
             Start
           </Button>
         )}
