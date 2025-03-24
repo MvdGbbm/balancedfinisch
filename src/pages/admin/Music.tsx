@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
@@ -383,44 +382,73 @@ const AdminMusic = () => {
     }
   };
 
-  const handleAddMusic = (values: z.infer<typeof formSchema>) => {
-    if (!audioUrl) {
-      toast({
-        title: "Error",
-        description: "Please upload an audio file first",
-        variant: "destructive",
-      });
+  // Fix: The handleAddMusic function will now directly call processAudioFile or handleExternalUrlChange
+  // instead of trying to submit the form directly
+  const handleAddMusic = () => {
+    const formValid = form.trigger();
+    if (!formValid) {
       return;
     }
     
-    const newMusic: Partial<MusicItem> = {
-      title: values.title,
-      artist: values.artist,
-      description: values.description,
-      audioUrl: audioUrl,
-      coverImageUrl: coverImageUrl,
-      category: values.category,
-      tags: values.tags ? values.tags.split(",").map(tag => tag.trim()) : [],
-    };
-
-    saveMusicItem(newMusic).then(savedItem => {
-      if (savedItem) {
-        setMusicList([...musicList, savedItem]);
-        form.reset();
-        
-        toast({
-          title: "Muziek toegevoegd",
-          description: `"${savedItem.title}" is succesvol toegevoegd.`,
-        });
-      }
-    }).catch(error => {
-      console.error("Error saving music:", error);
+    if (!audioUrl && !audioFile && !externalAudioUrl) {
       toast({
         title: "Error",
-        description: "Failed to save music",
+        description: "Please upload an audio file or provide an audio URL first",
         variant: "destructive",
       });
-    });
+      setIsUploadDialogOpen(true);
+      return;
+    }
+    
+    if (audioFile) {
+      processAudioFile();
+    } else if (externalAudioUrl) {
+      handleExternalUrlChange();
+    } else if (audioUrl) {
+      // If we already have a processed audioUrl but no file (e.g. after editing)
+      const values = form.getValues();
+      const newMusic: Partial<MusicItem> = {
+        id: editingId || undefined,
+        title: values.title,
+        artist: values.artist,
+        description: values.description,
+        audioUrl: audioUrl,
+        coverImageUrl: coverImageUrl,
+        category: values.category,
+        tags: values.tags ? values.tags.split(",").map(tag => tag.trim()) : [],
+      };
+      
+      saveMusicItem(newMusic).then(savedItem => {
+        if (savedItem) {
+          if (editingId) {
+            setMusicList(prev => prev.map(m => m.id === editingId ? savedItem : m));
+          } else {
+            setMusicList(prev => [...prev, savedItem]);
+          }
+          
+          // Reset form and state
+          form.reset();
+          setIsEditing(false);
+          setEditingId(null);
+          setAudioUrl("");
+          setCoverImageUrl("");
+          setPreviewUrl(null);
+          setIsPlaying(false);
+          
+          toast({
+            title: "Muziek toegevoegd",
+            description: `"${savedItem.title}" is succesvol toegevoegd.`,
+          });
+        }
+      }).catch(error => {
+        console.error("Error saving music:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save music",
+          variant: "destructive",
+        });
+      });
+    }
   };
 
   const handleEditMusic = (music: MusicItem) => {
@@ -439,9 +467,15 @@ const AdminMusic = () => {
     });
   };
 
-  const handleSaveEdit = (values: z.infer<typeof formSchema>) => {
+  const handleSaveEdit = () => {
+    const formValid = form.trigger();
+    if (!formValid) {
+      return;
+    }
+    
     if (!editingId) return;
     
+    const values = form.getValues();
     const updatedMusic: Partial<MusicItem> = {
       id: editingId,
       title: values.title,
@@ -543,7 +577,14 @@ const AdminMusic = () => {
             </CardDescription>
           </CardHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(isEditing ? handleSaveEdit : handleAddMusic)}>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (isEditing) {
+                handleSaveEdit();
+              } else {
+                handleAddMusic();
+              }
+            }}>
               <CardContent className="space-y-4">
                 {/* Audio File Upload */}
                 <div className="space-y-2">
@@ -775,7 +816,6 @@ const AdminMusic = () => {
         </Card>
       </div>
       
-      {/* Upload Dialog */}
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent>
           <DialogHeader>
