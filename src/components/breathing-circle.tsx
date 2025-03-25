@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ export function BreathingCircle({
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
-  const [circleScale, setCircleScale] = useState(0.75);
+  const [circleScale, setCircleScale] = useState(0.5);
 
   const activePhase = currentPhase || phase;
 
@@ -35,11 +36,11 @@ export function BreathingCircle({
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
-      setCircleScale(0.75);
+      setCircleScale(0.5);
     } else {
       setPhase("rest");
       setProgress(0);
-      setCircleScale(0.85);
+      setCircleScale(0.5);
     }
   }, [isActive, inhaleDuration]);
 
@@ -57,23 +58,31 @@ export function BreathingCircle({
       const percentComplete = (maxSeconds - secondsLeft) / maxSeconds;
       
       if (activePhase === "inhale") {
-        setCircleScale(0.75 + (percentComplete * 0.5));
+        // Expand from 50% to 90% during inhale
+        setCircleScale(0.5 + (percentComplete * 0.4));
       } else if (activePhase === "hold") {
-        setCircleScale(1.25);
+        // Stay at 90% during hold
+        setCircleScale(0.9);
       } else if (activePhase === "exhale") {
-        setCircleScale(1.25 - (percentComplete * 0.5));
+        // Shrink from 90% back to 50% during exhale
+        setCircleScale(0.9 - (percentComplete * 0.4));
       } else {
-        setCircleScale(0.85);
+        // Rest at 50%
+        setCircleScale(0.5);
       }
     } else {
       if (activePhase === "inhale") {
-        setCircleScale(0.75 + (progress / 100) * 0.5);
+        // Expand from 50% to 90% during inhale
+        setCircleScale(0.5 + (progress / 100) * 0.4);
       } else if (activePhase === "hold") {
-        setCircleScale(1.25);
+        // Stay at 90% during hold
+        setCircleScale(0.9);
       } else if (activePhase === "exhale") {
-        setCircleScale(1.25 - (progress / 100) * 0.5);
+        // Shrink from 90% back to 50% during exhale
+        setCircleScale(0.9 - (progress / 100) * 0.4);
       } else {
-        setCircleScale(0.85);
+        // Rest at 50%
+        setCircleScale(0.5);
       }
     }
   }, [activePhase, progress, isActive, secondsLeft, inhaleDuration, holdDuration, exhaleDuration]);
