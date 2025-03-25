@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, RefreshCw, Link, User } from "lucide-react";
+import { Pause, Play, RefreshCw, User } from "lucide-react";
 import { 
   Select,
   SelectContent,
@@ -11,8 +11,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 type BreathingPattern = {
@@ -63,14 +61,6 @@ const defaultBreathingPatterns: BreathingPattern[] = [
   },
 ];
 
-// Define voice presets
-interface VoicePreset {
-  name: string;
-  inhaleUrl: string;
-  exhaleUrl: string;
-  holdUrl: string;
-}
-
 export function BreathExercise() {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [currentPattern, setCurrentPattern] = useState<BreathingPattern>(breathingPatterns[0]);
@@ -82,18 +72,10 @@ export function BreathExercise() {
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
   
-  // Add voice preset URLs
-  const [veraInhaleUrl, setVeraInhaleUrl] = useState<string>("");
-  const [veraExhaleUrl, setVeraExhaleUrl] = useState<string>("");
-  const [veraHoldUrl, setVeraHoldUrl] = useState<string>("");
-  
-  const [marcoInhaleUrl, setMarcoInhaleUrl] = useState<string>("");
-  const [marcoExhaleUrl, setMarcoExhaleUrl] = useState<string>("");
-  const [marcoHoldUrl, setMarcoHoldUrl] = useState<string>("");
-  
   // Track currently selected voice
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
 
+  // Load breathing patterns and voice URLs from localStorage
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -115,34 +97,9 @@ export function BreathExercise() {
         console.error("Error loading breathing patterns:", error);
       }
     }
-    
-    // Load saved voice URLs from localStorage
-    const veraUrls = localStorage.getItem('veraVoiceUrls');
-    if (veraUrls) {
-      try {
-        const parsedUrls = JSON.parse(veraUrls);
-        setVeraInhaleUrl(parsedUrls.inhale || "");
-        setVeraExhaleUrl(parsedUrls.exhale || "");
-        setVeraHoldUrl(parsedUrls.hold || "");
-      } catch (error) {
-        console.error("Error loading Vera voice URLs:", error);
-      }
-    }
-    
-    const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-    if (marcoUrls) {
-      try {
-        const parsedUrls = JSON.parse(marcoUrls);
-        setMarcoInhaleUrl(parsedUrls.inhale || "");
-        setMarcoExhaleUrl(parsedUrls.exhale || "");
-        setMarcoHoldUrl(parsedUrls.hold || "");
-      } catch (error) {
-        console.error("Error loading Marco voice URLs:", error);
-      }
-    }
-    
   }, []);
 
+  // Reset state when pattern changes
   useEffect(() => {
     setIsActive(false);
     setCurrentPhase("inhale");
@@ -158,30 +115,48 @@ export function BreathExercise() {
     let url = "";
     
     if (activeVoice === "vera") {
-      switch (currentPhase) {
-        case "inhale":
-          url = veraInhaleUrl || "";
-          break;
-        case "hold1":
-        case "hold2":
-          url = veraHoldUrl || "";
-          break;
-        case "exhale":
-          url = veraExhaleUrl || "";
-          break;
+      // Get Vera URLs from localStorage
+      const veraUrls = localStorage.getItem('veraVoiceUrls');
+      if (veraUrls) {
+        try {
+          const parsedUrls = JSON.parse(veraUrls);
+          switch (currentPhase) {
+            case "inhale":
+              url = parsedUrls.inhale || "";
+              break;
+            case "hold1":
+            case "hold2":
+              url = parsedUrls.hold || "";
+              break;
+            case "exhale":
+              url = parsedUrls.exhale || "";
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing Vera URLs:", error);
+        }
       }
     } else if (activeVoice === "marco") {
-      switch (currentPhase) {
-        case "inhale":
-          url = marcoInhaleUrl || "";
-          break;
-        case "hold1":
-        case "hold2":
-          url = marcoHoldUrl || "";
-          break;
-        case "exhale":
-          url = marcoExhaleUrl || "";
-          break;
+      // Get Marco URLs from localStorage
+      const marcoUrls = localStorage.getItem('marcoVoiceUrls');
+      if (marcoUrls) {
+        try {
+          const parsedUrls = JSON.parse(marcoUrls);
+          switch (currentPhase) {
+            case "inhale":
+              url = parsedUrls.inhale || "";
+              break;
+            case "hold1":
+            case "hold2":
+              url = parsedUrls.hold || "";
+              break;
+            case "exhale":
+              url = parsedUrls.exhale || "";
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing Marco URLs:", error);
+        }
       }
     } else {
       // Default to pattern URLs if no voice is selected
@@ -205,6 +180,7 @@ export function BreathExercise() {
     setAudioError(false);
   };
 
+  // Update and play audio when phase changes
   useEffect(() => {
     if (!audioRef.current) return;
     
@@ -232,6 +208,7 @@ export function BreathExercise() {
     }
   }, [currentPhase, currentPattern, isActive, currentAudioUrl, activeVoice]);
 
+  // Breathing timer effect
   useEffect(() => {
     let timer: number | null = null;
     
@@ -298,6 +275,7 @@ export function BreathExercise() {
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, currentPattern]);
 
+  // Stop audio when exercise is paused
   useEffect(() => {
     if (!isActive && audioRef.current) {
       audioRef.current.pause();
@@ -346,7 +324,7 @@ export function BreathExercise() {
   };
 
   const startWithVera = () => {
-    if (isActive) {
+    if (isActive && activeVoice === "vera") {
       setIsActive(false);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -356,15 +334,8 @@ export function BreathExercise() {
       setActiveVoice("vera");
       setIsActive(true);
       
-      // Save Vera URLs to localStorage
-      localStorage.setItem('veraVoiceUrls', JSON.stringify({
-        inhale: veraInhaleUrl,
-        exhale: veraExhaleUrl,
-        hold: veraHoldUrl
-      }));
-      
       setTimeout(() => {
-        if (audioRef.current && veraInhaleUrl) {
+        if (audioRef.current && currentAudioUrl) {
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
             console.error("Error playing Vera audio on start:", error);
@@ -376,7 +347,7 @@ export function BreathExercise() {
   };
 
   const startWithMarco = () => {
-    if (isActive) {
+    if (isActive && activeVoice === "marco") {
       setIsActive(false);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -386,15 +357,8 @@ export function BreathExercise() {
       setActiveVoice("marco");
       setIsActive(true);
       
-      // Save Marco URLs to localStorage
-      localStorage.setItem('marcoVoiceUrls', JSON.stringify({
-        inhale: marcoInhaleUrl,
-        exhale: marcoExhaleUrl,
-        hold: marcoHoldUrl
-      }));
-      
       setTimeout(() => {
-        if (audioRef.current && marcoInhaleUrl) {
+        if (audioRef.current && currentAudioUrl) {
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
             console.error("Error playing Marco audio on start:", error);
@@ -413,31 +377,7 @@ export function BreathExercise() {
   };
 
   const hasAudioForCurrentPhase = () => {
-    if (activeVoice === "vera") {
-      switch (currentPhase) {
-        case "inhale": return !!veraInhaleUrl;
-        case "hold1":
-        case "hold2": return !!veraHoldUrl;
-        case "exhale": return !!veraExhaleUrl;
-        default: return false;
-      }
-    } else if (activeVoice === "marco") {
-      switch (currentPhase) {
-        case "inhale": return !!marcoInhaleUrl;
-        case "hold1":
-        case "hold2": return !!marcoHoldUrl;
-        case "exhale": return !!marcoExhaleUrl;
-        default: return false;
-      }
-    } else {
-      switch (currentPhase) {
-        case "inhale": return !!currentPattern.inhaleUrl;
-        case "hold1": return !!currentPattern.hold1Url;
-        case "exhale": return !!currentPattern.exhaleUrl;
-        case "hold2": return !!currentPattern.hold2Url;
-        default: return false;
-      }
-    }
+    return !!currentAudioUrl;
   };
 
   return (
@@ -491,7 +431,7 @@ export function BreathExercise() {
                 <p className="text-2xl font-medium">{getInstructions()}</p>
                 {hasAudioForCurrentPhase() && (
                   <span className={`${audioError ? "text-red-500" : "text-primary"}`}>
-                    <Link className="h-4 w-4" />
+                    {/* Audio indicator */}
                   </span>
                 )}
               </div>
@@ -531,77 +471,6 @@ export function BreathExercise() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reset
               </Button>
-            </div>
-            
-            {/* Voice URL inputs */}
-            <div className="w-full space-y-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-              <h3 className="text-md font-medium">Vera Audio URLs</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="vera-inhale">Inademen</Label>
-                  <Input
-                    id="vera-inhale"
-                    value={veraInhaleUrl}
-                    onChange={(e) => setVeraInhaleUrl(e.target.value)}
-                    placeholder="https://example.com/vera-inhale.mp3"
-                    disabled={isActive}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vera-exhale">Uitademen</Label>
-                  <Input
-                    id="vera-exhale"
-                    value={veraExhaleUrl}
-                    onChange={(e) => setVeraExhaleUrl(e.target.value)}
-                    placeholder="https://example.com/vera-exhale.mp3"
-                    disabled={isActive}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vera-hold">Vasthouden</Label>
-                  <Input
-                    id="vera-hold"
-                    value={veraHoldUrl}
-                    onChange={(e) => setVeraHoldUrl(e.target.value)}
-                    placeholder="https://example.com/vera-hold.mp3"
-                    disabled={isActive}
-                  />
-                </div>
-              </div>
-              
-              <h3 className="text-md font-medium">Marco Audio URLs</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="marco-inhale">Inademen</Label>
-                  <Input
-                    id="marco-inhale"
-                    value={marcoInhaleUrl}
-                    onChange={(e) => setMarcoInhaleUrl(e.target.value)}
-                    placeholder="https://example.com/marco-inhale.mp3"
-                    disabled={isActive}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="marco-exhale">Uitademen</Label>
-                  <Input
-                    id="marco-exhale"
-                    value={marcoExhaleUrl}
-                    onChange={(e) => setMarcoExhaleUrl(e.target.value)}
-                    placeholder="https://example.com/marco-exhale.mp3"
-                    disabled={isActive}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="marco-hold">Vasthouden</Label>
-                  <Input
-                    id="marco-hold"
-                    value={marcoHoldUrl}
-                    onChange={(e) => setMarcoHoldUrl(e.target.value)}
-                    placeholder="https://example.com/marco-hold.mp3"
-                    disabled={isActive}
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </CardContent>

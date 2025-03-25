@@ -36,11 +36,11 @@ export function BreathingCircle({
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
-      setCircleScale(0.5);
+      setCircleScale(0.5); // Start at 50%
     } else {
       setPhase("rest");
       setProgress(0);
-      setCircleScale(0.5);
+      setCircleScale(0.5); // Rest at 50%
     }
   }, [isActive, inhaleDuration]);
 
@@ -54,6 +54,7 @@ export function BreathingCircle({
       case "exhale": maxSeconds = Math.ceil(exhaleDuration / 1000); break;
     }
 
+    // Handle circle scaling based on phase and progress
     if (secondsLeft && maxSeconds > 0) {
       const percentComplete = (maxSeconds - secondsLeft) / maxSeconds;
       
@@ -154,7 +155,7 @@ export function BreathingCircle({
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
         <div 
           className={cn(
-            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all duration-1000", 
+            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all", 
             {
               "bg-blue-400/30": activePhase === "rest",
               "bg-cyan-400/40": activePhase === "inhale",
@@ -249,4 +250,17 @@ export function BreathingCircle({
       </div>
     </div>
   );
+  
+  function getTransitionDuration() {
+    switch (activePhase) {
+      case "inhale":
+        return inhaleDuration;
+      case "hold":
+        return holdDuration;
+      case "exhale":
+        return exhaleDuration;
+      default:
+        return 1000;
+    }
+  }
 }
