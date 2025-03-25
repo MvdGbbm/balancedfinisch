@@ -329,9 +329,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
   
   function updateSoundscape(id: string, soundscape: Partial<Soundscape>) {
-    setSoundscapes(
-      soundscapesData.map((s) => (s.id === id ? { ...s, ...soundscape } : s))
+    const updatedSoundscapes = soundscapesData.map((s) => 
+      (s.id === id ? { ...s, ...soundscape } : s)
     );
+    setSoundscapes(updatedSoundscapes);
   }
   
   function deleteSoundscape(id: string) {

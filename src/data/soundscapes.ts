@@ -64,5 +64,54 @@ export const soundscapes: Soundscape[] = [
     category: "Muziek",
     coverImageUrl: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?ixlib=rb-4.0.3",
     tags: ["piano", "muziek", "instrumentaal"],
+  },
+  // Meditatie muziek items
+  {
+    id: "med-music-1",
+    title: "Diepe Meditatie",
+    description: "Ontspannende tonen voor diepe meditatie sessies.",
+    audioUrl: "https://example.com/soundscapes/deep-meditation.mp3",
+    category: "Meditatie Muziek",
+    coverImageUrl: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?ixlib=rb-4.0.3",
+    tags: ["meditatie", "diep", "ontspanning"],
+    isFavorite: true
+  },
+  {
+    id: "med-music-2",
+    title: "Zen Tonen",
+    description: "Minimalistische tonen geïnspireerd door Zen-tradities.",
+    audioUrl: "https://example.com/soundscapes/zen-tones.mp3",
+    category: "Meditatie Muziek",
+    coverImageUrl: "https://images.unsplash.com/photo-1508672019048-805c876b67e2?ixlib=rb-4.0.3",
+    tags: ["zen", "minimalistisch", "meditatie"],
+    isFavorite: true
+  },
+  {
+    id: "med-music-3",
+    title: "Helende Frequenties",
+    description: "Tonen ontworpen om te resoneren op specifieke helende frequenties.",
+    audioUrl: "https://example.com/soundscapes/healing-frequencies.mp3",
+    category: "Meditatie Muziek",
+    coverImageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?ixlib=rb-4.0.3",
+    tags: ["helend", "frequenties", "resonantie"],
+    isFavorite: true
+  },
+  {
+    id: "med-music-4",
+    title: "Ochtend Meditatie",
+    description: "Lichte, opwekkende tonen voor ochtendmeditaties.",
+    audioUrl: "https://example.com/soundscapes/morning-meditation.mp3",
+    category: "Meditatie Muziek",
+    coverImageUrl: "https://images.unsplash.com/photo-1500835556837-99ac94a94552?ixlib=rb-4.0.3",
+    tags: ["ochtend", "opwekkend", "licht"],
+  },
+  {
+    id: "med-music-5",
+    title: "Slaap Meditatie",
+    description: "Zachte, rustige tonen die helpen bij het in slaap vallen.",
+    audioUrl: "https://example.com/soundscapes/sleep-meditation.mp3",
+    category: "Meditatie Muziek",
+    coverImageUrl: "https://images.unsplash.com/photo-1455642305367-68834a9d4339?ixlib=rb-4.0.3",
+    tags: ["slaap", "nacht", "kalmerend"],
   }
 ];
