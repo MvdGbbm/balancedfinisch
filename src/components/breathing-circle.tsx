@@ -250,17 +250,4 @@ export function BreathingCircle({
       </div>
     </div>
   );
-  
-  function getTransitionDuration() {
-    switch (activePhase) {
-      case "inhale":
-        return inhaleDuration;
-      case "hold":
-        return holdDuration;
-      case "exhale":
-        return exhaleDuration;
-      default:
-        return 1000;
-    }
-  }
 }
