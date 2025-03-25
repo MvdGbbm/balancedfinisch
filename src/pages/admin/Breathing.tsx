@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,25 @@ const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   
+  // Load breathing patterns from localStorage when component mounts
+  useEffect(() => {
+    const savedPatterns = localStorage.getItem('breathingPatterns');
+    if (savedPatterns) {
+      try {
+        const parsedPatterns = JSON.parse(savedPatterns);
+        setBreathingPatterns(parsedPatterns);
+      } catch (error) {
+        console.error("Error loading breathing patterns:", error);
+        // If there's an error, use default patterns
+        setBreathingPatterns(defaultBreathingPatterns);
+        localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
+      }
+    } else {
+      // If no saved patterns, initialize with defaults
+      localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
+    }
+  }, []);
+  
   // Form for editing patterns
   const form = useForm<BreathingPattern>({
     defaultValues: {
@@ -97,13 +116,19 @@ const AdminBreathing = () => {
     form.reset(newPattern);
   };
 
+  // Save breathing patterns to localStorage
+  const saveToLocalStorage = (patterns: BreathingPattern[]) => {
+    localStorage.setItem('breathingPatterns', JSON.stringify(patterns));
+  };
+
   const handleSave = (data: BreathingPattern) => {
     // If selectedPattern exists in breathingPatterns, update it
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
+    let updated: BreathingPattern[];
     
     if (existingPatternIndex >= 0) {
       // Update existing pattern
-      const updated = [...breathingPatterns];
+      updated = [...breathingPatterns];
       updated[existingPatternIndex] = { ...data, id: selectedPattern!.id };
       setBreathingPatterns(updated);
       setSelectedPattern(updated[existingPatternIndex]);
@@ -114,11 +139,14 @@ const AdminBreathing = () => {
         ...data,
         id: `${Date.now()}`
       };
-      const updated = [...breathingPatterns, newPattern];
+      updated = [...breathingPatterns, newPattern];
       setBreathingPatterns(updated);
       setSelectedPattern(newPattern);
       toast.success("Nieuwe ademhalingstechniek toegevoegd");
     }
+    
+    // Save to localStorage
+    saveToLocalStorage(updated);
   };
 
   const handleDelete = (id: string) => {
@@ -135,6 +163,7 @@ const AdminBreathing = () => {
       hold2: 0,
       cycles: 4,
     });
+    saveToLocalStorage(filtered);
     toast.success("Ademhalingstechniek verwijderd");
   };
 
@@ -310,4 +339,3 @@ const AdminBreathing = () => {
 };
 
 export default AdminBreathing;
-

@@ -13,17 +13,23 @@ import {
 } from "@/components/ui/select";
 
 type BreathingPattern = {
+  id: string;
   name: string;
   inhale: number;
   hold1: number;
   exhale: number;
   hold2: number;
   cycles: number;
+  description?: string;
 };
 
-const breathingPatterns: BreathingPattern[] = [
+// Sample data - this would ideally come from API/database in a real app
+// We'll use the same data structure as the admin panel to ensure consistency
+const defaultBreathingPatterns: BreathingPattern[] = [
   {
+    id: "1",
     name: "4-7-8 Techniek",
+    description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
     inhale: 4,
     hold1: 7,
     exhale: 8,
@@ -31,29 +37,63 @@ const breathingPatterns: BreathingPattern[] = [
     cycles: 5,
   },
   {
+    id: "2",
     name: "Box Breathing",
+    description: "Vierkante ademhaling voor focus en kalmte",
     inhale: 4,
     hold1: 4,
     exhale: 4,
-    hold2: 4,
+    hold2: 4, 
     cycles: 4,
   },
   {
+    id: "3",
     name: "Relaxerende Ademhaling",
+    description: "Eenvoudige techniek voor diepe ontspanning",
     inhale: 4,
     hold1: 2,
     exhale: 6,
     hold2: 0,
     cycles: 6,
   },
+  // In a real app, this would be fetched from a database/API
+  // Additional breathing patterns added in the admin panel would appear here
 ];
 
 export function BreathExercise() {
+  const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [currentPattern, setCurrentPattern] = useState<BreathingPattern>(breathingPatterns[0]);
   const [isActive, setIsActive] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
   const [currentCycle, setCurrentCycle] = useState(1);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  
+  // Load breathing patterns from localStorage when component mounts
+  useEffect(() => {
+    const savedPatterns = localStorage.getItem('breathingPatterns');
+    if (savedPatterns) {
+      try {
+        const parsedPatterns = JSON.parse(savedPatterns);
+        // Merge default patterns with saved patterns
+        const mergedPatterns = [...defaultBreathingPatterns];
+        
+        // Add any patterns from localStorage that aren't in defaults
+        parsedPatterns.forEach((pattern: BreathingPattern) => {
+          if (!mergedPatterns.some(p => p.id === pattern.id)) {
+            mergedPatterns.push(pattern);
+          }
+        });
+        
+        setBreathingPatterns(mergedPatterns);
+        // Set the current pattern to the first one if it exists
+        if (mergedPatterns.length > 0) {
+          setCurrentPattern(mergedPatterns[0]);
+        }
+      } catch (error) {
+        console.error("Error loading breathing patterns:", error);
+      }
+    }
+  }, []);
   
   useEffect(() => {
     // Reset state when pattern changes
@@ -146,7 +186,7 @@ export function BreathExercise() {
   };
 
   const handlePatternChange = (value: string) => {
-    const selectedPattern = breathingPatterns.find(pattern => pattern.name === value);
+    const selectedPattern = breathingPatterns.find(pattern => pattern.id === value);
     if (selectedPattern) {
       setCurrentPattern(selectedPattern);
     }
@@ -163,7 +203,7 @@ export function BreathExercise() {
         <CardContent className="p-4">
           <div className="mb-4">
             <Select
-              value={currentPattern.name}
+              value={currentPattern.id}
               onValueChange={handlePatternChange}
               disabled={isActive}
             >
@@ -172,7 +212,7 @@ export function BreathExercise() {
               </SelectTrigger>
               <SelectContent>
                 {breathingPatterns.map((pattern) => (
-                  <SelectItem key={pattern.name} value={pattern.name}>
+                  <SelectItem key={pattern.id} value={pattern.id}>
                     {pattern.name}
                   </SelectItem>
                 ))}
