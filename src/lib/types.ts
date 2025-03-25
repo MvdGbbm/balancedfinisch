@@ -1,4 +1,3 @@
-
 export interface Meditation {
   id: string;
   title: string;
