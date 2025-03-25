@@ -221,6 +221,16 @@ export function BreathExercise() {
     }
   }, [isActive]);
 
+  const mapPhaseToCirclePhase = (phase: "inhale" | "hold1" | "exhale" | "hold2"): "inhale" | "hold" | "exhale" | "rest" => {
+    switch (phase) {
+      case "inhale": return "inhale";
+      case "hold1": return "hold";
+      case "exhale": return "exhale";
+      case "hold2": return "hold";
+      default: return "rest";
+    }
+  };
+
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -303,7 +313,7 @@ export function BreathExercise() {
         onError={() => setAudioError(true)} 
       />
       
-      <Card className="bg-card/60 backdrop-blur-sm">
+      <Card className="bg-gradient-to-br from-blue-100/30 via-indigo-100/30 to-purple-100/30 dark:from-blue-900/10 dark:via-indigo-900/10 dark:to-purple-900/10 backdrop-blur-sm border border-white/20 dark:border-white/5">
         <CardContent className="p-4">
           <div className="mb-4">
             <Select
@@ -331,6 +341,7 @@ export function BreathExercise() {
               exhaleDuration={currentPattern.exhale * 1000}
               onBreathComplete={() => {}}
               isActive={isActive}
+              currentPhase={mapPhaseToCirclePhase(currentPhase)}
             />
             
             <div className="text-center space-y-2">
