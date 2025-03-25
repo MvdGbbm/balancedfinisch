@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -304,20 +303,20 @@ export function BreathExercise() {
         onError={() => setAudioError(true)} 
       />
       
-      <Card className="bg-gradient-to-br from-[#101218] to-[#1a1f2c] border-[#2a324a]/50 overflow-hidden backdrop-blur-sm shadow-xl">
-        <CardContent className="p-6">
-          <div className="mb-6">
+      <Card className="bg-card/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <div className="mb-4">
             <Select
               value={currentPattern.id}
               onValueChange={handlePatternChange}
               disabled={isActive}
             >
-              <SelectTrigger className="w-full bg-black/30 border-[#3a4160]/30 focus:ring-blue-400/30">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecteer een ademhalingstechniek" />
               </SelectTrigger>
-              <SelectContent className="bg-[#101218] border-[#2a324a]">
+              <SelectContent>
                 {breathingPatterns.map((pattern) => (
-                  <SelectItem key={pattern.id} value={pattern.id} className="text-white focus:bg-blue-500/20 focus:text-white">
+                  <SelectItem key={pattern.id} value={pattern.id}>
                     {pattern.name}
                   </SelectItem>
                 ))}
@@ -330,29 +329,31 @@ export function BreathExercise() {
               inhaleDuration={currentPattern.inhale * 1000}
               holdDuration={currentPattern.hold1 * 1000}
               exhaleDuration={currentPattern.exhale * 1000}
+              onBreathComplete={() => {}}
               isActive={isActive}
-              currentPhase={isActive ? currentPhase : "rest"}
             />
             
-            <div className="text-center space-y-1">
-              {hasAudioForCurrentPhase() && (
-                <div className="flex justify-center items-center text-blue-400 text-xs mb-1 space-x-1">
-                  <Link className="h-3 w-3" />
-                  <span>{audioError ? "Audio fout" : "Audio speelt af"}</span>
-                </div>
-              )}
-              
-              <p className="text-sm text-blue-300/80">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-2xl font-medium">{getInstructions()}</p>
+                {hasAudioForCurrentPhase() && (
+                  <span className={`${audioError ? "text-red-500" : "text-primary"}`}>
+                    <Link className="h-4 w-4" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xl">{secondsLeft}</p>
+              <p className="text-sm text-muted-foreground">
                 Cyclus {currentCycle} van {currentPattern.cycles}
               </p>
             </div>
             
-            <div className="flex gap-4 w-full max-w-xs">
+            <div className="flex gap-3">
               <Button 
                 onClick={toggleExercise} 
                 variant="default"
                 size="lg"
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                className="w-32"
               >
                 {isActive ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
                 {isActive ? "Pauze" : "Start"}
@@ -362,7 +363,7 @@ export function BreathExercise() {
                 onClick={resetExercise} 
                 variant="outline"
                 size="lg"
-                className="w-full border-[#3a4160]/50 bg-black/20 text-white hover:bg-black/30"
+                className="w-32"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reset

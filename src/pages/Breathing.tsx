@@ -7,7 +7,7 @@ import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-pla
 const Breathing = () => {
   return (
     <MobileLayout>
-      <div className="space-y-6 animate-fade-in p-4 bg-gradient-to-b from-[#0a0c14] via-[#12151e] to-[#161a24]">
+      <div className="space-y-6 animate-fade-in">
         <BreathExercise />
         <BreathingMusicPlayer />
       </div>
