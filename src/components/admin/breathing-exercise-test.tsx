@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { BreathingCircle } from "@/components/breathing-circle";
+import { Progress } from "@/components/ui/progress";
 
 type BreathingPattern = {
   id: string;
@@ -30,6 +30,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
   const [currentCycle, setCurrentCycle] = useState(1);
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [progress, setProgress] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
@@ -40,6 +41,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
     setCurrentPhase("inhale");
     setCurrentCycle(1);
     setAudioError(false);
+    setProgress(0);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
       setCurrentAudioUrl(pattern.inhaleUrl || "");
@@ -112,8 +114,10 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
     if (!pattern) return;
     
     let timer: number | null = null;
+    let progressTimer: number | null = null;
     
     if (isActive) {
+      // Set up the phase timer
       timer = window.setInterval(() => {
         if (secondsLeft > 1) {
           setSecondsLeft(seconds => seconds - 1);
@@ -128,25 +132,30 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
           if (currentPhase === "inhale") {
             setCurrentPhase("hold1");
             setSecondsLeft(pattern.hold1 || 1);
+            setProgress(0); // Reset progress for new phase
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
             setSecondsLeft(pattern.exhale);
+            setProgress(0); // Reset progress for new phase
           } else if (currentPhase === "exhale") {
             if (pattern.hold2) {
               setCurrentPhase("hold2");
               setSecondsLeft(pattern.hold2);
+              setProgress(0); // Reset progress for new phase
             } else {
               // If no hold2, go to next cycle or finish
               if (currentCycle < pattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
+                setProgress(0); // Reset progress for new phase
               } else {
                 // Exercise complete
                 setIsActive(false);
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
+                setProgress(0);
                 if (audioRef.current) {
                   audioRef.current.pause();
                   audioRef.current.currentTime = 0;
@@ -160,12 +169,14 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
+              setProgress(0); // Reset progress for new phase
             } else {
               // Exercise complete
               setIsActive(false);
               setCurrentCycle(1);
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
+              setProgress(0);
               if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -175,10 +186,31 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
           }
         }
       }, 1000);
+      
+      // Set up the progress timer for smoother animation
+      const getCurrentPhaseDuration = () => {
+        switch (currentPhase) {
+          case "inhale": return pattern.inhale;
+          case "hold1": return pattern.hold1;
+          case "exhale": return pattern.exhale;
+          case "hold2": return pattern.hold2;
+          default: return 1;
+        }
+      };
+      
+      const phaseDuration = getCurrentPhaseDuration() * 1000;
+      const startTime = Date.now();
+      
+      progressTimer = window.setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const calculatedProgress = (elapsed / phaseDuration) * 100;
+        setProgress(Math.min(calculatedProgress, 100));
+      }, 16); // ~60fps
     }
     
     return () => {
       if (timer) clearInterval(timer);
+      if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
   
@@ -205,6 +237,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
     setCurrentCycle(1);
     setSecondsLeft(pattern.inhale);
     setAudioError(false);
+    setProgress(0);
     
     // Reset audio
     if (audioRef.current) {
@@ -258,24 +291,30 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
         />
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
-          <BreathingCircle 
-            inhaleDuration={pattern.inhale * 1000}
-            holdDuration={pattern.hold1 * 1000}
-            exhaleDuration={pattern.exhale * 1000}
-            onBreathComplete={() => {}}
-            isActive={isActive}
-          />
+          {/* Visual representation of breathing phase with simple animated circle */}
+          <div className="relative w-full max-w-sm">
+            <Progress value={progress} className="h-2 mb-6" />
+          </div>
+          
+          <div className="relative h-40 w-40 flex items-center justify-center">
+            <div className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
+              ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : 
+                currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : 
+                currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" :
+                "bg-gradient-to-r from-blue-500 to-indigo-500"}`}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-white text-5xl font-bold">{secondsLeft}</p>
+            </div>
+          </div>
           
           <div className="text-center space-y-2">
-            <div className="flex items-center justify-center gap-2">
-              <p className="text-2xl font-medium">{getInstructions()}</p>
-              {currentAudioUrl && (
-                <span className={`${audioError ? "text-red-500" : "text-primary"}`}>
-                  <span className="text-xs">(Audio)</span>
-                </span>
-              )}
-            </div>
-            <p className="text-xl">{secondsLeft}</p>
+            <p className="text-2xl font-medium">{getInstructions()}</p>
+            {currentAudioUrl && (
+              <p className={`text-xs ${audioError ? "text-red-500" : "text-primary"}`}>
+                {audioError ? "Audio fout" : "Audio speelt af"}
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
               Cyclus {currentCycle} van {pattern.cycles}
             </p>
