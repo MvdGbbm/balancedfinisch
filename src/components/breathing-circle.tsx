@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 
 interface BreathingCircleProps {
   duration?: number;
@@ -92,11 +91,11 @@ export function BreathingCircle({
   const getScaleForPhase = () => {
     switch (phase) {
       case "inhale":
-        return "scale-[1.25]"; // Expand during inhale
+        return "scale-[1.5]"; // Larger scale for inhale
       case "hold":
-        return "scale-[1.25]"; // Stay expanded during hold
+        return "scale-[1.5]"; // Stay expanded during hold
       case "exhale":
-        return "scale-[1]"; // Contract during exhale
+        return "scale-[1]"; // Contract to normal size during exhale
       case "rest":
       default:
         return "scale-[1]"; // Default resting state
@@ -105,10 +104,6 @@ export function BreathingCircle({
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
-      <div className="relative w-full max-w-xs">
-        {phase !== "rest" && <Progress value={progress} className="h-2 mb-6 bg-gray-800" />}
-      </div>
-      
       {/* Fixed height container to prevent layout shifts */}
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
         <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" />
