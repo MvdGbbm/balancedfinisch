@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { Pause, Play, Timer } from "lucide-react";
+import { Timer } from "lucide-react";
 
 interface BreathingCircleProps {
   duration?: number;
@@ -11,6 +11,7 @@ interface BreathingCircleProps {
   exhaleDuration?: number;
   className?: string;
   onBreathComplete?: () => void;
+  isActive: boolean; // Added to control from parent
 }
 
 export function BreathingCircle({
@@ -18,10 +19,10 @@ export function BreathingCircle({
   holdDuration = 2000,
   exhaleDuration = 6000,
   className,
-  onBreathComplete
+  onBreathComplete,
+  isActive = false // Default to inactive
 }: BreathingCircleProps) {
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
-  const [isActive, setIsActive] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
 
@@ -38,7 +39,16 @@ export function BreathingCircle({
   }, [inhaleDuration, holdDuration, exhaleDuration, isActive]);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      setPhase("rest");
+      return;
+    }
+    
+    if (phase === "rest") {
+      setPhase("inhale");
+      setProgress(0);
+      setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
+    }
     
     let startTime = Date.now();
     let currentPhase = phase;
@@ -77,16 +87,16 @@ export function BreathingCircle({
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
 
-  const toggleActive = () => {
-    setIsActive(!isActive);
-    if (!isActive) {
+  // Effect to handle changes in isActive
+  useEffect(() => {
+    if (isActive) {
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
     } else {
       setPhase("rest");
     }
-  };
+  }, [isActive, inhaleDuration]);
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
@@ -120,13 +130,9 @@ export function BreathingCircle({
           >
             <div className="text-center text-white">
               {phase === "rest" ? (
-                <button 
-                  onClick={toggleActive} 
-                  className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors"
-                >
-                  <Play className="h-8 w-8" />
-                  <span className="text-lg font-medium">Start</span>
-                </button>
+                <div className="flex flex-col items-center justify-center space-y-2 px-6 py-4">
+                  <span className="text-lg font-medium">Klaar</span>
+                </div>
               ) : (
                 <div className="flex flex-col items-center space-y-2">
                   <div className="text-2xl font-semibold mb-1">
@@ -136,13 +142,6 @@ export function BreathingCircle({
                     {phaseTimeLeft}
                     <span className="text-sm ml-1 mt-1">s</span>
                   </div>
-                  <button 
-                    onClick={toggleActive} 
-                    className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors"
-                  >
-                    <Pause className="h-4 w-4" />
-                    <span>Pauzeren</span>
-                  </button>
                 </div>
               )}
             </div>

@@ -143,15 +143,19 @@ export function BreathExercise() {
     
     // Only load and play if there's a URL and the exercise is active
     if (url && isActive) {
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      
       // Set the src attribute directly instead of using the src prop
       audioRef.current.src = url;
       audioRef.current.load();
       
       // Reset audio and play
-      audioRef.current.currentTime = 0;
-      
       const playAudio = () => {
-        if (audioRef.current) {
+        if (audioRef.current && isActive) {
           audioRef.current.play().catch(error => {
             console.error("Error playing audio:", error);
             setAudioError(true);
@@ -204,6 +208,7 @@ export function BreathExercise() {
                 setSecondsLeft(currentPattern.inhale);
                 if (audioRef.current) {
                   audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
                 }
                 toast.success("Ademhalingsoefening voltooid!");
               }
@@ -222,6 +227,7 @@ export function BreathExercise() {
               setSecondsLeft(currentPattern.inhale);
               if (audioRef.current) {
                 audioRef.current.pause();
+                audioRef.current.currentTime = 0;
               }
               toast.success("Ademhalingsoefening voltooid!");
             }
@@ -239,6 +245,7 @@ export function BreathExercise() {
   useEffect(() => {
     if (!isActive && audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
   }, [isActive]);
   
@@ -279,11 +286,15 @@ export function BreathExercise() {
     
     // If starting the exercise, try to play audio if available
     if (!isActive && audioRef.current && currentAudioUrl) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(error => {
-        console.error("Error playing audio on start:", error);
-        setAudioError(true);
-      });
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio on start:", error);
+            setAudioError(true);
+          });
+        }
+      }, 100);
     }
   };
 
@@ -352,6 +363,7 @@ export function BreathExercise() {
               holdDuration={currentPattern.hold1 * 1000}
               exhaleDuration={currentPattern.exhale * 1000}
               onBreathComplete={() => {}}
+              isActive={isActive}
             />
             
             <div className="text-center space-y-2">

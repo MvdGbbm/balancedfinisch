@@ -73,15 +73,19 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
     
     // Only load and play if there's a URL and the exercise is active
     if (url && isActive) {
+      // Stop any currently playing audio before starting a new one
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      
       // Set the src attribute directly 
       audioRef.current.src = url;
       audioRef.current.load();
       
       // Reset audio and play with a small delay to prevent interruptions
-      audioRef.current.currentTime = 0;
-      
       const playAudio = () => {
-        if (audioRef.current) {
+        if (audioRef.current && isActive) {
           audioRef.current.play().catch(error => {
             console.error("Error playing audio:", error);
             setAudioError(true);
@@ -99,6 +103,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
   useEffect(() => {
     if (!isActive && audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
   }, [isActive]);
   
@@ -144,6 +149,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
                 setSecondsLeft(pattern.inhale);
                 if (audioRef.current) {
                   audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
                 }
                 toast.success("Test voltooid!");
               }
@@ -162,6 +168,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
               setSecondsLeft(pattern.inhale);
               if (audioRef.current) {
                 audioRef.current.pause();
+                audioRef.current.currentTime = 0;
               }
               toast.success("Test voltooid!");
             }
@@ -214,11 +221,15 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
     
     // If starting the exercise, try to play audio if available
     if (!isActive && audioRef.current && currentAudioUrl) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(error => {
-        console.error("Error playing audio on start:", error);
-        setAudioError(true);
-      });
+      setTimeout(() => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio on start:", error);
+            setAudioError(true);
+          });
+        }
+      }, 100);
     }
   };
 
@@ -252,6 +263,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
             holdDuration={pattern.hold1 * 1000}
             exhaleDuration={pattern.exhale * 1000}
             onBreathComplete={() => {}}
+            isActive={isActive}
           />
           
           <div className="text-center space-y-2">
