@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { Pause, Play, Timer } from "lucide-react";
+import { Timer } from "lucide-react";
 
 interface BreathingCircleProps {
   duration?: number;
@@ -120,13 +120,9 @@ export function BreathingCircle({
           >
             <div className="text-center text-white">
               {phase === "rest" ? (
-                <button 
-                  onClick={toggleActive} 
-                  className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full transition-colors"
-                >
-                  <Play className="h-8 w-8" />
-                  <span className="text-lg font-medium">Start</span>
-                </button>
+                <div className="flex flex-col items-center justify-center space-y-2 px-6 py-4 rounded-full">
+                  <span className="text-lg font-medium">Gereed</span>
+                </div>
               ) : (
                 <div className="flex flex-col items-center space-y-2">
                   <div className="text-2xl font-semibold mb-1">
@@ -136,13 +132,6 @@ export function BreathingCircle({
                     {phaseTimeLeft}
                     <span className="text-sm ml-1 mt-1">s</span>
                   </div>
-                  <button 
-                    onClick={toggleActive} 
-                    className="mt-4 flex items-center justify-center space-x-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors"
-                  >
-                    <Pause className="h-4 w-4" />
-                    <span>Pauzeren</span>
-                  </button>
                 </div>
               )}
             </div>
