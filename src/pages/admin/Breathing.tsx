@@ -1,14 +1,12 @@
-
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Define types for breathing patterns
@@ -83,8 +81,10 @@ const AdminBreathing = () => {
   };
 
   const handleCreateNew = () => {
+    // Generate a temporary ID for the new pattern
+    const newId = `temp_${Date.now()}`;
     const newPattern = {
-      id: `${Date.now()}`,
+      id: newId,
       name: "Nieuwe Techniek",
       description: "Beschrijving van de techniek",
       inhale: 4,
@@ -98,21 +98,24 @@ const AdminBreathing = () => {
   };
 
   const handleSave = (data: BreathingPattern) => {
-    if (selectedPattern) {
+    // If selectedPattern exists in breathingPatterns, update it
+    const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
+    
+    if (existingPatternIndex >= 0) {
       // Update existing pattern
-      const updated = breathingPatterns.map(p => 
-        p.id === selectedPattern.id ? data : p
-      );
+      const updated = [...breathingPatterns];
+      updated[existingPatternIndex] = { ...data, id: selectedPattern!.id };
       setBreathingPatterns(updated);
-      setSelectedPattern(data);
+      setSelectedPattern(updated[existingPatternIndex]);
       toast.success("Ademhalingstechniek bijgewerkt");
     } else {
-      // Add new pattern
+      // Add new pattern with a permanent ID
       const newPattern = {
         ...data,
         id: `${Date.now()}`
       };
-      setBreathingPatterns([...breathingPatterns, newPattern]);
+      const updated = [...breathingPatterns, newPattern];
+      setBreathingPatterns(updated);
       setSelectedPattern(newPattern);
       toast.success("Nieuwe ademhalingstechniek toegevoegd");
     }
@@ -307,3 +310,4 @@ const AdminBreathing = () => {
 };
 
 export default AdminBreathing;
+
