@@ -6,12 +6,19 @@ import { AudioPlayer } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Soundscape } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Music } from "lucide-react";
+import { Music, Sliders } from "lucide-react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 export function BreathingMusicPlayer() {
   const { soundscapes } = useApp();
   const [selectedSoundscape, setSelectedSoundscape] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showEqualizer, setShowEqualizer] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Filter soundscapes to only include those with the "Persoonlijke Meditatie" category
@@ -82,11 +89,31 @@ export function BreathingMusicPlayer() {
                   onPlayPauseChange={setIsPlaying}
                 />
                 
-                <ToneEqualizer
-                  isActive={isPlaying}
-                  audioRef={audioRef}
-                  className="mt-3"
-                />
+                {isPlaying && (
+                  <div className="flex justify-end mt-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-1.5"
+                        >
+                          <Sliders className="h-4 w-4" />
+                          Helende Frequenties
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="w-72 p-0 bg-background/95 backdrop-blur-sm border-0"
+                      >
+                        <ToneEqualizer
+                          isActive={isPlaying}
+                          audioRef={audioRef}
+                        />
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
               </div>
             )}
           </div>

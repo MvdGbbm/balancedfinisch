@@ -1,9 +1,17 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw } from "lucide-react";
+import { Play, Pause, RefreshCw, Sliders } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+
 type BreathingPattern = {
   id: string;
   name: string;
@@ -211,6 +219,7 @@ export function BreathingExerciseTest({
       if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
+  
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -225,6 +234,7 @@ export function BreathingExerciseTest({
         return "";
     }
   };
+  
   const resetExercise = () => {
     if (!pattern) return;
     setIsActive(false);
@@ -243,6 +253,7 @@ export function BreathingExerciseTest({
     // Set initial audio URL for the inhale phase
     setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
+  
   const toggleExercise = () => {
     setIsActive(!isActive);
 
@@ -259,6 +270,7 @@ export function BreathingExerciseTest({
       }, 100);
     }
   };
+  
   if (!pattern) {
     return <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
@@ -266,6 +278,7 @@ export function BreathingExerciseTest({
         </CardContent>
       </Card>;
   }
+  
   return <Card>
       <CardHeader>
         <CardTitle>Testen: {pattern.name}</CardTitle>
@@ -276,7 +289,6 @@ export function BreathingExerciseTest({
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
           {/* Visual representation of breathing phase with simple animated circle */}
-          
           
           <div className="relative h-40 w-40 flex items-center justify-center">
             <div className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
@@ -296,7 +308,7 @@ export function BreathingExerciseTest({
             </p>
           </div>
           
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3 flex-wrap justify-center">
             <Button onClick={toggleExercise} variant="default" size="lg">
               {isActive ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               {isActive ? "Pauze" : "Start"}
@@ -306,6 +318,30 @@ export function BreathingExerciseTest({
               <RefreshCw className="mr-2 h-4 w-4" />
               Reset
             </Button>
+            
+            {isActive && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="flex items-center gap-1.5"
+                  >
+                    <Sliders className="h-4 w-4 mr-2" />
+                    Helende Frequenties
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  align="center" 
+                  className="w-72 p-0 border-0 bg-background/95 backdrop-blur-sm"
+                >
+                  <ToneEqualizer
+                    isActive={isActive}
+                    audioRef={audioRef}
+                  />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </CardContent>
