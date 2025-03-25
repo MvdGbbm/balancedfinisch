@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      breathing_patterns: {
+        Row: {
+          created_at: string
+          cycles: number
+          description: string | null
+          exhale: number
+          exhale_url: string | null
+          hold1: number
+          hold1_url: string | null
+          hold2: number
+          hold2_url: string | null
+          id: string
+          inhale: number
+          inhale_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cycles?: number
+          description?: string | null
+          exhale: number
+          exhale_url?: string | null
+          hold1?: number
+          hold1_url?: string | null
+          hold2?: number
+          hold2_url?: string | null
+          id?: string
+          inhale: number
+          inhale_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cycles?: number
+          description?: string | null
+          exhale?: number
+          exhale_url?: string | null
+          hold1?: number
+          hold1_url?: string | null
+          hold2?: number
+          hold2_url?: string | null
+          id?: string
+          inhale?: number
+          inhale_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       music_items: {
         Row: {
           artist: string
