@@ -331,6 +331,7 @@ export function BreathExercise() {
               holdDuration={currentPattern.hold1 * 1000}
               exhaleDuration={currentPattern.exhale * 1000}
               isActive={isActive}
+              currentPhase={isActive ? currentPhase : "rest"}
             />
             
             <div className="text-center space-y-1">
