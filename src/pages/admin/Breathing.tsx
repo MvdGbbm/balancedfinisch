@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { useForm } from "react-hook-form";
 import { Plus, Save, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
+import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 
 // Define types for breathing patterns
 type BreathingPattern = {
@@ -405,6 +405,15 @@ const AdminBreathing = () => {
               )}
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Test section for breathing exercise with audio */}
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
+          <p className="text-muted-foreground mb-4">
+            Test de ademhalingsoefening met audio begeleiding hieronder. De audio url's worden automatisch afgespeeld bij elke fase.
+          </p>
+          <BreathingExerciseTest pattern={selectedPattern} />
         </div>
       </div>
     </AdminLayout>
