@@ -163,17 +163,10 @@ export function BreathExercise() {
           
           <div className="flex flex-col items-center justify-center space-y-6 py-4">
             <BreathingCircle 
-              phase={currentPhase}
-              isActive={isActive}
-              duration={
-                currentPhase === "inhale" 
-                  ? currentPattern.inhale 
-                  : currentPhase === "hold1" 
-                    ? currentPattern.hold1 
-                    : currentPhase === "exhale" 
-                      ? currentPattern.exhale 
-                      : currentPattern.hold2
-              }
+              inhaleDuration={currentPattern.inhale * 1000}
+              holdDuration={currentPattern.hold1 * 1000}
+              exhaleDuration={currentPattern.exhale * 1000}
+              onBreathComplete={() => {}}
             />
             
             <div className="text-center space-y-2">
