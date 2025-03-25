@@ -62,7 +62,7 @@ const Admin: React.FC = () => {
       color: "#8B5CF6" // Purple
     },
     {
-      title: "Inspirerende quotes",
+      title: "inspiratie quotes",
       description: "Beheer dagelijkse quotes",
       icon: <Quote className="h-5 w-5" style={{ color: "#F97316" }} />,
       path: "/admin/quotes",
