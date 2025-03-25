@@ -51,7 +51,7 @@ export function BreathingCircle({
     const calculateProgress = () => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, phaseDuration - elapsed);
-      const phaseProgress = elapsed / phaseDuration * 100;
+      const phaseProgress = (elapsed / phaseDuration) * 100;
       setPhaseTimeLeft(Math.ceil(remaining / 1000));
       setProgress(Math.min(phaseProgress, 100));
       return elapsed >= phaseDuration;
@@ -60,7 +60,8 @@ export function BreathingCircle({
     calculateProgress();
 
     const interval = setInterval(() => {
-      if (calculateProgress()) {
+      const phaseComplete = calculateProgress();
+      if (phaseComplete) {
         if (currentPhase === "inhale") {
           currentPhase = "hold";
           phaseDuration = holdDuration;
@@ -81,6 +82,20 @@ export function BreathingCircle({
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
 
+  const getScaleForPhase = () => {
+    switch (phase) {
+      case "inhale":
+        return "scale-125"; // Expand during inhale
+      case "hold":
+        return "scale-125"; // Stay expanded during hold
+      case "exhale":
+        return "scale-100"; // Contract during exhale
+      case "rest":
+      default:
+        return "scale-100"; // Default resting state
+    }
+  };
+
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative w-full max-w-xs">
@@ -92,10 +107,11 @@ export function BreathingCircle({
         <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" />
         
         <div 
-          className={cn("absolute inset-0 flex items-center justify-center rounded-full transition-all", {
-            "scale-100": phase === "rest" || phase === "exhale",
-            "scale-125": phase === "inhale" || phase === "hold"
-          }, className)} 
+          className={cn(
+            "absolute inset-0 flex items-center justify-center rounded-full transition-all", 
+            getScaleForPhase(),
+            className
+          )} 
           style={{
             transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
           }}
