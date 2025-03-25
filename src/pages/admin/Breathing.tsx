@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,6 @@ import { Plus, Save, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
 import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 
-// Define types for breathing patterns
 type BreathingPattern = {
   id: string;
   name: string;
@@ -27,7 +25,6 @@ type BreathingPattern = {
   hold2Url?: string;
 };
 
-// Sample data - in a real application this would come from the database
 const defaultBreathingPatterns: BreathingPattern[] = [
   {
     id: "1",
@@ -65,7 +62,6 @@ const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   
-  // Add state for voice guide URLs
   const [voiceUrls, setVoiceUrls] = useState({
     vera: {
       inhale: "",
@@ -78,8 +74,7 @@ const AdminBreathing = () => {
       exhale: "",
     }
   });
-  
-  // Load breathing patterns from localStorage when component mounts
+
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -88,16 +83,13 @@ const AdminBreathing = () => {
         setBreathingPatterns(parsedPatterns);
       } catch (error) {
         console.error("Error loading breathing patterns:", error);
-        // If there's an error, use default patterns
         setBreathingPatterns(defaultBreathingPatterns);
         localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
       }
     } else {
-      // If no saved patterns, initialize with defaults
       localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
     }
 
-    // Load voice URLs
     const veraUrls = localStorage.getItem('veraVoiceUrls');
     const marcoUrls = localStorage.getItem('marcoVoiceUrls');
 
@@ -125,8 +117,7 @@ const AdminBreathing = () => {
       }
     }
   }, []);
-  
-  // Form for editing patterns
+
   const form = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -152,7 +143,6 @@ const AdminBreathing = () => {
   };
 
   const handleCreateNew = () => {
-    // Generate a temporary ID for the new pattern
     const newId = `temp_${Date.now()}`;
     const newPattern = {
       id: newId,
@@ -168,12 +158,10 @@ const AdminBreathing = () => {
     form.reset(newPattern);
   };
 
-  // Save breathing patterns to localStorage
   const saveToLocalStorage = (patterns: BreathingPattern[]) => {
     localStorage.setItem('breathingPatterns', JSON.stringify(patterns));
   };
 
-  // Handle voice URLs changes
   const handleVoiceUrlChange = (voice: 'vera' | 'marco', type: 'inhale' | 'hold' | 'exhale', value: string) => {
     setVoiceUrls(prev => ({
       ...prev,
@@ -184,7 +172,6 @@ const AdminBreathing = () => {
     }));
   };
 
-  // Save voice URLs
   const saveVoiceUrls = () => {
     localStorage.setItem('veraVoiceUrls', JSON.stringify(voiceUrls.vera));
     localStorage.setItem('marcoVoiceUrls', JSON.stringify(voiceUrls.marco));
@@ -192,19 +179,16 @@ const AdminBreathing = () => {
   };
 
   const handleSave = (data: BreathingPattern) => {
-    // If selectedPattern exists in breathingPatterns, update it
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
     let updated: BreathingPattern[];
     
     if (existingPatternIndex >= 0) {
-      // Update existing pattern
       updated = [...breathingPatterns];
       updated[existingPatternIndex] = { ...data, id: selectedPattern!.id };
       setBreathingPatterns(updated);
       setSelectedPattern(updated[existingPatternIndex]);
       toast.success("Ademhalingstechniek bijgewerkt");
     } else {
-      // Add new pattern with a permanent ID
       const newPattern = {
         ...data,
         id: `${Date.now()}`
@@ -215,7 +199,6 @@ const AdminBreathing = () => {
       toast.success("Nieuwe ademhalingstechniek toegevoegd");
     }
     
-    // Save to localStorage
     saveToLocalStorage(updated);
   };
 
@@ -237,6 +220,50 @@ const AdminBreathing = () => {
     toast.success("Ademhalingstechniek verwijderd");
   };
 
+  const VoiceUrlForm = ({ voice, urls, onChange }: { 
+    voice: 'vera' | 'marco', 
+    urls: { inhale: string, hold: string, exhale: string },
+    onChange: (voice: 'vera' | 'marco', type: 'inhale' | 'hold' | 'exhale', value: string) => void
+  }) => (
+    <div className="space-y-4">
+      <div className="form-group">
+        <FormLabel className="flex items-center gap-1">
+          <Link className="h-4 w-4" />
+          <span>Audio URL voor inademen</span>
+        </FormLabel>
+        <Input 
+          placeholder="https://..." 
+          value={urls.inhale} 
+          onChange={(e) => onChange(voice, 'inhale', e.target.value)} 
+        />
+      </div>
+      
+      <div className="form-group">
+        <FormLabel className="flex items-center gap-1">
+          <Link className="h-4 w-4" />
+          <span>Audio URL voor vasthouden</span>
+        </FormLabel>
+        <Input 
+          placeholder="https://..." 
+          value={urls.hold} 
+          onChange={(e) => onChange(voice, 'hold', e.target.value)} 
+        />
+      </div>
+      
+      <div className="form-group">
+        <FormLabel className="flex items-center gap-1">
+          <Link className="h-4 w-4" />
+          <span>Audio URL voor uitademen</span>
+        </FormLabel>
+        <Input 
+          placeholder="https://..." 
+          value={urls.exhale} 
+          onChange={(e) => onChange(voice, 'exhale', e.target.value)} 
+        />
+      </div>
+    </div>
+  );
+
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
@@ -254,7 +281,6 @@ const AdminBreathing = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* List of breathing patterns */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Ademhalingstechnieken</CardTitle>
@@ -275,7 +301,6 @@ const AdminBreathing = () => {
             </CardContent>
           </Card>
 
-          {/* Edit form */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>
@@ -468,7 +493,6 @@ const AdminBreathing = () => {
           </Card>
         </div>
         
-        {/* Voice Guides URLs configuration */}
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Stem begeleiding URLs</h2>
           <p className="text-muted-foreground mb-4">
@@ -476,103 +500,29 @@ const AdminBreathing = () => {
           </p>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Vera Voice URLs */}
             <Card>
               <CardHeader>
                 <CardTitle>Vera stem URLs</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>Audio URL voor inademen</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..." 
-                      value={voiceUrls.vera.inhale} 
-                      onChange={(e) => handleVoiceUrlChange('vera', 'inhale', e.target.value)} 
-                    />
-                  </FormControl>
-                </FormItem>
-                
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>Audio URL voor vasthouden</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..." 
-                      value={voiceUrls.vera.hold} 
-                      onChange={(e) => handleVoiceUrlChange('vera', 'hold', e.target.value)} 
-                    />
-                  </FormControl>
-                </FormItem>
-                
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>Audio URL voor uitademen</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..." 
-                      value={voiceUrls.vera.exhale} 
-                      onChange={(e) => handleVoiceUrlChange('vera', 'exhale', e.target.value)} 
-                    />
-                  </FormControl>
-                </FormItem>
+                <VoiceUrlForm
+                  voice="vera"
+                  urls={voiceUrls.vera}
+                  onChange={handleVoiceUrlChange}
+                />
               </CardContent>
             </Card>
             
-            {/* Marco Voice URLs */}
             <Card>
               <CardHeader>
                 <CardTitle>Marco stem URLs</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>Audio URL voor inademen</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..." 
-                      value={voiceUrls.marco.inhale} 
-                      onChange={(e) => handleVoiceUrlChange('marco', 'inhale', e.target.value)} 
-                    />
-                  </FormControl>
-                </FormItem>
-                
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>Audio URL voor vasthouden</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..." 
-                      value={voiceUrls.marco.hold} 
-                      onChange={(e) => handleVoiceUrlChange('marco', 'hold', e.target.value)} 
-                    />
-                  </FormControl>
-                </FormItem>
-                
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Link className="h-4 w-4" />
-                    <span>Audio URL voor uitademen</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://..." 
-                      value={voiceUrls.marco.exhale} 
-                      onChange={(e) => handleVoiceUrlChange('marco', 'exhale', e.target.value)} 
-                    />
-                  </FormControl>
-                </FormItem>
+                <VoiceUrlForm
+                  voice="marco"
+                  urls={voiceUrls.marco}
+                  onChange={handleVoiceUrlChange}
+                />
               </CardContent>
             </Card>
           </div>
@@ -585,7 +535,6 @@ const AdminBreathing = () => {
           </div>
         </div>
         
-        {/* Test section for breathing exercise with audio */}
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
           <p className="text-muted-foreground mb-4">
