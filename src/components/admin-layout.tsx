@@ -85,21 +85,23 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       <div className="flex flex-col min-h-screen w-full bg-background">
         <header className="sticky top-0 z-40 w-full glass-morphism border-b py-3 px-4 backdrop-blur-lg transition-all">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Lock className="h-6 w-6 text-primary" />
-              <h1 className="text-lg font-medium">Dashboard</h1>
-              <SidebarTrigger className="ml-2" />
-            </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
-                className="mr-2"
                 onClick={() => navigate("/")}
+                className="flex items-center gap-1"
               >
-                <Home className="mr-2 h-4 w-4" />
+                <Home className="h-4 w-4" />
                 <span>Frontend</span>
               </Button>
+              <div className="flex items-center gap-2 ml-1">
+                <Lock className="h-6 w-6 text-primary" />
+                <h1 className="text-lg font-medium">Dashboard</h1>
+                <SidebarTrigger className="ml-1" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
