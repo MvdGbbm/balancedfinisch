@@ -2,7 +2,7 @@
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Lock, FileMusic, Music, Quote, Home } from "lucide-react";
+import { Moon, Sun, Lock, FileMusic, Music, Quote, Home, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
     { path: "/admin/soundscapes", icon: FileMusic, label: "Geluiden" },
     { path: "/admin/music", icon: Music, label: "Muziek" },
     { path: "/admin/quotes", icon: Quote, label: "Quotes" },
+    { path: "/admin/breathing", icon: RefreshCw, label: "Ademhaling" },
   ];
 
   return (
