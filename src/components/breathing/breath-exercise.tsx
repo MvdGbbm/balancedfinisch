@@ -74,7 +74,8 @@ export function BreathExercise() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
-  
+  const [audioError, setAudioError] = useState(false);
+
   // Load breathing patterns from localStorage when component mounts
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
@@ -102,71 +103,68 @@ export function BreathExercise() {
     }
   }, []);
   
+  // Reset state when pattern changes
   useEffect(() => {
     // Reset state when pattern changes
     setIsActive(false);
     setCurrentPhase("inhale");
     setCurrentCycle(1);
     setSecondsLeft(currentPattern.inhale);
+    setAudioError(false);
     
     // If there's an audio URL for inhale, set it as the current audio URL
     setCurrentAudioUrl(currentPattern.inhaleUrl || "");
   }, [currentPattern]);
   
-  // Handle audio playback for each phase
+  // A separate effect to handle audio loading on phase change
   useEffect(() => {
-    if (audioRef.current) {
-      // Stop current audio if it's playing
-      audioRef.current.pause();
+    if (!audioRef.current) return;
+    
+    // Get the correct URL for the current phase
+    let url = "";
+    switch (currentPhase) {
+      case "inhale":
+        url = currentPattern.inhaleUrl || "";
+        break;
+      case "hold1":
+        url = currentPattern.hold1Url || "";
+        break;
+      case "exhale":
+        url = currentPattern.exhaleUrl || "";
+        break;
+      case "hold2":
+        url = currentPattern.hold2Url || "";
+        break;
+    }
+    
+    // Set the new URL
+    setCurrentAudioUrl(url);
+    setAudioError(false);
+    
+    // Only load and play if there's a URL and the exercise is active
+    if (url && isActive) {
+      // Set the src attribute directly instead of using the src prop
+      audioRef.current.src = url;
+      audioRef.current.load();
+      
+      // Reset audio and play
       audioRef.current.currentTime = 0;
       
-      // Get the correct URL for the current phase
-      let url = "";
-      switch (currentPhase) {
-        case "inhale":
-          url = currentPattern.inhaleUrl || "";
-          break;
-        case "hold1":
-          url = currentPattern.hold1Url || "";
-          break;
-        case "exhale":
-          url = currentPattern.exhaleUrl || "";
-          break;
-        case "hold2":
-          url = currentPattern.hold2Url || "";
-          break;
-      }
-      
-      // Set the new URL and play if active
-      setCurrentAudioUrl(url);
-      if (url && isActive) {
-        audioRef.current.src = url;
-        audioRef.current.load();
-        const playPromise = audioRef.current.play();
-        
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
+      const playAudio = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(error => {
             console.error("Error playing audio:", error);
-            toast.error("Kan audio niet afspelen. Controleer de URL.");
+            setAudioError(true);
           });
         }
-      }
+      };
+      
+      // Add a small delay to prevent interruptions
+      setTimeout(playAudio, 100);
     }
-  }, [currentPhase, isActive, currentPattern]);
+  }, [currentPhase, currentPattern, isActive]);
   
-  // Play/pause audio when exercise is toggled
-  useEffect(() => {
-    if (audioRef.current) {
-      if (isActive && currentAudioUrl) {
-        audioRef.current.play().catch(error => {
-          console.error("Error playing audio:", error);
-        });
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isActive, currentAudioUrl]);
-  
+  // Handle phase transition timer
   useEffect(() => {
     let timer: number | null = null;
     
@@ -175,6 +173,12 @@ export function BreathExercise() {
         if (secondsLeft > 1) {
           setSecondsLeft(seconds => seconds - 1);
         } else {
+          // Stop current audio if any
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          
           // Move to next phase
           if (currentPhase === "inhale") {
             setCurrentPhase("hold1");
@@ -198,6 +202,10 @@ export function BreathExercise() {
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(currentPattern.inhale);
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                }
+                toast.success("Ademhalingsoefening voltooid!");
               }
             }
           } else if (currentPhase === "hold2") {
@@ -212,6 +220,10 @@ export function BreathExercise() {
               setCurrentCycle(1);
               setCurrentPhase("inhale");
               setSecondsLeft(currentPattern.inhale);
+              if (audioRef.current) {
+                audioRef.current.pause();
+              }
+              toast.success("Ademhalingsoefening voltooid!");
             }
           }
         }
@@ -222,6 +234,13 @@ export function BreathExercise() {
       if (timer) clearInterval(timer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, currentPattern]);
+  
+  // Stop audio when exercise is paused
+  useEffect(() => {
+    if (!isActive && audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [isActive]);
   
   const getInstructions = () => {
     switch (currentPhase) {
@@ -243,16 +262,29 @@ export function BreathExercise() {
     setCurrentPhase("inhale");
     setCurrentCycle(1);
     setSecondsLeft(currentPattern.inhale);
+    setAudioError(false);
     
     // Reset audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+    
+    // Set initial audio URL for the inhale phase
+    setCurrentAudioUrl(currentPattern.inhaleUrl || "");
   };
   
   const toggleExercise = () => {
     setIsActive(!isActive);
+    
+    // If starting the exercise, try to play audio if available
+    if (!isActive && audioRef.current && currentAudioUrl) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(error => {
+        console.error("Error playing audio on start:", error);
+        setAudioError(true);
+      });
+    }
   };
 
   const handlePatternChange = (value: string) => {
@@ -285,8 +317,13 @@ export function BreathExercise() {
         <h2 className="text-lg font-medium">Ademhalingsoefening</h2>
       </div>
       
-      {/* Hidden audio element for playing sound */}
-      <audio ref={audioRef} src={currentAudioUrl} preload="auto" />
+      {/* Audio element with explicit controls */}
+      <audio 
+        ref={audioRef} 
+        src={currentAudioUrl} 
+        preload="auto" 
+        onError={() => setAudioError(true)} 
+      />
       
       <Card className="bg-card/60 backdrop-blur-sm">
         <CardContent className="p-4">
@@ -321,7 +358,7 @@ export function BreathExercise() {
               <div className="flex items-center justify-center gap-2">
                 <p className="text-2xl font-medium">{getInstructions()}</p>
                 {hasAudioForCurrentPhase() && (
-                  <span className="text-primary">
+                  <span className={`${audioError ? "text-red-500" : "text-primary"}`}>
                     <Link className="h-4 w-4" />
                   </span>
                 )}

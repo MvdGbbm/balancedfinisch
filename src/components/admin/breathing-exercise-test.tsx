@@ -32,25 +32,23 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
+  const [audioError, setAudioError] = useState(false);
   
   // Reset state when pattern changes
   useEffect(() => {
     setIsActive(false);
     setCurrentPhase("inhale");
     setCurrentCycle(1);
+    setAudioError(false);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
       setCurrentAudioUrl(pattern.inhaleUrl || "");
     }
   }, [pattern]);
   
-  // Handle audio playback for each phase
+  // A separate effect to handle audio loading on phase change
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
-    
-    // Stop current audio if it's playing
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
     
     // Get the correct URL for the current phase
     let url = "";
@@ -69,35 +67,42 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
         break;
     }
     
-    // Set the new URL and play if active
+    // Set the new URL
     setCurrentAudioUrl(url);
+    setAudioError(false);
+    
+    // Only load and play if there's a URL and the exercise is active
     if (url && isActive) {
+      // Set the src attribute directly 
       audioRef.current.src = url;
       audioRef.current.load();
-      const playPromise = audioRef.current.play();
       
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error("Error playing audio:", error);
-          toast.error("Kan audio niet afspelen. Controleer de URL.");
-        });
-      }
+      // Reset audio and play with a small delay to prevent interruptions
+      audioRef.current.currentTime = 0;
+      
+      const playAudio = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio:", error);
+            setAudioError(true);
+            toast.error("Kan audio niet afspelen. Controleer de URL.");
+          });
+        }
+      };
+      
+      // Add a small delay to prevent interruptions
+      setTimeout(playAudio, 100);
     }
   }, [currentPhase, isActive, pattern]);
   
-  // Play/pause audio when exercise is toggled
+  // Stop audio when exercise is paused
   useEffect(() => {
-    if (audioRef.current) {
-      if (isActive && currentAudioUrl) {
-        audioRef.current.play().catch(error => {
-          console.error("Error playing audio:", error);
-        });
-      } else {
-        audioRef.current.pause();
-      }
+    if (!isActive && audioRef.current) {
+      audioRef.current.pause();
     }
-  }, [isActive, currentAudioUrl]);
+  }, [isActive]);
   
+  // Handle phase transition timer
   useEffect(() => {
     if (!pattern) return;
     
@@ -108,6 +113,12 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
         if (secondsLeft > 1) {
           setSecondsLeft(seconds => seconds - 1);
         } else {
+          // Stop current audio if any
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          
           // Move to next phase
           if (currentPhase === "inhale") {
             setCurrentPhase("hold1");
@@ -131,6 +142,10 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                }
+                toast.success("Test voltooid!");
               }
             }
           } else if (currentPhase === "hold2") {
@@ -145,6 +160,10 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
               setCurrentCycle(1);
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
+              if (audioRef.current) {
+                audioRef.current.pause();
+              }
+              toast.success("Test voltooid!");
             }
           }
         }
@@ -178,16 +197,29 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
     setCurrentPhase("inhale");
     setCurrentCycle(1);
     setSecondsLeft(pattern.inhale);
+    setAudioError(false);
     
     // Reset audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+    
+    // Set initial audio URL for the inhale phase
+    setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
   
   const toggleExercise = () => {
     setIsActive(!isActive);
+    
+    // If starting the exercise, try to play audio if available
+    if (!isActive && audioRef.current && currentAudioUrl) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(error => {
+        console.error("Error playing audio on start:", error);
+        setAudioError(true);
+      });
+    }
   };
 
   if (!pattern) {
@@ -206,8 +238,13 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
         <CardTitle>Testen: {pattern.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Hidden audio element for playing sound */}
-        <audio ref={audioRef} src={currentAudioUrl} preload="auto" />
+        {/* Audio element with explicit controls */}
+        <audio 
+          ref={audioRef} 
+          src={currentAudioUrl} 
+          preload="auto" 
+          onError={() => setAudioError(true)} 
+        />
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
           <BreathingCircle 
@@ -221,7 +258,7 @@ export function BreathingExerciseTest({ pattern }: BreathingExerciseTestProps) {
             <div className="flex items-center justify-center gap-2">
               <p className="text-2xl font-medium">{getInstructions()}</p>
               {currentAudioUrl && (
-                <span className="text-primary">
+                <span className={`${audioError ? "text-red-500" : "text-primary"}`}>
                   <span className="text-xs">(Audio)</span>
                 </span>
               )}
