@@ -4,6 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, RefreshCw } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 type BreathingPattern = {
   name: string;
@@ -137,6 +144,13 @@ export function BreathExercise() {
   const toggleExercise = () => {
     setIsActive(!isActive);
   };
+
+  const handlePatternChange = (value: string) => {
+    const selectedPattern = breathingPatterns.find(pattern => pattern.name === value);
+    if (selectedPattern) {
+      setCurrentPattern(selectedPattern);
+    }
+  };
   
   return (
     <div className="space-y-4 animate-fade-in">
@@ -147,18 +161,23 @@ export function BreathExercise() {
       
       <Card className="bg-card/60 backdrop-blur-sm">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-            {breathingPatterns.map((pattern) => (
-              <Button
-                key={pattern.name}
-                variant={currentPattern.name === pattern.name ? "default" : "outline"}
-                onClick={() => setCurrentPattern(pattern)}
-                className="w-full"
-                disabled={isActive}
-              >
-                {pattern.name}
-              </Button>
-            ))}
+          <div className="mb-4">
+            <Select
+              value={currentPattern.name}
+              onValueChange={handlePatternChange}
+              disabled={isActive}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecteer een ademhalingstechniek" />
+              </SelectTrigger>
+              <SelectContent>
+                {breathingPatterns.map((pattern) => (
+                  <SelectItem key={pattern.name} value={pattern.name}>
+                    {pattern.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="flex flex-col items-center justify-center space-y-6 py-4">
