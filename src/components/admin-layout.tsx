@@ -51,8 +51,8 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
     { 
       path: "/admin/quotes", 
       icon: Quote, 
-      label: "Citaten", 
-      description: "/admin/citaten"
+      label: "Inspirerende quotes", 
+      description: "/admin/quotes"
     },
     { 
       path: "/admin/soundscapes", 
