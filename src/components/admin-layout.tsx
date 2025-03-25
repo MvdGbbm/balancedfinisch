@@ -69,7 +69,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
     { 
       path: "/admin/streams", 
       icon: Radio, 
-      label: "Beheerders", 
+      label: "Streaming Links", 
       description: "/admin/streams"
     },
     { 
