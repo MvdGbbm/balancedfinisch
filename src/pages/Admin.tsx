@@ -83,7 +83,7 @@ const Admin: React.FC = () => {
       color: "#10B981" // Green
     },
     {
-      title: "Radio Streams",
+      title: "Streaming Links",
       description: "Beheer radiostreams",
       icon: <Radio className="h-5 w-5" style={{ color: "#EC4899" }} />,
       path: "/admin/streams",
@@ -103,7 +103,7 @@ const Admin: React.FC = () => {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <LayoutGrid className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         </div>
         <p className="text-muted-foreground">
           Beheer de content en instellingen van de applicatie

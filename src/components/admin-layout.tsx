@@ -45,25 +45,25 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
     { 
       path: "/admin/meditations", 
       icon: Headphones, 
-      label: "AdminMeditaties", 
+      label: "Meditaties", 
       description: "/admin/meditaties"
     },
     { 
       path: "/admin/quotes", 
       icon: Quote, 
-      label: "Admin Citaten", 
+      label: "Citaten", 
       description: "/admin/citaten"
     },
     { 
       path: "/admin/soundscapes", 
       icon: Waves, 
-      label: "Beheerder Soundscapes", 
+      label: "Soundscapes", 
       description: "/admin/soundscapes"
     },
     { 
       path: "/admin/music", 
       icon: Music, 
-      label: "AdminMusic", 
+      label: "Muziek", 
       description: "/admin/muziek"
     },
     { 
@@ -75,7 +75,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
     { 
       path: "/admin/breathing", 
       icon: RefreshCw, 
-      label: "Beheerder Ademhaling", 
+      label: "Ademhaling", 
       description: "/admin/ademhaling"
     },
   ];
@@ -87,10 +87,19 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Lock className="h-6 w-6 text-primary" />
-              <h1 className="text-lg font-medium">Admin Dashboard</h1>
+              <h1 className="text-lg font-medium">Dashboard</h1>
               <SidebarTrigger className="ml-2" />
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="mr-2"
+                onClick={() => navigate("/")}
+              >
+                <Home className="mr-2 h-4 w-4" />
+                <span>Frontend</span>
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -109,7 +118,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
             <SidebarHeader>
               <div className="flex items-center gap-2 px-2">
                 <Lock className="h-5 w-5" />
-                <span className="text-sm font-medium">Admin Panel</span>
+                <span className="text-sm font-medium">Panel</span>
               </div>
             </SidebarHeader>
             <SidebarContent>
@@ -143,19 +152,6 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter>
-              <div className="px-3 py-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => navigate("/")}
-                >
-                  <Home className="mr-2 h-4 w-4" />
-                  <span>Frontend</span>
-                </Button>
-              </div>
-            </SidebarFooter>
           </Sidebar>
           
           <main className="flex-1 overflow-auto p-4">
