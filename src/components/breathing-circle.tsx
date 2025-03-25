@@ -11,7 +11,7 @@ interface BreathingCircleProps {
   exhaleDuration?: number;
   className?: string;
   onBreathComplete?: () => void;
-  isActive: boolean; // Added to control from parent
+  isActive: boolean;
 }
 
 export function BreathingCircle({
@@ -20,34 +20,28 @@ export function BreathingCircle({
   exhaleDuration = 6000,
   className,
   onBreathComplete,
-  isActive = false // Default to inactive
+  isActive = false
 }: BreathingCircleProps) {
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
 
-  // Reset state when durations change
+  // Reset state when isActive changes
   useEffect(() => {
     if (isActive) {
-      // If active, just let the current cycle complete
-      // The new durations will be used in the next cycle
-    } else {
-      // If not active, reset the phase
-      setPhase("rest");
-      setProgress(0);
-    }
-  }, [inhaleDuration, holdDuration, exhaleDuration, isActive]);
-
-  useEffect(() => {
-    if (!isActive) {
-      setPhase("rest");
-      return;
-    }
-    
-    if (phase === "rest") {
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
+    } else {
+      setPhase("rest");
+      setProgress(0);
+    }
+  }, [isActive, inhaleDuration]);
+
+  // Main breathing cycle effect
+  useEffect(() => {
+    if (!isActive) {
+      return;
     }
     
     let startTime = Date.now();
@@ -86,17 +80,6 @@ export function BreathingCircle({
 
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
-
-  // Effect to handle changes in isActive
-  useEffect(() => {
-    if (isActive) {
-      setPhase("inhale");
-      setProgress(0);
-      setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
-    } else {
-      setPhase("rest");
-    }
-  }, [isActive, inhaleDuration]);
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
