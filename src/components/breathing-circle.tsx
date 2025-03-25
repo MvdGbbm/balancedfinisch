@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { Timer } from "lucide-react";
 
 interface BreathingCircleProps {
   duration?: number;
@@ -93,14 +92,14 @@ export function BreathingCircle({
   const getScaleForPhase = () => {
     switch (phase) {
       case "inhale":
-        return "scale-125"; // Expand during inhale
+        return "scale-[1.25]"; // Expand during inhale
       case "hold":
-        return "scale-125"; // Stay expanded during hold
+        return "scale-[1.25]"; // Stay expanded during hold
       case "exhale":
-        return "scale-100"; // Contract during exhale
+        return "scale-[1]"; // Contract during exhale
       case "rest":
       default:
-        return "scale-100"; // Default resting state
+        return "scale-[1]"; // Default resting state
     }
   };
 
@@ -116,13 +115,10 @@ export function BreathingCircle({
         
         <div 
           className={cn(
-            "absolute inset-0 flex items-center justify-center rounded-full transition-all", 
+            "absolute inset-0 flex items-center justify-center rounded-full transition-all duration-1000 ease-in-out", 
             getScaleForPhase(),
             className
-          )} 
-          style={{
-            transition: `transform ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
-          }}
+          )}
         >
           <div 
             className={cn("h-full w-full rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", {
@@ -131,9 +127,6 @@ export function BreathingCircle({
               "bg-gradient-to-r from-purple-500 to-amber-400": phase === "hold",
               "bg-gradient-to-r from-indigo-600 to-blue-500": phase === "exhale"
             })}
-            style={{
-              transition: "background 0.5s ease-in-out"
-            }}
           >
             <div className="text-center text-white">
               {phase === "rest" ? (
@@ -155,16 +148,6 @@ export function BreathingCircle({
           </div>
         </div>
       </div>
-      
-      {isActive && (
-        <div className="mt-4 text-center flex items-center gap-2 text-sm text-muted-foreground">
-          <Timer className="h-4 w-4" />
-          <p className="py-[25px]">
-            Adem in ({inhaleDuration / 1000}s) → Houd vast ({holdDuration / 1000}s) →
-            Adem uit ({exhaleDuration / 1000}s)
-          </p>
-        </div>
-      )}
     </div>
   );
 }
