@@ -57,27 +57,35 @@ export function BreathingCircle({
       return elapsed >= phaseDuration;
     };
 
+    // Initialize progress immediately
     calculateProgress();
 
     const interval = setInterval(() => {
       const phaseComplete = calculateProgress();
+      
       if (phaseComplete) {
+        // Reset progress to 0 before changing phase to ensure smooth transition
+        setProgress(0);
+        
         if (currentPhase === "inhale") {
+          setPhase("hold");
           currentPhase = "hold";
           phaseDuration = holdDuration;
         } else if (currentPhase === "hold") {
+          setPhase("exhale");
           currentPhase = "exhale";
           phaseDuration = exhaleDuration;
         } else {
           if (onBreathComplete) onBreathComplete();
+          setPhase("inhale");
           currentPhase = "inhale";
           phaseDuration = inhaleDuration;
         }
-        setPhase(currentPhase);
+        
         startTime = Date.now();
-        setProgress(0);
+        setPhaseTimeLeft(Math.ceil(phaseDuration / 1000));
       }
-    }, 16);
+    }, 16); // ~60fps for smooth animation
 
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
@@ -113,7 +121,7 @@ export function BreathingCircle({
             className
           )} 
           style={{
-            transition: `all ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
+            transition: `transform ${phase === "inhale" ? inhaleDuration : phase === "exhale" ? exhaleDuration : holdDuration}ms ease-in-out`
           }}
         >
           <div 
