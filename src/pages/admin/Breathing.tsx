@@ -10,6 +10,7 @@ import { Plus, Save, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
 import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 
+// Define types for breathing patterns
 type BreathingPattern = {
   id: string;
   name: string;
@@ -25,6 +26,7 @@ type BreathingPattern = {
   hold2Url?: string;
 };
 
+// Sample data - in a real application this would come from the database
 const defaultBreathingPatterns: BreathingPattern[] = [
   {
     id: "1",
@@ -62,19 +64,7 @@ const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   
-  const [voiceUrls, setVoiceUrls] = useState({
-    vera: {
-      inhale: "",
-      hold: "",
-      exhale: "",
-    },
-    marco: {
-      inhale: "",
-      hold: "",
-      exhale: "",
-    }
-  });
-
+  // Load breathing patterns from localStorage when component mounts
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -83,41 +73,17 @@ const AdminBreathing = () => {
         setBreathingPatterns(parsedPatterns);
       } catch (error) {
         console.error("Error loading breathing patterns:", error);
+        // If there's an error, use default patterns
         setBreathingPatterns(defaultBreathingPatterns);
         localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
       }
     } else {
+      // If no saved patterns, initialize with defaults
       localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
     }
-
-    const veraUrls = localStorage.getItem('veraVoiceUrls');
-    const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-
-    if (veraUrls) {
-      try {
-        const parsedUrls = JSON.parse(veraUrls);
-        setVoiceUrls(prev => ({
-          ...prev,
-          vera: parsedUrls
-        }));
-      } catch (error) {
-        console.error("Error loading Vera voice URLs:", error);
-      }
-    }
-
-    if (marcoUrls) {
-      try {
-        const parsedUrls = JSON.parse(marcoUrls);
-        setVoiceUrls(prev => ({
-          ...prev,
-          marco: parsedUrls
-        }));
-      } catch (error) {
-        console.error("Error loading Marco voice URLs:", error);
-      }
-    }
   }, []);
-
+  
+  // Form for editing patterns
   const form = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -143,6 +109,7 @@ const AdminBreathing = () => {
   };
 
   const handleCreateNew = () => {
+    // Generate a temporary ID for the new pattern
     const newId = `temp_${Date.now()}`;
     const newPattern = {
       id: newId,
@@ -158,37 +125,25 @@ const AdminBreathing = () => {
     form.reset(newPattern);
   };
 
+  // Save breathing patterns to localStorage
   const saveToLocalStorage = (patterns: BreathingPattern[]) => {
     localStorage.setItem('breathingPatterns', JSON.stringify(patterns));
   };
 
-  const handleVoiceUrlChange = (voice: 'vera' | 'marco', type: 'inhale' | 'hold' | 'exhale', value: string) => {
-    setVoiceUrls(prev => ({
-      ...prev,
-      [voice]: {
-        ...prev[voice],
-        [type]: value
-      }
-    }));
-  };
-
-  const saveVoiceUrls = () => {
-    localStorage.setItem('veraVoiceUrls', JSON.stringify(voiceUrls.vera));
-    localStorage.setItem('marcoVoiceUrls', JSON.stringify(voiceUrls.marco));
-    toast.success("Stem URLs opgeslagen");
-  };
-
   const handleSave = (data: BreathingPattern) => {
+    // If selectedPattern exists in breathingPatterns, update it
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
     let updated: BreathingPattern[];
     
     if (existingPatternIndex >= 0) {
+      // Update existing pattern
       updated = [...breathingPatterns];
       updated[existingPatternIndex] = { ...data, id: selectedPattern!.id };
       setBreathingPatterns(updated);
       setSelectedPattern(updated[existingPatternIndex]);
       toast.success("Ademhalingstechniek bijgewerkt");
     } else {
+      // Add new pattern with a permanent ID
       const newPattern = {
         ...data,
         id: `${Date.now()}`
@@ -199,6 +154,7 @@ const AdminBreathing = () => {
       toast.success("Nieuwe ademhalingstechniek toegevoegd");
     }
     
+    // Save to localStorage
     saveToLocalStorage(updated);
   };
 
@@ -220,50 +176,6 @@ const AdminBreathing = () => {
     toast.success("Ademhalingstechniek verwijderd");
   };
 
-  const VoiceUrlForm = ({ voice, urls, onChange }: { 
-    voice: 'vera' | 'marco', 
-    urls: { inhale: string, hold: string, exhale: string },
-    onChange: (voice: 'vera' | 'marco', type: 'inhale' | 'hold' | 'exhale', value: string) => void
-  }) => (
-    <div className="space-y-4">
-      <div className="form-group">
-        <FormLabel className="flex items-center gap-1">
-          <Link className="h-4 w-4" />
-          <span>Audio URL voor inademen</span>
-        </FormLabel>
-        <Input 
-          placeholder="https://..." 
-          value={urls.inhale} 
-          onChange={(e) => onChange(voice, 'inhale', e.target.value)} 
-        />
-      </div>
-      
-      <div className="form-group">
-        <FormLabel className="flex items-center gap-1">
-          <Link className="h-4 w-4" />
-          <span>Audio URL voor vasthouden</span>
-        </FormLabel>
-        <Input 
-          placeholder="https://..." 
-          value={urls.hold} 
-          onChange={(e) => onChange(voice, 'hold', e.target.value)} 
-        />
-      </div>
-      
-      <div className="form-group">
-        <FormLabel className="flex items-center gap-1">
-          <Link className="h-4 w-4" />
-          <span>Audio URL voor uitademen</span>
-        </FormLabel>
-        <Input 
-          placeholder="https://..." 
-          value={urls.exhale} 
-          onChange={(e) => onChange(voice, 'exhale', e.target.value)} 
-        />
-      </div>
-    </div>
-  );
-
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
@@ -281,6 +193,7 @@ const AdminBreathing = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* List of breathing patterns */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle>Ademhalingstechnieken</CardTitle>
@@ -301,6 +214,7 @@ const AdminBreathing = () => {
             </CardContent>
           </Card>
 
+          {/* Edit form */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>
@@ -493,48 +407,7 @@ const AdminBreathing = () => {
           </Card>
         </div>
         
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Stem begeleiding URLs</h2>
-          <p className="text-muted-foreground mb-4">
-            Configureer de URLs voor de stem begeleiding voor Marco en Vera.
-          </p>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vera stem URLs</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <VoiceUrlForm
-                  voice="vera"
-                  urls={voiceUrls.vera}
-                  onChange={handleVoiceUrlChange}
-                />
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Marco stem URLs</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <VoiceUrlForm
-                  voice="marco"
-                  urls={voiceUrls.marco}
-                  onChange={handleVoiceUrlChange}
-                />
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="mt-4">
-            <Button onClick={saveVoiceUrls}>
-              <Save className="mr-2 h-4 w-4" />
-              Stem URLs opslaan
-            </Button>
-          </div>
-        </div>
-        
+        {/* Test section for breathing exercise with audio */}
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
           <p className="text-muted-foreground mb-4">

@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { BreathingCircle } from "@/components/breathing-circle";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, RefreshCw } from "lucide-react";
 import { 
@@ -73,12 +73,6 @@ export function BreathExercise() {
   
   // Track currently selected voice
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
-  
-  // State for voice guide URLs
-  const [voiceUrls, setVoiceUrls] = useState({
-    vera: { inhale: "", hold: "", exhale: "" },
-    marco: { inhale: "", hold: "", exhale: "" }
-  });
 
   // Load breathing patterns and voice URLs from localStorage
   useEffect(() => {
@@ -102,34 +96,6 @@ export function BreathExercise() {
         console.error("Error loading breathing patterns:", error);
       }
     }
-    
-    // Load voice URLs
-    const veraUrls = localStorage.getItem('veraVoiceUrls');
-    const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-
-    if (veraUrls) {
-      try {
-        const parsedUrls = JSON.parse(veraUrls);
-        setVoiceUrls(prev => ({
-          ...prev,
-          vera: parsedUrls
-        }));
-      } catch (error) {
-        console.error("Error loading Vera voice URLs:", error);
-      }
-    }
-
-    if (marcoUrls) {
-      try {
-        const parsedUrls = JSON.parse(marcoUrls);
-        setVoiceUrls(prev => ({
-          ...prev,
-          marco: parsedUrls
-        }));
-      } catch (error) {
-        console.error("Error loading Marco voice URLs:", error);
-      }
-    }
   }, []);
 
   // Reset state when pattern changes
@@ -148,30 +114,48 @@ export function BreathExercise() {
     let url = "";
     
     if (activeVoice === "vera") {
-      switch (currentPhase) {
-        case "inhale":
-          url = voiceUrls.vera.inhale || "";
-          break;
-        case "hold1":
-        case "hold2":
-          url = voiceUrls.vera.hold || "";
-          break;
-        case "exhale":
-          url = voiceUrls.vera.exhale || "";
-          break;
+      // Get Vera URLs from localStorage
+      const veraUrls = localStorage.getItem('veraVoiceUrls');
+      if (veraUrls) {
+        try {
+          const parsedUrls = JSON.parse(veraUrls);
+          switch (currentPhase) {
+            case "inhale":
+              url = parsedUrls.inhale || "";
+              break;
+            case "hold1":
+            case "hold2":
+              url = parsedUrls.hold || "";
+              break;
+            case "exhale":
+              url = parsedUrls.exhale || "";
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing Vera URLs:", error);
+        }
       }
     } else if (activeVoice === "marco") {
-      switch (currentPhase) {
-        case "inhale":
-          url = voiceUrls.marco.inhale || "";
-          break;
-        case "hold1":
-        case "hold2":
-          url = voiceUrls.marco.hold || "";
-          break;
-        case "exhale":
-          url = voiceUrls.marco.exhale || "";
-          break;
+      // Get Marco URLs from localStorage
+      const marcoUrls = localStorage.getItem('marcoVoiceUrls');
+      if (marcoUrls) {
+        try {
+          const parsedUrls = JSON.parse(marcoUrls);
+          switch (currentPhase) {
+            case "inhale":
+              url = parsedUrls.inhale || "";
+              break;
+            case "hold1":
+            case "hold2":
+              url = parsedUrls.hold || "";
+              break;
+            case "exhale":
+              url = parsedUrls.exhale || "";
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing Marco URLs:", error);
+        }
       }
     } else {
       // Default to pattern URLs if no voice is selected
@@ -298,6 +282,16 @@ export function BreathExercise() {
     }
   }, [isActive]);
 
+  const mapPhaseToCirclePhase = (phase: "inhale" | "hold1" | "exhale" | "hold2"): "inhale" | "hold" | "exhale" | "rest" => {
+    switch (phase) {
+      case "inhale": return "inhale";
+      case "hold1": return "hold";
+      case "exhale": return "exhale";
+      case "hold2": return "hold";
+      default: return "rest";
+    }
+  };
+
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -340,9 +334,8 @@ export function BreathExercise() {
       setIsActive(true);
       
       setTimeout(() => {
-        if (audioRef.current && voiceUrls.vera.inhale) {
-          audioRef.current.src = voiceUrls.vera.inhale;
-          audioRef.current.load();
+        if (audioRef.current && currentAudioUrl) {
+          audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
             console.error("Error playing Vera audio on start:", error);
             setAudioError(true);
@@ -364,9 +357,8 @@ export function BreathExercise() {
       setIsActive(true);
       
       setTimeout(() => {
-        if (audioRef.current && voiceUrls.marco.inhale) {
-          audioRef.current.src = voiceUrls.marco.inhale;
-          audioRef.current.load();
+        if (audioRef.current && currentAudioUrl) {
+          audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
             console.error("Error playing Marco audio on start:", error);
             setAudioError(true);

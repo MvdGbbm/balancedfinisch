@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-
 type BreathingPattern = {
   id: string;
   name: string;
@@ -20,11 +18,9 @@ type BreathingPattern = {
   hold1Url?: string;
   hold2Url?: string;
 };
-
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
-
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -36,43 +32,6 @@ export function BreathingExerciseTest({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
-  const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
-
-  // Load the voice URLs from localStorage
-  const [voiceUrls, setVoiceUrls] = useState({
-    vera: { inhale: "", hold: "", exhale: "" },
-    marco: { inhale: "", hold: "", exhale: "" }
-  });
-
-  // Load voice URLs from localStorage on component mount
-  useEffect(() => {
-    const veraUrls = localStorage.getItem('veraVoiceUrls');
-    const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-
-    if (veraUrls) {
-      try {
-        const parsedUrls = JSON.parse(veraUrls);
-        setVoiceUrls(prev => ({
-          ...prev,
-          vera: parsedUrls
-        }));
-      } catch (error) {
-        console.error("Error loading Vera voice URLs:", error);
-      }
-    }
-
-    if (marcoUrls) {
-      try {
-        const parsedUrls = JSON.parse(marcoUrls);
-        setVoiceUrls(prev => ({
-          ...prev,
-          marco: parsedUrls
-        }));
-      } catch (error) {
-        console.error("Error loading Marco voice URLs:", error);
-      }
-    }
-  }, []);
 
   // Reset state when pattern changes
   useEffect(() => {
@@ -81,63 +40,34 @@ export function BreathingExerciseTest({
     setCurrentCycle(1);
     setAudioError(false);
     setProgress(0);
-    setActiveVoice("none");
     if (pattern) {
       setSecondsLeft(pattern.inhale);
       setCurrentAudioUrl(pattern.inhaleUrl || "");
     }
   }, [pattern]);
 
-  // Update audio URL based on phase and active voice
-  const getAudioUrlForPhase = (phase: string): string => {
-    if (activeVoice === "vera") {
-      switch (phase) {
-        case "inhale":
-          return voiceUrls.vera.inhale;
-        case "hold1":
-        case "hold2":
-          return voiceUrls.vera.hold;
-        case "exhale":
-          return voiceUrls.vera.exhale;
-        default:
-          return "";
-      }
-    } else if (activeVoice === "marco") {
-      switch (phase) {
-        case "inhale":
-          return voiceUrls.marco.inhale;
-        case "hold1":
-        case "hold2":
-          return voiceUrls.marco.hold;
-        case "exhale":
-          return voiceUrls.marco.exhale;
-        default:
-          return "";
-      }
-    } else if (pattern) {
-      // Default to pattern URLs if no voice is selected
-      switch (phase) {
-        case "inhale":
-          return pattern.inhaleUrl || "";
-        case "hold1":
-          return pattern.hold1Url || "";
-        case "exhale":
-          return pattern.exhaleUrl || "";
-        case "hold2":
-          return pattern.hold2Url || "";
-        default:
-          return "";
-      }
-    }
-    return "";
-  };
-
   // A separate effect to handle audio loading on phase change
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
 
     // Get the correct URL for the current phase
-    const url = getAudioUrlForPhase(currentPhase);
+    let url = "";
+    switch (currentPhase) {
+      case "inhale":
+        url = pattern.inhaleUrl || "";
+        break;
+      case "hold1":
+        url = pattern.hold1Url || "";
+        break;
+      case "exhale":
+        url = pattern.exhaleUrl || "";
+        break;
+      case "hold2":
+        url = pattern.hold2Url || "";
+        break;
+    }
+
+    // Set the new URL
     setCurrentAudioUrl(url);
     setAudioError(false);
 
@@ -167,7 +97,7 @@ export function BreathingExerciseTest({
       // Add a small delay to prevent interruptions
       setTimeout(playAudio, 100);
     }
-  }, [currentPhase, isActive, pattern, activeVoice, voiceUrls]);
+  }, [currentPhase, isActive, pattern]);
 
   // Stop audio when exercise is paused
   useEffect(() => {
@@ -281,7 +211,6 @@ export function BreathingExerciseTest({
       if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
-
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -296,7 +225,6 @@ export function BreathingExerciseTest({
         return "";
     }
   };
-
   const resetExercise = () => {
     if (!pattern) return;
     setIsActive(false);
@@ -305,48 +233,32 @@ export function BreathingExerciseTest({
     setSecondsLeft(pattern.inhale);
     setAudioError(false);
     setProgress(0);
-    setActiveVoice("none");
 
     // Reset audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-  };
 
-  const startWithVoice = (voice: "vera" | "marco") => {
-    if (!pattern) return;
-    
-    if (isActive && activeVoice === voice) {
-      // If already active with this voice, pause
-      setIsActive(false);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    } else {
-      // Start with selected voice
-      setActiveVoice(voice);
-      setIsActive(true);
-      setCurrentPhase("inhale");
-      setSecondsLeft(pattern.inhale);
-      
-      // Attempt to play audio
+    // Set initial audio URL for the inhale phase
+    setCurrentAudioUrl(pattern.inhaleUrl || "");
+  };
+  const toggleExercise = () => {
+    setIsActive(!isActive);
+
+    // If starting the exercise, try to play audio if available
+    if (!isActive && audioRef.current && currentAudioUrl) {
       setTimeout(() => {
-        const url = voice === "vera" ? voiceUrls.vera.inhale : voiceUrls.marco.inhale;
-        if (audioRef.current && url) {
-          audioRef.current.src = url;
-          audioRef.current.load();
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
-            console.error(`Error playing ${voice} audio:`, error);
+            console.error("Error playing audio on start:", error);
             setAudioError(true);
-            toast.error(`Kan ${voice} audio niet afspelen. Controleer de URL.`);
           });
         }
       }, 100);
     }
   };
-
   if (!pattern) {
     return <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
@@ -354,7 +266,6 @@ export function BreathingExerciseTest({
         </CardContent>
       </Card>;
   }
-
   return <Card>
       <CardHeader>
         <CardTitle>Testen: {pattern.name}</CardTitle>
@@ -386,32 +297,15 @@ export function BreathingExerciseTest({
           </div>
           
           <div className="flex gap-3">
-            <Button 
-              onClick={() => startWithVoice("vera")} 
-              variant={isActive && activeVoice === "vera" ? "secondary" : "default"} 
-              size="lg"
-            >
-              {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-              Start Vera
+            <Button onClick={toggleExercise} variant="default" size="lg">
+              {isActive ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+              {isActive ? "Pauze" : "Start"}
             </Button>
             
-            <Button 
-              onClick={() => startWithVoice("marco")} 
-              variant={isActive && activeVoice === "marco" ? "secondary" : "default"} 
-              size="lg"
-            >
-              {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-              Start Marco
+            <Button onClick={resetExercise} variant="outline" size="lg">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reset
             </Button>
-          </div>
-          
-          <Button onClick={resetExercise} variant="outline" size="lg">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Reset
-          </Button>
-          
-          <div className="w-full max-w-md mt-4">
-            <Progress value={progress} className="h-2" />
           </div>
         </div>
       </CardContent>
