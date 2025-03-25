@@ -124,8 +124,28 @@ export function BreathingCircle({
     <div className="flex flex-col items-center justify-center space-y-6">
       {/* Fixed height container to prevent layout shifts */}
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-gray-900/30 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.3)]" />
+        {/* Blurred outer glow effect */}
+        <div 
+          className={cn(
+            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all duration-1000", 
+            {
+              "bg-blue-400/30 scale-[1.15]": activePhase === "rest",
+              "bg-cyan-400/40 scale-[1.3]": activePhase === "inhale",
+              "bg-violet-400/40 scale-[1.3]": activePhase === "hold",
+              "bg-indigo-400/30 scale-[1.15]": activePhase === "exhale"
+            }
+          )}
+          style={{
+            transition: `transform ${getTransitionDuration()}ms ease-in-out, 
+                      background-color ${getTransitionDuration()}ms ease-in-out,
+                      opacity ${getTransitionDuration()}ms ease-in-out`
+          }}
+        />
         
+        {/* Shadow backdrop layer */}
+        <div className="absolute inset-0 rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.1)]" />
+        
+        {/* Main breathing circle with pulse effect */}
         <div 
           className={cn(
             "absolute inset-0 flex items-center justify-center rounded-full", 
@@ -133,7 +153,7 @@ export function BreathingCircle({
             className
           )}
           style={{
-            transition: `transform ${getTransitionDuration()}ms ease-in-out, 
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
                         box-shadow ${getTransitionDuration()}ms ease-in-out, 
                         background-color ${getTransitionDuration()}ms ease-in-out`
           }}
@@ -141,15 +161,30 @@ export function BreathingCircle({
           <div 
             className={cn("h-full w-full rounded-full flex items-center justify-center", {
               "bg-gradient-to-r from-blue-600/90 to-blue-400/90 shadow-[0_0_30px_rgba(59,130,246,0.5)]": activePhase === "rest",
-              "bg-gradient-to-r from-cyan-500/90 to-teal-400/90 shadow-[0_0_30px_rgba(20,184,166,0.6)]": activePhase === "inhale",
-              "bg-gradient-to-r from-violet-500/90 to-purple-400/90 shadow-[0_0_30px_rgba(139,92,246,0.6)]": activePhase === "hold",
-              "bg-gradient-to-r from-indigo-600/90 to-blue-500/90 shadow-[0_0_30px_rgba(99,102,241,0.5)]": activePhase === "exhale"
+              "bg-gradient-to-br from-cyan-500/90 to-teal-400/90 shadow-[0_0_30px_rgba(20,184,166,0.6)]": activePhase === "inhale",
+              "bg-gradient-to-br from-violet-500/90 to-purple-400/90 shadow-[0_0_30px_rgba(139,92,246,0.6)]": activePhase === "hold",
+              "bg-gradient-to-br from-indigo-600/90 to-blue-500/90 shadow-[0_0_30px_rgba(99,102,241,0.5)]": activePhase === "exhale"
             })}
             style={{
               transition: `background ${getTransitionDuration()}ms ease-in-out, 
                           box-shadow ${getTransitionDuration()}ms ease-in-out`
             }}
           >
+            {/* Small particle effects around the circle */}
+            <div className={cn(
+              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] rounded-full",
+              "opacity-0 dark:opacity-30",
+              {
+                "animate-pulse-gentle": isActive
+              }
+            )}>
+              <div className="absolute top-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 blur-sm" />
+              <div className="absolute bottom-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 blur-sm" />
+              <div className="absolute left-0 top-1/2 w-2 h-2 rounded-full bg-white/60 -translate-y-1/2 blur-sm" />
+              <div className="absolute right-0 top-1/2 w-2 h-2 rounded-full bg-white/60 -translate-y-1/2 blur-sm" />
+            </div>
+            
+            {/* Text content with transitions */}
             <div 
               className="text-center text-white"
               style={{
