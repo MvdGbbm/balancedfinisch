@@ -64,35 +64,5 @@ export const soundscapes: Soundscape[] = [
     category: "Muziek",
     coverImageUrl: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?ixlib=rb-4.0.3",
     tags: ["piano", "muziek", "instrumentaal"],
-  },
-  {
-    id: "sound-8",
-    title: "Rustgevende Piano",
-    description: "Kalme pianomuziek voor diepe ontspanning en meditatie.",
-    audioUrl: "https://example.com/soundscapes/calm-piano.mp3",
-    category: "Persoonlijke Meditatie",
-    coverImageUrl: "https://images.unsplash.com/photo-1552422535-c45813c61732?ixlib=rb-4.0.3",
-    tags: ["piano", "ontspanning", "meditatie"],
-    isFavorite: true
-  },
-  {
-    id: "sound-9",
-    title: "Meditatieve Bowls",
-    description: "Zachte klanken van Tibetaanse klankschalen.",
-    audioUrl: "https://example.com/soundscapes/bowls.mp3",
-    category: "Persoonlijke Meditatie",
-    coverImageUrl: "https://images.unsplash.com/photo-1591028666698-e5c7233dfe0c?ixlib=rb-4.0.3",
-    tags: ["bowls", "meditatie", "klanken"],
-    isFavorite: true
-  },
-  {
-    id: "sound-10",
-    title: "Natuurgeluiden",
-    description: "Een mengeling van rustgevende natuurgeluiden.",
-    audioUrl: "https://example.com/soundscapes/nature-sounds.mp3",
-    category: "Persoonlijke Meditatie",
-    coverImageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3",
-    tags: ["natuur", "geluiden", "ontspanning"],
-    isFavorite: true
   }
 ];

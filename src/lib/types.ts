@@ -20,7 +20,6 @@ export interface Soundscape {
   category: string;
   coverImageUrl: string;
   tags: string[];
-  isFavorite?: boolean;
 }
 
 export interface JournalEntry {
