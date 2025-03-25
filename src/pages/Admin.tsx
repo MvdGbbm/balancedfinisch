@@ -100,29 +100,27 @@ const Admin: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Beheer de content en instellingen van de applicatie
-          </p>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <LayoutGrid className="h-5 w-5 text-primary" />
+          <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         </div>
+        <p className="text-muted-foreground">
+          Beheer de content en instellingen van de applicatie
+        </p>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {adminTiles.map((tile, index) => (
-            <AdminTile
-              key={index}
-              title={tile.title}
-              description={tile.description}
-              icon={tile.icon}
-              color={tile.color}
-              onClick={() => navigate(tile.path)}
-            />
-          ))}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+        {adminTiles.map((tile, index) => (
+          <AdminTile
+            key={index}
+            title={tile.title}
+            description={tile.description}
+            icon={tile.icon}
+            color={tile.color}
+            onClick={() => navigate(tile.path)}
+          />
+        ))}
       </div>
     </AdminLayout>
   );
