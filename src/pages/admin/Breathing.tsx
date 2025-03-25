@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
 
 // Define types for breathing patterns
@@ -19,6 +20,10 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
+  inhaleUrl?: string;
+  exhaleUrl?: string;
+  hold1Url?: string;
+  hold2Url?: string;
 };
 
 // Sample data - in a real application this would come from the database
@@ -89,6 +94,10 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
+      inhaleUrl: "",
+      exhaleUrl: "",
+      hold1Url: "",
+      hold2Url: "",
     }
   });
 
@@ -258,12 +267,44 @@ const AdminBreathing = () => {
 
                       <FormField
                         control={form.control}
+                        name="inhaleUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Link className="h-4 w-4" />
+                              <span>Audio URL voor inademen</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="hold1"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Vasthouden na inademen (seconden)</FormLabel>
                             <FormControl>
                               <Input {...field} type="number" min="0" onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="hold1Url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Link className="h-4 w-4" />
+                              <span>Audio URL voor vasthouden</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." />
                             </FormControl>
                           </FormItem>
                         )}
@@ -284,12 +325,44 @@ const AdminBreathing = () => {
 
                       <FormField
                         control={form.control}
+                        name="exhaleUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Link className="h-4 w-4" />
+                              <span>Audio URL voor uitademen</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="hold2"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Vasthouden na uitademen (seconden)</FormLabel>
                             <FormControl>
                               <Input {...field} type="number" min="0" onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="hold2Url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Link className="h-4 w-4" />
+                              <span>Audio URL voor vasthouden na uitademen</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." />
                             </FormControl>
                           </FormItem>
                         )}
