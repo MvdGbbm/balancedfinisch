@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Pause, Play } from 'lucide-react';
@@ -97,7 +96,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
       case 'inhale': 
         return `grow-animation`;
       case 'hold': 
-        return 'scale-125'; 
+        return 'scale-130'; // Changed from scale-125 to scale-130 (130%)
       case 'exhale': 
         return `shrink-animation`;
       case 'pause': 
@@ -121,8 +120,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
 
   const shouldShowCounter = phase !== 'pause';
 
-  const circleSize = isMobile ? 'w-40 h-40' : 'w-48 h-48';
-  const innerCircleSize = isMobile ? 'w-32 h-32' : 'w-40 h-40';
+  const circleSize = isMobile ? 'w-52 h-52' : 'w-62 h-62'; // Increased from w-40/w-48
+  const innerCircleSize = isMobile ? 'w-42 h-42' : 'w-52 h-52'; // Increased from w-32/w-40
 
   return (
     <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
@@ -141,13 +140,14 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
         </div>
       </div>
       
-      <div className="mt-10 text-center space-y-4">
+      <div className="mt-16 text-center space-y-8"> {/* Increased margin-top from mt-10 to mt-16 for about 2cm lower */}
         <div className="flex justify-center">
           <button 
             onClick={toggleActive}
-            className="px-4 py-2 rounded-lg bg-primary/40 hover:bg-primary/60 text-foreground transition-colors flex items-center"
+            className="px-3 py-1 h-8 rounded-md text-sm font-medium bg-primary/40 hover:bg-primary/60 text-foreground transition-colors flex items-center"
+            /* Adjusted button size to match the Vera button */
           >
-            {isActive ? <Pause className="mr-1 h-4 w-4" /> : <Play className="mr-1 h-4 w-4" />}
+            {isActive ? <Pause className="mr-1 h-3.5 w-3.5" /> : <Play className="mr-1 h-3.5 w-3.5" />}
             {isActive ? 'Pauze' : 'Hervat'}
           </button>
         </div>
