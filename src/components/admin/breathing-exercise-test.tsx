@@ -2,15 +2,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw, Sliders } from "lucide-react";
+import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 
 type BreathingPattern = {
   id: string;
@@ -26,9 +20,11 @@ type BreathingPattern = {
   hold1Url?: string;
   hold2Url?: string;
 };
+
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
+
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -353,31 +349,51 @@ export function BreathingExerciseTest({
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
           {/* Visual representation of breathing phase with animated circle */}
-          <div className="relative h-40 w-40 flex items-center justify-center">
+          <div className="breathe-animation-container h-[300px] flex flex-col items-center justify-center">
             <div 
-              className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
-                ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : 
-                  currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : 
-                  currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : 
-                  "bg-gradient-to-r from-blue-500 to-indigo-500"}`}
+              className={`breathe-circle w-48 h-48 relative rounded-full flex items-center justify-center transition-all duration-500 ease-in-out
+                ${currentPhase === "inhale" ? "grow-animation" : 
+                  currentPhase === "hold1" ? "scale-125" : 
+                  currentPhase === "exhale" ? "shrink-animation" : 
+                  "scale-100"}`}
               style={{
+                animationDuration: `${secondsLeft}s`,
+                background: currentPhase === "inhale" ? "linear-gradient(to right, #60a5fa, #38bdf8)" :
+                             currentPhase === "hold1" ? "linear-gradient(to right, #a78bfa, #c084fc)" :
+                             currentPhase === "exhale" ? "linear-gradient(to right, #818cf8, #60a5fa)" :
+                             "linear-gradient(to right, #60a5fa, #818cf8)",
                 transform: `scale(${circleScale})`,
-                transition: 'transform 1s ease-in-out'
+                boxShadow: "0 0 20px rgba(96, 165, 250, 0.5)"
               }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-white text-5xl font-bold">{secondsLeft}</p>
+              onClick={() => {
+                if (isActive) {
+                  setIsActive(false);
+                  setActiveVoice(null);
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                  }
+                } else if (activeVoice) {
+                  setIsActive(true);
+                }
+              }}
+            >
+              <div className="breathe-inner-circle w-40 h-40 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-sm">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <p className="text-xl font-light mb-2 text-white">{getInstructions()}</p>
+                  <p className="text-3xl font-medium text-white">{secondsLeft}</p>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div className="text-center space-y-2">
-            <p className="text-2xl font-medium">{getInstructions()}</p>
-            {currentAudioUrl && <p className={`text-xs ${audioError ? "text-red-500" : "text-primary"}`}>
+            
+            <div className="mt-8 text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Cyclus {currentCycle} van {pattern.cycles}
+              </p>
+              {currentAudioUrl && <p className={`text-xs ${audioError ? "text-red-500" : "text-primary"}`}>
                 {audioError ? "Audio fout" : "Audio speelt af"}
               </p>}
-            <p className="text-sm text-muted-foreground">
-              Cyclus {currentCycle} van {pattern.cycles}
-            </p>
+            </div>
           </div>
           
           <div className="flex items-center gap-3 flex-wrap justify-center">
@@ -399,29 +415,14 @@ export function BreathingExerciseTest({
               Marco
             </Button>
             
-            {isActive && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="flex items-center gap-1.5"
-                  >
-                    <Sliders className="h-4 w-4 mr-2" />
-                    Helende Frequenties
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="center" 
-                  className="w-72 p-0 border-0 bg-background/95 backdrop-blur-sm"
-                >
-                  <ToneEqualizer
-                    isActive={isActive}
-                    audioRef={audioRef}
-                  />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <Button
+              onClick={resetExercise}
+              variant="outline"
+              size="lg"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reset
+            </Button>
           </div>
         </div>
       </CardContent>
