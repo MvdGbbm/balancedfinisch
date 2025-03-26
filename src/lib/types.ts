@@ -1,3 +1,4 @@
+
 export interface Meditation {
   id: string;
   title: string;
@@ -46,4 +47,18 @@ export interface PlannerEvent {
   duration?: number;
   completed: boolean;
   meditationId?: string;
+}
+
+export interface BreathingTechnique {
+  id: string;
+  name: string;
+  technique: string;
+  description?: string;
+  inhale: number;
+  hold1: number;
+  exhale: number;
+  hold2: number;
+  cycles: number;
+  veraUrl?: string;
+  marcoUrl?: string;
 }

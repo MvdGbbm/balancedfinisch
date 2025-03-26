@@ -93,7 +93,7 @@ const Admin: React.FC = () => {
       title: "Ademhaling",
       description: "Beheer ademhalingsoefeningen",
       icon: <RefreshCw className="h-5 w-5" style={{ color: "#EAB308" }} />,
-      path: "/admin/breathing",
+      path: "/admin/breathing-new",
       color: "#EAB308" // Yellow
     }
   ];
