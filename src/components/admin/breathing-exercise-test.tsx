@@ -1,15 +1,10 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw, Sliders } from "lucide-react";
+import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 
 type BreathingPattern = {
   id: string;
@@ -338,14 +333,14 @@ export function BreathingExerciseTest({
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
           <div className="relative h-40 w-40 flex items-center justify-center">
             <div 
-              className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
+              className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out
                 ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : 
                   currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : 
                   currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : 
                   "bg-gradient-to-r from-blue-500 to-indigo-500"}`}
               style={{
                 transform: `scale(${circleScale})`,
-                transition: 'transform 1s ease-in-out'
+                transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
@@ -381,33 +376,8 @@ export function BreathingExerciseTest({
               {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               Marco
             </Button>
-            
-            {isActive && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="flex items-center gap-1.5"
-                  >
-                    <Sliders className="h-4 w-4 mr-2" />
-                    Helende Frequenties
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="center" 
-                  className="w-72 p-0 border-0 bg-background/95 backdrop-blur-sm"
-                >
-                  <ToneEqualizer
-                    isActive={isActive}
-                    audioRef={audioRef}
-                  />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
         </div>
       </CardContent>
     </Card>;
 }
-

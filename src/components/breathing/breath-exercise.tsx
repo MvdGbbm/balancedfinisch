@@ -390,16 +390,6 @@ export function BreathExercise() {
     }
   };
 
-  const getCurrentPhaseLabel = () => {
-    switch (currentPhase) {
-      case "inhale": return "Inademen";
-      case "hold1": return "Vasthouden";
-      case "exhale": return "Uitademen";
-      case "hold2": return "Vasthouden";
-      default: return "";
-    }
-  };
-
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="flex items-center gap-2 mb-2">

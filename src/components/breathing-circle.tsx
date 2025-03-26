@@ -175,7 +175,7 @@ export function BreathingCircle({
           className="absolute inset-0 rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.1)]"
           style={{
             transform: `scale(${circleScale * 1.05})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1)`
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.25, 0.1, 0.25, 1.0)`
           }}
         />
         
@@ -186,7 +186,7 @@ export function BreathingCircle({
           )}
           style={{
             transform: `scale(${circleScale})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.25, 0.1, 0.25, 1.0), 
                         box-shadow ${getTransitionDuration()}ms ease-in-out, 
                         background-color ${getTransitionDuration()}ms ease-in-out`
           }}
