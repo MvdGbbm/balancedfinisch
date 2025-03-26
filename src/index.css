@@ -274,24 +274,24 @@
 
 /* New breathing animations for the breathing-animation component */
 .breathe-circle {
-  @apply relative flex items-center justify-center rounded-full transition-all cursor-pointer;
+  @apply relative flex items-center justify-center rounded-full shadow-lg bg-gradient-to-br from-blue-400 to-blue-600 transition-all cursor-pointer;
   box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
 }
 
 .breathe-inner-circle {
-  @apply flex items-center justify-center rounded-full text-white relative overflow-hidden;
+  @apply flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white;
 }
 
 .grow-animation {
   animation-name: grow;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-timing-function: ease-in-out;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
 }
 
 .shrink-animation {
   animation-name: shrink;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-timing-function: ease-in-out;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
 }
@@ -301,13 +301,13 @@
     transform: scale(1);
   }
   to {
-    transform: scale(1.3);
+    transform: scale(1.3); /* Changed from 1.25 to 1.3 for 130% */
   }
 }
 
 @keyframes shrink {
   from {
-    transform: scale(1.3);
+    transform: scale(1.3); /* Changed from 1.25 to 1.3 for 130% */
   }
   to {
     transform: scale(1);
