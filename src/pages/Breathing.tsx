@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
