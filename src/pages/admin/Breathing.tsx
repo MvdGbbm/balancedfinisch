@@ -175,6 +175,12 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
+      inhaleUrl: "",
+      exhaleUrl: "",
+      hold1Url: "",
+      hold2Url: "",
+      veraUrl: "",
+      marcoUrl: "",
     });
     saveToLocalStorage(filtered);
     toast.success("Ademhalingstechniek verwijderd");
