@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -27,7 +26,6 @@ const AdminQuotes = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentQuote, setCurrentQuote] = useState<DailyQuote | null>(null);
   
-  // Form state
   const [text, setText] = useState("");
   const [author, setAuthor] = useState("");
   
@@ -81,7 +79,7 @@ const AdminQuotes = () => {
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Quotes Beheren</h1>
+          <h1 className="text-2xl font-bold">inspiratie Quotes Beheren</h1>
           <Button onClick={handleOpenNew}>
             <Plus className="h-4 w-4 mr-2" />
             Nieuwe Quote
@@ -145,7 +143,6 @@ const AdminQuotes = () => {
         </div>
       </div>
       
-      {/* Add/Edit Quote Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>

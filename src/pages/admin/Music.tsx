@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
@@ -27,63 +27,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause, StopCircle } from "lucide-react";
+import { toast } from "sonner";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
 
 import { Soundscape } from "@/lib/types";
 
-const AdminSoundscapes = () => {
+const AdminMusic = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentSoundscape, setCurrentSoundscape] = useState<Soundscape | null>(null);
+  const musicItems = soundscapes.filter(item => item.category === "Muziek");
   
-  // Form state
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
-  const [category, setCategory] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  
-  // Extract unique categories from existing soundscapes
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  
-  useEffect(() => {
-    // Get unique categories from all soundscapes
-    const categories = [...new Set(soundscapes.map(s => s.category))];
-    setAvailableCategories(categories);
-  }, [soundscapes]);
   
   const resetForm = () => {
     setTitle("");
     setDescription("");
     setAudioUrl("");
-    setCategory("");
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
+    setIsPreviewPlaying(false);
   };
   
   const handleOpenNew = () => {
-    setCurrentSoundscape(null);
+    setCurrentMusicItem(null);
     resetForm();
     setIsDialogOpen(true);
   };
   
-  const handleEdit = (soundscape: Soundscape) => {
-    setCurrentSoundscape(soundscape);
-    setTitle(soundscape.title);
-    setDescription(soundscape.description);
-    setAudioUrl(soundscape.audioUrl);
-    setCategory(soundscape.category);
-    setCoverImageUrl(soundscape.coverImageUrl);
-    setTags([...soundscape.tags]);
+  const handleEdit = (musicItem: Soundscape) => {
+    setCurrentMusicItem(musicItem);
+    setTitle(musicItem.title);
+    setDescription(musicItem.description);
+    setAudioUrl(musicItem.audioUrl);
+    setCoverImageUrl(musicItem.coverImageUrl);
+    setTags([...musicItem.tags]);
     setIsDialogOpen(true);
   };
   
   const handleDelete = (id: string) => {
-    if (window.confirm("Weet je zeker dat je deze soundscape wilt verwijderen?")) {
+    if (window.confirm("Weet je zeker dat je dit muziekstuk wilt verwijderen?")) {
       deleteSoundscape(id);
     }
   };
@@ -99,131 +93,141 @@ const AdminSoundscapes = () => {
     setTags(tags.filter((t) => t !== tag));
   };
   
+  const handleAudioPreview = () => {
+    if (audioUrl) {
+      setIsPreviewPlaying(!isPreviewPlaying);
+    } else {
+      toast.error("Voer eerst een audio URL in om voor te luisteren");
+    }
+  };
+  
+  const handleAudioError = () => {
+    toast.error("Kon de audio niet laden. Controleer of de URL correct is.");
+    setIsPreviewPlaying(false);
+  };
+  
   const handleSave = () => {
-    if (!title || !description || !audioUrl || !category || !coverImageUrl) {
-      alert("Vul alle verplichte velden in");
+    if (!title || !description || !audioUrl || !coverImageUrl) {
+      toast.error("Vul alle verplichte velden in");
       return;
     }
     
-    if (currentSoundscape) {
-      updateSoundscape(currentSoundscape.id, {
+    if (currentMusicItem) {
+      updateSoundscape(currentMusicItem.id, {
         title,
         description,
         audioUrl,
-        category,
+        category: "Muziek",
         coverImageUrl,
         tags,
       });
+      toast.success("Muziek bijgewerkt");
     } else {
       addSoundscape({
         title,
         description,
         audioUrl,
-        category,
+        category: "Muziek",
         coverImageUrl,
         tags,
       });
+      toast.success("Nieuwe muziek toegevoegd");
     }
     
     setIsDialogOpen(false);
     resetForm();
   };
-  
-  const groupedSoundscapes = soundscapes.reduce((acc, soundscape) => {
-    const category = soundscape.category;
-    if (!acc[category]) {
-      acc[category] = [];
+
+  const isValidUrl = (url: string) => {
+    if (!url) return false;
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
     }
-    acc[category].push(soundscape);
-    return acc;
-  }, {} as Record<string, Soundscape[]>);
+  };
   
   return (
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Soundscapes Beheren</h1>
+          <h1 className="text-2xl font-bold">Muziek Beheren</h1>
           <Button onClick={handleOpenNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe Soundscape
+            <Music className="h-4 w-4 mr-2" />
+            Nieuwe Muziek
           </Button>
         </div>
         
         <p className="text-muted-foreground">
-          Voeg nieuwe soundscapes toe of bewerk bestaande geluiden
+          Voeg nieuwe muziek toe of bewerk bestaande muziekstukken
         </p>
         
         <div className="space-y-8 pb-20">
-          {Object.entries(groupedSoundscapes).map(([category, soundscapesList]) => (
-            <div key={category} className="space-y-3">
-              <h2 className="text-lg font-medium">{category}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {soundscapesList.map((soundscape) => (
-                  <Card key={soundscape.id} className="overflow-hidden">
-                    <div className="aspect-video bg-cover bg-center relative">
-                      <img 
-                        src={soundscape.coverImageUrl} 
-                        alt={soundscape.title}
-                        className="w-full h-full object-cover" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-white font-medium">{soundscape.title}</h3>
-                        <p className="text-white/80 text-sm truncate">
-                          {soundscape.description}
-                        </p>
-                      </div>
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button 
-                          variant="secondary" 
-                          size="icon"
-                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                          onClick={() => handleEdit(soundscape)}
-                        >
-                          <Edit className="h-4 w-4 text-white" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="icon"
-                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                          onClick={() => handleDelete(soundscape.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-white" />
-                        </Button>
-                      </div>
+          {musicItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {musicItems.map((musicItem) => (
+                <Card key={musicItem.id} className="overflow-hidden border-muted bg-background/30 backdrop-blur-sm">
+                  <div className="aspect-video bg-cover bg-center relative">
+                    <img 
+                      src={musicItem.coverImageUrl} 
+                      alt={musicItem.title}
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <h3 className="text-white font-medium">{musicItem.title}</h3>
+                      <p className="text-white/80 text-sm truncate">
+                        {musicItem.description}
+                      </p>
                     </div>
-                    <CardFooter className="p-3 bg-background">
-                      <AudioPlayer audioUrl={soundscape.audioUrl} showControls={false} />
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <Button 
+                        variant="secondary" 
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                        onClick={() => handleEdit(musicItem)}
+                      >
+                        <Edit className="h-4 w-4 text-white" />
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                        onClick={() => handleDelete(musicItem.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
+                  </div>
+                  <CardFooter className="p-3 bg-background/50 backdrop-blur-sm">
+                    <AudioPlayer audioUrl={musicItem.audioUrl} showControls={false} />
+                  </CardFooter>
+                </Card>
+              ))}
             </div>
-          ))}
-          
-          {soundscapes.length === 0 && (
+          ) : (
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">
-                Er zijn nog geen soundscapes. Voeg je eerste soundscape toe!
+                Er zijn nog geen muziekstukken. Voeg je eerste muziekstuk toe!
               </p>
               <Button onClick={handleOpenNew}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nieuwe Soundscape
+                <Music className="h-4 w-4 mr-2" />
+                Nieuwe Muziek
               </Button>
             </div>
           )}
         </div>
       </div>
       
-      {/* Add/Edit Soundscape Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {currentSoundscape ? "Soundscape Bewerken" : "Nieuwe Soundscape"}
+              {currentMusicItem ? "Muziek Bewerken" : "Nieuwe Muziek"}
             </DialogTitle>
             <DialogDescription>
-              Vul de details in voor de soundscape
+              Vul de details in voor de muziek
             </DialogDescription>
           </DialogHeader>
           
@@ -233,7 +237,7 @@ const AdminSoundscapes = () => {
                 <Label htmlFor="title">Titel</Label>
                 <Input
                   id="title"
-                  placeholder="Titel van de soundscape"
+                  placeholder="Titel van de muziek"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />
@@ -243,52 +247,11 @@ const AdminSoundscapes = () => {
                 <Label htmlFor="description">Beschrijving</Label>
                 <Textarea
                   id="description"
-                  placeholder="Beschrijving van de soundscape"
+                  placeholder="Beschrijving van de muziek"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="category">Categorie</Label>
-                <div className="flex gap-2 items-start">
-                  {availableCategories.length > 0 ? (
-                    <Select
-                      value={category}
-                      onValueChange={setCategory}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecteer of typ een categorie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      id="category"
-                      placeholder="Categorie"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                    />
-                  )}
-                </div>
-                {availableCategories.length > 0 && (
-                  <div className="mt-1">
-                    <Input
-                      id="custom-category"
-                      placeholder="Of voer een nieuwe categorie in"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
               </div>
               
               <div className="space-y-2">
@@ -347,10 +310,17 @@ const AdminSoundscapes = () => {
                     type="button" 
                     variant="outline"
                     className="shrink-0"
+                    onClick={handleAudioPreview}
                   >
-                    <FileAudio className="h-4 w-4" />
+                    {isPreviewPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
                 </div>
+                {isValidUrl(audioUrl) && (
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Directe URL naar een online audio bestand
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -370,6 +340,12 @@ const AdminSoundscapes = () => {
                     <Image className="h-4 w-4" />
                   </Button>
                 </div>
+                {isValidUrl(coverImageUrl) && (
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Directe URL naar een online afbeelding
+                  </div>
+                )}
               </div>
               
               {coverImageUrl && (
@@ -380,15 +356,23 @@ const AdminSoundscapes = () => {
                     className="w-full h-full object-cover" 
                     onError={(e) => {
                       e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      toast.error("Kon de afbeelding niet laden. Controleer de URL.");
                     }}
                   />
                 </div>
               )}
               
-              {audioUrl && (
+              {audioUrl && isPreviewPlaying && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
-                  <AudioPlayer audioUrl={audioUrl} />
+                  <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
+                  <AudioPlayer 
+                    audioUrl={audioUrl} 
+                    isPlayingExternal={isPreviewPlaying}
+                    onPlayPauseChange={setIsPreviewPlaying}
+                    onError={handleAudioError}
+                    ref={audioRef}
+                  />
                 </div>
               )}
             </div>
@@ -408,4 +392,4 @@ const AdminSoundscapes = () => {
   );
 };
 
-export default AdminSoundscapes;
+export default AdminMusic;

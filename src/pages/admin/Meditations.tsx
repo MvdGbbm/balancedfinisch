@@ -34,7 +34,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, Tag, ListMusic, MoreVertical, Link } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, ListMusic, MoreVertical, ExternalLink } from "lucide-react";
 
 import { Meditation } from "@/lib/types";
 
@@ -53,7 +54,6 @@ const AdminMeditations = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  
   const [veraLink, setVeraLink] = useState("");
   const [marcoLink, setMarcoLink] = useState("");
   
@@ -84,11 +84,11 @@ const AdminMeditations = () => {
     setCurrentMeditation(meditation);
     setTitle(meditation.title);
     setDescription(meditation.description);
-    setAudioUrl(meditation.audioUrl);
+    setAudioUrl(meditation.audioUrl || "");
     setDuration(meditation.duration);
     setCategory(meditation.category);
     setCoverImageUrl(meditation.coverImageUrl);
-    setTags([...meditation.tags]);
+    setTags(meditation.category === "Geleide Meditaties" ? [] : [...meditation.tags]);
     setVeraLink(meditation.veraLink || "");
     setMarcoLink(meditation.marcoLink || "");
     setIsDialogOpen(true);
@@ -101,6 +101,8 @@ const AdminMeditations = () => {
   };
   
   const handleAddTag = () => {
+    if (category === "Geleide Meditaties") return;
+    
     if (tagInput && !tags.includes(tagInput)) {
       setTags([...tags, tagInput]);
       setTagInput("");
@@ -117,6 +119,8 @@ const AdminMeditations = () => {
       return;
     }
     
+    const meditationTags = category === "Geleide Meditaties" ? [] : tags;
+    
     if (currentMeditation) {
       updateMeditation(currentMeditation.id, {
         title,
@@ -125,9 +129,9 @@ const AdminMeditations = () => {
         duration,
         category,
         coverImageUrl,
-        tags,
-        veraLink: veraLink || undefined,
-        marcoLink: marcoLink || undefined,
+        tags: meditationTags,
+        veraLink,
+        marcoLink,
       });
     } else {
       addMeditation({
@@ -137,9 +141,9 @@ const AdminMeditations = () => {
         duration,
         category,
         coverImageUrl,
-        tags,
-        veraLink: veraLink || undefined,
-        marcoLink: marcoLink || undefined,
+        tags: meditationTags,
+        veraLink,
+        marcoLink,
       });
     }
     
@@ -149,7 +153,7 @@ const AdminMeditations = () => {
   
   const categories = Array.from(
     new Set(meditations.map((meditation) => meditation.category))
-  );
+  ).sort();
   
   const handleAddCategory = () => {
     if (!newCategory.trim()) return;
@@ -161,7 +165,7 @@ const AdminMeditations = () => {
       duration: 10,
       category: newCategory,
       coverImageUrl: "images/sample.jpg",
-      tags: [newCategory.toLowerCase()],
+      tags: newCategory === "Geleide Meditaties" ? [] : [newCategory.toLowerCase()],
     });
     
     setNewCategory("");
@@ -174,10 +178,19 @@ const AdminMeditations = () => {
     meditations
       .filter(m => m.category === editingCategory)
       .forEach(m => {
+        let updatedTags = [...m.tags];
+        if (updatedCategoryName === "Geleide Meditaties") {
+          updatedTags = [];
+        } else if (editingCategory === "Geleide Meditaties") {
+          updatedTags = [updatedCategoryName.toLowerCase()];
+        } else {
+          updatedTags = [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()];
+        }
+        
         updateMeditation(m.id, {
           ...m,
           category: updatedCategoryName,
-          tags: [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()]
+          tags: updatedTags
         });
       });
     
@@ -356,22 +369,40 @@ const AdminMeditations = () => {
                   <Label htmlFor="category">Categorie</Label>
                   <Select 
                     value={category} 
-                    onValueChange={setCategory}
+                    onValueChange={(val) => {
+                      setCategory(val);
+                      if (val === "Geleide Meditaties") {
+                        setTags([]);
+                      }
+                    }}
                   >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Selecteer categorie" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                      {category && !categories.includes(category) && (
-                        <SelectItem value={category}>
-                          {category} (Nieuw)
+                      {categories.length > 0 ? (
+                        categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="nieuwe-categorie" disabled>
+                          Geen categorieën beschikbaar
                         </SelectItem>
                       )}
+                      <SelectItem value="nieuwe-categorie">
+                        <Input 
+                          placeholder="Nieuwe categorie" 
+                          value={category}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setCategory(e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -389,46 +420,49 @@ const AdminMeditations = () => {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="tags"
-                    placeholder="Voeg een tag toe"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button 
-                    type="button" 
-                    onClick={handleAddTag}
-                  >
-                    <Tag className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground"
+              {category !== "Geleide Meditaties" && (
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="tags"
+                      placeholder="Voeg een tag toe"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      onClick={handleAddTag}
                     >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="flex items-center gap-1"
                       >
-                        ×
-                      </button>
-                    </span>
-                  ))}
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             
             <div className="space-y-4">
@@ -437,7 +471,7 @@ const AdminMeditations = () => {
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
-                    placeholder="URL naar audio bestand (optioneel)"
+                    placeholder="URL naar audio bestand"
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
                   />
@@ -470,6 +504,44 @@ const AdminMeditations = () => {
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="veraLink">Vera Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="veraLink"
+                    placeholder="URL voor Vera link"
+                    value={veraLink}
+                    onChange={(e) => setVeraLink(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="marcoLink">Marco Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="marcoLink"
+                    placeholder="URL voor Marco link"
+                    value={marcoLink}
+                    onChange={(e) => setMarcoLink(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
               {coverImageUrl && (
                 <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
                   <img 
@@ -489,48 +561,6 @@ const AdminMeditations = () => {
                   <AudioPlayer audioUrl={audioUrl} />
                 </div>
               )}
-              
-              <div className="space-y-4 border-t pt-4 mt-4">
-                <h3 className="font-medium">Extra Knoppen</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="veraLink">Vera Link (optioneel)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="veraLink"
-                      placeholder="URL voor Vera knop"
-                      value={veraLink}
-                      onChange={(e) => setVeraLink(e.target.value)}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      className="shrink-0"
-                    >
-                      <Link className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="marcoLink">Marco Link (optioneel)</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="marcoLink"
-                      placeholder="URL voor Marco knop"
-                      value={marcoLink}
-                      onChange={(e) => setMarcoLink(e.target.value)}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      className="shrink-0"
-                    >
-                      <Link className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
           
@@ -596,7 +626,10 @@ const AdminMeditations = () => {
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
                   />
-                  <Button onClick={handleAddCategory}>
+                  <Button 
+                    type="button" 
+                    onClick={handleAddCategory}
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
@@ -604,49 +637,43 @@ const AdminMeditations = () => {
               
               <div className="space-y-2">
                 <Label>Bestaande categorieën</Label>
-                <div className="max-h-60 overflow-y-auto border rounded-md p-2">
+                <div className="space-y-2 mt-2">
                   {categories.length > 0 ? (
-                    <ul className="space-y-2">
-                      {categories.map((cat) => (
-                        <li key={cat} className="flex justify-between items-center p-2 hover:bg-secondary rounded-md">
-                          {cat}
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => {
-                                setEditingCategory(cat);
-                                setUpdatedCategoryName(cat);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="h-7 w-7 text-destructive"
-                              onClick={() => handleDeleteCategory(cat)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                    categories.map((cat) => (
+                      <div 
+                        key={cat} 
+                        className="flex items-center justify-between p-2 bg-muted rounded-md"
+                      >
+                        <span>{cat}</span>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingCategory(cat);
+                              setUpdatedCategoryName(cat);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => handleDeleteCategory(cat)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
                   ) : (
-                    <p className="text-center text-muted-foreground py-4">
+                    <p className="text-muted-foreground text-center py-2">
                       Geen categorieën gevonden
                     </p>
                   )}
                 </div>
               </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
-                  Sluiten
-                </Button>
-              </DialogFooter>
             </div>
           )}
         </DialogContent>

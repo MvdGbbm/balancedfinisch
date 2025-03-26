@@ -1,9 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Meditation } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Play } from "lucide-react";
+import { Clock, Play, ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MeditationCardProps {
@@ -13,6 +13,8 @@ interface MeditationCardProps {
 }
 
 export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCardProps) => {
+  const [imageError, setImageError] = useState(false);
+  
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click event
     onClick(meditation); // Use the same click handler to open the meditation
@@ -20,6 +22,11 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
 
   // Check if meditation has audio URL before rendering play button
   const hasAudio = !!meditation.audioUrl;
+  
+  const handleImageError = () => {
+    setImageError(true);
+    console.error(`Failed to load image for meditation: ${meditation.title}`);
+  };
 
   return (
     <Card 
@@ -33,10 +40,25 @@ export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCa
       onClick={() => onClick(meditation)}
     >
       <div className="flex h-20">
-        <div
-          className="w-20 bg-cover bg-center"
-          style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
-        />
+        {!imageError ? (
+          <div
+            className="w-20 bg-cover bg-center"
+            style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
+            onError={handleImageError}
+          >
+            {/* Dit is een achtergrondafbeelding dus we voegen een extra img toe voor foutafhandeling */}
+            <img 
+              src={meditation.coverImageUrl} 
+              alt="" 
+              className="hidden" 
+              onError={handleImageError} 
+            />
+          </div>
+        ) : (
+          <div className="w-20 bg-muted flex items-center justify-center">
+            <ImageOff className="h-8 w-8 text-muted-foreground" />
+          </div>
+        )}
         <CardContent className="flex-1 p-2.5 flex flex-col justify-between">
           <div>
             <h3 className="font-medium text-sm mb-0.5 line-clamp-1">{meditation.title}</h3>

@@ -1,25 +1,15 @@
 
 import React, { useState, useEffect } from "react";
-import { AudioPlayer } from "@/components/audio-player";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { Music, ChevronDown, ChevronRight, Play } from "lucide-react";
+import { Tabs } from "@/components/ui/tabs";
+import { Music } from "lucide-react";
 import { meditations } from "@/data/meditations";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { Meditation } from "@/lib/types";
+import { MeditationCategoryTabs } from "./meditation/meditation-category-tabs";
+import { MeditationPlayerContainer } from "./meditation/meditation-player-container";
 
 export function MeditationMusicPlayer() {
-  const [selectedMeditation, setSelectedMeditation] = useState(null);
+  const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
   const { toast } = useToast();
 
@@ -30,8 +20,8 @@ export function MeditationMusicPlayer() {
     }
     acc[meditation.category].push(meditation);
     return acc;
-  }, {});
-
+  }, {} as Record<string, Meditation[]>);
+  
   // Get unique categories
   const categories = Object.keys(meditationsByCategory);
 
@@ -40,11 +30,32 @@ export function MeditationMusicPlayer() {
     if (!selectedMeditation && categories.length > 0) {
       const firstCategory = categories[0];
       const firstMeditation = meditationsByCategory[firstCategory][0];
-      setSelectedMeditation(firstMeditation);
+      
+      // Log the available meditations for debugging
+      console.log("Available meditations:", meditations);
+      console.log("Setting default meditation:", firstMeditation);
+      
+      // Validate audio URL before setting
+      if (firstMeditation && firstMeditation.audioUrl) {
+        setSelectedMeditation(firstMeditation);
+        setIsPlayerVisible(true);
+      }
     }
   }, [categories, meditationsByCategory, selectedMeditation]);
 
-  const handleMeditationSelect = (meditation) => {
+  const handleMeditationSelect = (meditation: Meditation) => {
+    console.log("Selected meditation:", meditation);
+    
+    // Validate the meditation has an audio URL
+    if (!meditation.audioUrl) {
+      toast({
+        title: "Geen audio beschikbaar",
+        description: "Deze meditatie heeft geen audio.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSelectedMeditation(meditation);
     setIsPlayerVisible(true);
     toast({
@@ -53,9 +64,15 @@ export function MeditationMusicPlayer() {
     });
   };
 
-  // Group meditations by their tags for subcategories
-  const getSubcategories = (meditationsInCategory) => {
-    const tagGroups = {};
+  // Group meditations for display, without depending on tags
+  const getSubcategories = (meditationsInCategory: Meditation[]) => {
+    // For guided meditations, just display all of them without subcategories
+    if (meditationsInCategory.some(m => m.category === "Geleide Meditaties")) {
+      return { "Alle geleide meditaties": meditationsInCategory };
+    }
+    
+    // For other categories, if they have tags, use those for subcategories
+    const tagGroups: Record<string, Meditation[]> = {};
     
     meditationsInCategory.forEach(meditation => {
       if (meditation.tags && meditation.tags.length > 0) {
@@ -79,6 +96,11 @@ export function MeditationMusicPlayer() {
       }
     });
     
+    // If no tags were used at all, just show all meditations
+    if (Object.keys(tagGroups).length === 0) {
+      return { "Alle meditaties": meditationsInCategory };
+    }
+    
     return tagGroups;
   };
 
@@ -90,111 +112,19 @@ export function MeditationMusicPlayer() {
       </div>
       
       <Tabs defaultValue={categories[0]} className="w-full">
-        <TabsList className="w-full h-auto flex flex-wrap justify-start mb-4 bg-background border overflow-x-auto">
-          {categories.map((category) => (
-            <TabsTrigger 
-              key={category} 
-              value={category}
-              className="px-4 py-2 whitespace-nowrap"
-            >
-              {category}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {categories.map((category) => {
-          const meditationsInCategory = meditationsByCategory[category];
-          const tagGroups = getSubcategories(meditationsInCategory);
-          const subcategoryNames = Object.keys(tagGroups);
-          
-          return (
-            <TabsContent key={category} value={category} className="space-y-4">
-              {subcategoryNames.length > 0 ? (
-                // Display subcategories as collapsible sections
-                subcategoryNames.map((tag) => (
-                  <Collapsible 
-                    key={tag}
-                    className="border rounded-lg overflow-hidden"
-                    defaultOpen={true}
-                  >
-                    <CollapsibleTrigger className="flex items-center justify-between w-full p-3 hover:bg-muted/50">
-                      <span className="font-medium capitalize">{tag}</span>
-                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <div className="divide-y">
-                        {tagGroups[tag].map((meditation) => (
-                          <MeditationItem
-                            key={meditation.id}
-                            meditation={meditation}
-                            isSelected={selectedMeditation?.id === meditation.id}
-                            onSelect={handleMeditationSelect}
-                          />
-                        ))}
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
-                ))
-              ) : (
-                // If no subcategories, just list the meditations
-                <div className="border rounded-lg overflow-hidden divide-y">
-                  {meditationsInCategory.map((meditation) => (
-                    <MeditationItem
-                      key={meditation.id}
-                      meditation={meditation}
-                      isSelected={selectedMeditation?.id === meditation.id}
-                      onSelect={handleMeditationSelect}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          );
-        })}
+        <MeditationCategoryTabs 
+          categories={categories}
+          meditationsByCategory={meditationsByCategory}
+          selectedMeditationId={selectedMeditation?.id || null}
+          getSubcategories={getSubcategories}
+          onSelectMeditation={handleMeditationSelect}
+        />
       </Tabs>
       
-      {isPlayerVisible && selectedMeditation && (
-        <div className="mt-4">
-          <AudioPlayer 
-            audioUrl={selectedMeditation.audioUrl}
-            title={selectedMeditation.title}
-            showTitle
-            showControls
-            className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Component for individual meditation items
-function MeditationItem({ meditation, isSelected, onSelect }) {
-  return (
-    <div 
-      className={cn(
-        "flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors",
-        isSelected && "bg-primary/10"
-      )}
-      onClick={() => onSelect(meditation)}
-    >
-      <div className="flex items-center gap-3">
-        <div 
-          className="w-12 h-12 rounded bg-cover bg-center" 
-          style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
-        />
-        <div>
-          <h3 className="font-medium line-clamp-1">{meditation.title}</h3>
-          <p className="text-xs text-muted-foreground">{meditation.duration} min</p>
-        </div>
-      </div>
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-8 w-8 text-primary"
-      >
-        <Play className="h-4 w-4" />
-      </Button>
+      <MeditationPlayerContainer 
+        isVisible={isPlayerVisible}
+        selectedMeditation={selectedMeditation}
+      />
     </div>
   );
 }
