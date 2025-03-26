@@ -164,7 +164,7 @@
 
 /* Custom animations */
 .breathing-circle {
-  animation: breathe 5s infinite ease-in-out;
+  animation: breathe 7s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes breathe {
@@ -177,6 +177,15 @@
 }
 
 /* New animations for breathing exercise */
+@keyframes smooth-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+}
+
 @keyframes pulse-gentle {
   0%, 100% {
     opacity: 0.3;
@@ -235,6 +244,10 @@
     transform: scale(0.8);
     opacity: 0.1;
   }
+}
+
+.animate-smooth-scale {
+  animation: smooth-scale 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-pulse-gentle {

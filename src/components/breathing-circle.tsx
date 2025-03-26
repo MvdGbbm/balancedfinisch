@@ -153,10 +153,10 @@ export function BreathingCircle({
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
-        {/* Outer glow */}
+        {/* Outer glow with smoother animation */}
         <div 
           className={cn(
-            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all", 
+            "absolute inset-0 rounded-full opacity-70 blur-xl", 
             {
               "bg-blue-400/30": activePhase === "rest",
               "bg-cyan-400/40": activePhase === "inhale",
@@ -166,22 +166,22 @@ export function BreathingCircle({
           )}
           style={{
             transform: `scale(${circleScale * 1.2})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1), 
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
                       background-color ${getTransitionDuration()}ms ease-in-out,
                       opacity ${getTransitionDuration()}ms ease-in-out`
           }}
         />
         
-        {/* Middle layer */}
+        {/* Middle layer with smoother animation */}
         <div 
           className="absolute inset-0 rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.1)]"
           style={{
             transform: `scale(${circleScale * 1.05})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1)`
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1)`
           }}
         />
         
-        {/* Main circle */}
+        {/* Main circle with smoother animation */}
         <div 
           className={cn(
             "absolute inset-0 flex items-center justify-center rounded-full", 
@@ -189,7 +189,7 @@ export function BreathingCircle({
           )}
           style={{
             transform: `scale(${circleScale})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1), 
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
                         box-shadow ${getTransitionDuration()}ms ease-in-out, 
                         background-color ${getTransitionDuration()}ms ease-in-out`
           }}
