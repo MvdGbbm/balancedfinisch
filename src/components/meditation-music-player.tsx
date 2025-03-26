@@ -1,12 +1,12 @@
-
 import React, { useState, useEffect } from "react";
 import { Tabs } from "@/components/ui/tabs";
-import { Music } from "lucide-react";
+import { Music, Square } from "lucide-react";
 import { meditations } from "@/data/meditations";
 import { useToast } from "@/hooks/use-toast";
 import { Meditation } from "@/lib/types";
 import { MeditationCategoryTabs } from "./meditation/meditation-category-tabs";
 import { MeditationPlayerContainer } from "./meditation/meditation-player-container";
+import { Button } from "./ui/button";
 
 export function MeditationMusicPlayer() {
   const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
@@ -30,38 +30,37 @@ export function MeditationMusicPlayer() {
     if (!selectedMeditation && categories.length > 0) {
       const firstCategory = categories[0];
       const firstMeditation = meditationsByCategory[firstCategory][0];
-      
-      // Log the available meditations for debugging
-      console.log("Available meditations:", meditations);
-      console.log("Setting default meditation:", firstMeditation);
-      
-      // Validate audio URL before setting
-      if (firstMeditation && firstMeditation.audioUrl) {
-        setSelectedMeditation(firstMeditation);
-        setIsPlayerVisible(true);
-      }
+      setSelectedMeditation(firstMeditation);
     }
   }, [categories, meditationsByCategory, selectedMeditation]);
 
   const handleMeditationSelect = (meditation: Meditation) => {
-    console.log("Selected meditation:", meditation);
-    
-    // Validate the meditation has an audio URL
-    if (!meditation.audioUrl) {
+    // If the same meditation is already playing, stop it
+    if (selectedMeditation?.id === meditation.id && isPlayerVisible) {
+      setIsPlayerVisible(false);
       toast({
-        title: "Geen audio beschikbaar",
-        description: "Deze meditatie heeft geen audio.",
-        variant: "destructive"
+        title: "Meditatie gestopt",
+        description: `${meditation.title} is gestopt.`
       });
-      return;
+    } else {
+      // Otherwise play the selected meditation
+      setSelectedMeditation(meditation);
+      setIsPlayerVisible(true);
+      toast({
+        title: "Meditatie geselecteerd",
+        description: `${meditation.title} is geselecteerd en klaar om af te spelen.`
+      });
     }
-    
-    setSelectedMeditation(meditation);
-    setIsPlayerVisible(true);
-    toast({
-      title: "Meditatie geselecteerd",
-      description: `${meditation.title} is geselecteerd en klaar om af te spelen.`
-    });
+  };
+
+  const handleStopPlaying = () => {
+    if (isPlayerVisible) {
+      setIsPlayerVisible(false);
+      toast({
+        title: "Meditatie gestopt",
+        description: "Het afspelen is gestopt."
+      });
+    }
   };
 
   // Group meditations for display, without depending on tags
@@ -112,6 +111,30 @@ export function MeditationMusicPlayer() {
       </div>
       
       <Tabs defaultValue={categories[0]} className="w-full">
+        {isPlayerVisible && selectedMeditation && (
+          <div className="mb-4 bg-muted/30 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-medium">
+                Speelt nu: <span className="text-primary">{selectedMeditation.title}</span>
+              </h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleStopPlaying}
+                className="h-8 w-8 p-0"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <MeditationPlayerContainer 
+              isVisible={isPlayerVisible}
+              selectedMeditation={selectedMeditation}
+              hideErrorMessage={false}
+            />
+          </div>
+        )}
+        
         <MeditationCategoryTabs 
           categories={categories}
           meditationsByCategory={meditationsByCategory}
@@ -120,11 +143,6 @@ export function MeditationMusicPlayer() {
           onSelectMeditation={handleMeditationSelect}
         />
       </Tabs>
-      
-      <MeditationPlayerContainer 
-        isVisible={isPlayerVisible}
-        selectedMeditation={selectedMeditation}
-      />
     </div>
   );
 }

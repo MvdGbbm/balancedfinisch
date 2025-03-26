@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
@@ -27,22 +27,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause, StopCircle } from "lucide-react";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause, Square } from "lucide-react";
 import { toast } from "sonner";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
 
 import { Soundscape } from "@/lib/types";
 
 const AdminMusic = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
   
+  // Filter only music items (category "Muziek")
   const musicItems = soundscapes.filter(item => item.category === "Muziek");
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
   
+  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
@@ -96,6 +96,11 @@ const AdminMusic = () => {
   const handleAudioPreview = () => {
     if (audioUrl) {
       setIsPreviewPlaying(!isPreviewPlaying);
+      if (!isPreviewPlaying) {
+        toast.success(`Audio voorluisteren: ${title || 'Nieuwe muziek'}`);
+      } else {
+        toast.info("Voorluisteren gestopt");
+      }
     } else {
       toast.error("Voer eerst een audio URL in om voor te luisteren");
     }
@@ -117,7 +122,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: "Muziek",
+        category: "Muziek", // Always set category to "Muziek"
         coverImageUrl,
         tags,
       });
@@ -127,7 +132,7 @@ const AdminMusic = () => {
         title,
         description,
         audioUrl,
-        category: "Muziek",
+        category: "Muziek", // Always set category to "Muziek"
         coverImageUrl,
         tags,
       });
@@ -167,7 +172,7 @@ const AdminMusic = () => {
           {musicItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {musicItems.map((musicItem) => (
-                <Card key={musicItem.id} className="overflow-hidden border-muted bg-background/30 backdrop-blur-sm">
+                <Card key={musicItem.id} className="overflow-hidden">
                   <div className="aspect-video bg-cover bg-center relative">
                     <img 
                       src={musicItem.coverImageUrl} 
@@ -200,7 +205,7 @@ const AdminMusic = () => {
                       </Button>
                     </div>
                   </div>
-                  <CardFooter className="p-3 bg-background/50 backdrop-blur-sm">
+                  <CardFooter className="p-3 bg-background">
                     <AudioPlayer audioUrl={musicItem.audioUrl} showControls={false} />
                   </CardFooter>
                 </Card>
@@ -220,6 +225,7 @@ const AdminMusic = () => {
         </div>
       </div>
       
+      {/* Add/Edit Music Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -308,11 +314,11 @@ const AdminMusic = () => {
                   />
                   <Button 
                     type="button" 
-                    variant="outline"
+                    variant={isPreviewPlaying ? "default" : "outline"}
                     className="shrink-0"
                     onClick={handleAudioPreview}
                   >
-                    {isPreviewPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isPreviewPlaying ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </Button>
                 </div>
                 {isValidUrl(audioUrl) && (
@@ -363,15 +369,23 @@ const AdminMusic = () => {
               )}
               
               {audioUrl && isPreviewPlaying && (
-                <div className="mt-4">
-                  <Label>Audio Preview</Label>
-                  <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
+                <div className="mt-4 bg-muted/30 p-3 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label>Audio Voorluisteren: <span className="text-primary">{title || "Nieuwe muziek"}</span></Label>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsPreviewPlaying(false)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <Square className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <AudioPlayer 
                     audioUrl={audioUrl} 
                     isPlayingExternal={isPreviewPlaying}
                     onPlayPauseChange={setIsPreviewPlaying}
                     onError={handleAudioError}
-                    ref={audioRef}
                   />
                 </div>
               )}

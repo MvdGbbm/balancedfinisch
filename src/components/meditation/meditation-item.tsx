@@ -1,24 +1,31 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Play, StopCircle } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
 import { Meditation } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 
 interface MeditationItemProps {
   meditation: Meditation;
   isSelected: boolean;
   onSelect: (meditation: Meditation) => void;
-  isPlaying?: boolean;
-  onStopPlaying?: () => void;
+  playlists?: any[];
+  onAddToPlaylist?: (meditation: Meditation, playlist: any) => void;
+  onCreatePlaylist?: () => void;
+  onRemoveFromPlaylist?: () => void;
+  isInPlaylist?: boolean;
 }
 
 export function MeditationItem({ 
   meditation, 
   isSelected, 
   onSelect,
-  isPlaying,
-  onStopPlaying
+  playlists = [],
+  onAddToPlaylist,
+  onCreatePlaylist,
+  onRemoveFromPlaylist,
+  isInPlaylist = false
 }: MeditationItemProps) {
   return (
     <div 
@@ -38,25 +45,22 @@ export function MeditationItem({
           <p className="text-xs text-muted-foreground">{meditation.duration} min</p>
         </div>
       </div>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        {onAddToPlaylist && onCreatePlaylist && (
+          <PlaylistSelector 
+            playlists={playlists}
+            onSelectPlaylist={(playlist) => onAddToPlaylist(meditation, playlist)}
+            onCreateNew={onCreatePlaylist}
+            onRemove={onRemoveFromPlaylist}
+            showRemoveOption={isInPlaylist}
+          />
+        )}
         <Button 
           variant="ghost" 
           size="icon" 
           className="h-8 w-8 text-primary"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isPlaying && onStopPlaying) {
-              onStopPlaying();
-            } else {
-              onSelect(meditation);
-            }
-          }}
         >
-          {isPlaying ? (
-            <StopCircle className="h-4 w-4" />
-          ) : (
-            <Play className="h-4 w-4" />
-          )}
+          <Play className="h-4 w-4" />
         </Button>
       </div>
     </div>

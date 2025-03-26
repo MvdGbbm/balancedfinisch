@@ -1,12 +1,15 @@
 
-import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { useAudioPlayer } from "@/hooks/use-audio-player";
-import { ProgressBar } from "./audio-player/progress-bar";
-import { AudioControls } from "./audio-player/audio-controls";
-import { ErrorMessage } from "./audio-player/error-message";
-import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote } from "./audio-player/utils";
+import { quotes } from "@/data/quotes";
+import { useAudioEngine } from "./audio/audio-engine";
+import { ProgressBar } from "./audio/progress-bar";
+import { PlayerControls } from "./audio/player-controls";
+import { VolumeControl } from "./audio/volume-control";
+import { ErrorMessage } from "./audio/error-message";
+import { QuoteDisplay } from "./audio/quote-display";
+import { checkAudioCompatibility } from "@/utils/meditation-utils";
+import { toast } from "sonner";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -20,11 +23,13 @@ interface AudioPlayerProps {
   showQuote?: boolean;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
-  nextAudioUrl?: string;
-  onCrossfadeStart?: () => void;
+  nextAudioUrl?: string; // URL for the next track to crossfade
+  onCrossfadeStart?: () => void; // Called when crossfade starts
+  onAudioElementRef?: (element: HTMLAudioElement | null) => void;
+  hideErrorMessage?: boolean;
 }
 
-export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
+export function AudioPlayer({ 
   audioUrl, 
   showControls = true, 
   showTitle = false,
@@ -37,92 +42,148 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   isPlayingExternal,
   onPlayPauseChange,
   nextAudioUrl,
-  onCrossfadeStart
-}, ref) => {
-  const [randomQuote] = useState(getRandomQuote);
-  const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
-  const [audioKey, setAudioKey] = useState(0); // Add a key to force remounting
+  onCrossfadeStart,
+  onAudioElementRef,
+  hideErrorMessage = false
+}: AudioPlayerProps) {
+  // Initialize with a random quote
+  const [randomQuote] = useState(() => {
+    const randomIndex = Math.floor(Math.random() * quotes.length);
+    return quotes[randomIndex];
+  });
   
-  // Initialize all hooks unconditionally
+  // Check audio URL before attempting to play
+  const [urlChecked, setUrlChecked] = useState(false);
+  const [urlValid, setUrlValid] = useState(true);
+  const [isEmptyUrl, setIsEmptyUrl] = useState(false);
+  
+  useEffect(() => {
+    const validateAudioUrl = async () => {
+      if (!audioUrl || audioUrl.trim() === '') {
+        console.log("Empty audio URL provided");
+        setIsEmptyUrl(true);
+        setUrlValid(false);
+        setUrlChecked(true);
+        return;
+      }
+      
+      setIsEmptyUrl(false);
+      
+      try {
+        console.log("Checking audio compatibility for:", audioUrl);
+        const isCompatible = await checkAudioCompatibility(audioUrl);
+        setUrlValid(isCompatible);
+        
+        if (!isCompatible) {
+          console.error("Audio format not supported:", audioUrl);
+          if (onError) onError();
+        }
+      } catch (error) {
+        console.error("Error checking audio compatibility:", error);
+        setUrlValid(false);
+        if (onError) onError();
+      } finally {
+        setUrlChecked(true);
+      }
+    };
+    
+    setUrlChecked(false);
+    validateAudioUrl();
+  }, [audioUrl, onError]);
+  
+  // Use our custom audio engine hook to manage audio state and controls
   const {
-    audioRef,
-    nextAudioRef,
     isPlaying,
     duration,
     currentTime,
-    volume,
-    isLooping,
     isLoaded,
     loadError,
     isRetrying,
     isCrossfading,
     isLiveStream,
-    togglePlay,
-    handleRetry,
-    toggleLoop,
+    audioRef,
+    nextAudioRef,
     handleProgressChange,
     handleVolumeChange,
-    skipTime
-  } = useAudioPlayer({
-    audioUrl: audioUrl || "",
-    onEnded,
-    onError,
+    togglePlay,
+    toggleLoop,
+    handleRetry,
+    skipTime,
+    isLooping
+  } = useAudioEngine({
+    audioUrl,
     isPlayingExternal,
     onPlayPauseChange,
+    volume: 0.8, // Initial volume
+    isLooping: false, // Initial looping state
+    onAudioElementRef,
+    onEnded,
+    onError: () => {
+      if (onError) onError();
+    },
     nextAudioUrl,
     onCrossfadeStart,
-    title
   });
   
-  // Log the audio URL for debugging
+  // Log the current audio state for debugging
   useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
-    if (audioUrl?.includes('marco')) {
-      console.log('Marco audio detected:', audioUrl);
-    }
-    
-    // Reset player when URL changes
-    setAudioKey(prev => prev + 1);
-  }, [audioUrl]);
+    console.log("Audio player state:", {
+      audioUrl,
+      isPlaying,
+      isLoaded,
+      loadError,
+      duration,
+      urlChecked,
+      urlValid,
+      isEmptyUrl,
+      isPlayingExternal
+    });
+  }, [audioUrl, isPlaying, isLoaded, loadError, duration, urlChecked, urlValid, isEmptyUrl, isPlayingExternal]);
   
-  // Expose the audio element ref to parent components
-  useImperativeHandle(ref, () => audioRef.current!, []);
+  // Check if we have any errors to display
+  const hasError = loadError || (urlChecked && !urlValid && !isEmptyUrl);
   
-  // Connect the nextAudioRef to its element
-  useEffect(() => {
-    nextAudioRef.current = nextAudioElementRef.current;
-  }, [nextAudioRef]);
-  
-  // Early return with placeholder if no audioUrl
-  if (!audioUrl) {
+  // If it's an empty URL, show a placeholder instead of an error
+  if (isEmptyUrl) {
     return (
-      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-        <div className="text-center py-3 text-muted-foreground">
-          <p>Geen audio URL opgegeven</p>
+      <div className={cn("w-full space-y-2 rounded-lg p-2 bg-card/50 shadow-sm", className)}>
+        <div className="flex items-center justify-center h-12 bg-muted/30 rounded-md">
+          <p className="text-muted-foreground text-sm">
+            Geen audio beschikbaar
+          </p>
         </div>
-        
-        {showQuote && (
-          <QuoteDisplay quote={randomQuote} />
-        )}
       </div>
     );
   }
   
   return (
-    <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+    <div className={cn("w-full space-y-2 rounded-lg p-2 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
-      {nextAudioUrl && <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous" />}
+      {nextAudioUrl && <audio ref={nextAudioRef} preload="metadata" crossOrigin="anonymous" />}
       
       {showTitle && title && (
         <h3 className="text-lg font-medium">{title}</h3>
       )}
       
-      {loadError && (
-        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
+      {hasError && !hideErrorMessage && (
+        <ErrorMessage 
+          onRetry={() => {
+            if (!urlValid) {
+              setUrlChecked(false);
+              setUrlValid(true);
+              setTimeout(() => validateAudioUrl(), 500);
+            } else {
+              handleRetry();
+            }
+          }} 
+          isRetrying={isRetrying}
+          customMessage={isEmptyUrl ? "Geen audio URL opgegeven" : undefined}
+          hideMessage={hideErrorMessage}
+        />
       )}
       
       {showQuote && (
-        <QuoteDisplay quote={randomQuote} />
+        <QuoteDisplay text={randomQuote.text} author={randomQuote.author} />
       )}
       
       {customSoundscapeSelector && !showQuote && (
@@ -132,29 +193,61 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
       <ProgressBar
         currentTime={currentTime}
         duration={duration}
-        isLoaded={isLoaded}
+        isLoaded={isLoaded && !hasError}
         isCrossfading={isCrossfading}
         isLiveStream={isLiveStream}
-        handleProgressChange={handleProgressChange}
+        onProgressChange={handleProgressChange}
       />
       
       {showControls && (
-        <AudioControls
-          isPlaying={isPlaying}
-          togglePlay={togglePlay}
-          skipTime={skipTime}
-          isLoaded={isLoaded}
-          isLooping={isLooping}
-          toggleLoop={toggleLoop}
-          isCrossfading={isCrossfading}
-          isLiveStream={isLiveStream}
-          volume={volume}
-          handleVolumeChange={handleVolumeChange}
-          loadError={loadError}
-        />
+        <div className="flex items-center justify-between">
+          <PlayerControls
+            isPlaying={isPlaying}
+            isLoaded={isLoaded && !hasError}
+            loadError={hasError}
+            isLooping={isLooping}
+            isCrossfading={isCrossfading}
+            isLiveStream={isLiveStream}
+            togglePlay={togglePlay}
+            toggleLoop={toggleLoop}
+            skipTime={skipTime}
+          />
+          
+          <VolumeControl
+            volume={0.8}
+            onVolumeChange={handleVolumeChange}
+          />
+        </div>
       )}
     </div>
   );
-});
-
-AudioPlayer.displayName = "AudioPlayer";
+  
+  async function validateAudioUrl() {
+    if (!audioUrl || audioUrl.trim() === '') {
+      console.log("Empty audio URL provided");
+      setIsEmptyUrl(true);
+      setUrlValid(false);
+      setUrlChecked(true);
+      return;
+    }
+    
+    setIsEmptyUrl(false);
+    
+    try {
+      console.log("Checking audio compatibility for:", audioUrl);
+      const isCompatible = await checkAudioCompatibility(audioUrl);
+      setUrlValid(isCompatible);
+      
+      if (!isCompatible) {
+        console.error("Audio format not supported:", audioUrl);
+        if (onError) onError();
+      }
+    } catch (error) {
+      console.error("Error checking audio compatibility:", error);
+      setUrlValid(false);
+      if (onError) onError();
+    } finally {
+      setUrlChecked(true);
+    }
+  }
+}

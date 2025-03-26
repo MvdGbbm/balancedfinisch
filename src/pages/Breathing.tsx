@@ -3,15 +3,12 @@ import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingCircle } from "@/components/breathing-circle";
 import { MeditationMusicPlayer } from "@/components/meditation-music-player";
-import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import { getRandomQuote } from "@/components/audio-player/utils";
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle,
-  CardFooter
+  CardTitle 
 } from "@/components/ui/card";
 import { 
   Select,
@@ -27,17 +24,9 @@ import {
   Moon, 
   Zap,
   Info,
-  RefreshCw,
-  Wind,
-  Leaf
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const breathingPatterns = [
   {
@@ -48,9 +37,7 @@ const breathingPatterns = [
     holdDuration: 2000,
     exhaleDuration: 6000,
     icon: Heart,
-    color: "text-rose-500",
-    bgColor: "bg-rose-500/10",
-    gradient: "from-rose-500 to-rose-400"
+    color: "text-rose-500"
   },
   {
     id: "focus",
@@ -60,9 +47,7 @@ const breathingPatterns = [
     holdDuration: 2000,
     exhaleDuration: 5000,
     icon: Brain,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    gradient: "from-blue-500 to-blue-400"
+    color: "text-blue-500"
   },
   {
     id: "energy",
@@ -72,9 +57,7 @@ const breathingPatterns = [
     holdDuration: 1000,
     exhaleDuration: 4000,
     icon: Zap,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500/10",
-    gradient: "from-amber-500 to-amber-400"
+    color: "text-amber-500"
   },
   {
     id: "sleep",
@@ -84,34 +67,8 @@ const breathingPatterns = [
     holdDuration: 3000,
     exhaleDuration: 7000,
     icon: Moon,
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-500/10",
-    gradient: "from-indigo-500 to-indigo-400"
+    color: "text-indigo-500"
   },
-  {
-    id: "deep",
-    name: "Diepe Ademhaling",
-    description: "Diafragmatische ademhaling voor ontspanning",
-    inhaleDuration: 5000,
-    holdDuration: 4000,
-    exhaleDuration: 6000,
-    icon: Wind,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500/10",
-    gradient: "from-emerald-500 to-emerald-400"
-  },
-  {
-    id: "nature",
-    name: "Natuur Ademhaling",
-    description: "Langzame natuurlijke ademhaling voor mindfulness",
-    inhaleDuration: 7000,
-    holdDuration: 2000,
-    exhaleDuration: 8000,
-    icon: Leaf,
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-    gradient: "from-green-500 to-green-400"
-  }
 ];
 
 const benefitsList = [
@@ -125,8 +82,6 @@ const benefitsList = [
 const Breathing = () => {
   const [selectedPatternId, setSelectedPatternId] = useState(breathingPatterns[0].id);
   const [breathCount, setBreathCount] = useState(0);
-  const [dailyQuote, setDailyQuote] = useState(getRandomQuote());
-  const [showOptions, setShowOptions] = useState(false);
   
   // Reset breath count when pattern changes
   useEffect(() => {
@@ -154,48 +109,39 @@ const Breathing = () => {
   
   return (
     <MobileLayout>
-      <div className="space-y-5 animate-fade-in pb-6">
-        {/* Quote display */}
-        <QuoteDisplay quote={dailyQuote} />
-        
-        {/* Music player */}
+      <div className="space-y-6 animate-fade-in">
         <MeditationMusicPlayer />
         
-        {/* Pattern selector and info card */}
-        <Card className="glass-morphism border-t border-t-blue-500/30 overflow-hidden">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold mb-1">Ademhalingspatroon</h1>
+          <p className="text-muted-foreground">
+            Kies een patroon dat bij je stemming past
+          </p>
+        </div>
+        
+        <Card className="glass-morphism border-t border-t-blue-500/30">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <PatternIcon className={selectedPattern.color} />
-                <div>
-                  <CardTitle className="text-xl">{selectedPattern.name}</CardTitle>
-                  <CardDescription>
-                    {selectedPattern.description}
-                  </CardDescription>
-                </div>
+            <div className="flex items-center gap-2">
+              <PatternIcon className={selectedPattern.color} />
+              <div>
+                <CardTitle>{selectedPattern.name}</CardTitle>
+                <CardDescription>
+                  {selectedPattern.description}
+                </CardDescription>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                onClick={() => setShowOptions(!showOptions)}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
             </div>
           </CardHeader>
-          
           <CardContent>
             <Select 
               value={selectedPatternId}
               onValueChange={handlePatternChange}
             >
-              <SelectTrigger className="w-full bg-background/50 backdrop-blur-sm">
-                <SelectValue placeholder="Selecteer een ademhalingsoefening" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecteer een patroon" />
               </SelectTrigger>
               <SelectContent>
                 {breathingPatterns.map((pattern) => (
-                  <SelectItem key={pattern.id} value={pattern.id}>
+                  <SelectItem key={pattern.id} value={pattern.id} className="flex items-center">
                     <div className="flex items-center gap-2">
                       <pattern.icon className={`h-4 w-4 ${pattern.color}`} />
                       <span>{pattern.name}</span>
@@ -205,27 +151,24 @@ const Breathing = () => {
               </SelectContent>
             </Select>
             
-            {showOptions && (
-              <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
-                <div className="rounded-lg bg-blue-500/10 p-3 backdrop-blur-sm">
-                  <p className="text-xs text-muted-foreground">Inademen</p>
-                  <p className="text-xl font-semibold text-blue-500">{selectedPattern.inhaleDuration / 1000}s</p>
-                </div>
-                <div className="rounded-lg bg-amber-500/10 p-3 backdrop-blur-sm">
-                  <p className="text-xs text-muted-foreground">Vasthouden</p>
-                  <p className="text-xl font-semibold text-amber-500">{selectedPattern.holdDuration / 1000}s</p>
-                </div>
-                <div className="rounded-lg bg-indigo-500/10 p-3 backdrop-blur-sm">
-                  <p className="text-xs text-muted-foreground">Uitademen</p>
-                  <p className="text-xl font-semibold text-indigo-500">{selectedPattern.exhaleDuration / 1000}s</p>
-                </div>
+            <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+              <div className="rounded-lg bg-blue-500/10 p-3 backdrop-blur-sm">
+                <p className="text-xs text-muted-foreground">Inademen</p>
+                <p className="text-xl font-semibold text-blue-500">{selectedPattern.inhaleDuration / 1000}s</p>
               </div>
-            )}
+              <div className="rounded-lg bg-amber-500/10 p-3 backdrop-blur-sm">
+                <p className="text-xs text-muted-foreground">Vasthouden</p>
+                <p className="text-xl font-semibold text-amber-500">{selectedPattern.holdDuration / 1000}s</p>
+              </div>
+              <div className="rounded-lg bg-indigo-500/10 p-3 backdrop-blur-sm">
+                <p className="text-xs text-muted-foreground">Uitademen</p>
+                <p className="text-xl font-semibold text-indigo-500">{selectedPattern.exhaleDuration / 1000}s</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
-        {/* Breathing circle */}
-        <div className="flex justify-center py-4">
+        <div className="flex justify-center py-6">
           <BreathingCircle
             inhaleDuration={selectedPattern.inhaleDuration}
             holdDuration={selectedPattern.holdDuration}
@@ -234,7 +177,6 @@ const Breathing = () => {
           />
         </div>
         
-        {/* Breath counter */}
         <div className="text-center bg-gray-900/40 py-4 rounded-xl backdrop-blur-sm flex flex-col items-center">
           <div className="flex items-center gap-2 mb-1">
             <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent animate-pulse-gentle">
@@ -253,40 +195,6 @@ const Breathing = () => {
           <p className="text-muted-foreground">Volledige ademhalingen</p>
         </div>
         
-        {/* Breathing techniques tile view */}
-        <div className="mt-6">
-          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
-            <Wind className="h-5 w-5 text-blue-500" />
-            Ademhalingstechnieken
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            {breathingPatterns.map((pattern) => (
-              <Card 
-                key={pattern.id} 
-                className={`overflow-hidden hover:shadow-lg transition-all cursor-pointer backdrop-blur-sm ${pattern.id === selectedPatternId ? 'ring-2 ring-primary' : ''}`}
-                onClick={() => setSelectedPatternId(pattern.id)}
-              >
-                <div className={`h-2 bg-gradient-to-r ${pattern.gradient}`} />
-                <CardContent className="p-3 pb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <pattern.icon className={`h-5 w-5 ${pattern.color}`} />
-                    <h3 className="font-medium text-sm">{pattern.name}</h3>
-                  </div>
-                  <div className="text-xs text-muted-foreground mb-2">
-                    {pattern.description}
-                  </div>
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-blue-500">{pattern.inhaleDuration / 1000}s</span>
-                    <span className="text-amber-500">{pattern.holdDuration / 1000}s</span>
-                    <span className="text-indigo-500">{pattern.exhaleDuration / 1000}s</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-        
-        {/* Benefits card */}
         <Card className="neo-morphism mt-6 bg-gray-900/40 backdrop-blur-sm">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">

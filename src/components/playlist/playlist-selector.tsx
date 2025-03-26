@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ListMusic } from "lucide-react";
+import { Plus, ListMusic, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,25 +16,26 @@ interface PlaylistSelectorProps {
   playlists: Playlist[];
   onSelectPlaylist: (playlist: Playlist) => void;
   onCreateNew: () => void;
+  onRemove?: () => void;
+  showRemoveOption?: boolean;
 }
 
-export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: PlaylistSelectorProps) {
+export function PlaylistSelector({ 
+  playlists, 
+  onSelectPlaylist, 
+  onCreateNew, 
+  onRemove,
+  showRemoveOption = false 
+}: PlaylistSelectorProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
-        >
-          <Plus className="h-4 w-4" />
+        <Button variant="outline" size="sm">
+          <Plus className="h-4 w-4 mr-1" />
           Toevoegen aan
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
-        className="w-48 bg-background/95 backdrop-blur-sm border-muted z-50"
-      >
+      <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>Afspeellijsten</DropdownMenuLabel>
         <DropdownMenuSeparator />
         
@@ -60,6 +61,16 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
           <Plus className="h-4 w-4 mr-1" />
           <span>Nieuwe afspeellijst...</span>
         </DropdownMenuItem>
+        
+        {showRemoveOption && onRemove && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onRemove} className="text-destructive">
+              <Trash2 className="h-4 w-4 mr-1" />
+              <span>Verwijderen</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
