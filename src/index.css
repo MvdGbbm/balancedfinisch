@@ -176,6 +176,91 @@
   }
 }
 
+/* New animations for breathing exercise */
+@keyframes pulse-gentle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-5px) translateX(2px);
+  }
+}
+
+@keyframes float-delay {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-7px) translateX(-3px);
+  }
+}
+
+@keyframes float-longer {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-10px) translateX(5px);
+  }
+}
+
+@keyframes float-longer-delay {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-8px) translateX(-6px);
+  }
+}
+
+@keyframes ping-slow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.1;
+  }
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 3s infinite ease-in-out;
+}
+
+.animate-float {
+  animation: float 4s infinite ease-in-out;
+}
+
+.animate-float-delay {
+  animation: float-delay 5s infinite ease-in-out;
+}
+
+.animate-float-longer {
+  animation: float-longer 7s infinite ease-in-out;
+}
+
+.animate-float-longer-delay {
+  animation: float-longer-delay 8s infinite ease-in-out;
+}
+
+.animate-ping-slow {
+  animation: ping-slow 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Audio player slider customization */
 .audio-player-slider::-webkit-slider-thumb {
   -webkit-appearance: none;

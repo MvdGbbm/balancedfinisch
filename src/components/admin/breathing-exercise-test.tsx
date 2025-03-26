@@ -323,46 +323,81 @@ export function BreathingExerciseTest({
       </Card>;
   }
 
-  return <Card>
-      <CardHeader>
+  return <Card className="overflow-hidden">
+      <CardHeader className="bg-gradient-to-br from-blue-950 to-indigo-950 text-white">
         <CardTitle>Testen: {pattern.name}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         <audio ref={audioRef} src={currentAudioUrl} preload="auto" onError={() => setAudioError(true)} />
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
-          <div className="relative h-40 w-40 flex items-center justify-center">
+          <div className="relative h-[250px] w-[250px] flex items-center justify-center">
+            {/* Animated background circles */}
+            <div className="absolute inset-0 scale-[0.85] animate-ping-slow opacity-20 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 blur-md"></div>
+            <div className="absolute inset-0 scale-[0.7] animate-ping-slow opacity-20 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 blur-md"></div>
+            
+            {/* Main breathing circle */}
             <div 
-              className={`absolute inset-0 rounded-full transition-all duration-1000 ease-in-out
-                ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : 
-                  currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : 
-                  currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : 
-                  "bg-gradient-to-r from-blue-500 to-indigo-500"}`}
+              className="absolute inset-0 rounded-full transition-all duration-1000 ease-in-out"
               style={{
                 transform: `scale(${circleScale})`,
-                transition: 'transform 1s cubic-bezier(0.4, 0, 0.2, 1)'
+                transition: 'transform 1s cubic-bezier(0.16, 1, 0.3, 1)',
+                background: currentPhase === "inhale" 
+                  ? "linear-gradient(135deg, rgb(56, 189, 248), rgb(59, 130, 246))" 
+                  : currentPhase === "hold1" || currentPhase === "hold2"
+                    ? "linear-gradient(135deg, rgb(168, 85, 247), rgb(217, 70, 239))"
+                    : "linear-gradient(135deg, rgb(99, 102, 241), rgb(79, 70, 229))",
+                boxShadow: currentPhase === "inhale" 
+                  ? "0 0 40px rgba(59, 130, 246, 0.5)" 
+                  : currentPhase === "hold1" || currentPhase === "hold2"
+                    ? "0 0 40px rgba(168, 85, 247, 0.5)"
+                    : "0 0 40px rgba(99, 102, 241, 0.5)"
               }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-white text-5xl font-bold">{secondsLeft}</p>
+            >
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                <p className="text-6xl font-bold">{secondsLeft}</p>
+                <p className="text-xl font-medium mt-2">{getInstructions()}</p>
+                {currentCycle > 1 && <p className="text-sm mt-2 opacity-75">Cyclus {currentCycle} van {pattern.cycles}</p>}
+                {currentAudioUrl && <p className={`text-xs mt-1 ${audioError ? "text-red-300" : "text-blue-200"}`}>
+                  {audioError ? "Audio fout" : "Audio speelt af"}
+                </p>}
+              </div>
+            </div>
+            
+            {/* Animated particles */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/2 left-1/4 w-2 h-2 rounded-full bg-white/30 animate-float blur-sm"></div>
+              <div className="absolute top-1/4 right-1/4 w-2 h-2 rounded-full bg-white/30 animate-float-delay blur-sm"></div>
+              <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 rounded-full bg-white/20 animate-float-longer blur-sm"></div>
+              <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 rounded-full bg-white/20 animate-float-longer-delay blur-sm"></div>
             </div>
           </div>
           
-          <div className="text-center space-y-2">
-            <p className="text-2xl font-medium">{getInstructions()}</p>
-            {currentAudioUrl && <p className={`text-xs ${audioError ? "text-red-500" : "text-primary"}`}>
-                {audioError ? "Audio fout" : "Audio speelt af"}
-              </p>}
-            <p className="text-sm text-muted-foreground">
-              Cyclus {currentCycle} van {pattern.cycles}
-            </p>
+          {/* Progress bar */}
+          <div className="w-full max-w-md">
+            <Progress 
+              value={progress} 
+              max={100} 
+              className="h-1.5 bg-gray-200/10" 
+              indicatorClassName={
+                currentPhase === "inhale" 
+                  ? "bg-gradient-to-r from-blue-400 to-cyan-400" 
+                  : currentPhase === "hold1" || currentPhase === "hold2"
+                    ? "bg-gradient-to-r from-violet-400 to-fuchsia-400" 
+                    : "bg-gradient-to-r from-indigo-400 to-blue-400"
+              }
+            />
           </div>
           
-          <div className="flex items-center gap-3 flex-wrap justify-center">
+          <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-4">
             <Button 
               onClick={startWithVera} 
               variant={isActive && activeVoice === "vera" ? "secondary" : "default"} 
               size="lg"
+              className={isActive && activeVoice === "vera" 
+                ? "bg-blue-700 hover:bg-blue-800" 
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
+              }
             >
               {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               Vera
@@ -372,11 +407,21 @@ export function BreathingExerciseTest({
               onClick={startWithMarco} 
               variant={isActive && activeVoice === "marco" ? "secondary" : "default"} 
               size="lg"
+              className={isActive && activeVoice === "marco" 
+                ? "bg-blue-700 hover:bg-blue-800" 
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
+              }
             >
               {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               Marco
             </Button>
           </div>
+          
+          {isActive && (
+            <p className="text-center text-sm text-muted-foreground animate-pulse">
+              {activeVoice === "vera" ? "Vera begeleidt je ademhaling..." : "Marco begeleidt je ademhaling..."}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>;

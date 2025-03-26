@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -11,6 +12,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
 
 type BreathingPattern = {
   id: string;
@@ -72,9 +74,10 @@ export function BreathExercise() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
-  
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
+  const [progress, setProgress] = useState(0);
 
+  // Load breathing patterns from localStorage
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -104,6 +107,7 @@ export function BreathExercise() {
     setCurrentCycle(1);
     setSecondsLeft(currentPattern.inhale);
     setAudioError(false);
+    setProgress(0);
     
     updateCurrentAudioUrl();
   }, [currentPattern]);
@@ -211,6 +215,7 @@ export function BreathExercise() {
 
   useEffect(() => {
     let timer: number | null = null;
+    let progressTimer: number | null = null;
     
     if (isActive) {
       timer = window.setInterval(() => {
@@ -268,10 +273,29 @@ export function BreathExercise() {
           }
         }
       }, 1000);
+
+      // Calculate and update progress for smooth progress bar
+      const getCurrentPhaseDuration = () => {
+        switch (currentPhase) {
+          case "inhale": return currentPattern.inhale;
+          case "hold1": return currentPattern.hold1;
+          case "exhale": return currentPattern.exhale;
+          case "hold2": return currentPattern.hold2;
+          default: return 1;
+        }
+      };
+      const phaseDuration = getCurrentPhaseDuration() * 1000;
+      const startTime = Date.now();
+      progressTimer = window.setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const calculatedProgress = elapsed / phaseDuration * 100;
+        setProgress(Math.min(calculatedProgress, 100));
+      }, 16);
     }
     
     return () => {
       if (timer) clearInterval(timer);
+      if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, currentPattern]);
 
@@ -289,21 +313,6 @@ export function BreathExercise() {
       case "exhale": return "exhale";
       case "hold2": return "hold";
       default: return "rest";
-    }
-  };
-
-  const getInstructions = () => {
-    switch (currentPhase) {
-      case "inhale":
-        return "Inademen";
-      case "hold1":
-        return "Houd vast";
-      case "exhale":
-        return "Uitademen";
-      case "hold2":
-        return "Houd vast";
-      default:
-        return "";
     }
   };
 
@@ -424,6 +433,13 @@ export function BreathExercise() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Description text */}
+          {currentPattern.description && !isActive && (
+            <div className="mb-6 text-center">
+              <p className="text-white/80 text-sm">{currentPattern.description}</p>
+            </div>
+          )}
           
           <BreathingCircle
             isActive={isActive}
@@ -438,17 +454,38 @@ export function BreathExercise() {
             <p className="text-sm text-white/70">
               Cyclus {currentCycle} van {currentPattern.cycles}
             </p>
-            {currentAudioUrl && !audioError ? (
-              <p className="text-blue-200">Audio speelt af</p>
+            {currentAudioUrl && !audioError && isActive ? (
+              <p className="text-blue-200 text-xs">Audio speelt af</p>
             ) : null}
           </div>
+
+          {/* Progress bar */}
+          {isActive && (
+            <div className="w-full max-w-md mx-auto mt-4">
+              <Progress 
+                value={progress} 
+                max={100} 
+                className="h-1.5 bg-white/10" 
+                indicatorClassName={
+                  currentPhase === "inhale" 
+                    ? "bg-gradient-to-r from-cyan-400 to-blue-400" 
+                    : currentPhase === "hold1" || currentPhase === "hold2"
+                      ? "bg-gradient-to-r from-violet-400 to-fuchsia-400" 
+                      : "bg-gradient-to-r from-indigo-400 to-blue-400"
+                }
+              />
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
             <Button 
               onClick={startWithVera} 
               variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
               size="lg"
-              className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+              className={isActive && activeVoice === "vera" 
+                ? "bg-blue-700 hover:bg-blue-800" 
+                : "bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-none"
+              }
             >
               {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               Vera
@@ -458,14 +495,23 @@ export function BreathExercise() {
               onClick={startWithMarco} 
               variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
               size="lg"
-              className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+              className={isActive && activeVoice === "marco" 
+                ? "bg-blue-700 hover:bg-blue-800" 
+                : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-none"
+              }
             >
               {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               Marco
             </Button>
           </div>
           
-          <div className="flex justify-center mt-3">
+          {isActive && (
+            <p className="text-center text-sm text-white/70 mt-2 animate-pulse">
+              {activeVoice === "vera" ? "Vera begeleidt je ademhaling..." : "Marco begeleidt je ademhaling..."}
+            </p>
+          )}
+          
+          <div className="flex justify-center mt-4">
             <Button 
               onClick={resetExercise} 
               variant="outline"
@@ -476,6 +522,24 @@ export function BreathExercise() {
               Reset
             </Button>
           </div>
+          
+          {/* Cycle counter circles */}
+          {isActive && currentPattern.cycles > 1 && (
+            <div className="flex justify-center mt-4 gap-1.5">
+              {Array.from({ length: currentPattern.cycles }).map((_, index) => (
+                <div 
+                  key={index}
+                  className={`w-2 h-2 rounded-full ${
+                    index + 1 === currentCycle 
+                      ? "bg-white" 
+                      : index + 1 < currentCycle 
+                        ? "bg-white/60" 
+                        : "bg-white/20"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
