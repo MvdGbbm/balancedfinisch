@@ -8,7 +8,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Breathing from "./pages/Breathing";
 import Meditations from "./pages/Meditations";
 import Soundscapes from "./pages/Soundscapes";
 import Music from "./pages/Music";
@@ -23,7 +22,6 @@ import AdminQuotes from "./pages/admin/Quotes";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminMusic from "./pages/admin/Music";
 import AdminStreams from "./pages/admin/Streams";
-import AdminGuidedBreathing from "./pages/admin/GuidedBreathing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,7 +38,6 @@ const router = createBrowserRouter(
     <>
       <Route path="/" element={<Index />} errorElement={<ErrorBoundary />} />
       <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
       <Route path="/music" element={<Music />} errorElement={<ErrorBoundary />} />
       <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
       <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
@@ -51,7 +48,6 @@ const router = createBrowserRouter(
       <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/guided-breathing" element={<AdminGuidedBreathing />} errorElement={<ErrorBoundary />} />
       <Route path="*" element={<NotFound />} />
     </>
   )

@@ -10,7 +10,6 @@ import {
   Music, 
   Quote, 
   Home, 
-  RefreshCw,
   Waves,
   Radio
 } from "lucide-react";
@@ -71,13 +70,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       icon: Radio, 
       label: "Streaming Links", 
       description: "/admin/streams"
-    },
-    { 
-      path: "/admin/guided-breathing", 
-      icon: RefreshCw, 
-      label: "Begeleide Ademhaling", 
-      description: "/admin/begeleide-ademhaling"
-    },
+    }
   ];
 
   return (
