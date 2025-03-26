@@ -81,22 +81,37 @@ const Breathing = () => {
 
   return (
     <MobileLayout>
-      <div className="space-y-6 animate-fade-in min-h-full p-4 rounded-lg bg-gradient-to-br from-blue-50/50 via-indigo-50/30 to-purple-50/30 dark:from-blue-950/20 dark:via-indigo-950/10 dark:to-purple-950/10 backdrop-blur-sm">
-        <div className="space-y-4">
-          <div className="flex justify-center mb-2">
+      <div className="min-h-full p-6 space-y-8 animate-fade-in">
+        <div className="text-center mb-4">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Breathe and Relax
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Practice mindful breathing for inner peace
+          </p>
+        </div>
+        
+        <div className="space-y-6">
+          <div className="flex justify-center mb-4">
             {/* Dropdown menu for breathing exercises */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="bg-white/80 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700 shadow-sm">
+                <Button 
+                  variant="outline" 
+                  className="bg-white/90 dark:bg-gray-800/90 border border-blue-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
+                >
                   {breathingExercises.find(ex => ex.technique === selectedTechnique)?.name || 'Select Technique'}
-                  <ChevronDown className="ml-2 h-4 w-4" />
+                  <ChevronDown className="ml-2 h-4 w-4 text-blue-500" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48 bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-700">
+              <DropdownMenuContent 
+                className="w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-blue-100 dark:border-gray-700 shadow-lg"
+                align="center"
+              >
                 {breathingExercises.map((exercise) => (
                   <DropdownMenuItem 
                     key={exercise.id}
-                    className={`${selectedTechnique === exercise.technique ? 'bg-primary/10 font-medium' : ''} cursor-pointer`}
+                    className={`${selectedTechnique === exercise.technique ? 'bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-600 dark:text-blue-300' : ''} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors`}
                     onClick={() => handleTechniqueChange(exercise.technique as AnimationTechnique)}
                   >
                     {exercise.name}
@@ -106,17 +121,50 @@ const Breathing = () => {
             </DropdownMenu>
           </div>
           
-          <div className="bg-white/70 dark:bg-gray-800/70 rounded-xl p-6 shadow-sm">
-            <BreathingAnimation 
-              technique={selectedTechnique} 
-              onReset={handleAnimationReset}
-            />
-            
-            <BreathingCounter ref={counterRef} />
+          <div className="bg-gradient-to-br from-white/80 to-blue-50/80 dark:from-gray-800/80 dark:to-gray-900/80 rounded-2xl p-6 shadow-xl border border-blue-100/50 dark:border-blue-900/30">
+            <div className="flex flex-col items-center">
+              <BreathingAnimation 
+                technique={selectedTechnique} 
+                onReset={handleAnimationReset}
+              />
+              
+              <div className="mt-4 text-center">
+                <BreathingCounter ref={counterRef} />
+              </div>
+            </div>
           </div>
         </div>
         
-        <BreathingMusicPlayer />
+        <div className="mt-8">
+          <BreathingMusicPlayer />
+        </div>
+        
+        {/* Benefits section */}
+        <div className="mt-8 px-4 py-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
+          <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3">
+            Benefits of Regular Practice
+          </h3>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start">
+              <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-2 mt-0.5">
+                <span className="text-blue-600 dark:text-blue-300 text-xs">✓</span>
+              </div>
+              <span>Reduces stress and anxiety</span>
+            </li>
+            <li className="flex items-start">
+              <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-2 mt-0.5">
+                <span className="text-blue-600 dark:text-blue-300 text-xs">✓</span>
+              </div>
+              <span>Improves focus and concentration</span>
+            </li>
+            <li className="flex items-start">
+              <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-2 mt-0.5">
+                <span className="text-blue-600 dark:text-blue-300 text-xs">✓</span>
+              </div>
+              <span>Enhances overall well-being</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </MobileLayout>
   );
