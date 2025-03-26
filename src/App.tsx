@@ -1,4 +1,3 @@
-
 import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -24,7 +23,6 @@ import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminMusic from "./pages/admin/Music";
 import AdminStreams from "./pages/admin/Streams";
 import AdminBreathing from "./pages/admin/Breathing";
-import BreathingAdmin from "./pages/admin/BreathingAdmin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,7 +51,6 @@ const router = createBrowserRouter(
       <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/breathing-new" element={<BreathingAdmin />} errorElement={<ErrorBoundary />} />
       <Route path="*" element={<NotFound />} />
     </>
   )

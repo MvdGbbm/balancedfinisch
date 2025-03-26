@@ -1,17 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Pause, Play } from 'lucide-react';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
 type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
 
 interface BreathingAnimationProps {
   technique: BreathingTechnique;
-  onReset?: () => void;
 }
 
-const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onReset }) => {
+const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) => {
   const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
     if (breathingTechnique === '4-7-8') {
       switch(currentPhase) {
@@ -85,42 +83,25 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
       case 'inhale': return 'Adem in';
       case 'hold': return 'Houd vast';
       case 'exhale': return 'Adem uit';
-      case 'pause': return ''; // No text for pause phase
+      case 'pause': return ''; // Removed 'Rust' text
       default: return 'Adem in';
     }
   };
 
-  // Enhanced circle classes with gradients based on phase
-  const getCircleStyles = () => {
-    const baseClasses = "relative flex items-center justify-center rounded-full shadow-lg transition-all";
+  const circleClass = () => {
+    const duration = getCountForPhase(phase, technique);
     
     switch(phase) {
       case 'inhale': 
-        return `${baseClasses} grow-animation bg-gradient-to-br from-cyan-400 to-blue-500`;
+        return `grow-animation`;
       case 'hold': 
-        return `${baseClasses} scale-130 bg-gradient-to-br from-violet-400 to-purple-500`;
+        return 'scale-125'; 
       case 'exhale': 
-        return `${baseClasses} shrink-animation bg-gradient-to-br from-indigo-400 to-blue-500`;
-      case 'pause':
+        return `shrink-animation`;
+      case 'pause': 
+        return 'scale-100';
       default: 
-        return `${baseClasses} scale-100 bg-gradient-to-br from-teal-400 to-blue-400`;
-    }
-  };
-
-  // Enhanced inner circle classes with glass effect
-  const getInnerCircleStyles = () => {
-    const baseClasses = "flex items-center justify-center rounded-full backdrop-blur-md";
-    
-    switch(phase) {
-      case 'inhale':
-        return `${baseClasses} bg-cyan-50/20 shadow-inner`;
-      case 'hold':
-        return `${baseClasses} bg-violet-50/20 shadow-inner`;
-      case 'exhale':
-        return `${baseClasses} bg-indigo-50/20 shadow-inner`;
-      case 'pause':
-      default:
-        return `${baseClasses} bg-teal-50/20 shadow-inner`;
+        return 'scale-100';
     }
   };
 
@@ -128,13 +109,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
     const duration = getCountForPhase(phase, technique);
     
     return {
-      animationDuration: `${duration}s`,
-      boxShadow: `0 0 30px ${
-        phase === 'inhale' ? 'rgba(56, 189, 248, 0.5)' : 
-        phase === 'hold' ? 'rgba(167, 139, 250, 0.5)' : 
-        phase === 'exhale' ? 'rgba(99, 102, 241, 0.5)' : 
-        'rgba(45, 212, 191, 0.5)'
-      }`
+      animationDuration: `${duration}s`
     };
   };
 
@@ -144,57 +119,33 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
 
   const shouldShowCounter = phase !== 'pause';
 
-  const circleSize = isMobile ? 'w-52 h-52' : 'w-62 h-62';
-  const innerCircleSize = isMobile ? 'w-42 h-42' : 'w-52 h-52';
+  const circleSize = isMobile ? 'w-40 h-40' : 'w-48 h-48';
+  const innerCircleSize = isMobile ? 'w-32 h-32' : 'w-40 h-40';
 
   return (
     <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
-      {/* Outer glow */}
       <div 
-        className="absolute rounded-full opacity-30 blur-xl"
-        style={{
-          width: circleSize === 'w-52 h-52' ? '220px' : '260px',
-          height: circleSize === 'w-52 h-52' ? '220px' : '260px',
-          background: `radial-gradient(circle, ${
-            phase === 'inhale' ? 'rgba(56, 189, 248, 0.8)' : 
-            phase === 'hold' ? 'rgba(167, 139, 250, 0.8)' : 
-            phase === 'exhale' ? 'rgba(99, 102, 241, 0.8)' : 
-            'rgba(45, 212, 191, 0.8)'
-          } 0%, transparent 70%)`
-        }}
-      />
-      
-      {/* Main circle */}
-      <div 
-        className={`${getCircleStyles()} ${circleSize}`}
+        className={`breathe-circle ${circleSize} ${circleClass()}`}
         style={animationStyle()}
         onClick={toggleActive}
       >
-        {/* Decorative rings */}
-        <div className="absolute w-full h-full rounded-full opacity-30 border border-white"></div>
-        <div className="absolute w-[95%] h-[95%] rounded-full opacity-20 border border-white"></div>
-        
-        {/* Inner circle with glass effect */}
-        <div className={`${getInnerCircleStyles()} ${innerCircleSize}`}>
+        <div className={`breathe-inner-circle ${innerCircleSize}`}>
           <div className="flex flex-col items-center justify-center text-center">
-            <p className="text-xl font-light mb-2 text-white drop-shadow-md">{getMessage()}</p>
+            <p className="text-xl font-light mb-2">{getMessage()}</p>
             {shouldShowCounter && (
-              <p className="text-3xl font-medium text-white drop-shadow-lg">{count}</p>
+              <p className="text-3xl font-medium">{count}</p>
             )}
           </div>
         </div>
       </div>
       
-      <div className="mt-16 text-center space-y-8">
-        <div className="flex justify-center">
-          <button 
-            onClick={toggleActive}
-            className="px-3 py-1 h-8 rounded-md text-sm font-medium bg-primary/40 hover:bg-primary/60 text-foreground transition-colors flex items-center shadow-md"
-          >
-            {isActive ? <Pause className="mr-1 h-3.5 w-3.5" /> : <Play className="mr-1 h-3.5 w-3.5" />}
-            {isActive ? 'Pauze' : 'Hervat'}
-          </button>
-        </div>
+      <div className="mt-16 text-center">
+        <button 
+          onClick={toggleActive}
+          className="px-4 py-2 rounded-lg bg-primary/40 hover:bg-primary/60 text-foreground transition-colors"
+        >
+          {isActive ? 'Pauze' : 'Hervat'}
+        </button>
       </div>
     </div>
   );

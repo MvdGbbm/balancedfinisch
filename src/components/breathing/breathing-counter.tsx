@@ -1,14 +1,11 @@
 
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { RefreshCw, Plus } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
-export interface BreathingCounterHandle {
-  resetCount: () => void;
-}
-
-export const BreathingCounter = forwardRef<BreathingCounterHandle, {}>((props, ref) => {
+export const BreathingCounter = () => {
   const [count, setCount] = useState(0);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
 
@@ -31,13 +28,7 @@ export const BreathingCounter = forwardRef<BreathingCounterHandle, {}>((props, r
 
   const resetCount = () => {
     setCount(0);
-    setActiveVoice(null);
   };
-
-  // Expose resetCount method to parent component
-  useImperativeHandle(ref, () => ({
-    resetCount
-  }));
 
   const handleVoiceClick = (voice: "vera" | "marco") => {
     if (activeVoice === voice) {
@@ -49,9 +40,9 @@ export const BreathingCounter = forwardRef<BreathingCounterHandle, {}>((props, r
   };
 
   return (
-    <Card className="p-3 mt-4 bg-white/90 dark:bg-gray-800/90 border border-blue-100 dark:border-blue-900/30 shadow-sm">
-      <div className="flex flex-col space-y-3">
-        <div className="flex justify-center space-x-4">
+    <Card className="p-3 bg-white/90 dark:bg-gray-800/90 border border-blue-100 dark:border-blue-900/30 shadow-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
           <Button 
             variant="outline" 
             size="sm" 
@@ -73,7 +64,7 @@ export const BreathingCounter = forwardRef<BreathingCounterHandle, {}>((props, r
           </Button>
         </div>
         
-        <div className="flex justify-center items-center space-x-2">
+        <div className="flex items-center space-x-2">
           <div className="flex items-center px-3 h-8 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300">
             {count}
           </div>
@@ -91,6 +82,4 @@ export const BreathingCounter = forwardRef<BreathingCounterHandle, {}>((props, r
       </div>
     </Card>
   );
-});
-
-BreathingCounter.displayName = "BreathingCounter";
+};
