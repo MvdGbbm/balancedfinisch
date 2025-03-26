@@ -5,6 +5,7 @@ import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import BreathingAnimation, { BreathingTechnique } from "@/components/breathing/breathing-animation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BreathingCounter } from "@/components/breathing/breathing-counter";
 
 const Breathing = () => {
   const [selectedTechnique, setSelectedTechnique] = useState<BreathingTechnique>('4-7-8');
@@ -58,6 +59,8 @@ const Breathing = () => {
               <div className="bg-white/70 dark:bg-gray-800/70 rounded-xl p-6 shadow-sm">
                 <BreathingAnimation technique={selectedTechnique} />
               </div>
+              
+              <BreathingCounter />
             </div>
           </TabsContent>
           
