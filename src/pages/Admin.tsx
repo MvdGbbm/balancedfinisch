@@ -90,10 +90,10 @@ const Admin: React.FC = () => {
       color: "#EC4899" // Pink
     },
     {
-      title: "Ademhaling",
-      description: "Beheer ademhalingsoefeningen",
+      title: "Begeleide Ademhaling",
+      description: "Beheer ademhalings-audio",
       icon: <RefreshCw className="h-5 w-5" style={{ color: "#EAB308" }} />,
-      path: "/admin/breathing",
+      path: "/admin/guided-breathing",
       color: "#EAB308" // Yellow
     }
   ];
