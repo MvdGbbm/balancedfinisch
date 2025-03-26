@@ -59,28 +59,28 @@ export function BreathingCircle({
       const percentComplete = (maxSeconds - secondsLeft) / maxSeconds;
       
       if (activePhase === "inhale") {
-        // Expand from 50% to 90% during inhale
-        setCircleScale(0.5 + (percentComplete * 0.4));
+        // Expand from 50% to 100% during inhale (more dramatic expansion)
+        setCircleScale(0.5 + (percentComplete * 0.5));
       } else if (activePhase === "hold") {
-        // Stay at 90% during hold
-        setCircleScale(0.9);
+        // Stay at 100% during hold
+        setCircleScale(1.0);
       } else if (activePhase === "exhale") {
-        // Shrink from 90% back to 50% during exhale
-        setCircleScale(0.9 - (percentComplete * 0.4));
+        // Shrink from 100% back to 50% during exhale
+        setCircleScale(1.0 - (percentComplete * 0.5));
       } else {
         // Rest at 50%
         setCircleScale(0.5);
       }
     } else {
       if (activePhase === "inhale") {
-        // Expand from 50% to 90% during inhale
-        setCircleScale(0.5 + (progress / 100) * 0.4);
+        // Expand from 50% to 100% during inhale
+        setCircleScale(0.5 + (progress / 100) * 0.5);
       } else if (activePhase === "hold") {
-        // Stay at 90% during hold
-        setCircleScale(0.9);
+        // Stay at 100% during hold
+        setCircleScale(1.0);
       } else if (activePhase === "exhale") {
-        // Shrink from 90% back to 50% during exhale
-        setCircleScale(0.9 - (progress / 100) * 0.4);
+        // Shrink from 100% back to 50% during exhale
+        setCircleScale(1.0 - (progress / 100) * 0.5);
       } else {
         // Rest at 50%
         setCircleScale(0.5);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -313,6 +314,7 @@ export function BreathExercise() {
     setCurrentCycle(1);
     setSecondsLeft(currentPattern.inhale);
     setAudioError(false);
+    setActiveVoice("none");
     
     if (audioRef.current) {
       audioRef.current.pause();
@@ -325,6 +327,7 @@ export function BreathExercise() {
   const startWithVera = () => {
     if (isActive && activeVoice === "vera") {
       setIsActive(false);
+      setActiveVoice("none");
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -348,6 +351,7 @@ export function BreathExercise() {
   const startWithMarco = () => {
     if (isActive && activeVoice === "marco") {
       setIsActive(false);
+      setActiveVoice("none");
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -420,50 +424,52 @@ export function BreathExercise() {
             </Select>
           </div>
           
-          <div className="flex flex-col items-center justify-center space-y-6 py-6">
-            <div className="relative h-48 w-48 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <div className="text-white text-center">
-                <div className="text-6xl font-bold mb-1">{secondsLeft}</div>
-                <div className="text-xl font-medium">{getCurrentPhaseLabel()}</div>
-              </div>
-            </div>
+          <BreathingCircle
+            isActive={isActive}
+            currentPhase={mapPhaseToCirclePhase(currentPhase)}
+            secondsLeft={secondsLeft}
+            inhaleDuration={currentPattern.inhale * 1000}
+            holdDuration={currentPattern.hold1 * 1000}
+            exhaleDuration={currentPattern.exhale * 1000}
+          />
+          
+          <div className="text-center space-y-1 text-white mt-4">
+            <p className="text-sm text-white/70">
+              Cyclus {currentCycle} van {currentPattern.cycles}
+            </p>
+            {currentAudioUrl && !audioError ? (
+              <p className="text-blue-200">Audio speelt af</p>
+            ) : null}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
+            <Button 
+              onClick={startWithVera} 
+              variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
+              size="lg"
+              className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+            >
+              {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+              Vera
+            </Button>
             
-            <div className="text-center space-y-1 text-white">
-              <p className="text-blue-200">
-                {currentAudioUrl && !audioError ? "Audio speelt af" : ""}
-              </p>
-              <p className="text-sm text-white/70">
-                Cyclus {currentCycle} van {currentPattern.cycles}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3 w-full max-w-xs mt-2">
-              <Button 
-                onClick={startWithVera} 
-                variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
-                size="lg"
-                className="w-full bg-blue-500 hover:bg-blue-600 border-none"
-              >
-                {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-                Start Vera
-              </Button>
-              
-              <Button 
-                onClick={startWithMarco} 
-                variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
-                size="lg"
-                className="w-full bg-blue-500 hover:bg-blue-600 border-none"
-              >
-                {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-                Start Marco
-              </Button>
-            </div>
-            
+            <Button 
+              onClick={startWithMarco} 
+              variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
+              size="lg"
+              className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+            >
+              {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+              Marco
+            </Button>
+          </div>
+          
+          <div className="flex justify-center mt-3">
             <Button 
               onClick={resetExercise} 
               variant="outline"
               size="sm"
-              className="mt-2 text-white/80 border-white/20 hover:bg-white/10"
+              className="text-white/80 border-white/20 hover:bg-white/10"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Reset

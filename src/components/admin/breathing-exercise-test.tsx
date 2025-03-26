@@ -40,6 +40,8 @@ export function BreathingExerciseTest({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
+  const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+  const [circleScale, setCircleScale] = useState(1);
 
   // Reset state when pattern changes
   useEffect(() => {
@@ -48,6 +50,8 @@ export function BreathingExerciseTest({
     setCurrentCycle(1);
     setAudioError(false);
     setProgress(0);
+    setActiveVoice(null);
+    setCircleScale(1);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
       setCurrentAudioUrl(pattern.inhaleUrl || "");
@@ -115,6 +119,21 @@ export function BreathingExerciseTest({
     }
   }, [isActive]);
 
+  // Update circle scale based on breathing phase
+  useEffect(() => {
+    if (!isActive || !pattern) return;
+    
+    if (currentPhase === "inhale") {
+      // Gradually increase scale during inhale
+      const inhaleProgress = (pattern.inhale - secondsLeft) / pattern.inhale;
+      setCircleScale(1 + inhaleProgress * 0.5); // Scale from 1 to 1.5
+    } else if (currentPhase === "exhale") {
+      // Gradually decrease scale during exhale
+      const exhaleProgress = (pattern.exhale - secondsLeft) / pattern.exhale;
+      setCircleScale(1.5 - exhaleProgress * 0.5); // Scale from 1.5 to 1
+    }
+  }, [currentPhase, secondsLeft, isActive, pattern]);
+
   // Handle phase transition timer
   useEffect(() => {
     if (!pattern) return;
@@ -137,6 +156,7 @@ export function BreathingExerciseTest({
             setCurrentPhase("hold1");
             setSecondsLeft(pattern.hold1 || 1);
             setProgress(0); // Reset progress for new phase
+            setCircleScale(1.5); // Keep expanded during hold
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
             setSecondsLeft(pattern.exhale);
@@ -146,6 +166,7 @@ export function BreathingExerciseTest({
               setCurrentPhase("hold2");
               setSecondsLeft(pattern.hold2);
               setProgress(0); // Reset progress for new phase
+              setCircleScale(1); // Keep contracted during hold
             } else {
               // If no hold2, go to next cycle or finish
               if (currentCycle < pattern.cycles) {
@@ -153,6 +174,7 @@ export function BreathingExerciseTest({
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
                 setProgress(0); // Reset progress for new phase
+                setCircleScale(1); // Reset to initial size
               } else {
                 // Exercise complete
                 setIsActive(false);
@@ -160,6 +182,8 @@ export function BreathingExerciseTest({
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
                 setProgress(0);
+                setCircleScale(1);
+                setActiveVoice(null);
                 if (audioRef.current) {
                   audioRef.current.pause();
                   audioRef.current.currentTime = 0;
@@ -174,6 +198,7 @@ export function BreathingExerciseTest({
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
               setProgress(0); // Reset progress for new phase
+              setCircleScale(1); // Reset to initial size
             } else {
               // Exercise complete
               setIsActive(false);
@@ -181,6 +206,8 @@ export function BreathingExerciseTest({
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
               setProgress(0);
+              setCircleScale(1);
+              setActiveVoice(null);
               if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -243,6 +270,8 @@ export function BreathingExerciseTest({
     setSecondsLeft(pattern.inhale);
     setAudioError(false);
     setProgress(0);
+    setActiveVoice(null);
+    setCircleScale(1);
 
     // Reset audio
     if (audioRef.current) {
@@ -254,16 +283,51 @@ export function BreathingExerciseTest({
     setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
   
-  const toggleExercise = () => {
-    setIsActive(!isActive);
-
-    // If starting the exercise, try to play audio if available
-    if (!isActive && audioRef.current && currentAudioUrl) {
+  const startWithVera = () => {
+    if (isActive && activeVoice === "vera") {
+      // If already active with Vera voice, pause
+      setIsActive(false);
+      setActiveVoice(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    } else {
+      // Start with Vera voice
+      setIsActive(true);
+      setActiveVoice("vera");
+      
       setTimeout(() => {
-        if (audioRef.current) {
+        if (audioRef.current && currentAudioUrl) {
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
-            console.error("Error playing audio on start:", error);
+            console.error("Error playing audio with Vera:", error);
+            setAudioError(true);
+          });
+        }
+      }, 100);
+    }
+  };
+  
+  const startWithMarco = () => {
+    if (isActive && activeVoice === "marco") {
+      // If already active with Marco voice, pause
+      setIsActive(false);
+      setActiveVoice(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    } else {
+      // Start with Marco voice
+      setIsActive(true);
+      setActiveVoice("marco");
+      
+      setTimeout(() => {
+        if (audioRef.current && currentAudioUrl) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio with Marco:", error);
             setAudioError(true);
           });
         }
@@ -288,11 +352,19 @@ export function BreathingExerciseTest({
         <audio ref={audioRef} src={currentAudioUrl} preload="auto" onError={() => setAudioError(true)} />
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
-          {/* Visual representation of breathing phase with simple animated circle */}
-          
+          {/* Visual representation of breathing phase with animated circle */}
           <div className="relative h-40 w-40 flex items-center justify-center">
-            <div className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
-              ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : "bg-gradient-to-r from-blue-500 to-indigo-500"}`} />
+            <div 
+              className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
+                ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : 
+                  currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : 
+                  currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : 
+                  "bg-gradient-to-r from-blue-500 to-indigo-500"}`}
+              style={{
+                transform: `scale(${circleScale})`,
+                transition: 'transform 1s ease-in-out'
+              }}
+            />
             <div className="absolute inset-0 flex items-center justify-center">
               <p className="text-white text-5xl font-bold">{secondsLeft}</p>
             </div>
@@ -309,14 +381,22 @@ export function BreathingExerciseTest({
           </div>
           
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <Button onClick={toggleExercise} variant="default" size="lg">
-              {isActive ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-              {isActive ? "Pauze" : "Start"}
+            <Button 
+              onClick={startWithVera} 
+              variant={isActive && activeVoice === "vera" ? "secondary" : "default"} 
+              size="lg"
+            >
+              {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+              Vera
             </Button>
             
-            <Button onClick={resetExercise} variant="outline" size="lg">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reset
+            <Button 
+              onClick={startWithMarco} 
+              variant={isActive && activeVoice === "marco" ? "secondary" : "default"} 
+              size="lg"
+            >
+              {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+              Marco
             </Button>
             
             {isActive && (
