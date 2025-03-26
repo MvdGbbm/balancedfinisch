@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,15 +111,15 @@ export function BreathingExerciseTest({
     if (!isActive || !pattern) return;
     
     if (currentPhase === "inhale") {
-      setCircleScale(1);
-    } else if (currentPhase === "hold1") {
-      setCircleScale(1.5);
+      const inhaleProgress = (pattern.inhale - secondsLeft) / pattern.inhale;
+      setCircleScale(1 + inhaleProgress * 0.5);
+    } else if (currentPhase === "hold1" || currentPhase === "hold2") {
+      setCircleScale(currentPhase === "hold1" ? 1.5 : 1.0);
     } else if (currentPhase === "exhale") {
-      setCircleScale(1.5);
-    } else if (currentPhase === "hold2") {
-      setCircleScale(1);
+      const exhaleProgress = (pattern.exhale - secondsLeft) / pattern.exhale;
+      setCircleScale(1.5 - exhaleProgress * 0.5);
     }
-  }, [currentPhase, isActive, pattern]);
+  }, [currentPhase, secondsLeft, isActive, pattern]);
 
   useEffect(() => {
     if (!pattern) return;
@@ -322,17 +323,6 @@ export function BreathingExerciseTest({
       </Card>;
   }
 
-  const getTransitionDuration = () => {
-    if (!pattern) return 1000;
-    switch (currentPhase) {
-      case "inhale": return pattern.inhale * 1000;
-      case "hold1": return pattern.hold1 * 1000;
-      case "exhale": return pattern.exhale * 1000;
-      case "hold2": return pattern.hold2 * 1000;
-      default: return 1000;
-    }
-  };
-
   return <Card className="overflow-hidden">
       <CardHeader className="bg-gradient-to-br from-blue-950 to-indigo-950 text-white">
         <CardTitle>Testen: {pattern.name}</CardTitle>
@@ -346,16 +336,12 @@ export function BreathingExerciseTest({
             <div className="absolute inset-0 scale-[0.85] animate-ping-slow opacity-20 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 blur-md"></div>
             <div className="absolute inset-0 scale-[0.7] animate-ping-slow opacity-20 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 blur-md"></div>
             
-            {/* Main breathing circle with smooth transitions */}
+            {/* Main breathing circle */}
             <div 
-              className={`absolute inset-0 rounded-full flex items-center justify-center ${
-                isActive ? "" : "transition-transform duration-500 ease-in-out"
-              }`}
+              className="absolute inset-0 rounded-full transition-all duration-1000 ease-in-out"
               style={{
                 transform: `scale(${circleScale})`,
-                transition: isActive 
-                  ? `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1)` 
-                  : 'transform 500ms ease-in-out',
+                transition: 'transform 1s cubic-bezier(0.16, 1, 0.3, 1)',
                 background: currentPhase === "inhale" 
                   ? "linear-gradient(135deg, rgb(56, 189, 248), rgb(59, 130, 246))" 
                   : currentPhase === "hold1" || currentPhase === "hold2"
@@ -387,7 +373,7 @@ export function BreathingExerciseTest({
             </div>
           </div>
           
-          {/* Progress bar with smoother animation */}
+          {/* Progress bar */}
           <div className="w-full max-w-md">
             <Progress 
               value={progress} 

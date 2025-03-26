@@ -62,7 +62,7 @@ export function BreathingCircle({
         // Expand from 50% to 100% during inhale (more dramatic expansion)
         setCircleScale(0.5 + (percentComplete * 0.5));
       } else if (activePhase === "hold") {
-        // Stay at 100% during hold - no change in size
+        // Stay at 100% during hold
         setCircleScale(1.0);
       } else if (activePhase === "exhale") {
         // Shrink from 100% back to 50% during exhale
@@ -76,7 +76,7 @@ export function BreathingCircle({
         // Expand from 50% to 100% during inhale
         setCircleScale(0.5 + (progress / 100) * 0.5);
       } else if (activePhase === "hold") {
-        // Stay at 100% during hold - no change in size
+        // Stay at 100% during hold
         setCircleScale(1.0);
       } else if (activePhase === "exhale") {
         // Shrink from 100% back to 50% during exhale
@@ -153,10 +153,10 @@ export function BreathingCircle({
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
-        {/* Outer glow with smoother animation */}
+        {/* Outer glow */}
         <div 
           className={cn(
-            "absolute inset-0 rounded-full opacity-70 blur-xl", 
+            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all", 
             {
               "bg-blue-400/30": activePhase === "rest",
               "bg-cyan-400/40": activePhase === "inhale",
@@ -166,22 +166,22 @@ export function BreathingCircle({
           )}
           style={{
             transform: `scale(${circleScale * 1.2})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1), 
                       background-color ${getTransitionDuration()}ms ease-in-out,
                       opacity ${getTransitionDuration()}ms ease-in-out`
           }}
         />
         
-        {/* Middle layer with smoother animation */}
+        {/* Middle layer */}
         <div 
           className="absolute inset-0 rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.1)]"
           style={{
             transform: `scale(${circleScale * 1.05})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1)`
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1)`
           }}
         />
         
-        {/* Main circle with smoother animation */}
+        {/* Main circle */}
         <div 
           className={cn(
             "absolute inset-0 flex items-center justify-center rounded-full", 
@@ -189,7 +189,7 @@ export function BreathingCircle({
           )}
           style={{
             transform: `scale(${circleScale})`,
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1), 
                         box-shadow ${getTransitionDuration()}ms ease-in-out, 
                         background-color ${getTransitionDuration()}ms ease-in-out`
           }}
