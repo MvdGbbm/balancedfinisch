@@ -2,15 +2,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw, Sliders } from "lucide-react";
+import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 
 type BreathingPattern = {
   id: string;
@@ -26,9 +20,11 @@ type BreathingPattern = {
   hold1Url?: string;
   hold2Url?: string;
 };
+
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
+
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -42,6 +38,41 @@ export function BreathingExerciseTest({
   const [audioError, setAudioError] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
   const [circleScale, setCircleScale] = useState(1);
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
+
+  // Load voice URLs from localStorage
+  useEffect(() => {
+    // Load Vera voice URLs
+    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+    if (savedVeraUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedVeraUrls);
+        setVeraVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Vera voice URLs:", error);
+      }
+    }
+    
+    // Load Marco voice URLs
+    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+    if (savedMarcoUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedMarcoUrls);
+        setMarcoVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Marco voice URLs:", error);
+      }
+    }
+  }, []);
 
   // Reset state when pattern changes
   useEffect(() => {
@@ -58,33 +89,67 @@ export function BreathingExerciseTest({
     }
   }, [pattern]);
 
-  // A separate effect to handle audio loading on phase change
+  // Update audio URL based on the current phase and active voice
+  useEffect(() => {
+    if (!pattern) return;
+    
+    let url = "";
+    
+    if (activeVoice === "vera") {
+      // Use Vera voice URLs
+      switch (currentPhase) {
+        case "inhale":
+          url = veraVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = veraVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = veraVoiceUrls.exhale || "";
+          break;
+      }
+    } else if (activeVoice === "marco") {
+      // Use Marco voice URLs
+      switch (currentPhase) {
+        case "inhale":
+          url = marcoVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = marcoVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = marcoVoiceUrls.exhale || "";
+          break;
+      }
+    } else {
+      // Use pattern-specific URLs if no voice is selected
+      switch (currentPhase) {
+        case "inhale":
+          url = pattern.inhaleUrl || "";
+          break;
+        case "hold1":
+          url = pattern.hold1Url || "";
+          break;
+        case "exhale":
+          url = pattern.exhaleUrl || "";
+          break;
+        case "hold2":
+          url = pattern.hold2Url || "";
+          break;
+      }
+    }
+    
+    setCurrentAudioUrl(url);
+    setAudioError(false);
+  }, [currentPhase, activeVoice, pattern, veraVoiceUrls, marcoVoiceUrls]);
+
+  // Play audio when URL changes and exercise is active
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
 
-    // Get the correct URL for the current phase
-    let url = "";
-    switch (currentPhase) {
-      case "inhale":
-        url = pattern.inhaleUrl || "";
-        break;
-      case "hold1":
-        url = pattern.hold1Url || "";
-        break;
-      case "exhale":
-        url = pattern.exhaleUrl || "";
-        break;
-      case "hold2":
-        url = pattern.hold2Url || "";
-        break;
-    }
-
-    // Set the new URL
-    setCurrentAudioUrl(url);
-    setAudioError(false);
-
-    // Only load and play if there's a URL and the exercise is active
-    if (url && isActive) {
+    if (currentAudioUrl && isActive) {
       // Stop any currently playing audio before starting a new one
       if (audioRef.current) {
         audioRef.current.pause();
@@ -92,7 +157,7 @@ export function BreathingExerciseTest({
       }
 
       // Set the src attribute directly 
-      audioRef.current.src = url;
+      audioRef.current.src = currentAudioUrl;
       audioRef.current.load();
 
       // Reset audio and play with a small delay to prevent interruptions
@@ -109,7 +174,7 @@ export function BreathingExerciseTest({
       // Add a small delay to prevent interruptions
       setTimeout(playAudio, 100);
     }
-  }, [currentPhase, isActive, pattern]);
+  }, [currentAudioUrl, isActive, pattern]);
 
   // Stop audio when exercise is paused
   useEffect(() => {
@@ -398,30 +463,17 @@ export function BreathingExerciseTest({
               {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
               Marco
             </Button>
-            
-            {isActive && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="flex items-center gap-1.5"
-                  >
-                    <Sliders className="h-4 w-4 mr-2" />
-                    Helende Frequenties
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  align="center" 
-                  className="w-72 p-0 border-0 bg-background/95 backdrop-blur-sm"
-                >
-                  <ToneEqualizer
-                    isActive={isActive}
-                    audioRef={audioRef}
-                  />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+          </div>
+          
+          <div className="flex justify-center mt-2">
+            <Button 
+              onClick={resetExercise}
+              variant="outline"
+              size="sm"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reset
+            </Button>
           </div>
         </div>
       </CardContent>
