@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { BreathingVisualization } from "@/components/breathing/breathing-visualization";
+import { supabase } from "@/integrations/supabase/client";
 
 type BreathingPattern = {
   id: string;
@@ -22,12 +23,12 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-  veraUrl?: string;
-  marcoUrl?: string;
+  inhale_url?: string;
+  exhale_url?: string;
+  hold1_url?: string;
+  hold2_url?: string;
+  vera_url?: string;
+  marco_url?: string;
 };
 
 const defaultBreathingPatterns: BreathingPattern[] = [
@@ -77,26 +78,79 @@ export function BreathExercise() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const savedPatterns = localStorage.getItem('breathingPatterns');
-    if (savedPatterns) {
+    const fetchBreathingPatterns = async () => {
       try {
-        const parsedPatterns = JSON.parse(savedPatterns);
-        const mergedPatterns = [...defaultBreathingPatterns];
+        const { data, error } = await supabase
+          .from('breathing_patterns')
+          .select('*');
+          
+        if (error) {
+          console.error('Error fetching from Supabase:', error);
+          throw error;
+        }
         
-        parsedPatterns.forEach((pattern: BreathingPattern) => {
-          if (!mergedPatterns.some(p => p.id === pattern.id)) {
-            mergedPatterns.push(pattern);
+        if (data && data.length > 0) {
+          setBreathingPatterns(data);
+          setCurrentPattern(data[0]);
+        } else {
+          const savedPatterns = localStorage.getItem('breathingPatterns');
+          if (savedPatterns) {
+            try {
+              const parsedPatterns = JSON.parse(savedPatterns);
+              const mergedPatterns = [...defaultBreathingPatterns];
+              
+              parsedPatterns.forEach((pattern: BreathingPattern) => {
+                if (!mergedPatterns.some(p => p.id === pattern.id)) {
+                  mergedPatterns.push(pattern);
+                }
+              });
+              
+              setBreathingPatterns(mergedPatterns);
+              if (mergedPatterns.length > 0) {
+                setCurrentPattern(mergedPatterns[0]);
+              }
+            } catch (error) {
+              console.error("Error loading breathing patterns:", error);
+              setBreathingPatterns(defaultBreathingPatterns);
+              setCurrentPattern(defaultBreathingPatterns[0]);
+            }
+          } else {
+            setBreathingPatterns(defaultBreathingPatterns);
+            setCurrentPattern(defaultBreathingPatterns[0]);
           }
-        });
-        
-        setBreathingPatterns(mergedPatterns);
-        if (mergedPatterns.length > 0) {
-          setCurrentPattern(mergedPatterns[0]);
         }
       } catch (error) {
-        console.error("Error loading breathing patterns:", error);
+        console.error('Error fetching patterns:', error);
+        
+        const savedPatterns = localStorage.getItem('breathingPatterns');
+        if (savedPatterns) {
+          try {
+            const parsedPatterns = JSON.parse(savedPatterns);
+            const mergedPatterns = [...defaultBreathingPatterns];
+            
+            parsedPatterns.forEach((pattern: BreathingPattern) => {
+              if (!mergedPatterns.some(p => p.id === pattern.id)) {
+                mergedPatterns.push(pattern);
+              }
+            });
+            
+            setBreathingPatterns(mergedPatterns);
+            if (mergedPatterns.length > 0) {
+              setCurrentPattern(mergedPatterns[0]);
+            }
+          } catch (error) {
+            console.error("Error loading breathing patterns:", error);
+            setBreathingPatterns(defaultBreathingPatterns);
+            setCurrentPattern(defaultBreathingPatterns[0]);
+          }
+        } else {
+          setBreathingPatterns(defaultBreathingPatterns);
+          setCurrentPattern(defaultBreathingPatterns[0]);
+        }
       }
-    }
+    };
+
+    fetchBreathingPatterns();
   }, []);
 
   useEffect(() => {
@@ -114,8 +168,8 @@ export function BreathExercise() {
     let url = "";
     
     if (activeVoice === "vera") {
-      if (currentPattern.veraUrl) {
-        url = currentPattern.veraUrl;
+      if (currentPattern.vera_url) {
+        url = currentPattern.vera_url;
       } else {
         const veraUrls = localStorage.getItem('veraVoiceUrls');
         if (veraUrls) {
@@ -139,8 +193,8 @@ export function BreathExercise() {
         }
       }
     } else if (activeVoice === "marco") {
-      if (currentPattern.marcoUrl) {
-        url = currentPattern.marcoUrl;
+      if (currentPattern.marco_url) {
+        url = currentPattern.marco_url;
       } else {
         const marcoUrls = localStorage.getItem('marcoVoiceUrls');
         if (marcoUrls) {
@@ -166,16 +220,16 @@ export function BreathExercise() {
     } else {
       switch (currentPhase) {
         case "inhale":
-          url = currentPattern.inhaleUrl || "";
+          url = currentPattern.inhale_url || "";
           break;
         case "hold1":
-          url = currentPattern.hold1Url || "";
+          url = currentPattern.hold1_url || "";
           break;
         case "exhale":
-          url = currentPattern.exhaleUrl || "";
+          url = currentPattern.exhale_url || "";
           break;
         case "hold2":
-          url = currentPattern.hold2Url || "";
+          url = currentPattern.hold2_url || "";
           break;
       }
     }
@@ -348,8 +402,10 @@ export function BreathExercise() {
       setActiveVoice("vera");
       setIsActive(true);
       
-      if (currentPattern.veraUrl) {
-        setCurrentAudioUrl(currentPattern.veraUrl);
+      const veraUrl = currentPattern.vera_url;
+      
+      if (veraUrl) {
+        setCurrentAudioUrl(veraUrl);
       } else {
         updateCurrentAudioUrl();
       }
@@ -378,8 +434,10 @@ export function BreathExercise() {
       setActiveVoice("marco");
       setIsActive(true);
       
-      if (currentPattern.marcoUrl) {
-        setCurrentAudioUrl(currentPattern.marcoUrl);
+      const marcoUrl = currentPattern.marco_url;
+      
+      if (marcoUrl) {
+        setCurrentAudioUrl(marcoUrl);
       } else {
         updateCurrentAudioUrl();
       }

@@ -73,10 +73,10 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       description: "/admin/streams"
     },
     { 
-      path: "/admin/breathing", 
+      path: "/admin/guided-breathing", 
       icon: RefreshCw, 
-      label: "Ademhaling", 
-      description: "/admin/ademhaling"
+      label: "Begeleide Ademhaling", 
+      description: "/admin/begeleide-ademhaling"
     },
   ];
 

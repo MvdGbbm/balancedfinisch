@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
 type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
@@ -53,6 +54,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) =>
   const [phase, setPhase] = useState<BreathingPhase>('inhale');
   const [count, setCount] = useState(getCountForPhase('inhale', technique));
   const [isActive, setIsActive] = useState(true);
+  const [scale, setScale] = useState(1);
   const isMobile = useIsMobile();
   
   useEffect(() => {
@@ -78,6 +80,21 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) =>
     return () => clearInterval(interval);
   }, [phase, technique, isActive]);
 
+  // Update scale based on phase
+  useEffect(() => {
+    if (!isActive) return;
+    
+    if (phase === 'inhale') {
+      setScale(1.25);
+    } else if (phase === 'hold') {
+      setScale(1.25);
+    } else if (phase === 'exhale') {
+      setScale(1);
+    } else {
+      setScale(1);
+    }
+  }, [phase, isActive]);
+
   const getMessage = (): string => {
     switch(phase) {
       case 'inhale': return 'Adem in';
@@ -86,31 +103,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) =>
       case 'pause': return ''; // Removed 'Rust' text
       default: return 'Adem in';
     }
-  };
-
-  const circleClass = () => {
-    const duration = getCountForPhase(phase, technique);
-    
-    switch(phase) {
-      case 'inhale': 
-        return `grow-animation`;
-      case 'hold': 
-        return 'scale-125'; 
-      case 'exhale': 
-        return `shrink-animation`;
-      case 'pause': 
-        return 'scale-100';
-      default: 
-        return 'scale-100';
-    }
-  };
-
-  const animationStyle = () => {
-    const duration = getCountForPhase(phase, technique);
-    
-    return {
-      animationDuration: `${duration}s`
-    };
   };
 
   const toggleActive = () => {
@@ -122,19 +114,66 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) =>
   const circleSize = isMobile ? 'w-40 h-40' : 'w-48 h-48';
   const innerCircleSize = isMobile ? 'w-32 h-32' : 'w-40 h-40';
 
+  // Determine colors based on phase
+  const getPhaseColors = () => {
+    switch (phase) {
+      case 'inhale':
+        return {
+          bg: 'bg-gradient-to-br from-cyan-500 to-blue-500',
+          glow: 'bg-cyan-400/30'
+        };
+      case 'hold':
+        return {
+          bg: 'bg-gradient-to-br from-purple-500 to-violet-500',
+          glow: 'bg-violet-400/30'
+        };
+      case 'exhale':
+        return {
+          bg: 'bg-gradient-to-br from-blue-500 to-indigo-500',
+          glow: 'bg-blue-400/30'
+        };
+      default:
+        return {
+          bg: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+          glow: 'bg-blue-300/30'
+        };
+    }
+  };
+
+  const colors = getPhaseColors();
+  const duration = getCountForPhase(phase, technique) * 1000;
+
   return (
     <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
-      <div 
-        className={`breathe-circle ${circleSize} ${circleClass()}`}
-        style={animationStyle()}
-        onClick={toggleActive}
-      >
-        <div className={`breathe-inner-circle ${innerCircleSize}`}>
-          <div className="flex flex-col items-center justify-center text-center">
-            <p className="text-xl font-light mb-2">{getMessage()}</p>
-            {shouldShowCounter && (
-              <p className="text-3xl font-medium">{count}</p>
-            )}
+      <div className="relative flex items-center justify-center">
+        {/* Glow effect */}
+        <div 
+          className={cn("absolute rounded-full blur-xl opacity-70 transition-transform", colors.glow)}
+          style={{
+            width: `${scale * 1.2 * (isMobile ? 160 : 192)}px`,
+            height: `${scale * 1.2 * (isMobile ? 160 : 192)}px`,
+            transition: `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1), background-color ${duration}ms ease-in-out`
+          }}
+        />
+        
+        {/* Main circle with gradient */}
+        <div 
+          className={cn("rounded-full shadow-lg transition-transform flex items-center justify-center", colors.bg, circleSize)}
+          style={{ 
+            transform: `scale(${scale})`,
+            transition: `transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1), background ${duration}ms ease-in-out`
+          }}
+          onClick={toggleActive}
+        >
+          <div 
+            className={cn("rounded-full flex items-center justify-center bg-white/10 backdrop-blur-sm", innerCircleSize)}
+          >
+            <div className="flex flex-col items-center justify-center text-center text-white">
+              <p className="text-xl font-light mb-2">{getMessage()}</p>
+              {shouldShowCounter && (
+                <p className="text-3xl font-medium">{count}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
