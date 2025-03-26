@@ -2,11 +2,10 @@
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
-import BreathingAnimation, { BreathingTechnique as AnimationTechnique } from "@/components/breathing/breathing-animation";
-import { BreathingCounter } from "@/components/breathing/breathing-counter";
+import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, RefreshCw } from "lucide-react";
 import { BreathingTechnique } from "@/lib/types";
 
 // Fallback default exercises if none exist in localStorage
@@ -47,10 +46,8 @@ const defaultBreathingExercises = [
 ];
 
 const Breathing = () => {
-  const [selectedTechnique, setSelectedTechnique] = useState<AnimationTechnique>('4-7-8');
   const [breathingExercises, setBreathingExercises] = useState<BreathingTechnique[]>([]);
-  const counterRef = React.useRef<{ resetCount: () => void } | null>(null);
-
+  
   // Load breathing exercises from localStorage
   useEffect(() => {
     const savedExercises = localStorage.getItem('breathingPatterns');
@@ -67,103 +64,71 @@ const Breathing = () => {
     }
   }, []);
 
-  const handleAnimationReset = () => {
-    // Reset counter if it exists
-    if (counterRef.current && counterRef.current.resetCount) {
-      counterRef.current.resetCount();
-    }
-  };
-
-  const handleTechniqueChange = (technique: AnimationTechnique) => {
-    setSelectedTechnique(technique);
-    handleAnimationReset();
-  };
-
   return (
     <MobileLayout>
-      <div className="min-h-full p-6 space-y-8 animate-fade-in">
-        <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Breathe and Relax
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Practice mindful breathing for inner peace
-          </p>
+      <div className="space-y-6 min-h-full p-4 animate-fade-in">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight">Ademhaling</h1>
+          </div>
         </div>
         
-        <div className="space-y-6">
-          <div className="flex justify-center mb-4">
-            {/* Dropdown menu for breathing exercises */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="bg-white/90 dark:bg-gray-800/90 border border-blue-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all"
-                >
-                  {breathingExercises.find(ex => ex.technique === selectedTechnique)?.name || 'Select Technique'}
-                  <ChevronDown className="ml-2 h-4 w-4 text-blue-500" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                className="w-56 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-blue-100 dark:border-gray-700 shadow-lg"
-                align="center"
-              >
-                {breathingExercises.map((exercise) => (
-                  <DropdownMenuItem 
-                    key={exercise.id}
-                    className={`${selectedTechnique === exercise.technique ? 'bg-blue-50 dark:bg-blue-900/20 font-medium text-blue-600 dark:text-blue-300' : ''} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors`}
-                    onClick={() => handleTechniqueChange(exercise.technique as AnimationTechnique)}
-                  >
-                    {exercise.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        <div className="relative rounded-xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-indigo-500/30 backdrop-blur-sm -z-10" />
           
-          <div className="bg-gradient-to-br from-white/80 to-blue-50/80 dark:from-gray-800/80 dark:to-gray-900/80 rounded-2xl p-6 shadow-xl border border-blue-100/50 dark:border-blue-900/30">
-            <div className="flex flex-col items-center">
-              <BreathingAnimation 
-                technique={selectedTechnique} 
-                onReset={handleAnimationReset}
-              />
-              
-              <div className="mt-4 text-center">
-                <BreathingCounter ref={counterRef} />
-              </div>
+          <div className="grid gap-4 p-1">
+            {/* Main breathing exercise component */}
+            <BreathExercise />
+            
+            {/* Music player for ambient sounds */}
+            <div className="mt-4">
+              <BreathingMusicPlayer />
             </div>
           </div>
         </div>
         
-        <div className="mt-8">
-          <BreathingMusicPlayer />
-        </div>
-        
-        {/* Benefits section */}
-        <div className="mt-8 px-4 py-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl border border-blue-100/50 dark:border-blue-900/30">
-          <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300 mb-3">
-            Benefits of Regular Practice
-          </h3>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-start">
-              <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-2 mt-0.5">
-                <span className="text-blue-600 dark:text-blue-300 text-xs">✓</span>
+        {/* Benefits of breathing exercises section */}
+        <div className="rounded-xl bg-white/80 dark:bg-gray-800/80 p-6 shadow-sm mt-6 space-y-4">
+          <h2 className="text-lg font-semibold">Voordelen van ademhalingsoefeningen</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="flex items-start gap-2">
+              <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-1.5">
+                <RefreshCw className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <span>Reduces stress and anxiety</span>
-            </li>
-            <li className="flex items-start">
-              <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-2 mt-0.5">
-                <span className="text-blue-600 dark:text-blue-300 text-xs">✓</span>
+              <div>
+                <p className="font-medium">Stress verminderen</p>
+                <p className="text-muted-foreground">Helpt bij het verlagen van het cortisolniveau</p>
               </div>
-              <span>Improves focus and concentration</span>
-            </li>
-            <li className="flex items-start">
-              <div className="h-5 w-5 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-2 mt-0.5">
-                <span className="text-blue-600 dark:text-blue-300 text-xs">✓</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="rounded-full bg-indigo-100 dark:bg-indigo-900/30 p-1.5">
+                <RefreshCw className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
-              <span>Enhances overall well-being</span>
-            </li>
-          </ul>
+              <div>
+                <p className="font-medium">Betere focus</p>
+                <p className="text-muted-foreground">Verhoogt concentratie en mentale helderheid</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="rounded-full bg-purple-100 dark:bg-purple-900/30 p-1.5">
+                <RefreshCw className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="font-medium">Betere slaap</p>
+                <p className="text-muted-foreground">Kalmeert het zenuwstelsel voor het slapen</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="rounded-full bg-cyan-100 dark:bg-cyan-900/30 p-1.5">
+                <RefreshCw className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              </div>
+              <div>
+                <p className="font-medium">Immuunsysteem</p>
+                <p className="text-muted-foreground">Versterkt het natuurlijke immuunsysteem</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </MobileLayout>
