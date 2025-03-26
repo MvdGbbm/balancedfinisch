@@ -8,7 +8,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { useForm } from "react-hook-form";
 import { Plus, Save, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
-import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 
 // Define types for breathing patterns
 type BreathingPattern = {
@@ -24,8 +23,8 @@ type BreathingPattern = {
   exhaleUrl?: string;
   hold1Url?: string;
   hold2Url?: string;
-  veraUrl?: string;  // New field for Vera voice URL
-  marcoUrl?: string; // New field for Marco voice URL
+  veraUrl?: string;  // Field for Vera voice URL
+  marcoUrl?: string; // Field for Marco voice URL
 };
 
 // Sample data - in a real application this would come from the database
@@ -388,15 +387,6 @@ const AdminBreathing = () => {
               )}
             </CardContent>
           </Card>
-        </div>
-        
-        {/* Test section for breathing exercise with audio */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
-          <p className="text-muted-foreground mb-4">
-            Test de ademhalingsoefening met audio begeleiding hieronder. De audio url's worden automatisch afgespeeld bij elke fase.
-          </p>
-          <BreathingExerciseTest pattern={selectedPattern} />
         </div>
       </div>
     </AdminLayout>
