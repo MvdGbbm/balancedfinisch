@@ -15,12 +15,10 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-  veraUrl?: string;
-  marcoUrl?: string;
+  inhale_url?: string;
+  exhale_url?: string;
+  hold1_url?: string;
+  hold2_url?: string;
   vera_url?: string;
   marco_url?: string;
 };
@@ -51,7 +49,7 @@ export function BreathingExerciseTest({
     setActiveVoice(null);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
-      setCurrentAudioUrl(pattern.inhaleUrl || "");
+      setCurrentAudioUrl(pattern.inhale_url || "");
     }
   }, [pattern]);
 
@@ -61,16 +59,16 @@ export function BreathingExerciseTest({
     let url = "";
     switch (currentPhase) {
       case "inhale":
-        url = pattern.inhaleUrl || "";
+        url = pattern.inhale_url || "";
         break;
       case "hold1":
-        url = pattern.hold1Url || "";
+        url = pattern.hold1_url || "";
         break;
       case "exhale":
-        url = pattern.exhaleUrl || "";
+        url = pattern.exhale_url || "";
         break;
       case "hold2":
-        url = pattern.hold2Url || "";
+        url = pattern.hold2_url || "";
         break;
     }
 
@@ -225,7 +223,7 @@ export function BreathingExerciseTest({
       audioRef.current.currentTime = 0;
     }
     
-    setCurrentAudioUrl(pattern.inhaleUrl || "");
+    setCurrentAudioUrl(pattern.inhale_url || "");
   };
 
   const startWithVera = () => {
@@ -240,7 +238,7 @@ export function BreathingExerciseTest({
       setIsActive(true);
       setActiveVoice("vera");
       
-      const veraUrl = pattern?.veraUrl || pattern?.vera_url || currentAudioUrl;
+      const veraUrl = pattern?.vera_url || currentAudioUrl;
 
       if (veraUrl) {
         if (audioRef.current) {
@@ -268,7 +266,7 @@ export function BreathingExerciseTest({
       setIsActive(true);
       setActiveVoice("marco");
       
-      const marcoUrl = pattern?.marcoUrl || pattern?.marco_url || currentAudioUrl;
+      const marcoUrl = pattern?.marco_url || currentAudioUrl;
 
       if (marcoUrl) {
         if (audioRef.current) {

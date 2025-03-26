@@ -23,12 +23,10 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-  veraUrl?: string;
-  marcoUrl?: string;
+  inhale_url?: string;
+  exhale_url?: string;
+  hold1_url?: string;
+  hold2_url?: string;
   vera_url?: string;
   marco_url?: string;
 };
@@ -92,13 +90,8 @@ export function BreathExercise() {
         }
         
         if (data && data.length > 0) {
-          const mappedData = data.map(pattern => ({
-            ...pattern,
-            veraUrl: pattern.veraUrl || pattern.vera_url,
-            marcoUrl: pattern.marcoUrl || pattern.marco_url
-          }));
-          setBreathingPatterns(mappedData);
-          setCurrentPattern(mappedData[0]);
+          setBreathingPatterns(data);
+          setCurrentPattern(data[0]);
         } else {
           const savedPatterns = localStorage.getItem('breathingPatterns');
           if (savedPatterns) {
@@ -175,8 +168,8 @@ export function BreathExercise() {
     let url = "";
     
     if (activeVoice === "vera") {
-      if (currentPattern.veraUrl) {
-        url = currentPattern.veraUrl;
+      if (currentPattern.vera_url) {
+        url = currentPattern.vera_url;
       } else {
         const veraUrls = localStorage.getItem('veraVoiceUrls');
         if (veraUrls) {
@@ -200,8 +193,8 @@ export function BreathExercise() {
         }
       }
     } else if (activeVoice === "marco") {
-      if (currentPattern.marcoUrl) {
-        url = currentPattern.marcoUrl;
+      if (currentPattern.marco_url) {
+        url = currentPattern.marco_url;
       } else {
         const marcoUrls = localStorage.getItem('marcoVoiceUrls');
         if (marcoUrls) {
@@ -227,16 +220,16 @@ export function BreathExercise() {
     } else {
       switch (currentPhase) {
         case "inhale":
-          url = currentPattern.inhaleUrl || "";
+          url = currentPattern.inhale_url || "";
           break;
         case "hold1":
-          url = currentPattern.hold1Url || "";
+          url = currentPattern.hold1_url || "";
           break;
         case "exhale":
-          url = currentPattern.exhaleUrl || "";
+          url = currentPattern.exhale_url || "";
           break;
         case "hold2":
-          url = currentPattern.hold2Url || "";
+          url = currentPattern.hold2_url || "";
           break;
       }
     }
@@ -409,7 +402,7 @@ export function BreathExercise() {
       setActiveVoice("vera");
       setIsActive(true);
       
-      const veraUrl = currentPattern.veraUrl || currentPattern.vera_url;
+      const veraUrl = currentPattern.vera_url;
       
       if (veraUrl) {
         setCurrentAudioUrl(veraUrl);
@@ -441,7 +434,7 @@ export function BreathExercise() {
       setActiveVoice("marco");
       setIsActive(true);
       
-      const marcoUrl = currentPattern.marcoUrl || currentPattern.marco_url;
+      const marcoUrl = currentPattern.marco_url;
       
       if (marcoUrl) {
         setCurrentAudioUrl(marcoUrl);
