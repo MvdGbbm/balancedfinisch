@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,10 +24,14 @@ type BreathingPattern = {
   exhaleUrl?: string;
   hold1Url?: string;
   hold2Url?: string;
+  veraUrl?: string;
+  marcoUrl?: string;
 };
+
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
+
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -43,7 +46,6 @@ export function BreathingExerciseTest({
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
   const [circleScale, setCircleScale] = useState(1);
 
-  // Reset state when pattern changes
   useEffect(() => {
     setIsActive(false);
     setCurrentPhase("inhale");
@@ -58,11 +60,9 @@ export function BreathingExerciseTest({
     }
   }, [pattern]);
 
-  // A separate effect to handle audio loading on phase change
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
 
-    // Get the correct URL for the current phase
     let url = "";
     switch (currentPhase) {
       case "inhale":
@@ -79,23 +79,18 @@ export function BreathingExerciseTest({
         break;
     }
 
-    // Set the new URL
     setCurrentAudioUrl(url);
     setAudioError(false);
 
-    // Only load and play if there's a URL and the exercise is active
     if (url && isActive) {
-      // Stop any currently playing audio before starting a new one
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
 
-      // Set the src attribute directly 
       audioRef.current.src = url;
       audioRef.current.load();
 
-      // Reset audio and play with a small delay to prevent interruptions
       const playAudio = () => {
         if (audioRef.current && isActive) {
           audioRef.current.play().catch(error => {
@@ -106,12 +101,10 @@ export function BreathingExerciseTest({
         }
       };
 
-      // Add a small delay to prevent interruptions
       setTimeout(playAudio, 100);
     }
   }, [currentPhase, isActive, pattern]);
 
-  // Stop audio when exercise is paused
   useEffect(() => {
     if (!isActive && audioRef.current) {
       audioRef.current.pause();
@@ -119,64 +112,57 @@ export function BreathingExerciseTest({
     }
   }, [isActive]);
 
-  // Update circle scale based on breathing phase
   useEffect(() => {
     if (!isActive || !pattern) return;
     
     if (currentPhase === "inhale") {
-      // Gradually increase scale during inhale
       const inhaleProgress = (pattern.inhale - secondsLeft) / pattern.inhale;
-      setCircleScale(1 + inhaleProgress * 0.5); // Scale from 1 to 1.5
+      setCircleScale(1 + inhaleProgress * 0.5);
+    } else if (currentPhase === "hold1" || currentPhase === "hold2") {
+      setCircleScale(currentPhase === "hold1" ? 1.5 : 1.0);
     } else if (currentPhase === "exhale") {
-      // Gradually decrease scale during exhale
       const exhaleProgress = (pattern.exhale - secondsLeft) / pattern.exhale;
-      setCircleScale(1.5 - exhaleProgress * 0.5); // Scale from 1.5 to 1
+      setCircleScale(1.5 - exhaleProgress * 0.5);
     }
   }, [currentPhase, secondsLeft, isActive, pattern]);
 
-  // Handle phase transition timer
   useEffect(() => {
     if (!pattern) return;
     let timer: number | null = null;
     let progressTimer: number | null = null;
     if (isActive) {
-      // Set up the phase timer
       timer = window.setInterval(() => {
         if (secondsLeft > 1) {
           setSecondsLeft(seconds => seconds - 1);
         } else {
-          // Stop current audio if any
           if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
           }
 
-          // Move to next phase
           if (currentPhase === "inhale") {
             setCurrentPhase("hold1");
             setSecondsLeft(pattern.hold1 || 1);
-            setProgress(0); // Reset progress for new phase
-            setCircleScale(1.5); // Keep expanded during hold
+            setProgress(0);
+            setCircleScale(1.5);
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
             setSecondsLeft(pattern.exhale);
-            setProgress(0); // Reset progress for new phase
+            setProgress(0);
           } else if (currentPhase === "exhale") {
             if (pattern.hold2) {
               setCurrentPhase("hold2");
               setSecondsLeft(pattern.hold2);
-              setProgress(0); // Reset progress for new phase
-              setCircleScale(1); // Keep contracted during hold
+              setProgress(0);
+              setCircleScale(1);
             } else {
-              // If no hold2, go to next cycle or finish
               if (currentCycle < pattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
-                setProgress(0); // Reset progress for new phase
-                setCircleScale(1); // Reset to initial size
+                setProgress(0);
+                setCircleScale(1);
               } else {
-                // Exercise complete
                 setIsActive(false);
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
@@ -192,15 +178,13 @@ export function BreathingExerciseTest({
               }
             }
           } else if (currentPhase === "hold2") {
-            // Cycle completed, start next or finish
             if (currentCycle < pattern.cycles) {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
-              setProgress(0); // Reset progress for new phase
-              setCircleScale(1); // Reset to initial size
+              setProgress(0);
+              setCircleScale(1);
             } else {
-              // Exercise complete
               setIsActive(false);
               setCurrentCycle(1);
               setCurrentPhase("inhale");
@@ -218,7 +202,6 @@ export function BreathingExerciseTest({
         }
       }, 1000);
 
-      // Set up the progress timer for smoother animation
       const getCurrentPhaseDuration = () => {
         switch (currentPhase) {
           case "inhale":
@@ -239,14 +222,14 @@ export function BreathingExerciseTest({
         const elapsed = Date.now() - startTime;
         const calculatedProgress = elapsed / phaseDuration * 100;
         setProgress(Math.min(calculatedProgress, 100));
-      }, 16); // ~60fps
+      }, 16);
     }
     return () => {
       if (timer) clearInterval(timer);
       if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
-  
+
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -261,7 +244,7 @@ export function BreathingExerciseTest({
         return "";
     }
   };
-  
+
   const resetExercise = () => {
     if (!pattern) return;
     setIsActive(false);
@@ -273,19 +256,16 @@ export function BreathingExerciseTest({
     setActiveVoice(null);
     setCircleScale(1);
 
-    // Reset audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
 
-    // Set initial audio URL for the inhale phase
     setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
-  
+
   const startWithVera = () => {
     if (isActive && activeVoice === "vera") {
-      // If already active with Vera voice, pause
       setIsActive(false);
       setActiveVoice(null);
       if (audioRef.current) {
@@ -293,25 +273,27 @@ export function BreathingExerciseTest({
         audioRef.current.currentTime = 0;
       }
     } else {
-      // Start with Vera voice
       setIsActive(true);
       setActiveVoice("vera");
-      
-      setTimeout(() => {
-        if (audioRef.current && currentAudioUrl) {
+
+      const veraUrl = pattern?.veraUrl || currentAudioUrl;
+
+      if (veraUrl) {
+        if (audioRef.current) {
+          audioRef.current.src = veraUrl;
+          audioRef.current.load();
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
             console.error("Error playing audio with Vera:", error);
             setAudioError(true);
           });
         }
-      }, 100);
+      }
     }
   };
-  
+
   const startWithMarco = () => {
     if (isActive && activeVoice === "marco") {
-      // If already active with Marco voice, pause
       setIsActive(false);
       setActiveVoice(null);
       if (audioRef.current) {
@@ -319,22 +301,25 @@ export function BreathingExerciseTest({
         audioRef.current.currentTime = 0;
       }
     } else {
-      // Start with Marco voice
       setIsActive(true);
       setActiveVoice("marco");
-      
-      setTimeout(() => {
-        if (audioRef.current && currentAudioUrl) {
+
+      const marcoUrl = pattern?.marcoUrl || currentAudioUrl;
+
+      if (marcoUrl) {
+        if (audioRef.current) {
+          audioRef.current.src = marcoUrl;
+          audioRef.current.load();
           audioRef.current.currentTime = 0;
           audioRef.current.play().catch(error => {
             console.error("Error playing audio with Marco:", error);
             setAudioError(true);
           });
         }
-      }, 100);
+      }
     }
   };
-  
+
   if (!pattern) {
     return <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
@@ -342,17 +327,15 @@ export function BreathingExerciseTest({
         </CardContent>
       </Card>;
   }
-  
+
   return <Card>
       <CardHeader>
         <CardTitle>Testen: {pattern.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Audio element with explicit controls */}
         <audio ref={audioRef} src={currentAudioUrl} preload="auto" onError={() => setAudioError(true)} />
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
-          {/* Visual representation of breathing phase with animated circle */}
           <div className="relative h-40 w-40 flex items-center justify-center">
             <div 
               className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
@@ -427,3 +410,4 @@ export function BreathingExerciseTest({
       </CardContent>
     </Card>;
 }
+

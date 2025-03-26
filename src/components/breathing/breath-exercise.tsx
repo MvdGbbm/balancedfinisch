@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -26,6 +25,8 @@ type BreathingPattern = {
   exhaleUrl?: string;
   hold1Url?: string;
   hold2Url?: string;
+  veraUrl?: string;
+  marcoUrl?: string;
 };
 
 const defaultBreathingPatterns: BreathingPattern[] = [
@@ -72,10 +73,8 @@ export function BreathExercise() {
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
   
-  // Track currently selected voice
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
 
-  // Load breathing patterns and voice URLs from localStorage
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -99,7 +98,6 @@ export function BreathExercise() {
     }
   }, []);
 
-  // Reset state when pattern changes
   useEffect(() => {
     setIsActive(false);
     setCurrentPhase("inhale");
@@ -110,56 +108,60 @@ export function BreathExercise() {
     updateCurrentAudioUrl();
   }, [currentPattern]);
   
-  // Update audio URL based on current phase and active voice
   const updateCurrentAudioUrl = () => {
     let url = "";
     
     if (activeVoice === "vera") {
-      // Get Vera URLs from localStorage
-      const veraUrls = localStorage.getItem('veraVoiceUrls');
-      if (veraUrls) {
-        try {
-          const parsedUrls = JSON.parse(veraUrls);
-          switch (currentPhase) {
-            case "inhale":
-              url = parsedUrls.inhale || "";
-              break;
-            case "hold1":
-            case "hold2":
-              url = parsedUrls.hold || "";
-              break;
-            case "exhale":
-              url = parsedUrls.exhale || "";
-              break;
+      if (currentPattern.veraUrl) {
+        url = currentPattern.veraUrl;
+      } else {
+        const veraUrls = localStorage.getItem('veraVoiceUrls');
+        if (veraUrls) {
+          try {
+            const parsedUrls = JSON.parse(veraUrls);
+            switch (currentPhase) {
+              case "inhale":
+                url = parsedUrls.inhale || "";
+                break;
+              case "hold1":
+              case "hold2":
+                url = parsedUrls.hold || "";
+                break;
+              case "exhale":
+                url = parsedUrls.exhale || "";
+                break;
+            }
+          } catch (error) {
+            console.error("Error parsing Vera URLs:", error);
           }
-        } catch (error) {
-          console.error("Error parsing Vera URLs:", error);
         }
       }
     } else if (activeVoice === "marco") {
-      // Get Marco URLs from localStorage
-      const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-      if (marcoUrls) {
-        try {
-          const parsedUrls = JSON.parse(marcoUrls);
-          switch (currentPhase) {
-            case "inhale":
-              url = parsedUrls.inhale || "";
-              break;
-            case "hold1":
-            case "hold2":
-              url = parsedUrls.hold || "";
-              break;
-            case "exhale":
-              url = parsedUrls.exhale || "";
-              break;
+      if (currentPattern.marcoUrl) {
+        url = currentPattern.marcoUrl;
+      } else {
+        const marcoUrls = localStorage.getItem('marcoVoiceUrls');
+        if (marcoUrls) {
+          try {
+            const parsedUrls = JSON.parse(marcoUrls);
+            switch (currentPhase) {
+              case "inhale":
+                url = parsedUrls.inhale || "";
+                break;
+              case "hold1":
+              case "hold2":
+                url = parsedUrls.hold || "";
+                break;
+              case "exhale":
+                url = parsedUrls.exhale || "";
+                break;
+            }
+          } catch (error) {
+            console.error("Error parsing Marco URLs:", error);
           }
-        } catch (error) {
-          console.error("Error parsing Marco URLs:", error);
         }
       }
     } else {
-      // Default to pattern URLs if no voice is selected
       switch (currentPhase) {
         case "inhale":
           url = currentPattern.inhaleUrl || "";
@@ -180,7 +182,6 @@ export function BreathExercise() {
     setAudioError(false);
   };
 
-  // Update and play audio when phase changes
   useEffect(() => {
     if (!audioRef.current) return;
     
@@ -208,7 +209,6 @@ export function BreathExercise() {
     }
   }, [currentPhase, currentPattern, isActive, currentAudioUrl, activeVoice]);
 
-  // Breathing timer effect
   useEffect(() => {
     let timer: number | null = null;
     
@@ -275,7 +275,6 @@ export function BreathExercise() {
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, currentPattern]);
 
-  // Stop audio when exercise is paused
   useEffect(() => {
     if (!isActive && audioRef.current) {
       audioRef.current.pause();
@@ -336,6 +335,12 @@ export function BreathExercise() {
       setActiveVoice("vera");
       setIsActive(true);
       
+      if (currentPattern.veraUrl) {
+        setCurrentAudioUrl(currentPattern.veraUrl);
+      } else {
+        updateCurrentAudioUrl();
+      }
+      
       setTimeout(() => {
         if (audioRef.current && currentAudioUrl) {
           audioRef.current.currentTime = 0;
@@ -359,6 +364,12 @@ export function BreathExercise() {
     } else {
       setActiveVoice("marco");
       setIsActive(true);
+      
+      if (currentPattern.marcoUrl) {
+        setCurrentAudioUrl(currentPattern.marcoUrl);
+      } else {
+        updateCurrentAudioUrl();
+      }
       
       setTimeout(() => {
         if (audioRef.current && currentAudioUrl) {
