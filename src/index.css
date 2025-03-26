@@ -1,188 +1,156 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 12%;
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 12%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 12%;
+    --popover-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 210 100% 50%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+ 
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+ 
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 222 47% 12%;
-
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
-
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 12%;
-
-    --destructive: 0 84% 60%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 222 47% 12%;
-
-    --radius: 1rem;
-
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 222 47% 12%;
-    --sidebar-primary: 210 100% 50%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 222 47% 12%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 222 47% 12%;
+    --ring: 222.2 47.4% 11.2%;
+ 
+    --radius: 0.5rem;
   }
-
+ 
   .dark {
-    --background: 222 47% 5%;
+    --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 7%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 210 100% 50%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 217 33% 18%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+ 
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 217 33% 18%;
+ 
+    --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 63% 31%;
+ 
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 18%;
-    --input: 217 33% 18%;
-    --ring: 212 27% 84%;
-
-    --sidebar-background: 222 47% 7%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 100% 50%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 217 33% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 18%;
-    --sidebar-ring: 212 27% 84%;
+ 
+    --ring: 217.2 32.6% 17.5%;
+ 
+    --radius: 0.5rem;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer utilities {
-  .glass-morphism {
-    @apply backdrop-blur-lg bg-white/20 dark:bg-black/20 border border-white/10 dark:border-white/5;
-  }
-  
-  .neo-morphism {
-    @apply bg-white dark:bg-black border border-gray-100 dark:border-gray-800 shadow-lg;
-  }
-  
-  .text-balance {
-    text-wrap: balance;
-  }
+/* ===== Scrollbar CSS ===== */
+/* Firefox */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #8f54a0 #ffffff;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 6px;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+*::-webkit-scrollbar-track {
+  background: #ffffff;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
+*::-webkit-scrollbar-thumb {
+  background-color: #8f54a0;
+  border-radius: 10px;
+  border: 0px none #ffffff;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.dark ::-webkit-scrollbar-thumb {
+.glass-morphism {
   background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out forwards;
 }
 
-/* Page transitions */
-.page-transition-enter {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.page-transition-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s, transform 0.3s;
-}
-
-.page-transition-exit {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.page-transition-exit-active {
-  opacity: 0;
-  transform: translateY(-8px);
-  transition: opacity 0.3s, transform 0.3s;
-}
-
-/* Custom animations */
-.breathing-circle {
-  animation: breathe 5s infinite ease-in-out;
-}
-
-@keyframes breathe {
-  0%, 100% {
-    transform: scale(1);
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px);
   }
-  50% {
-    transform: scale(1.2);
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Audio player slider customization */
-.audio-player-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: hsl(var(--primary));
-  cursor: pointer;
+/* Breathing Circle Animation Styles */
+.breathe-circle {
+  @apply relative flex items-center justify-center rounded-full border-2 border-primary/30 bg-primary/10 backdrop-blur-md transition-transform cursor-pointer;
+  transform-origin: center;
+}
+
+.breathe-inner-circle {
+  @apply rounded-full bg-background/80 flex items-center justify-center shadow-inner border border-primary/20;
+}
+
+@keyframes grow {
+  from { transform: scale(1); }
+  to { transform: scale(1.25); }
+}
+
+@keyframes shrink {
+  from { transform: scale(1.25); }
+  to { transform: scale(1); }
+}
+
+.grow-animation {
+  animation-name: grow;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+}
+
+.shrink-animation {
+  animation-name: shrink;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
 }
