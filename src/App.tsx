@@ -5,7 +5,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
-import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Breathing from "./pages/Breathing";
@@ -23,35 +22,25 @@ import AdminQuotes from "./pages/admin/Quotes";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminMusic from "./pages/admin/Music";
 import AdminStreams from "./pages/admin/Streams";
-import AdminGuidedBreathing from "./pages/admin/GuidedBreathing";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      <Route path="/" element={<Index />} errorElement={<ErrorBoundary />} />
-      <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
-      <Route path="/music" element={<Music />} errorElement={<ErrorBoundary />} />
-      <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
-      <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
-      <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin" element={<Admin />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/guided-breathing" element={<AdminGuidedBreathing />} errorElement={<ErrorBoundary />} />
+      <Route path="/" element={<Index />} />
+      <Route path="/meditations" element={<Meditations />} />
+      <Route path="/breathing" element={<Breathing />} />
+      <Route path="/music" element={<Music />} />
+      <Route path="/journal" element={<Journal />} />
+      <Route path="/soundscapes" element={<Soundscapes />} />
+      <Route path="/daily-quote" element={<DailyQuote />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/meditations" element={<AdminMeditations />} />
+      <Route path="/admin/quotes" element={<AdminQuotes />} />
+      <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
+      <Route path="/admin/music" element={<AdminMusic />} />
+      <Route path="/admin/streams" element={<AdminStreams />} />
       <Route path="*" element={<NotFound />} />
     </>
   )

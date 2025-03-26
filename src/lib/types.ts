@@ -20,7 +20,6 @@ export interface Soundscape {
   category: string;
   coverImageUrl: string;
   tags: string[];
-  isFavorite?: boolean;
 }
 
 export interface JournalEntry {
@@ -35,7 +34,7 @@ export interface DailyQuote {
   id: string;
   text: string;
   author: string;
-  backgroundClass?: string;
+  date?: string;
 }
 
 export interface PlannerEvent {

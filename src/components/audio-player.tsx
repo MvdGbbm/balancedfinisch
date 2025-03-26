@@ -100,6 +100,10 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
         <div className="text-center py-3 text-muted-foreground">
           <p>Geen audio URL opgegeven</p>
         </div>
+        
+        {showQuote && (
+          <QuoteDisplay quote={randomQuote} />
+        )}
       </div>
     );
   }

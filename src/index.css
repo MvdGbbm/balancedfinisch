@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -175,91 +176,6 @@
   }
 }
 
-/* New animations for breathing exercise */
-@keyframes pulse-gentle {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-5px) translateX(2px);
-  }
-}
-
-@keyframes float-delay {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-7px) translateX(-3px);
-  }
-}
-
-@keyframes float-longer {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-10px) translateX(5px);
-  }
-}
-
-@keyframes float-longer-delay {
-  0%, 100% {
-    transform: translateY(0) translateX(0);
-  }
-  50% {
-    transform: translateY(-8px) translateX(-6px);
-  }
-}
-
-@keyframes ping-slow {
-  0% {
-    transform: scale(0.8);
-    opacity: 0.1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.2;
-  }
-  100% {
-    transform: scale(0.8);
-    opacity: 0.1;
-  }
-}
-
-.animate-pulse-gentle {
-  animation: pulse-gentle 3s infinite ease-in-out;
-}
-
-.animate-float {
-  animation: float 4s infinite ease-in-out;
-}
-
-.animate-float-delay {
-  animation: float-delay 5s infinite ease-in-out;
-}
-
-.animate-float-longer {
-  animation: float-longer 7s infinite ease-in-out;
-}
-
-.animate-float-longer-delay {
-  animation: float-longer-delay 8s infinite ease-in-out;
-}
-
-.animate-ping-slow {
-  animation: ping-slow 8s infinite cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 /* Audio player slider customization */
 .audio-player-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -269,46 +185,4 @@
   border-radius: 50%;
   background: hsl(var(--primary));
   cursor: pointer;
-}
-
-/* New breathing animations for the breathing-animation component */
-.breathe-circle {
-  @apply relative flex items-center justify-center rounded-full shadow-lg bg-gradient-to-br from-blue-400 to-blue-600 transition-all cursor-pointer;
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
-}
-
-.breathe-inner-circle {
-  @apply flex items-center justify-center rounded-full bg-white/20 backdrop-blur-md text-white;
-}
-
-.grow-animation {
-  animation-name: grow;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: 1;
-  animation-fill-mode: forwards;
-}
-
-.shrink-animation {
-  animation-name: shrink;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: 1;
-  animation-fill-mode: forwards;
-}
-
-@keyframes grow {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.25);
-  }
-}
-
-@keyframes shrink {
-  from {
-    transform: scale(1.25);
-  }
-  to {
-    transform: scale(1);
-  }
 }

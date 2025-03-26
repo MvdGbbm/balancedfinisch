@@ -1,241 +1,310 @@
 
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
-import BreathingAnimation, { BreathingTechnique } from "@/components/breathing/breathing-animation";
+import { BreathingCircle } from "@/components/breathing-circle";
+import { MeditationMusicPlayer } from "@/components/meditation-music-player";
+import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle,
+  CardFooter
+} from "@/components/ui/card";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { 
+  Droplet, 
+  Heart, 
+  Brain, 
+  Moon, 
+  Zap,
+  Info,
+  RefreshCw,
+  Wind,
+  Leaf
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-// Define breathing pattern type based on database structure
-type BreathingPattern = {
-  id: string;
-  name: string;
-  inhale: number;
-  hold1: number;
-  exhale: number;
-  hold2: number;
-  cycles: number;
-  description?: string;
-  vera_url?: string;
-  marco_url?: string;
-};
+const breathingPatterns = [
+  {
+    id: "calm",
+    name: "Ontspannende Ademhaling",
+    description: "Ontspannende ademhaling om stress te verminderen",
+    inhaleDuration: 4000,
+    holdDuration: 2000,
+    exhaleDuration: 6000,
+    icon: Heart,
+    color: "text-rose-500",
+    bgColor: "bg-rose-500/10",
+    gradient: "from-rose-500 to-rose-400"
+  },
+  {
+    id: "focus",
+    name: "Focus Ademhaling",
+    description: "Ademhaling voor verbeterde concentratie",
+    inhaleDuration: 5000,
+    holdDuration: 2000,
+    exhaleDuration: 5000,
+    icon: Brain,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    gradient: "from-blue-500 to-blue-400"
+  },
+  {
+    id: "energy",
+    name: "Energie Ademhaling",
+    description: "Krachtige ademhaling voor meer energie",
+    inhaleDuration: 3000,
+    holdDuration: 1000,
+    exhaleDuration: 4000,
+    icon: Zap,
+    color: "text-amber-500",
+    bgColor: "bg-amber-500/10",
+    gradient: "from-amber-500 to-amber-400"
+  },
+  {
+    id: "sleep",
+    name: "Slaap Ademhaling",
+    description: "Rustige ademhaling voor betere slaap",
+    inhaleDuration: 6000,
+    holdDuration: 3000,
+    exhaleDuration: 7000,
+    icon: Moon,
+    color: "text-indigo-500",
+    bgColor: "bg-indigo-500/10",
+    gradient: "from-indigo-500 to-indigo-400"
+  },
+  {
+    id: "deep",
+    name: "Diepe Ademhaling",
+    description: "Diafragmatische ademhaling voor ontspanning",
+    inhaleDuration: 5000,
+    holdDuration: 4000,
+    exhaleDuration: 6000,
+    icon: Wind,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    gradient: "from-emerald-500 to-emerald-400"
+  },
+  {
+    id: "nature",
+    name: "Natuur Ademhaling",
+    description: "Langzame natuurlijke ademhaling voor mindfulness",
+    inhaleDuration: 7000,
+    holdDuration: 2000,
+    exhaleDuration: 8000,
+    icon: Leaf,
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+    gradient: "from-green-500 to-green-400"
+  }
+];
 
-// Interface for guided breathing audio links
-interface GuidedBreathingAudio {
-  voice_type: string;
-  audio_url: string;
-}
+const benefitsList = [
+  "Vermindert stress en angst",
+  "Verbetert concentratie en focus",
+  "Verlaagt de bloeddruk",
+  "Bevordert beter slapen",
+  "Verhoogt energieniveaus"
+];
 
 const Breathing = () => {
-  const [selectedTechnique, setSelectedTechnique] = useState<BreathingTechnique>('4-7-8');
-  const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeVoice, setActiveVoice] = useState<null | "vera" | "marco">(null);
-  const [isActive, setIsActive] = useState(true);
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
-  const isMobile = useIsMobile();
-  const [guidedBreathingAudio, setGuidedBreathingAudio] = useState<{
-    vera: string;
-    marco: string;
-  }>({
-    vera: "",
-    marco: ""
-  });
-
-  // Fetch breathing patterns from Supabase
+  const [selectedPatternId, setSelectedPatternId] = useState(breathingPatterns[0].id);
+  const [breathCount, setBreathCount] = useState(0);
+  const [dailyQuote, setDailyQuote] = useState(getRandomQuote());
+  const [showOptions, setShowOptions] = useState(false);
+  
+  // Reset breath count when pattern changes
   useEffect(() => {
-    const fetchBreathingPatterns = async () => {
-      try {
-        setIsLoading(true);
-        const { data, error } = await supabase
-          .from('breathing_patterns')
-          .select('*');
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setBreathingPatterns(data);
-        } else {
-          // Use default patterns if database is empty
-          const defaultPatterns = [
-            {
-              id: "1",
-              name: "4-7-8 Techniek",
-              description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
-              inhale: 4,
-              hold1: 7,
-              exhale: 8,
-              hold2: 0,
-              cycles: 5,
-            },
-            {
-              id: "2",
-              name: "Box Breathing",
-              description: "Vierkante ademhaling voor focus en kalmte",
-              inhale: 4,
-              hold1: 4,
-              exhale: 4,
-              hold2: 4, 
-              cycles: 4,
-            },
-            {
-              id: "3",
-              name: "Diafragma",
-              description: "Diafragma ademhaling voor diepe ontspanning",
-              inhale: 5,
-              hold1: 2,
-              exhale: 6,
-              hold2: 1,
-              cycles: 6,
-            },
-          ];
-          setBreathingPatterns(defaultPatterns);
-        }
-      } catch (error) {
-        console.error('Error fetching breathing patterns:', error);
-        // Use default patterns as fallback
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBreathingPatterns();
-  }, []);
-
-  // Fetch guided breathing audio links
-  useEffect(() => {
-    const fetchGuidedBreathingAudio = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('guided_breathing')
-          .select('voice_type, audio_url');
-        
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          const audioLinks = {
-            vera: data.find((item: GuidedBreathingAudio) => item.voice_type === 'vera')?.audio_url || "",
-            marco: data.find((item: GuidedBreathingAudio) => item.voice_type === 'marco')?.audio_url || ""
-          };
-          
-          setGuidedBreathingAudio(audioLinks);
-        }
-      } catch (error) {
-        console.error('Error fetching guided breathing audio:', error);
-      }
-    };
-
-    fetchGuidedBreathingAudio();
-  }, []);
-
-  // Handle voice selection
-  const handleVoiceToggle = (voice: "vera" | "marco") => {
-    if (activeVoice === voice) {
-      setActiveVoice(null);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    } else {
-      setActiveVoice(voice);
-      
-      // Use the URL from guided_breathing table
-      const audioUrl = voice === "vera" 
-        ? guidedBreathingAudio.vera 
-        : guidedBreathingAudio.marco;
-      
-      if (audioUrl && audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.play().catch(err => console.error("Error playing audio:", err));
-      } else {
-        console.error(`No audio URL available for ${voice}`);
-      }
-    }
+    setBreathCount(0);
+  }, [selectedPatternId]);
+  
+  const selectedPattern = breathingPatterns.find(
+    (pattern) => pattern.id === selectedPatternId
+  ) || breathingPatterns[0];
+  
+  const handleBreathComplete = () => {
+    setBreathCount((prevCount) => prevCount + 1);
   };
-
+  
+  const handlePatternChange = (value: string) => {
+    setSelectedPatternId(value);
+    // The breathCount will be reset in the useEffect
+  };
+  
+  const resetBreathCount = () => {
+    setBreathCount(0);
+  };
+  
+  const PatternIcon = selectedPattern.icon;
+  
   return (
     <MobileLayout>
-      <div className="space-y-6 animate-fade-in min-h-full p-4 rounded-lg bg-gradient-to-br from-blue-50/50 via-indigo-50/30 to-purple-50/30 dark:from-blue-950/20 dark:via-indigo-950/10 dark:to-purple-950/10 backdrop-blur-sm">
-        <div className="space-y-4">
-          <div className="flex justify-center mb-2">
-            <div className="inline-flex rounded-md shadow-sm">
-              <button 
-                onClick={() => setSelectedTechnique('4-7-8')}
-                className={`px-4 py-2 text-sm font-medium rounded-l-md ${
-                  selectedTechnique === '4-7-8' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200'
-                }`}
+      <div className="space-y-5 animate-fade-in pb-6">
+        {/* Quote display */}
+        <QuoteDisplay quote={dailyQuote} />
+        
+        {/* Music player */}
+        <MeditationMusicPlayer />
+        
+        {/* Pattern selector and info card */}
+        <Card className="glass-morphism border-t border-t-blue-500/30 overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PatternIcon className={selectedPattern.color} />
+                <div>
+                  <CardTitle className="text-xl">{selectedPattern.name}</CardTitle>
+                  <CardDescription>
+                    {selectedPattern.description}
+                  </CardDescription>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setShowOptions(!showOptions)}
               >
-                4-7-8
-              </button>
-              <button 
-                onClick={() => setSelectedTechnique('box-breathing')}
-                className={`px-4 py-2 text-sm font-medium ${
-                  selectedTechnique === 'box-breathing' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200'
-                }`}
-              >
-                Box Breathing
-              </button>
-              <button 
-                onClick={() => setSelectedTechnique('diaphragmatic')}
-                className={`px-4 py-2 text-sm font-medium rounded-r-md ${
-                  selectedTechnique === 'diaphragmatic' 
-                    ? 'bg-primary text-white' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200'
-                }`}
-              >
-                Diafragma
-              </button>
+                <Info className="h-4 w-4" />
+              </Button>
             </div>
-          </div>
+          </CardHeader>
           
-          <div className="bg-white/70 dark:bg-gray-800/70 rounded-xl p-6 shadow-sm">
-            <audio ref={audioRef} className="hidden" />
-            <BreathingAnimation technique={selectedTechnique} />
+          <CardContent>
+            <Select 
+              value={selectedPatternId}
+              onValueChange={handlePatternChange}
+            >
+              <SelectTrigger className="w-full bg-background/50 backdrop-blur-sm">
+                <SelectValue placeholder="Selecteer een ademhalingsoefening" />
+              </SelectTrigger>
+              <SelectContent>
+                {breathingPatterns.map((pattern) => (
+                  <SelectItem key={pattern.id} value={pattern.id}>
+                    <div className="flex items-center gap-2">
+                      <pattern.icon className={`h-4 w-4 ${pattern.color}`} />
+                      <span>{pattern.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             
-            {/* Add Marco/Vera buttons */}
-            <div className="grid grid-cols-2 gap-4 mt-6 max-w-xs mx-auto">
-              <Button 
-                onClick={() => handleVoiceToggle("vera")}
-                variant={activeVoice === "vera" ? "secondary" : "default"}
-                className={activeVoice === "vera" 
-                  ? "bg-blue-700 hover:bg-blue-800" 
-                  : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
-                }
-                disabled={!guidedBreathingAudio.vera}
-              >
-                {activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-                Vera
-              </Button>
-              
-              <Button 
-                onClick={() => handleVoiceToggle("marco")}
-                variant={activeVoice === "marco" ? "secondary" : "default"}
-                className={activeVoice === "marco" 
-                  ? "bg-blue-700 hover:bg-blue-800" 
-                  : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
-                }
-                disabled={!guidedBreathingAudio.marco}
-              >
-                {activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-                Marco
-              </Button>
-            </div>
-            
-            {activeVoice && (
-              <p className="text-center text-sm text-muted-foreground animate-pulse mt-3">
-                {activeVoice === "vera" ? "Vera begeleidt je ademhaling..." : "Marco begeleidt je ademhaling..."}
-              </p>
+            {showOptions && (
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center text-sm">
+                <div className="rounded-lg bg-blue-500/10 p-3 backdrop-blur-sm">
+                  <p className="text-xs text-muted-foreground">Inademen</p>
+                  <p className="text-xl font-semibold text-blue-500">{selectedPattern.inhaleDuration / 1000}s</p>
+                </div>
+                <div className="rounded-lg bg-amber-500/10 p-3 backdrop-blur-sm">
+                  <p className="text-xs text-muted-foreground">Vasthouden</p>
+                  <p className="text-xl font-semibold text-amber-500">{selectedPattern.holdDuration / 1000}s</p>
+                </div>
+                <div className="rounded-lg bg-indigo-500/10 p-3 backdrop-blur-sm">
+                  <p className="text-xs text-muted-foreground">Uitademen</p>
+                  <p className="text-xl font-semibold text-indigo-500">{selectedPattern.exhaleDuration / 1000}s</p>
+                </div>
+              </div>
             )}
+          </CardContent>
+        </Card>
+        
+        {/* Breathing circle */}
+        <div className="flex justify-center py-4">
+          <BreathingCircle
+            inhaleDuration={selectedPattern.inhaleDuration}
+            holdDuration={selectedPattern.holdDuration}
+            exhaleDuration={selectedPattern.exhaleDuration}
+            onBreathComplete={handleBreathComplete}
+          />
+        </div>
+        
+        {/* Breath counter */}
+        <div className="text-center bg-gray-900/40 py-4 rounded-xl backdrop-blur-sm flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="text-5xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent animate-pulse-gentle">
+              {breathCount}
+            </div>
+            <Button 
+              onClick={resetBreathCount} 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 rounded-full hover:bg-gray-800/50"
+              title="Reset teller"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-muted-foreground">Volledige ademhalingen</p>
+        </div>
+        
+        {/* Breathing techniques tile view */}
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+            <Wind className="h-5 w-5 text-blue-500" />
+            Ademhalingstechnieken
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {breathingPatterns.map((pattern) => (
+              <Card 
+                key={pattern.id} 
+                className={`overflow-hidden hover:shadow-lg transition-all cursor-pointer backdrop-blur-sm ${pattern.id === selectedPatternId ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => setSelectedPatternId(pattern.id)}
+              >
+                <div className={`h-2 bg-gradient-to-r ${pattern.gradient}`} />
+                <CardContent className="p-3 pb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <pattern.icon className={`h-5 w-5 ${pattern.color}`} />
+                    <h3 className="font-medium text-sm">{pattern.name}</h3>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    {pattern.description}
+                  </div>
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-blue-500">{pattern.inhaleDuration / 1000}s</span>
+                    <span className="text-amber-500">{pattern.holdDuration / 1000}s</span>
+                    <span className="text-indigo-500">{pattern.exhaleDuration / 1000}s</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
         
-        <BreathingMusicPlayer />
+        {/* Benefits card */}
+        <Card className="neo-morphism mt-6 bg-gray-900/40 backdrop-blur-sm">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4 text-blue-400" />
+              <CardTitle className="text-base">Voordelen van Ademhalingsoefeningen</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <ul className="space-y-3">
+              {benefitsList.map((benefit, index) => (
+                <li key={index} className="flex items-start gap-2">
+                  <Droplet className="h-4 w-4 text-blue-400 mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
     </MobileLayout>
   );

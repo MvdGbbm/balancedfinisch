@@ -1,5 +1,6 @@
 
-import { quotes, colorGradients } from "@/data/quotes";
+import { quotes } from "@/data/quotes";
+import { DailyQuote } from "@/lib/types";
 
 export const formatTime = (time: number) => {
   if (isNaN(time)) return "0:00";
@@ -9,37 +10,45 @@ export const formatTime = (time: number) => {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-export const getRandomQuote = () => {
+export const getRandomQuote = (): DailyQuote => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
-  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
   return {
-    ...quotes[randomIndex],
-    backgroundClass: colorGradients[randomGradientIndex]
+    id: `quote-${randomIndex}`,
+    text: quotes[randomIndex].text,
+    author: quotes[randomIndex].author
   };
 };
 
-export const validateAudioUrl = (url: string | undefined): string => {
-  if (!url) return '';
+// Format duration from milliseconds to friendly string
+export const formatDuration = (ms: number): string => {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
   
-  // Remove any trailing or leading whitespace
-  url = url.trim();
-  
-  // Ensure URL has valid protocol
-  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
-    // If it's a relative path, add leading slash
-    if (!url.startsWith('/')) {
-      url = '/' + url;
-    }
+  if (minutes === 0) {
+    return `${seconds} seconden`;
+  } else if (minutes === 1) {
+    return remainingSeconds > 0 
+      ? `1 minuut en ${remainingSeconds} seconden` 
+      : '1 minuut';
+  } else {
+    return remainingSeconds > 0 
+      ? `${minutes} minuten en ${remainingSeconds} seconden` 
+      : `${minutes} minuten`;
   }
-  
-  return url;
 };
 
-export const isStreamUrl = (url: string): boolean => {
-  return url.includes('stream') || 
-         url.includes('radio') || 
-         url.includes('live') || 
-         url.endsWith('.m3u8') || 
-         url.includes('icecast') || 
-         url.includes('shoutcast');
+// Get appropriate color class based on a string ID
+export const getColorClassFromId = (id: string): string => {
+  const colors = [
+    'blue', 'indigo', 'purple', 'pink', 'rose', 
+    'orange', 'amber', 'yellow', 'lime', 'green', 
+    'emerald', 'teal', 'cyan'
+  ];
+  
+  // Simple hash function to determine index
+  const hash = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const colorIndex = hash % colors.length;
+  
+  return colors[colorIndex];
 };
