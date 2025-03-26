@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Pause, Play } from 'lucide-react';
@@ -96,7 +97,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
       case 'inhale': 
         return `grow-animation`;
       case 'hold': 
-        return 'scale-130'; // Changed from scale-125 to scale-130 (130%)
+        return 'scale-130'; 
       case 'exhale': 
         return `shrink-animation`;
       case 'pause': 
@@ -120,32 +121,50 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
 
   const shouldShowCounter = phase !== 'pause';
 
-  const circleSize = isMobile ? 'w-52 h-52' : 'w-62 h-62'; // Increased from w-40/w-48
-  const innerCircleSize = isMobile ? 'w-42 h-42' : 'w-52 h-52'; // Increased from w-32/w-40
+  const circleSize = isMobile ? 'w-52 h-52' : 'w-62 h-62';
+  const innerCircleSize = isMobile ? 'w-42 h-42' : 'w-52 h-52';
+
+  // Colors based on current phase
+  const getCircleGradient = () => {
+    switch(phase) {
+      case 'inhale': 
+        return 'from-cyan-500 to-blue-600';
+      case 'hold': 
+        return 'from-indigo-500 to-purple-600';
+      case 'exhale': 
+        return 'from-blue-500 to-indigo-600';
+      case 'pause': 
+        return 'from-blue-400 to-blue-600';
+      default: 
+        return 'from-blue-400 to-blue-600';
+    }
+  };
 
   return (
     <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
       <div 
-        className={`breathe-circle ${circleSize} ${circleClass()}`}
-        style={animationStyle()}
+        className={`breathe-circle ${circleSize} ${circleClass()} bg-gradient-to-br ${getCircleGradient()} shadow-lg shadow-primary/20`}
+        style={{
+          ...animationStyle(),
+          boxShadow: '0 5px 30px rgba(59, 130, 246, 0.5)'
+        }}
         onClick={toggleActive}
       >
-        <div className={`breathe-inner-circle ${innerCircleSize}`}>
+        <div className={`breathe-inner-circle ${innerCircleSize} backdrop-blur-md bg-white/20 border border-white/30 dark:border-white/10`}>
           <div className="flex flex-col items-center justify-center text-center">
-            <p className="text-xl font-light mb-2">{getMessage()}</p>
+            <p className="text-xl font-light mb-2 text-white drop-shadow-md">{getMessage()}</p>
             {shouldShowCounter && (
-              <p className="text-3xl font-medium">{count}</p>
+              <p className="text-4xl font-medium text-white drop-shadow-lg">{count}</p>
             )}
           </div>
         </div>
       </div>
       
-      <div className="mt-16 text-center space-y-8"> {/* Increased margin-top from mt-10 to mt-16 for about 2cm lower */}
+      <div className="mt-16 text-center space-y-8">
         <div className="flex justify-center">
           <button 
             onClick={toggleActive}
-            className="px-3 py-1 h-8 rounded-md text-sm font-medium bg-primary/40 hover:bg-primary/60 text-foreground transition-colors flex items-center"
-            /* Adjusted button size to match the Vera button */
+            className="px-3 py-1 h-8 rounded-md text-sm font-medium bg-primary/40 hover:bg-primary/60 text-foreground transition-colors flex items-center shadow-sm hover:shadow-md"
           >
             {isActive ? <Pause className="mr-1 h-3.5 w-3.5" /> : <Play className="mr-1 h-3.5 w-3.5" />}
             {isActive ? 'Pauze' : 'Hervat'}
