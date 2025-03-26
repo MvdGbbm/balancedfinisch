@@ -24,8 +24,6 @@ type BreathingPattern = {
   exhaleUrl?: string;
   hold1Url?: string;
   hold2Url?: string;
-  veraUrl?: string;  // New field for Vera voice URL
-  marcoUrl?: string; // New field for Marco voice URL
 };
 
 // Sample data - in a real application this would come from the database
@@ -85,7 +83,7 @@ const AdminBreathing = () => {
     }
   }, []);
   
-  // Form for editing patterns - updated with new URL fields
+  // Form for editing patterns
   const form = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -100,8 +98,6 @@ const AdminBreathing = () => {
       exhaleUrl: "",
       hold1Url: "",
       hold2Url: "",
-      veraUrl: "",    // Added Vera URL field
-      marcoUrl: "",   // Added Marco URL field
     }
   });
 
@@ -269,15 +265,14 @@ const AdminBreathing = () => {
                         )}
                       />
 
-                      {/* Replaced with veraUrl */}
                       <FormField
                         control={form.control}
-                        name="veraUrl"
+                        name="inhaleUrl"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-1">
                               <Link className="h-4 w-4" />
-                              <span>Audio URL voor Vera stem</span>
+                              <span>Audio URL voor inademen</span>
                             </FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
@@ -299,15 +294,14 @@ const AdminBreathing = () => {
                         )}
                       />
 
-                      {/* Replaced with marcoUrl */}
                       <FormField
                         control={form.control}
-                        name="marcoUrl"
+                        name="hold1Url"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="flex items-center gap-1">
                               <Link className="h-4 w-4" />
-                              <span>Audio URL voor Marco stem</span>
+                              <span>Audio URL voor vasthouden</span>
                             </FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
@@ -331,12 +325,15 @@ const AdminBreathing = () => {
 
                       <FormField
                         control={form.control}
-                        name="cycles"
+                        name="exhaleUrl"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Aantal cycli</FormLabel>
+                            <FormLabel className="flex items-center gap-1">
+                              <Link className="h-4 w-4" />
+                              <span>Audio URL voor uitademen</span>
+                            </FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" min="1" max="20" onChange={e => field.onChange(parseInt(e.target.value) || 1)} />
+                              <Input {...field} placeholder="https://..." />
                             </FormControl>
                           </FormItem>
                         )}
@@ -355,9 +352,35 @@ const AdminBreathing = () => {
                         )}
                       />
 
-                      {/* We keep one empty spot for balance */}
-                      <div></div>
+                      <FormField
+                        control={form.control}
+                        name="hold2Url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-1">
+                              <Link className="h-4 w-4" />
+                              <span>Audio URL voor vasthouden na uitademen</span>
+                            </FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://..." />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
                     </div>
+
+                    <FormField
+                      control={form.control}
+                      name="cycles"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Aantal cycli</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="number" min="1" max="20" onChange={e => field.onChange(parseInt(e.target.value) || 1)} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
                     <div className="flex justify-between">
                       <Button type="submit" className="mr-2">
