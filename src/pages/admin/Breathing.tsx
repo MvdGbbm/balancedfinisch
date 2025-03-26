@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,6 +66,15 @@ const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   
+  // Audio configuration section
+  const [generalAudioUrls, setGeneralAudioUrls] = useState<{
+    vera: { inhale: string; hold: string; exhale: string; };
+    marco: { inhale: string; hold: string; exhale: string; };
+  }>({
+    vera: { inhale: "", hold: "", exhale: "" },
+    marco: { inhale: "", hold: "", exhale: "" }
+  });
+  
   // Load breathing patterns from localStorage when component mounts
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
@@ -81,6 +91,34 @@ const AdminBreathing = () => {
     } else {
       // If no saved patterns, initialize with defaults
       localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
+    }
+    
+    // Load voice URLs
+    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+    
+    if (savedVeraUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedVeraUrls);
+        setGeneralAudioUrls(prev => ({
+          ...prev,
+          vera: parsedUrls
+        }));
+      } catch (error) {
+        console.error("Error loading Vera URLs:", error);
+      }
+    }
+    
+    if (savedMarcoUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedMarcoUrls);
+        setGeneralAudioUrls(prev => ({
+          ...prev,
+          marco: parsedUrls
+        }));
+      } catch (error) {
+        console.error("Error loading Marco URLs:", error);
+      }
     }
   }, []);
   
@@ -99,8 +137,8 @@ const AdminBreathing = () => {
       exhaleUrl: "",
       hold1Url: "",
       hold2Url: "",
-      veraUrl: "",    // Added Vera URL field
-      marcoUrl: "",   // Added Marco URL field
+      veraUrl: "",
+      marcoUrl: "",
     }
   });
 
@@ -183,6 +221,54 @@ const AdminBreathing = () => {
     });
     saveToLocalStorage(filtered);
     toast.success("Ademhalingstechniek verwijderd");
+  };
+  
+  // Functions to handle general voice URL updates
+  const handleVeraUrlChange = (type: 'inhale' | 'hold' | 'exhale', value: string) => {
+    setGeneralAudioUrls(prev => {
+      const updated = {
+        ...prev,
+        vera: {
+          ...prev.vera,
+          [type]: value
+        }
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('veraVoiceUrls', JSON.stringify(updated.vera));
+      
+      return updated;
+    });
+  };
+  
+  const handleMarcoUrlChange = (type: 'inhale' | 'hold' | 'exhale', value: string) => {
+    setGeneralAudioUrls(prev => {
+      const updated = {
+        ...prev,
+        marco: {
+          ...prev.marco,
+          [type]: value
+        }
+      };
+      
+      // Save to localStorage
+      localStorage.setItem('marcoVoiceUrls', JSON.stringify(updated.marco));
+      
+      return updated;
+    });
+  };
+  
+  // Function to test audio
+  const playAudio = (url: string) => {
+    if (url) {
+      const audio = new Audio(url);
+      audio.play().catch(error => {
+        console.error("Error playing audio:", error);
+        toast.error("Kon audio niet afspelen. Controleer de URL.");
+      });
+    } else {
+      toast.error("Geen audio URL ingesteld");
+    }
   };
 
   return (
@@ -387,6 +473,146 @@ const AdminBreathing = () => {
               )}
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Voice configuration section */}
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-4">Stem Configuratie</h2>
+          <p className="text-muted-foreground mb-4">
+            Configureer de audio URLs voor de ademhalingsfasen voor Vera en Marco stemmen.
+          </p>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Vera voice configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Vera Stem</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <FormLabel>Adem in</FormLabel>
+                    <Input 
+                      value={generalAudioUrls.vera.inhale} 
+                      onChange={e => handleVeraUrlChange('inhale', e.target.value)}
+                      placeholder="https://..." 
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => playAudio(generalAudioUrls.vera.inhale)}
+                    disabled={!generalAudioUrls.vera.inhale}
+                  >
+                    Afspelen
+                  </Button>
+                </div>
+                
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <FormLabel>Houd vast</FormLabel>
+                    <Input 
+                      value={generalAudioUrls.vera.hold} 
+                      onChange={e => handleVeraUrlChange('hold', e.target.value)}
+                      placeholder="https://..." 
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => playAudio(generalAudioUrls.vera.hold)}
+                    disabled={!generalAudioUrls.vera.hold}
+                  >
+                    Afspelen
+                  </Button>
+                </div>
+                
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <FormLabel>Adem uit</FormLabel>
+                    <Input 
+                      value={generalAudioUrls.vera.exhale} 
+                      onChange={e => handleVeraUrlChange('exhale', e.target.value)}
+                      placeholder="https://..." 
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => playAudio(generalAudioUrls.vera.exhale)}
+                    disabled={!generalAudioUrls.vera.exhale}
+                  >
+                    Afspelen
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Marco voice configuration */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Marco Stem</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <FormLabel>Adem in</FormLabel>
+                    <Input 
+                      value={generalAudioUrls.marco.inhale} 
+                      onChange={e => handleMarcoUrlChange('inhale', e.target.value)}
+                      placeholder="https://..." 
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => playAudio(generalAudioUrls.marco.inhale)}
+                    disabled={!generalAudioUrls.marco.inhale}
+                  >
+                    Afspelen
+                  </Button>
+                </div>
+                
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <FormLabel>Houd vast</FormLabel>
+                    <Input 
+                      value={generalAudioUrls.marco.hold} 
+                      onChange={e => handleMarcoUrlChange('hold', e.target.value)}
+                      placeholder="https://..." 
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => playAudio(generalAudioUrls.marco.hold)}
+                    disabled={!generalAudioUrls.marco.hold}
+                  >
+                    Afspelen
+                  </Button>
+                </div>
+                
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <FormLabel>Adem uit</FormLabel>
+                    <Input 
+                      value={generalAudioUrls.marco.exhale} 
+                      onChange={e => handleMarcoUrlChange('exhale', e.target.value)}
+                      placeholder="https://..." 
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => playAudio(generalAudioUrls.marco.exhale)}
+                    disabled={!generalAudioUrls.marco.exhale}
+                  >
+                    Afspelen
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </AdminLayout>
