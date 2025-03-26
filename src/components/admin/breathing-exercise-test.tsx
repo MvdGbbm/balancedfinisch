@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,9 +52,6 @@ export function BreathingExerciseTest({
       setCurrentAudioUrl(pattern.inhaleUrl || "");
     }
   }, [pattern]);
-
-  // Remove the problematic useEffect that was using setCircleScale
-  // This functionality is now handled by the BreathingVisualization component
 
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
