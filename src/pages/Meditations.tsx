@@ -8,6 +8,8 @@ import { MeditationDetailDialog } from "@/components/meditation/meditation-detai
 import { processMeditationUrls, filterMeditations } from "@/utils/meditation-utils";
 import { Meditation } from "@/lib/types";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PersonalMeditationMusic } from "@/components/meditation/personal-meditation-music";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
@@ -17,8 +19,8 @@ const Meditations = () => {
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
-  const [selectedAudioSource, setSelectedAudioSource] = useState<'vera' | 'marco'>('vera');
   const [selectedGuidedMeditation, setSelectedGuidedMeditation] = useState<Meditation | null>(null);
+  const [activeTab, setActiveTab] = useState("meditations");
   
   useEffect(() => {
     const fetchAndProcessMeditations = async () => {
@@ -37,7 +39,6 @@ const Meditations = () => {
   
   const filteredMeditations = filterMeditations(processedMeditations, searchQuery, selectedCategory);
   
-  // Get guided meditations - no tag filtering needed
   const guidedMeditations = processedMeditations.filter(
     meditation => meditation.category === "Geleide Meditaties"
   );
@@ -59,81 +60,31 @@ const Meditations = () => {
     setCurrentSoundscapeId(soundscapeId);
   };
   
-  // Function to check if an audio source is available
-  const isAudioSourceAvailable = (meditation: Meditation, source: 'vera' | 'marco'): boolean => {
-    if (source === 'vera') {
-      return !!(meditation.veraLink || meditation.audioUrl);
-    } else {
-      return !!meditation.marcoLink;
-    }
-  };
-  
-  const handleAudioSourceChange = (source: 'vera' | 'marco') => {
-    console.log(`Changing audio source to: ${source}`);
-    
-    // Check if the selected audio source is available
-    if (selectedGuidedMeditation && !isAudioSourceAvailable(selectedGuidedMeditation, source)) {
-      toast.error(`${source === 'vera' ? 'Vera' : 'Marco'}'s versie is niet beschikbaar voor deze meditatie`);
-      return;
-    } else if (currentMeditationWithUrls && !isAudioSourceAvailable(currentMeditationWithUrls, source)) {
-      toast.error(`${source === 'vera' ? 'Vera' : 'Marco'}'s versie is niet beschikbaar voor deze meditatie`);
-      return;
-    }
-    
-    setSelectedAudioSource(source);
-    toast.success(`${source === 'vera' ? 'Vera' : 'Marco'} audio geselecteerd`);
-  };
-  
-  const handleGuidedMeditationSelect = (meditation: Meditation) => {
-    console.log("Selected guided meditation:", meditation);
-    
-    // Check if the selected audio source is available for this meditation
-    if (!isAudioSourceAvailable(meditation, selectedAudioSource)) {
-      // Try the other audio source
-      const otherSource = selectedAudioSource === 'vera' ? 'marco' : 'vera';
-      
-      if (isAudioSourceAvailable(meditation, otherSource)) {
-        toast.warning(`${selectedAudioSource === 'vera' ? 'Vera' : 'Marco'}'s versie is niet beschikbaar voor ${meditation.title}. ${otherSource === 'vera' ? 'Vera' : 'Marco'}'s versie wordt gebruikt.`);
-        setSelectedAudioSource(otherSource);
-      } else {
-        toast.error(`Geen audio beschikbaar voor deze meditatie`);
-        return;
-      }
-    }
-    
-    setSelectedGuidedMeditation(meditation);
-    toast.success(`Geleide meditatie "${meditation.title}" geselecteerd`);
-  };
-  
   const getActiveAudioUrl = () => {
     if (selectedGuidedMeditation) {
-      if (selectedAudioSource === 'vera') {
-        return selectedGuidedMeditation.veraLink || selectedGuidedMeditation.audioUrl || '';
-      } else if (selectedAudioSource === 'marco' && selectedGuidedMeditation.marcoLink) {
-        return selectedGuidedMeditation.marcoLink || '';
-      }
       return selectedGuidedMeditation.audioUrl || '';
     }
     
     if (!currentMeditationWithUrls) return '';
     
-    if (selectedAudioSource === 'vera') {
-      return currentMeditationWithUrls.veraLink || currentMeditationWithUrls.audioUrl || '';
-    } else if (selectedAudioSource === 'marco') {
-      return currentMeditationWithUrls.marcoLink || '';
-    }
-    
     return currentMeditationWithUrls.audioUrl || '';
   };
   
+  const handleGuidedMeditationSelect = (meditation: Meditation) => {
+    setSelectedGuidedMeditation(meditation);
+    if (meditation.audioUrl) {
+      console.log("Selected guided meditation:", meditation.title);
+    } else {
+      toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
+    }
+  };
+  
   useEffect(() => {
-    // Log the current selection state when it changes
     if (currentMeditationWithUrls) {
       console.log("Current meditation:", currentMeditationWithUrls.title);
-      console.log("Audio source:", selectedAudioSource);
       console.log("Active URL:", getActiveAudioUrl());
     }
-  }, [currentMeditationWithUrls, selectedAudioSource]);
+  }, [currentMeditationWithUrls]);
   
   if (loading) {
     return (
@@ -150,69 +101,92 @@ const Meditations = () => {
   return (
     <MobileLayout>
       <div className="space-y-4 animate-fade-in">
-        <MeditationFilters 
-          categories={categories}
-          selectedCategory={selectedCategory}
-          searchQuery={searchQuery}
-          showFilters={showFilters}
-          onCategoryChange={handleCategoryChange}
-          onSearchChange={setSearchQuery}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          onClearFilters={handleClearFilters}
-        />
-        
-        <div className="space-y-3 pb-20">
-          {filteredMeditations.map((meditation) => (
-            <MeditationCard 
-              key={meditation.id}
-              meditation={meditation}
-              isSelected={currentMeditation?.id === meditation.id}
-              onClick={(med) => {
-                console.log("Selected meditation card:", med.title);
-                setCurrentMeditation(med);
-                setSelectedGuidedMeditation(null);
-                
-                // If neither audio source is available, show a message
-                const veraAvailable = !!(med.veraLink || med.audioUrl);
-                const marcoAvailable = !!med.marcoLink;
-                
-                if (!veraAvailable && !marcoAvailable) {
-                  toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
-                  return;
-                }
-                
-                // Check if selected audio source is available
-                if (selectedAudioSource === 'marco' && !marcoAvailable) {
-                  if (veraAvailable) {
-                    toast.warning(`Marco's versie is niet beschikbaar voor ${med.title}. Vera's versie wordt gebruikt.`);
-                    setSelectedAudioSource('vera');
-                  } else {
-                    toast.error(`Geen audio beschikbaar voor deze meditatie`);
-                  }
-                } else if (selectedAudioSource === 'vera' && !veraAvailable) {
-                  if (marcoAvailable) {
-                    toast.warning(`Vera's versie is niet beschikbaar voor ${med.title}. Marco's versie wordt gebruikt.`);
-                    setSelectedAudioSource('marco');
-                  } else {
-                    toast.error(`Geen audio beschikbaar voor deze meditatie`);
-                  }
-                }
-              }}
-            />
-          ))}
+        <Tabs defaultValue="meditations" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full h-auto flex overflow-x-auto bg-background border">
+            <TabsTrigger value="meditations" className="flex-1">Meditaties</TabsTrigger>
+            <TabsTrigger value="geleide-meditaties" className="flex-1">Geleide Meditaties</TabsTrigger>
+            <TabsTrigger value="slaap" className="flex-1">Slaap</TabsTrigger>
+            <TabsTrigger value="focus" className="flex-1">Focus</TabsTrigger>
+            <TabsTrigger value="persoonlijke-muziek" className="flex-1">Persoonlijke meditatie muziek</TabsTrigger>
+          </TabsList>
           
-          {filteredMeditations.length === 0 && (
-            <div className="text-center py-10 text-muted-foreground">
-              <p>Geen meditaties gevonden die aan je filters voldoen.</p>
-              <button 
-                className="text-primary underline mt-2"
-                onClick={handleClearFilters}
-              >
-                Wis filters
-              </button>
+          <TabsContent value="meditations" className="mt-4">
+            <MeditationFilters 
+              categories={categories}
+              selectedCategory={selectedCategory}
+              searchQuery={searchQuery}
+              showFilters={showFilters}
+              onCategoryChange={handleCategoryChange}
+              onSearchChange={setSearchQuery}
+              onToggleFilters={() => setShowFilters(!showFilters)}
+              onClearFilters={handleClearFilters}
+            />
+            
+            <div className="space-y-3 pb-20">
+              {filteredMeditations.map((meditation) => (
+                <MeditationCard 
+                  key={meditation.id}
+                  meditation={meditation}
+                  isSelected={currentMeditation?.id === meditation.id}
+                  onClick={(med) => {
+                    console.log("Selected meditation card:", med.title);
+                    setCurrentMeditation(med);
+                    setSelectedGuidedMeditation(null);
+                    
+                    if (!med.audioUrl) {
+                      toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
+                      return;
+                    }
+                  }}
+                />
+              ))}
+              
+              {filteredMeditations.length === 0 && (
+                <div className="text-center py-10 text-muted-foreground">
+                  <p>Geen meditaties gevonden die aan je filters voldoen.</p>
+                  <button 
+                    className="text-primary underline mt-2"
+                    onClick={handleClearFilters}
+                  >
+                    Wis filters
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+          
+          <TabsContent value="geleide-meditaties" className="mt-4">
+            <div className="space-y-3 pb-20">
+              {guidedMeditations.map((meditation) => (
+                <MeditationCard 
+                  key={meditation.id}
+                  meditation={meditation}
+                  isSelected={currentMeditation?.id === meditation.id}
+                  onClick={(med) => {
+                    setCurrentMeditation(med);
+                    setSelectedGuidedMeditation(null);
+                  }}
+                />
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="slaap" className="mt-4">
+            <div className="text-center py-10 text-muted-foreground">
+              <p>Slaap meditaties komen binnenkort beschikbaar.</p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="focus" className="mt-4">
+            <div className="text-center py-10 text-muted-foreground">
+              <p>Focus meditaties komen binnenkort beschikbaar.</p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="persoonlijke-muziek" className="mt-4">
+            <PersonalMeditationMusic />
+          </TabsContent>
+        </Tabs>
       </div>
       
       <MeditationDetailDialog 
@@ -220,11 +194,8 @@ const Meditations = () => {
         soundscapes={soundscapes}
         isOpen={currentMeditation !== null}
         onOpenChange={(open) => !open && setCurrentMeditation(null)}
-        selectedAudioSource={selectedAudioSource}
         currentSoundscapeId={currentSoundscapeId}
-        onAudioSourceChange={handleAudioSourceChange}
         onSoundscapeChange={handleSoundscapeChange}
-        getActiveAudioUrl={getActiveAudioUrl}
         guidedMeditations={guidedMeditations}
         onGuidedMeditationSelect={handleGuidedMeditationSelect}
       />

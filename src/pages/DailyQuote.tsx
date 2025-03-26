@@ -8,7 +8,7 @@ import { ArrowRight, BookOpen, Share2, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { getQuoteForDate, getGradientForDate } from "@/data/quotes";
+import { getQuoteForDate, getGradientForDate, colorGradients } from "@/data/quotes";
 import { DailyQuote as DailyQuoteType } from "@/lib/types";
 
 const DailyQuote = () => {
@@ -21,34 +21,55 @@ const DailyQuote = () => {
   
   const [quote, setQuote] = useState<DailyQuoteType | null>(currentQuote);
   const [date, setDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [gradient, setGradient] = useState<string>("");
+  const [usedGradientIndexes, setUsedGradientIndexes] = useState<number[]>([]);
   
   // Initialize with today's quote and gradient
   useEffect(() => {
     const today = format(new Date(), 'yyyy-MM-dd');
     const todaysQuote = getQuoteForDate(today);
-    const todaysGradient = getGradientForDate(today);
     
     console.log("Today's quote:", todaysQuote);
-    console.log("Today's gradient:", todaysGradient);
     
     setQuote(todaysQuote);
     setDate(today);
-    setGradient(todaysGradient);
   }, []);
   
   const getNextQuote = () => {
-    // Use the app's random quote function but also generate a new gradient
+    // Get a new quote first
     const newQuote = getRandomQuote();
-    const newDate = format(new Date(Date.now() + Math.random() * 7776000000), 'yyyy-MM-dd'); // Random date within 90 days
-    const newGradient = getGradientForDate(newDate);
     
-    console.log("New quote:", newQuote);
-    console.log("New gradient:", newGradient);
+    // Create a function to get a random gradient that hasn't been used recently
+    const getUniqueRandomGradient = () => {
+      // If we've used all or most gradients, reset the tracking
+      if (usedGradientIndexes.length >= colorGradients.length - 5) {
+        setUsedGradientIndexes([]);
+      }
+      
+      let randomIndex;
+      do {
+        randomIndex = Math.floor(Math.random() * colorGradients.length);
+      } while (usedGradientIndexes.includes(randomIndex));
+      
+      // Add this index to our used list
+      setUsedGradientIndexes(prev => [...prev, randomIndex]);
+      
+      return colorGradients[randomIndex];
+    };
     
-    setQuote(newQuote);
+    // Apply a unique random gradient
+    const uniqueGradient = getUniqueRandomGradient();
+    
+    // Generate a new date for this quote
+    const newDate = format(new Date(Date.now() + Math.random() * 7776000000), 'yyyy-MM-dd');
+    
+    console.log("New quote with unique gradient:", { ...newQuote, backgroundClass: uniqueGradient });
+    
+    // Set the quote with the unique gradient
+    setQuote({
+      ...newQuote,
+      backgroundClass: uniqueGradient
+    });
     setDate(newDate);
-    setGradient(newGradient);
   };
   
   const handleSaveToJournal = () => {
@@ -76,9 +97,6 @@ const DailyQuote = () => {
   // Format the date in Dutch
   const formattedDate = date ? format(new Date(date), 'd MMMM yyyy', { locale: nl }) : '';
   
-  // Ensure gradient has a fallback
-  const safeGradient = gradient || "bg-gradient-to-br from-blue-500 to-purple-600";
-  
   return (
     <MobileLayout>
       <div className="space-y-6 animate-fade-in">
@@ -92,13 +110,16 @@ const DailyQuote = () => {
         
         {quote ? (
           <div className="flex flex-col items-center justify-center min-h-[40vh]">
-            <Card className={cn("w-full max-w-md mx-auto animate-scale-in overflow-hidden", safeGradient)}>
-              <CardContent className="p-8 backdrop-blur-sm bg-white/30 dark:bg-black/30">
+            <Card className={cn(
+              "w-full max-w-md mx-auto animate-scale-in overflow-hidden",
+              quote.backgroundClass || "bg-gradient-to-br from-blue-500 to-purple-600")
+            }>
+              <CardContent className="p-8 backdrop-blur-sm bg-black/10">
                 <div className="text-center">
-                  <p className="text-xl italic leading-relaxed mb-4">
+                  <p className="text-xl italic leading-relaxed mb-4 text-white font-medium">
                     "{quote.text}"
                   </p>
-                  <p className="text-right text-foreground/90 font-medium">
+                  <p className="text-right text-white/90 font-medium">
                     — {quote.author}
                   </p>
                 </div>
@@ -136,13 +157,19 @@ const DailyQuote = () => {
                 key={q.id} 
                 className={cn(
                   "neo-morphism cursor-pointer animate-slide-in", 
-                  quote?.id === q.id && "ring-2 ring-primary/50"
+                  quote?.id === q.id && "ring-2 ring-primary/50",
+                  q.backgroundClass || ""
                 )} 
                 onClick={() => setQuote(q)}
               >
                 <CardContent className="p-4">
-                  <p className="italic text-sm mb-1">"{q.text}"</p>
-                  <p className="text-right text-xs text-muted-foreground">
+                  <p className={cn(
+                    "italic text-sm mb-1",
+                    q.backgroundClass?.includes('from-white') ? 'text-gray-800' : 'text-white'
+                  )}>
+                    "{q.text}"
+                  </p>
+                  <p className="text-right text-xs text-white/80">
                     — {q.author}
                   </p>
                 </CardContent>
