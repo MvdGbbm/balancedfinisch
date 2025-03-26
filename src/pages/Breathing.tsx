@@ -2,10 +2,8 @@
 import React, { useState } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
-import BreathingAnimation from "@/components/breathing/breathing-animation";
-import { type BreathingTechnique } from "@/components/breathing/breathing-animation";
+import { BreathingAnimation, BreathingTechnique } from "@/components/breathing/breathing-animation";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BreathExercise } from "@/components/breathing/breath-exercise";
 
 const Breathing = () => {
   const [technique, setTechnique] = useState<BreathingTechnique>('4-7-8');
@@ -16,9 +14,28 @@ const Breathing = () => {
         <div className="flex flex-col items-center space-y-4">
           <h1 className="text-2xl font-bold text-center">Ademhalingsoefeningen</h1>
           
-          {/* Switch to BreathExercise component which supports voice selection */}
-          <BreathExercise />
+          <div className="w-full max-w-xs">
+            <Select 
+              value={technique} 
+              onValueChange={(value) => setTechnique(value as BreathingTechnique)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecteer techniek" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="4-7-8">4-7-8 Techniek</SelectItem>
+                  <SelectItem value="box-breathing">Box Breathing</SelectItem>
+                  <SelectItem value="diaphragmatic">Diafragmatisch ademen</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <BreathingAnimation technique={technique} />
         </div>
+        
+        <BreathingMusicPlayer />
       </div>
     </MobileLayout>
   );
