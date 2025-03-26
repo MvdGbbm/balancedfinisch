@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
-import { BreathingAnimation, BreathingTechnique } from "@/components/breathing/breathing-animation";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
+import { type BreathingTechnique } from "@/components/breathing/breathing-animation";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Breathing = () => {
