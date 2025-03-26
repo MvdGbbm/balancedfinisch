@@ -9,6 +9,7 @@ import {
   Waves, 
   Music, 
   Radio, 
+  RefreshCw, 
   LayoutGrid 
 } from "lucide-react";
 
@@ -87,6 +88,13 @@ const Admin: React.FC = () => {
       icon: <Radio className="h-5 w-5" style={{ color: "#EC4899" }} />,
       path: "/admin/streams",
       color: "#EC4899" // Pink
+    },
+    {
+      title: "Ademhaling",
+      description: "Beheer ademhalingsoefeningen",
+      icon: <RefreshCw className="h-5 w-5" style={{ color: "#EAB308" }} />,
+      path: "/admin/breathing",
+      color: "#EAB308" // Yellow
     }
   ];
 
