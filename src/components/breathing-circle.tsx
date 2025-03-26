@@ -62,7 +62,7 @@ export function BreathingCircle({
         // Expand from 50% to 100% during inhale (more dramatic expansion)
         setCircleScale(0.5 + (percentComplete * 0.5));
       } else if (activePhase === "hold") {
-        // Stay at 100% during hold - no change in size
+        // Stay at 100% during hold
         setCircleScale(1.0);
       } else if (activePhase === "exhale") {
         // Shrink from 100% back to 50% during exhale
@@ -76,7 +76,7 @@ export function BreathingCircle({
         // Expand from 50% to 100% during inhale
         setCircleScale(0.5 + (progress / 100) * 0.5);
       } else if (activePhase === "hold") {
-        // Stay at 100% during hold - no change in size
+        // Stay at 100% during hold
         setCircleScale(1.0);
       } else if (activePhase === "exhale") {
         // Shrink from 100% back to 50% during exhale
