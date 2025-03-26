@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Pause, Play, StopCircle } from 'lucide-react';
+import { Pause, Play } from 'lucide-react';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
 type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
@@ -119,13 +119,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
     setIsActive(!isActive);
   };
 
-  const handleReset = () => {
-    setIsActive(false);
-    setPhase('inhale');
-    setCount(getCountForPhase('inhale', technique));
-    if (onReset) onReset();
-  };
-
   const shouldShowCounter = phase !== 'pause';
 
   const circleSize = isMobile ? 'w-40 h-40' : 'w-48 h-48';
@@ -149,21 +142,13 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique, onRe
       </div>
       
       <div className="mt-10 text-center space-y-4">
-        <div className="flex space-x-3 justify-center">
+        <div className="flex justify-center">
           <button 
             onClick={toggleActive}
             className="px-4 py-2 rounded-lg bg-primary/40 hover:bg-primary/60 text-foreground transition-colors flex items-center"
           >
             {isActive ? <Pause className="mr-1 h-4 w-4" /> : <Play className="mr-1 h-4 w-4" />}
             {isActive ? 'Pauze' : 'Hervat'}
-          </button>
-          
-          <button 
-            onClick={handleReset}
-            className="px-4 py-2 rounded-lg bg-red-500/40 hover:bg-red-500/60 text-foreground transition-colors flex items-center"
-          >
-            <StopCircle className="mr-1 h-4 w-4" />
-            Stop
           </button>
         </div>
       </div>
