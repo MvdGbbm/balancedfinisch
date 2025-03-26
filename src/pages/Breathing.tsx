@@ -9,6 +9,14 @@ import { BreathingCounter } from "@/components/breathing/breathing-counter";
 
 const Breathing = () => {
   const [selectedTechnique, setSelectedTechnique] = useState<BreathingTechnique>('4-7-8');
+  const counterRef = React.useRef<{ resetCount: () => void } | null>(null);
+
+  const handleAnimationReset = () => {
+    // Reset counter if it exists
+    if (counterRef.current && counterRef.current.resetCount) {
+      counterRef.current.resetCount();
+    }
+  };
 
   return (
     <MobileLayout>
@@ -57,10 +65,13 @@ const Breathing = () => {
               </div>
               
               <div className="bg-white/70 dark:bg-gray-800/70 rounded-xl p-6 shadow-sm">
-                <BreathingAnimation technique={selectedTechnique} />
+                <BreathingAnimation 
+                  technique={selectedTechnique} 
+                  onReset={handleAnimationReset}
+                />
+                
+                <BreathingCounter ref={counterRef} />
               </div>
-              
-              <BreathingCounter />
             </div>
           </TabsContent>
           
