@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,19 +106,8 @@ export function BreathingExerciseTest({
     }
   }, [isActive]);
 
-  useEffect(() => {
-    if (!isActive || !pattern) return;
-    
-    if (currentPhase === "inhale") {
-      const inhaleProgress = (pattern.inhale - secondsLeft) / pattern.inhale;
-      setCircleScale(1 + inhaleProgress * 0.5);
-    } else if (currentPhase === "hold1" || currentPhase === "hold2") {
-      setCircleScale(currentPhase === "hold1" ? 1.5 : 1.0);
-    } else if (currentPhase === "exhale") {
-      const exhaleProgress = (pattern.exhale - secondsLeft) / pattern.exhale;
-      setCircleScale(1.5 - exhaleProgress * 0.5);
-    }
-  }, [currentPhase, secondsLeft, isActive, pattern]);
+  // Remove the problematic effect that used setCircleScale
+  // We don't need this effect anymore since scaling is handled by the BreathingVisualization component
 
   useEffect(() => {
     if (!pattern) return;
