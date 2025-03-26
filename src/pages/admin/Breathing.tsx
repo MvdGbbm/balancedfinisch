@@ -24,10 +24,8 @@ type BreathingPattern = {
   exhaleUrl?: string;
   hold1Url?: string;
   hold2Url?: string;
-  veraUrl?: string;  // Original property names
-  marcoUrl?: string;
-  vera_url?: string;  // Added for database compatibility
-  marco_url?: string;
+  veraUrl?: string;  // New field for Vera voice URL
+  marcoUrl?: string; // New field for Marco voice URL
 };
 
 // Sample data - in a real application this would come from the database
@@ -87,7 +85,7 @@ const AdminBreathing = () => {
     }
   }, []);
   
-  // Form for editing patterns - updated with both naming conventions for compatibility
+  // Form for editing patterns - updated with new URL fields
   const form = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -102,20 +100,15 @@ const AdminBreathing = () => {
       exhaleUrl: "",
       hold1Url: "",
       hold2Url: "",
-      veraUrl: "",    // Original UI naming
-      marcoUrl: "",   
-      vera_url: "",   // Database column names
-      marco_url: "",  
+      veraUrl: "",    // Added Vera URL field
+      marcoUrl: "",   // Added Marco URL field
     }
   });
 
   const handleSelectPattern = (pattern: BreathingPattern) => {
     setSelectedPattern(pattern);
-    // Map database column names to UI field names for compatibility
     form.reset({
-      ...pattern,
-      veraUrl: pattern.veraUrl || pattern.vera_url,
-      marcoUrl: pattern.marcoUrl || pattern.marco_url
+      ...pattern
     });
   };
 
@@ -142,13 +135,6 @@ const AdminBreathing = () => {
   };
 
   const handleSave = (data: BreathingPattern) => {
-    // Map UI field names to database column names
-    const dataToSave = {
-      ...data,
-      vera_url: data.veraUrl || data.vera_url,
-      marco_url: data.marcoUrl || data.marco_url
-    };
-    
     // If selectedPattern exists in breathingPatterns, update it
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
     let updated: BreathingPattern[];
@@ -156,14 +142,14 @@ const AdminBreathing = () => {
     if (existingPatternIndex >= 0) {
       // Update existing pattern
       updated = [...breathingPatterns];
-      updated[existingPatternIndex] = { ...dataToSave, id: selectedPattern!.id };
+      updated[existingPatternIndex] = { ...data, id: selectedPattern!.id };
       setBreathingPatterns(updated);
       setSelectedPattern(updated[existingPatternIndex]);
       toast.success("Ademhalingstechniek bijgewerkt");
     } else {
       // Add new pattern with a permanent ID
       const newPattern = {
-        ...dataToSave,
+        ...data,
         id: `${Date.now()}`
       };
       updated = [...breathingPatterns, newPattern];
@@ -294,15 +280,7 @@ const AdminBreathing = () => {
                               <span>Audio URL voor Vera stem</span>
                             </FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="https://..." 
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  // Also update the database field name
-                                  form.setValue("vera_url", e.target.value);
-                                }}
-                              />
+                              <Input {...field} placeholder="https://..." />
                             </FormControl>
                           </FormItem>
                         )}
@@ -332,15 +310,7 @@ const AdminBreathing = () => {
                               <span>Audio URL voor Marco stem</span>
                             </FormLabel>
                             <FormControl>
-                              <Input 
-                                {...field} 
-                                placeholder="https://..." 
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  // Also update the database field name
-                                  form.setValue("marco_url", e.target.value);
-                                }}
-                              />
+                              <Input {...field} placeholder="https://..." />
                             </FormControl>
                           </FormItem>
                         )}

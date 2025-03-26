@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,12 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
-  inhale_url?: string;
-  exhale_url?: string;
-  hold1_url?: string;
-  hold2_url?: string;
-  vera_url?: string;
-  marco_url?: string;
+  inhaleUrl?: string;
+  exhaleUrl?: string;
+  hold1Url?: string;
+  hold2Url?: string;
+  veraUrl?: string;
+  marcoUrl?: string;
 };
 
 interface BreathingExerciseTestProps {
@@ -49,9 +50,12 @@ export function BreathingExerciseTest({
     setActiveVoice(null);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
-      setCurrentAudioUrl(pattern.inhale_url || "");
+      setCurrentAudioUrl(pattern.inhaleUrl || "");
     }
   }, [pattern]);
+
+  // Remove the problematic useEffect that was using setCircleScale
+  // This functionality is now handled by the BreathingVisualization component
 
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
@@ -59,16 +63,16 @@ export function BreathingExerciseTest({
     let url = "";
     switch (currentPhase) {
       case "inhale":
-        url = pattern.inhale_url || "";
+        url = pattern.inhaleUrl || "";
         break;
       case "hold1":
-        url = pattern.hold1_url || "";
+        url = pattern.hold1Url || "";
         break;
       case "exhale":
-        url = pattern.exhale_url || "";
+        url = pattern.exhaleUrl || "";
         break;
       case "hold2":
-        url = pattern.hold2_url || "";
+        url = pattern.hold2Url || "";
         break;
     }
 
@@ -223,7 +227,7 @@ export function BreathingExerciseTest({
       audioRef.current.currentTime = 0;
     }
     
-    setCurrentAudioUrl(pattern.inhale_url || "");
+    setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
 
   const startWithVera = () => {
@@ -238,7 +242,7 @@ export function BreathingExerciseTest({
       setIsActive(true);
       setActiveVoice("vera");
       
-      const veraUrl = pattern?.vera_url || currentAudioUrl;
+      const veraUrl = pattern?.veraUrl || currentAudioUrl;
 
       if (veraUrl) {
         if (audioRef.current) {
@@ -266,7 +270,7 @@ export function BreathingExerciseTest({
       setIsActive(true);
       setActiveVoice("marco");
       
-      const marcoUrl = pattern?.marco_url || currentAudioUrl;
+      const marcoUrl = pattern?.marcoUrl || currentAudioUrl;
 
       if (marcoUrl) {
         if (audioRef.current) {
