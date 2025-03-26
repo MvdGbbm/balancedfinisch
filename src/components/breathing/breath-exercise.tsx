@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { BreathingCircle } from "@/components/breathing-circle";
 import { Button } from "@/components/ui/button";
 import { Pause, Play, RefreshCw } from "lucide-react";
 import { 
@@ -13,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { BreathingVisualization } from "@/components/breathing/breathing-visualization";
 
 type BreathingPattern = {
   id: string;
@@ -77,7 +76,6 @@ export function BreathExercise() {
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
   const [progress, setProgress] = useState(0);
 
-  // Load breathing patterns from localStorage
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -230,23 +228,28 @@ export function BreathExercise() {
           if (currentPhase === "inhale") {
             setCurrentPhase("hold1");
             setSecondsLeft(currentPattern.hold1 || 1);
+            setProgress(0);
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
             setSecondsLeft(currentPattern.exhale);
+            setProgress(0);
           } else if (currentPhase === "exhale") {
             if (currentPattern.hold2) {
               setCurrentPhase("hold2");
               setSecondsLeft(currentPattern.hold2);
+              setProgress(0);
             } else {
               if (currentCycle < currentPattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(currentPattern.inhale);
+                setProgress(0);
               } else {
                 setIsActive(false);
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(currentPattern.inhale);
+                setProgress(0);
                 if (audioRef.current) {
                   audioRef.current.pause();
                   audioRef.current.currentTime = 0;
@@ -259,11 +262,13 @@ export function BreathExercise() {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");
               setSecondsLeft(currentPattern.inhale);
+              setProgress(0);
             } else {
               setIsActive(false);
               setCurrentCycle(1);
               setCurrentPhase("inhale");
               setSecondsLeft(currentPattern.inhale);
+              setProgress(0);
               if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -274,7 +279,6 @@ export function BreathExercise() {
         }
       }, 1000);
 
-      // Calculate and update progress for smooth progress bar
       const getCurrentPhaseDuration = () => {
         switch (currentPhase) {
           case "inhale": return currentPattern.inhale;
@@ -306,12 +310,12 @@ export function BreathExercise() {
     }
   }, [isActive]);
 
-  const mapPhaseToCirclePhase = (phase: "inhale" | "hold1" | "exhale" | "hold2"): "inhale" | "hold" | "exhale" | "rest" => {
-    switch (phase) {
+  const getPhaseForVisualization = () => {
+    switch (currentPhase) {
       case "inhale": return "inhale";
-      case "hold1": return "hold";
-      case "exhale": return "exhale";
+      case "hold1":
       case "hold2": return "hold";
+      case "exhale": return "exhale";
       default: return "rest";
     }
   };
@@ -434,48 +438,46 @@ export function BreathExercise() {
             </Select>
           </div>
 
-          {/* Description text */}
           {currentPattern.description && !isActive && (
             <div className="mb-6 text-center">
               <p className="text-white/80 text-sm">{currentPattern.description}</p>
             </div>
           )}
           
-          <BreathingCircle
-            isActive={isActive}
-            currentPhase={mapPhaseToCirclePhase(currentPhase)}
-            secondsLeft={secondsLeft}
-            inhaleDuration={currentPattern.inhale * 1000}
-            holdDuration={currentPattern.hold1 * 1000}
-            exhaleDuration={currentPattern.exhale * 1000}
-          />
+          <div className="flex justify-center mb-6">
+            <BreathingVisualization 
+              phase={getPhaseForVisualization()}
+              progress={progress}
+              secondsLeft={secondsLeft}
+              isActive={isActive}
+              cycles={{
+                current: currentCycle,
+                total: currentPattern.cycles
+              }}
+              className="h-[280px]"
+            />
+          </div>
           
-          <div className="text-center space-y-1 text-white mt-4">
-            <p className="text-sm text-white/70">
-              Cyclus {currentCycle} van {currentPattern.cycles}
-            </p>
+          <div className="text-center mb-2">
             {currentAudioUrl && !audioError && isActive ? (
               <p className="text-blue-200 text-xs">Audio speelt af</p>
             ) : null}
           </div>
 
-          {/* Progress bar */}
-          {isActive && (
-            <div className="w-full max-w-md mx-auto mt-4">
-              <Progress 
-                value={progress} 
-                max={100} 
-                className="h-1.5 bg-white/10" 
-                indicatorClassName={
-                  currentPhase === "inhale" 
-                    ? "bg-gradient-to-r from-cyan-400 to-blue-400" 
-                    : currentPhase === "hold1" || currentPhase === "hold2"
-                      ? "bg-gradient-to-r from-violet-400 to-fuchsia-400" 
-                      : "bg-gradient-to-r from-indigo-400 to-blue-400"
-                }
-              />
-            </div>
-          )}
+          <div className="w-full max-w-md mx-auto mt-4">
+            <Progress 
+              value={progress} 
+              max={100} 
+              className="h-1.5 bg-white/10" 
+              indicatorClassName={
+                currentPhase === "inhale" 
+                  ? "bg-gradient-to-r from-cyan-400 to-blue-400" 
+                  : currentPhase === "hold1" || currentPhase === "hold2"
+                    ? "bg-gradient-to-r from-violet-400 to-fuchsia-400" 
+                    : "bg-gradient-to-r from-indigo-400 to-blue-400"
+              }
+            />
+          </div>
           
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
             <Button 
@@ -522,24 +524,6 @@ export function BreathExercise() {
               Reset
             </Button>
           </div>
-          
-          {/* Cycle counter circles */}
-          {isActive && currentPattern.cycles > 1 && (
-            <div className="flex justify-center mt-4 gap-1.5">
-              {Array.from({ length: currentPattern.cycles }).map((_, index) => (
-                <div 
-                  key={index}
-                  className={`w-2 h-2 rounded-full ${
-                    index + 1 === currentCycle 
-                      ? "bg-white" 
-                      : index + 1 < currentCycle 
-                        ? "bg-white/60" 
-                        : "bg-white/20"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { BreathingVisualization } from "@/components/breathing/breathing-visualization";
 
 type BreathingPattern = {
   id: string;
@@ -39,7 +39,6 @@ export function BreathingExerciseTest({
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [audioError, setAudioError] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [circleScale, setCircleScale] = useState(1);
 
   useEffect(() => {
     setIsActive(false);
@@ -48,7 +47,6 @@ export function BreathingExerciseTest({
     setAudioError(false);
     setProgress(0);
     setActiveVoice(null);
-    setCircleScale(1);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
       setCurrentAudioUrl(pattern.inhaleUrl || "");
@@ -139,7 +137,6 @@ export function BreathingExerciseTest({
             setCurrentPhase("hold1");
             setSecondsLeft(pattern.hold1 || 1);
             setProgress(0);
-            setCircleScale(1.5);
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
             setSecondsLeft(pattern.exhale);
@@ -149,21 +146,18 @@ export function BreathingExerciseTest({
               setCurrentPhase("hold2");
               setSecondsLeft(pattern.hold2);
               setProgress(0);
-              setCircleScale(1);
             } else {
               if (currentCycle < pattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
                 setProgress(0);
-                setCircleScale(1);
               } else {
                 setIsActive(false);
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
                 setSecondsLeft(pattern.inhale);
                 setProgress(0);
-                setCircleScale(1);
                 setActiveVoice(null);
                 if (audioRef.current) {
                   audioRef.current.pause();
@@ -178,14 +172,12 @@ export function BreathingExerciseTest({
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
               setProgress(0);
-              setCircleScale(1);
             } else {
               setIsActive(false);
               setCurrentCycle(1);
               setCurrentPhase("inhale");
               setSecondsLeft(pattern.inhale);
               setProgress(0);
-              setCircleScale(1);
               setActiveVoice(null);
               if (audioRef.current) {
                 audioRef.current.pause();
@@ -199,16 +191,11 @@ export function BreathingExerciseTest({
 
       const getCurrentPhaseDuration = () => {
         switch (currentPhase) {
-          case "inhale":
-            return pattern.inhale;
-          case "hold1":
-            return pattern.hold1;
-          case "exhale":
-            return pattern.exhale;
-          case "hold2":
-            return pattern.hold2;
-          default:
-            return 1;
+          case "inhale": return pattern.inhale;
+          case "hold1": return pattern.hold1;
+          case "exhale": return pattern.exhale;
+          case "hold2": return pattern.hold2;
+          default: return 1;
         }
       };
       const phaseDuration = getCurrentPhaseDuration() * 1000;
@@ -225,18 +212,13 @@ export function BreathingExerciseTest({
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
 
-  const getInstructions = () => {
+  const getPhaseForVisualization = () => {
     switch (currentPhase) {
-      case "inhale":
-        return "Inademen";
+      case "inhale": return "inhale";
       case "hold1":
-        return "Vasthouden";
-      case "exhale":
-        return "Uitademen";
-      case "hold2":
-        return "Vasthouden";
-      default:
-        return "";
+      case "hold2": return "hold";
+      case "exhale": return "exhale";
+      default: return "rest";
     }
   };
 
@@ -249,13 +231,12 @@ export function BreathingExerciseTest({
     setAudioError(false);
     setProgress(0);
     setActiveVoice(null);
-    setCircleScale(1);
-
+    
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
-
+    
     setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
 
@@ -270,7 +251,7 @@ export function BreathingExerciseTest({
     } else {
       setIsActive(true);
       setActiveVoice("vera");
-
+      
       const veraUrl = pattern?.veraUrl || currentAudioUrl;
 
       if (veraUrl) {
@@ -298,7 +279,7 @@ export function BreathingExerciseTest({
     } else {
       setIsActive(true);
       setActiveVoice("marco");
-
+      
       const marcoUrl = pattern?.marcoUrl || currentAudioUrl;
 
       if (marcoUrl) {
@@ -331,47 +312,16 @@ export function BreathingExerciseTest({
         <audio ref={audioRef} src={currentAudioUrl} preload="auto" onError={() => setAudioError(true)} />
         
         <div className="flex flex-col items-center justify-center space-y-6 py-4">
-          <div className="relative h-[250px] w-[250px] flex items-center justify-center">
-            {/* Animated background circles */}
-            <div className="absolute inset-0 scale-[0.85] animate-ping-slow opacity-20 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 blur-md"></div>
-            <div className="absolute inset-0 scale-[0.7] animate-ping-slow opacity-20 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 blur-md"></div>
-            
-            {/* Main breathing circle */}
-            <div 
-              className="absolute inset-0 rounded-full transition-all duration-1000 ease-in-out"
-              style={{
-                transform: `scale(${circleScale})`,
-                transition: 'transform 1s cubic-bezier(0.16, 1, 0.3, 1)',
-                background: currentPhase === "inhale" 
-                  ? "linear-gradient(135deg, rgb(56, 189, 248), rgb(59, 130, 246))" 
-                  : currentPhase === "hold1" || currentPhase === "hold2"
-                    ? "linear-gradient(135deg, rgb(168, 85, 247), rgb(217, 70, 239))"
-                    : "linear-gradient(135deg, rgb(99, 102, 241), rgb(79, 70, 229))",
-                boxShadow: currentPhase === "inhale" 
-                  ? "0 0 40px rgba(59, 130, 246, 0.5)" 
-                  : currentPhase === "hold1" || currentPhase === "hold2"
-                    ? "0 0 40px rgba(168, 85, 247, 0.5)"
-                    : "0 0 40px rgba(99, 102, 241, 0.5)"
-              }}
-            >
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                <p className="text-6xl font-bold">{secondsLeft}</p>
-                <p className="text-xl font-medium mt-2">{getInstructions()}</p>
-                {currentCycle > 1 && <p className="text-sm mt-2 opacity-75">Cyclus {currentCycle} van {pattern.cycles}</p>}
-                {currentAudioUrl && <p className={`text-xs mt-1 ${audioError ? "text-red-300" : "text-blue-200"}`}>
-                  {audioError ? "Audio fout" : "Audio speelt af"}
-                </p>}
-              </div>
-            </div>
-            
-            {/* Animated particles */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-1/2 left-1/4 w-2 h-2 rounded-full bg-white/30 animate-float blur-sm"></div>
-              <div className="absolute top-1/4 right-1/4 w-2 h-2 rounded-full bg-white/30 animate-float-delay blur-sm"></div>
-              <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 rounded-full bg-white/20 animate-float-longer blur-sm"></div>
-              <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 rounded-full bg-white/20 animate-float-longer-delay blur-sm"></div>
-            </div>
-          </div>
+          <BreathingVisualization 
+            phase={getPhaseForVisualization()}
+            progress={progress}
+            secondsLeft={secondsLeft}
+            isActive={isActive}
+            cycles={{
+              current: currentCycle,
+              total: pattern.cycles
+            }}
+          />
           
           {/* Progress bar */}
           <div className="w-full max-w-md">
@@ -422,6 +372,18 @@ export function BreathingExerciseTest({
               {activeVoice === "vera" ? "Vera begeleidt je ademhaling..." : "Marco begeleidt je ademhaling..."}
             </p>
           )}
+          
+          <div className="flex justify-center mt-4">
+            <Button 
+              onClick={resetExercise} 
+              variant="outline"
+              size="sm"
+              className="text-muted-foreground border-muted hover:bg-muted/10"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reset
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>;
