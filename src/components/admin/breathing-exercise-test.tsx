@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,9 +104,6 @@ export function BreathingExerciseTest({
       audioRef.current.currentTime = 0;
     }
   }, [isActive]);
-
-  // Remove the problematic effect that used setCircleScale
-  // We don't need this effect anymore since scaling is handled by the BreathingVisualization component
 
   useEffect(() => {
     if (!pattern) return;
@@ -313,7 +309,6 @@ export function BreathingExerciseTest({
             }}
           />
           
-          {/* Progress bar */}
           <div className="w-full max-w-md">
             <Progress 
               value={progress} 

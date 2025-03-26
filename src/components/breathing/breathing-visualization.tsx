@@ -1,7 +1,13 @@
-import React from "react";
+
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
+type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'rest';
+
 interface BreathingVisualizationProps {
-  phase: "inhale" | "hold" | "exhale" | "rest";
+  phase: BreathingPhase;
   progress: number;
   secondsLeft: number;
   isActive: boolean;
@@ -10,15 +16,20 @@ interface BreathingVisualizationProps {
     total: number;
   };
   className?: string;
+  technique?: BreathingTechnique;
 }
+
 export function BreathingVisualization({
   phase,
   progress,
   secondsLeft,
   isActive,
   cycles,
-  className
+  className,
+  technique = '4-7-8'
 }: BreathingVisualizationProps) {
+  const isMobile = useIsMobile();
+
   // Map phase to animation parameters
   const getPhaseColors = () => {
     switch (phase) {
@@ -83,10 +94,14 @@ export function BreathingVisualization({
       case "exhale":
         return "Adem uit";
       default:
-        return "Rust";
+        return "";
     }
   };
-  return <div className={cn("relative flex items-center justify-center", className)}>
+
+  const shouldShowCounter = phase !== 'rest';
+  
+  return (
+    <div className={cn("relative flex items-center justify-center", className)}>
       {/* Background animated elements */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="absolute w-full h-full rounded-full opacity-10 animate-ping-slow" />
@@ -94,18 +109,24 @@ export function BreathingVisualization({
       </div>
       
       {/* Outer glow ring */}
-      <div className={cn("absolute rounded-full blur-xl opacity-60 bg-gradient-to-br", colors.outerGradient)} style={{
-      width: `${Math.max(240, 240 * scale * 1.2)}px`,
-      height: `${Math.max(240, 240 * scale * 1.2)}px`,
-      transition: isActive ? 'all 1s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.5s ease-out'
-    }} />
+      <div 
+        className={cn("absolute rounded-full blur-xl opacity-60 bg-gradient-to-br", colors.outerGradient)} 
+        style={{
+          width: `${Math.max(240, 240 * scale * 1.2)}px`,
+          height: `${Math.max(240, 240 * scale * 1.2)}px`,
+          transition: isActive ? 'all 1s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.5s ease-out'
+        }} 
+      />
       
       {/* Main breathing circle */}
-      <div className={cn("relative flex items-center justify-center rounded-full shadow-lg bg-gradient-to-br", colors.innerGradient)} style={{
-      width: `${Math.max(200, 200 * scale)}px`,
-      height: `${Math.max(200, 200 * scale)}px`,
-      transition: isActive ? 'all 1s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.5s ease-out'
-    }}>
+      <div 
+        className={cn("relative flex items-center justify-center rounded-full shadow-lg bg-gradient-to-br", colors.innerGradient)} 
+        style={{
+          width: `${Math.max(200, 200 * scale)}px`,
+          height: `${Math.max(200, 200 * scale)}px`,
+          transition: isActive ? 'all 1s cubic-bezier(0.4, 0, 0.2, 1)' : 'all 0.5s ease-out'
+        }}
+      >
         {/* Decorative particles */}
         <div className="absolute inset-0 overflow-hidden rounded-full">
           <div className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-white/20 animate-float blur-sm" />
@@ -116,20 +137,35 @@ export function BreathingVisualization({
         
         {/* Circle content */}
         <div className={cn("text-center px-6", colors.textColor)}>
-          <p className="text-3xl font-bold mb-1">{secondsLeft}</p>
+          {shouldShowCounter && (
+            <p className="text-3xl font-bold mb-1">{secondsLeft}</p>
+          )}
           <p className="text-lg font-medium mb-1">{getInstructionText()}</p>
           
-          {cycles && cycles.total > 1 && <p className="text-xs opacity-80 mt-2">
+          {cycles && cycles.total > 1 && (
+            <p className="text-xs opacity-80 mt-2">
               Cyclus {cycles.current} van {cycles.total}
-            </p>}
+            </p>
+          )}
         </div>
       </div>
       
       {/* Cycle indicators */}
-      {cycles && cycles.total > 1 && <div className="absolute -bottom-8 flex justify-center gap-1.5">
-          {Array.from({
-        length: cycles.total
-      }).map((_, index) => {})}
-        </div>}
-    </div>;
+      {cycles && cycles.total > 1 && (
+        <div className="absolute -bottom-8 flex justify-center gap-1.5">
+          {Array.from({ length: cycles.total }).map((_, index) => (
+            <div 
+              key={index}
+              className={cn(
+                "w-2 h-2 rounded-full transition-all duration-300",
+                index + 1 === cycles.current 
+                  ? "bg-primary" 
+                  : "bg-primary/30"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
