@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { BreathingVisualization } from "@/components/breathing/breathing-visualization";
+import { supabase } from "@/lib/supabase";
 
 type BreathingPattern = {
   id: string;
@@ -28,6 +29,8 @@ type BreathingPattern = {
   hold2Url?: string;
   veraUrl?: string;
   marcoUrl?: string;
+  vera_url?: string;
+  marco_url?: string;
 };
 
 const defaultBreathingPatterns: BreathingPattern[] = [
@@ -77,26 +80,84 @@ export function BreathExercise() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const savedPatterns = localStorage.getItem('breathingPatterns');
-    if (savedPatterns) {
+    const fetchBreathingPatterns = async () => {
       try {
-        const parsedPatterns = JSON.parse(savedPatterns);
-        const mergedPatterns = [...defaultBreathingPatterns];
+        const { data, error } = await supabase
+          .from('breathing_patterns')
+          .select('*');
+          
+        if (error) {
+          console.error('Error fetching from Supabase:', error);
+          throw error;
+        }
         
-        parsedPatterns.forEach((pattern: BreathingPattern) => {
-          if (!mergedPatterns.some(p => p.id === pattern.id)) {
-            mergedPatterns.push(pattern);
+        if (data && data.length > 0) {
+          const mappedData = data.map(pattern => ({
+            ...pattern,
+            veraUrl: pattern.veraUrl || pattern.vera_url,
+            marcoUrl: pattern.marcoUrl || pattern.marco_url
+          }));
+          setBreathingPatterns(mappedData);
+          setCurrentPattern(mappedData[0]);
+        } else {
+          const savedPatterns = localStorage.getItem('breathingPatterns');
+          if (savedPatterns) {
+            try {
+              const parsedPatterns = JSON.parse(savedPatterns);
+              const mergedPatterns = [...defaultBreathingPatterns];
+              
+              parsedPatterns.forEach((pattern: BreathingPattern) => {
+                if (!mergedPatterns.some(p => p.id === pattern.id)) {
+                  mergedPatterns.push(pattern);
+                }
+              });
+              
+              setBreathingPatterns(mergedPatterns);
+              if (mergedPatterns.length > 0) {
+                setCurrentPattern(mergedPatterns[0]);
+              }
+            } catch (error) {
+              console.error("Error loading breathing patterns:", error);
+              setBreathingPatterns(defaultBreathingPatterns);
+              setCurrentPattern(defaultBreathingPatterns[0]);
+            }
+          } else {
+            setBreathingPatterns(defaultBreathingPatterns);
+            setCurrentPattern(defaultBreathingPatterns[0]);
           }
-        });
-        
-        setBreathingPatterns(mergedPatterns);
-        if (mergedPatterns.length > 0) {
-          setCurrentPattern(mergedPatterns[0]);
         }
       } catch (error) {
-        console.error("Error loading breathing patterns:", error);
+        console.error('Error fetching patterns:', error);
+        
+        const savedPatterns = localStorage.getItem('breathingPatterns');
+        if (savedPatterns) {
+          try {
+            const parsedPatterns = JSON.parse(savedPatterns);
+            const mergedPatterns = [...defaultBreathingPatterns];
+            
+            parsedPatterns.forEach((pattern: BreathingPattern) => {
+              if (!mergedPatterns.some(p => p.id === pattern.id)) {
+                mergedPatterns.push(pattern);
+              }
+            });
+            
+            setBreathingPatterns(mergedPatterns);
+            if (mergedPatterns.length > 0) {
+              setCurrentPattern(mergedPatterns[0]);
+            }
+          } catch (error) {
+            console.error("Error loading breathing patterns:", error);
+            setBreathingPatterns(defaultBreathingPatterns);
+            setCurrentPattern(defaultBreathingPatterns[0]);
+          }
+        } else {
+          setBreathingPatterns(defaultBreathingPatterns);
+          setCurrentPattern(defaultBreathingPatterns[0]);
+        }
       }
-    }
+    };
+
+    fetchBreathingPatterns();
   }, []);
 
   useEffect(() => {
@@ -348,8 +409,10 @@ export function BreathExercise() {
       setActiveVoice("vera");
       setIsActive(true);
       
-      if (currentPattern.veraUrl) {
-        setCurrentAudioUrl(currentPattern.veraUrl);
+      const veraUrl = currentPattern.veraUrl || currentPattern.vera_url;
+      
+      if (veraUrl) {
+        setCurrentAudioUrl(veraUrl);
       } else {
         updateCurrentAudioUrl();
       }
@@ -378,8 +441,10 @@ export function BreathExercise() {
       setActiveVoice("marco");
       setIsActive(true);
       
-      if (currentPattern.marcoUrl) {
-        setCurrentAudioUrl(currentPattern.marcoUrl);
+      const marcoUrl = currentPattern.marcoUrl || currentPattern.marco_url;
+      
+      if (marcoUrl) {
+        setCurrentAudioUrl(marcoUrl);
       } else {
         updateCurrentAudioUrl();
       }

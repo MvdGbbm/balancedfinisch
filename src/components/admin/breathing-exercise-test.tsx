@@ -21,6 +21,8 @@ type BreathingPattern = {
   hold2Url?: string;
   veraUrl?: string;
   marcoUrl?: string;
+  vera_url?: string;
+  marco_url?: string;
 };
 
 interface BreathingExerciseTestProps {
@@ -238,7 +240,7 @@ export function BreathingExerciseTest({
       setIsActive(true);
       setActiveVoice("vera");
       
-      const veraUrl = pattern?.veraUrl || currentAudioUrl;
+      const veraUrl = pattern?.veraUrl || pattern?.vera_url || currentAudioUrl;
 
       if (veraUrl) {
         if (audioRef.current) {
@@ -266,7 +268,7 @@ export function BreathingExerciseTest({
       setIsActive(true);
       setActiveVoice("marco");
       
-      const marcoUrl = pattern?.marcoUrl || currentAudioUrl;
+      const marcoUrl = pattern?.marcoUrl || pattern?.marco_url || currentAudioUrl;
 
       if (marcoUrl) {
         if (audioRef.current) {
