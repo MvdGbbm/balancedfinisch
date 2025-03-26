@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { BreathingVisualization } from "@/components/breathing/breathing-visualization";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 type BreathingPattern = {
   id: string;
