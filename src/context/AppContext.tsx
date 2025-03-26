@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Meditation, Soundscape, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +54,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
+export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   // State
   const [meditationsData, setMeditations] = useState<Meditation[]>(sampleMeditations);
   const [soundscapesData, setSoundscapes] = useState<Soundscape[]>(soundscapes);
@@ -403,20 +404,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Function to save daily quote to journal instead of calendar
+  // Function to save daily quote to calendar
   function saveDailyQuoteToCalendar(quote: DailyQuote) {
-    // Create a journal entry for the quote instead of a planner event
+    // Create a planner event for the quote
     const today = new Date().toISOString().split('T')[0];
     
-    addJournalEntry({
+    addPlannerEvent({
+      title: `Dagelijkse quote: ${quote.text.substring(0, 30)}...`,
       date: today,
-      content: `"${quote.text}" - ${quote.author}`,
-      mood: "calm", // Default to a calm mood
-      tags: ["quote"], // Add a "quote" tag for easy filtering
+      completed: false,
     });
     
     // Show success message
-    alert("Quote opgeslagen in het dagboek!");
+    alert("Quote opgeslagen in de agenda!");
   }
   
   // Context value
@@ -459,7 +459,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
-}
+};
 
 export function useApp() {
   const context = useContext(AppContext);

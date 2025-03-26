@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -17,7 +18,6 @@ const Meditations = () => {
   const [loading, setLoading] = useState(true);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
   const [selectedAudioSource, setSelectedAudioSource] = useState<'vera' | 'marco'>('vera');
-  const [selectedGuidedMeditation, setSelectedGuidedMeditation] = useState<Meditation | null>(null);
   
   useEffect(() => {
     const fetchAndProcessMeditations = async () => {
@@ -35,10 +35,6 @@ const Meditations = () => {
   );
   
   const filteredMeditations = filterMeditations(processedMeditations, searchQuery, selectedCategory);
-  
-  const guidedMeditations = processedMeditations.filter(
-    meditation => meditation.category === "Geleide Meditaties"
-  );
   
   const handleClearFilters = () => {
     setSelectedCategory(null);
@@ -62,30 +58,18 @@ const Meditations = () => {
     toast.success(`${source === 'vera' ? 'Vera' : 'Marco'} audio geselecteerd`);
   };
   
-  const handleGuidedMeditationSelect = (meditation: Meditation) => {
-    setSelectedGuidedMeditation(meditation);
-    toast.success(`Geleide meditatie "${meditation.title}" geselecteerd`);
-  };
-  
   const getActiveAudioUrl = () => {
-    if (selectedGuidedMeditation) {
-      if (selectedAudioSource === 'vera' && selectedGuidedMeditation.veraLink) {
-        return selectedGuidedMeditation.veraLink;
-      } else if (selectedAudioSource === 'marco' && selectedGuidedMeditation.marcoLink) {
-        return selectedGuidedMeditation.marcoLink;
-      }
-      return selectedGuidedMeditation.audioUrl;
-    }
-    
     if (!currentMeditationWithUrls) return '';
     
+    // The actual URL resolution is now handled in the meditation-detail-dialog component
+    // This function will be called by the dialog component when needed
     if (selectedAudioSource === 'vera' && currentMeditationWithUrls.veraLink) {
       return currentMeditationWithUrls.veraLink;
     } else if (selectedAudioSource === 'marco' && currentMeditationWithUrls.marcoLink) {
       return currentMeditationWithUrls.marcoLink;
     }
     
-    return currentMeditationWithUrls.audioUrl;
+    return currentMeditationWithUrls.audioUrl || '';
   };
   
   if (loading) {
@@ -120,11 +104,7 @@ const Meditations = () => {
               key={meditation.id}
               meditation={meditation}
               isSelected={currentMeditation?.id === meditation.id}
-              onClick={(med) => {
-                setCurrentMeditation(med);
-                setSelectedGuidedMeditation(null);
-              }}
-              hideAudioStatus={false}
+              onClick={setCurrentMeditation}
             />
           ))}
           
@@ -152,8 +132,6 @@ const Meditations = () => {
         onAudioSourceChange={handleAudioSourceChange}
         onSoundscapeChange={handleSoundscapeChange}
         getActiveAudioUrl={getActiveAudioUrl}
-        guidedMeditations={guidedMeditations}
-        onGuidedMeditationSelect={handleGuidedMeditationSelect}
       />
     </MobileLayout>
   );

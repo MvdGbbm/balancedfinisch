@@ -1,4 +1,3 @@
-
 import { Meditation } from "@/lib/types";
 
 export const meditations: Meditation[] = [
@@ -22,7 +21,7 @@ export const meditations: Meditation[] = [
     audioUrl: "/audio/breathing.mp3",
     duration: 15,
     category: "Geleide Meditaties",
-    tags: [],
+    tags: ["ademhaling", "stress", "ontspanning"],
     coverImageUrl: "/images/breathing.jpg",
     createdAt: "2023-01-02T10:30:00Z",
     veraLink: "https://example.com/vera/ademhalingsmeditatie"
@@ -42,7 +41,7 @@ export const meditations: Meditation[] = [
     id: "med-4",
     title: "Werkfocus Meditatie",
     description: "Verbeter je concentratie en productiviteit tijdens het werk.",
-    audioUrl: "",
+    audioUrl: "/audio/work-focus.mp3",
     duration: 8,
     category: "Focus",
     coverImageUrl: "/images/work-focus.jpg",
@@ -57,7 +56,7 @@ export const meditations: Meditation[] = [
     duration: 18,
     category: "Geleide Meditaties",
     coverImageUrl: "/images/body-scan.jpg",
-    tags: [],
+    tags: ["lichaamsbewustzijn", "ontspanning", "mindfulness"],
     createdAt: "2023-01-05T16:45:00Z",
   },
   {
@@ -68,7 +67,7 @@ export const meditations: Meditation[] = [
     duration: 12,
     category: "Geleide Meditaties",
     coverImageUrl: "/images/gratitude.jpg",
-    tags: [],
+    tags: ["dankbaarheid", "positiviteit", "geluk"],
     createdAt: "2023-01-06T09:15:00Z",
   },
   {
@@ -86,7 +85,7 @@ export const meditations: Meditation[] = [
     id: "med-8",
     title: "Natuurgeluiden",
     description: "Bosvogels, watergeluid en zachte wind voor een natuurlijke meditatie-ervaring.",
-    audioUrl: "",
+    audioUrl: "/audio/nature-sounds.mp3",
     duration: 30,
     category: "Persoonlijke meditatie muziek",
     coverImageUrl: "/images/nature-sounds.jpg",

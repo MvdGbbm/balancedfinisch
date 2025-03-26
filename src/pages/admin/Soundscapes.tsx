@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
@@ -20,13 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag } from "lucide-react";
 
 import { Soundscape } from "@/lib/types";
@@ -45,15 +38,6 @@ const AdminSoundscapes = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  
-  // Extract unique categories from existing soundscapes
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  
-  useEffect(() => {
-    // Get unique categories from all soundscapes
-    const categories = [...new Set(soundscapes.map(s => s.category))];
-    setAvailableCategories(categories);
-  }, [soundscapes]);
   
   const resetForm = () => {
     setTitle("");
@@ -252,43 +236,12 @@ const AdminSoundscapes = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="category">Categorie</Label>
-                <div className="flex gap-2 items-start">
-                  {availableCategories.length > 0 ? (
-                    <Select
-                      value={category}
-                      onValueChange={setCategory}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecteer of typ een categorie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      id="category"
-                      placeholder="Categorie"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                    />
-                  )}
-                </div>
-                {availableCategories.length > 0 && (
-                  <div className="mt-1">
-                    <Input
-                      id="custom-category"
-                      placeholder="Of voer een nieuwe categorie in"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
+                <Input
+                  id="category"
+                  placeholder="Categorie"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                />
               </div>
               
               <div className="space-y-2">
