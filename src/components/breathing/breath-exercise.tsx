@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -354,11 +353,6 @@ export function BreathExercise({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-2 mb-2">
-        <RefreshCw className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-medium">Ademhalingsoefening</h2>
-      </div>
-      
       <audio 
         ref={audioRef} 
         src={currentAudioUrl} 
@@ -366,7 +360,7 @@ export function BreathExercise({
         onError={() => setAudioError(true)} 
       />
       
-      <Card className="overflow-hidden bg-gradient-to-br from-blue-950 via-indigo-950 to-purple-950 border-none shadow-xl">
+      <Card className="overflow-hidden bg-navy-900 border-none shadow-xl">
         <CardContent className="p-6">
           <div className="mb-4">
             <Select
@@ -374,7 +368,7 @@ export function BreathExercise({
               onValueChange={onPatternChange}
               disabled={isActive}
             >
-              <SelectTrigger className="w-full bg-black/20 border-white/10">
+              <SelectTrigger className="w-full bg-black/20 border-white/10 text-white">
                 <SelectValue placeholder="Selecteer een ademhalingstechniek" />
               </SelectTrigger>
               <SelectContent>
@@ -400,9 +394,6 @@ export function BreathExercise({
             <p className="text-sm text-white/70">
               Cyclus {currentCycle} van {selectedPattern.cycles}
             </p>
-            {currentAudioUrl && !audioError ? (
-              <p className="text-blue-200">Audio speelt af</p>
-            ) : null}
           </div>
           
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
