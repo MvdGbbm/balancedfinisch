@@ -466,6 +466,45 @@ const AdminBreathing = () => {
                 <CardContent>
                   <Form {...veraForm}>
                     <form onSubmit={veraForm.handleSubmit(onVeraSubmit)} className="space-y-4">
+                      <FormField
+                        control={veraForm.control}
+                        name="inhale"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Inademen Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/adem-in.mp3" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={veraForm.control}
+                        name="hold"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Vasthouden Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/vasthouden.mp3" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={veraForm.control}
+                        name="exhale"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Uitademen Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/adem-uit.mp3" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
                       <div className="flex justify-end">
                         <Button type="submit">
                           <Save className="mr-2 h-4 w-4" />
@@ -485,6 +524,45 @@ const AdminBreathing = () => {
                 <CardContent>
                   <Form {...marcoForm}>
                     <form onSubmit={marcoForm.handleSubmit(onMarcoSubmit)} className="space-y-4">
+                      <FormField
+                        control={marcoForm.control}
+                        name="inhale"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Inademen Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/adem-in.mp3" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={marcoForm.control}
+                        name="hold"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Vasthouden Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/vasthouden.mp3" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={marcoForm.control}
+                        name="exhale"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Uitademen Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/adem-uit.mp3" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
                       <div className="flex justify-end">
                         <Button type="submit">
                           <Save className="mr-2 h-4 w-4" />
