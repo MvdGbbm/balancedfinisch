@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
@@ -36,10 +37,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 
   // Validate URLs for a voice set
   const validateUrls = (urls: VoiceUrls): boolean => {
-    if (!urls.inhale || !urls.hold || !urls.exhale) {
-      return false;
-    }
-    return true;
+    return !!(urls.inhale && urls.hold && urls.exhale);
   };
 
   // Pre-cache audio files to ensure they're loaded before playback
