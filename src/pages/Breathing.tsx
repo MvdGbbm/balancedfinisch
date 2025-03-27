@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
@@ -6,6 +5,8 @@ import { BreathingPattern } from "@/lib/types";
 import { RefreshCw } from "lucide-react";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+import { toast } from "sonner";
 
 const Breathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
@@ -15,7 +16,6 @@ const Breathing = () => {
   const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
 
-  // Updated Voice URLs for different techniques based on the provided image
   const techniqueVoiceUrls = {
     "4-7-8": {
       vera: {
@@ -55,7 +55,20 @@ const Breathing = () => {
     }
   };
 
-  // Load breathing patterns from localStorage (keeping for potential future use)
+  useEffect(() => {
+    Object.keys(techniqueVoiceUrls).forEach(technique => {
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.inhale);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.hold);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.exhale);
+      
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.inhale);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.hold);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.exhale);
+    });
+    
+    console.log("Preloading all breathing audio files");
+  }, []);
+
   useEffect(() => {
     const loadPatterns = () => {
       setIsLoading(true);
@@ -83,14 +96,48 @@ const Breathing = () => {
     setActiveVoice(voice);
     console.log(`Activating ${voice} voice for ${selectedTechnique}`, 
       techniqueVoiceUrls[selectedTechnique][voice]);
+    
+    const urls = techniqueVoiceUrls[selectedTechnique][voice];
+    const validInhale = validateAudioUrl(urls.inhale);
+    const validHold = validateAudioUrl(urls.hold);
+    const validExhale = validateAudioUrl(urls.exhale);
+    
+    console.log("Validated URLs for breathing:");
+    console.log("Inhale:", validInhale);
+    console.log("Hold:", validHold);
+    console.log("Exhale:", validExhale);
+    
+    preloadAudio(validInhale);
+    preloadAudio(validHold);
+    preloadAudio(validExhale);
   };
 
   const handleVoicePause = () => {
     setIsVoiceActive(false);
     setActiveVoice(null);
+    toast.info("Ademhalingsoefening gepauzeerd");
   };
   
-  // Debug logging for voice URLs
+  const handleTechniqueChange = (technique: "4-7-8" | "box-breathing" | "diaphragmatic") => {
+    if (isVoiceActive) {
+      setIsVoiceActive(false);
+      setActiveVoice(null);
+    }
+    
+    setSelectedTechnique(technique);
+    toast.info(`Ademhalingstechniek gewijzigd naar ${technique}`);
+    
+    const veraUrls = techniqueVoiceUrls[technique].vera;
+    const marcoUrls = techniqueVoiceUrls[technique].marco;
+    
+    preloadAudio(veraUrls.inhale);
+    preloadAudio(veraUrls.hold);
+    preloadAudio(veraUrls.exhale);
+    preloadAudio(marcoUrls.inhale);
+    preloadAudio(marcoUrls.hold);
+    preloadAudio(marcoUrls.exhale);
+  };
+  
   useEffect(() => {
     if (activeVoice) {
       const voiceUrls = techniqueVoiceUrls[selectedTechnique][activeVoice];
@@ -112,7 +159,7 @@ const Breathing = () => {
           <div className="mb-4 w-full max-w-xs">
             <select
               value={selectedTechnique}
-              onChange={(e) => setSelectedTechnique(e.target.value as any)}
+              onChange={(e) => handleTechniqueChange(e.target.value as any)}
               className="w-full p-2 rounded-lg bg-slate-800 text-white border border-white/20"
               disabled={isVoiceActive}
             >
@@ -122,7 +169,6 @@ const Breathing = () => {
             </select>
           </div>
           
-          {/* Only show breathing animation when a voice is active */}
           {isVoiceActive && activeVoice && (
             <BreathingAnimation 
               technique={selectedTechnique}
@@ -131,14 +177,12 @@ const Breathing = () => {
             />
           )}
           
-          {/* Show instruction when no voice is selected */}
           {!isVoiceActive && (
             <div className="p-6 text-center bg-blue-900/30 rounded-lg border border-blue-800/50 mb-4">
               <p className="text-white font-medium">Selecteer Vera of Marco hieronder om te beginnen</p>
             </div>
           )}
           
-          {/* Voice player */}
           <BreathingVoicePlayer 
             veraUrls={techniqueVoiceUrls[selectedTechnique].vera}
             marcoUrls={techniqueVoiceUrls[selectedTechnique].marco}
