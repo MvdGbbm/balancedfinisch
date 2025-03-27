@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +14,6 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormDescription,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import {
@@ -30,73 +28,12 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Soundscape } from "@/lib/types";
-import {
-  Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogClose,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
-import { AlertCircle } from "lucide-react";
 
 // Define the type for the tag
 type Tag = {
   id: string;
   label: string;
 };
-
-// Define types for Alert components
-interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "destructive";
-}
-
-const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        "relative w-full rounded-lg border p-4 [&_svg]:h-4 [&_svg]:w-4",
-        variant === "destructive"
-          ? "border-destructive text-destructive"
-          : "border-muted",
-        className
-      )}
-      {...props}
-    />
-  )
-);
-Alert.displayName = "Alert";
-
-interface AlertTitleProps extends React.HTMLAttributes<HTMLParagraphElement> {}
-
-const AlertTitle = React.forwardRef<HTMLParagraphElement, AlertTitleProps>(
-  ({ className, ...props }, ref) => (
-    <h5
-      ref={ref}
-      className={cn("mb-1 font-medium leading-none", className)}
-      {...props}
-    />
-  )
-);
-AlertTitle.displayName = "AlertTitle";
-
-const AlertDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
-    className={cn("text-sm font-medium", className)}
-    {...props}
-  />
-));
-AlertDescription.displayName = "AlertDescription";
 
 const AdminMusic: React.FC = () => {
   const { toast } = useToast();
@@ -112,11 +49,12 @@ const AdminMusic: React.FC = () => {
   const form = useForm<Partial<Soundscape>>({
     defaultValues: {
       title: "",
-      audioUrl: "", // Fix: Changed from url to audioUrl
-      category: "nature",
-      coverImageUrl: "", // Fix: Changed from imageUrl to coverImageUrl
+      url: "",
+      isActive: true,
+      volume: 50,
+      imageUrl: "",
       tags: [],
-      isFavorite: false, // Fix: Changed from isActive to isFavorite
+      category: "nature",
     },
   });
 
@@ -143,12 +81,12 @@ const AdminMusic: React.FC = () => {
   const handleCreateSoundscape = (data: Partial<Soundscape>) => {
     const newSoundscape: Omit<Soundscape, "id"> = {
       title: data.title || "New Soundscape",
-      audioUrl: data.audioUrl || "", // Fix: Changed from url to audioUrl
-      category: data.category || "nature",
-      coverImageUrl: data.coverImageUrl || "", // Fix: Changed from imageUrl to coverImageUrl
+      url: data.url || "",
+      isActive: data.isActive ?? true,
+      volume: data.volume ?? 50,
+      imageUrl: data.imageUrl || "",
       tags: data.tags || [],
-      description: data.description || "",
-      isFavorite: !!data.isFavorite, // Fix: Changed from isActive to isFavorite
+      category: data.category || "nature"
     };
     
     addSoundscape(newSoundscape);
@@ -198,15 +136,7 @@ const AdminMusic: React.FC = () => {
 
   const handleSelectSoundscape = (soundscape: Soundscape) => {
     setSelectedSoundscape(soundscape);
-    form.reset({
-      title: soundscape.title,
-      description: soundscape.description,
-      audioUrl: soundscape.audioUrl, // Fix: Changed from url to audioUrl
-      category: soundscape.category,
-      coverImageUrl: soundscape.coverImageUrl, // Fix: Changed from imageUrl to coverImageUrl
-      tags: soundscape.tags,
-      isFavorite: soundscape.isFavorite, // Fix: Changed from isActive to isFavorite
-    });
+    form.reset(soundscape);
     setOpenDialog(true);
   };
 
@@ -275,21 +205,21 @@ const AdminMusic: React.FC = () => {
               <CardContent className="grid grid-cols-2 gap-4">
                 <div className="col-span-1">
                   <p className="text-sm text-muted-foreground">
-                    URL: {soundscape.audioUrl}
+                    URL: {soundscape.url}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Afbeelding: {soundscape.coverImageUrl}
+                    Afbeelding: {soundscape.imageUrl}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Categorie: {soundscape.category}
                   </p>
                   <div className="flex items-center mt-2">
                     <Label htmlFor={`active-${soundscape.id}`} className="mr-2">
-                      Favoriet:
+                      Actief:
                     </Label>
                     <Switch
                       id={`active-${soundscape.id}`}
-                      checked={soundscape.isFavorite} // Fix: Changed from isActive to isFavorite
+                      checked={soundscape.isActive}
                       disabled
                     />
                   </div>
@@ -327,6 +257,9 @@ const AdminMusic: React.FC = () => {
         </div>
       </div>
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogTrigger asChild>
+          <Button variant="outline">Edit Soundscape</Button>
+        </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
@@ -359,7 +292,7 @@ const AdminMusic: React.FC = () => {
               />
               <FormField
                 control={form.control}
-                name="audioUrl" // Fix: Changed from url to audioUrl
+                name="url"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>URL</FormLabel>
@@ -371,7 +304,7 @@ const AdminMusic: React.FC = () => {
               />
               <FormField
                 control={form.control}
-                name="coverImageUrl" // Fix: Changed from imageUrl to coverImageUrl
+                name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Afbeelding URL</FormLabel>
@@ -405,30 +338,35 @@ const AdminMusic: React.FC = () => {
               />
               <FormField
                 control={form.control}
-                name="description"
+                name="volume"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Beschrijving</FormLabel>
+                    <FormLabel>Volume</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Beschrijving van de geluidscape" {...field} />
+                      <Slider
+                        defaultValue={[field.value || 50]}
+                        max={100}
+                        step={1}
+                        onValueChange={(value) => field.onChange(value[0])}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="isFavorite" // Fix: Changed from isActive to isFavorite
+                name="isActive"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">Favoriet</FormLabel>
+                      <FormLabel className="text-base">Actief</FormLabel>
                       <FormDescription>
-                        Markeer als favoriet.
+                        Zet de geluidscape aan of uit.
                       </FormDescription>
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value as boolean}
+                        checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
@@ -579,3 +517,125 @@ const AdminMusic: React.FC = () => {
 };
 
 export default AdminMusic;
+
+interface DialogProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+const DialogDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn(
+      "text-sm text-muted-foreground",
+      className
+    )}
+    {...props}
+  />
+));
+DialogDescription.displayName = "DialogDescription";
+
+interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
+
+const DialogHeader = React.forwardRef<HTMLDivElement, DialogHeaderProps>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "flex flex-col space-y-1.5 text-center sm:text-left",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+DialogHeader.displayName = "DialogHeader";
+
+interface DialogTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
+
+const DialogTitle = React.forwardRef<HTMLHeadingElement, DialogTitleProps>(
+  ({ className, ...props }, ref) => (
+    <h2
+      ref={ref}
+      className={cn(
+        "text-lg font-semibold leading-none tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+DialogTitle.displayName = "DialogTitle";
+
+interface FormDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
+
+const FormDescription = React.forwardRef<
+  HTMLParagraphElement,
+  FormDescriptionProps
+>(({ className, ...props }, ref) => (
+  <p
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+));
+FormDescription.displayName = "FormDescription";
+
+interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "destructive";
+}
+
+const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
+  ({ className, variant, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(
+        "relative w-full rounded-lg border p-4 [&_svg]:h-4 [&_svg]:w-4",
+        variant === "destructive"
+          ? "border-destructive text-destructive"
+          : "border-muted",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+Alert.displayName = "Alert";
+
+const AlertCircle = React.forwardRef<
+  SVGSVGElement,
+  React.SVGProps<SVGSVGElement>
+>(({ className, ...props }, ref) => (
+  <svg
+    ref={ref}
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={cn("h-4 w-4", className)}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+));
+AlertCircle.displayName = "AlertCircle";
+
+interface AlertTitleProps extends React.HTMLAttributes<HTMLParagraphElement> {}
+
+const AlertTitle = React.forwardRef<HTMLParagraphElement, AlertTitleProps>(
+  ({ className, ...props }, ref) => (
+    <h5
+      ref={ref}
+      className={cn("mb-1 font-medium leading-none", className)}
+      {...props}
+    />
+  )
+);
+AlertTitle.displayName = "AlertTitle";
