@@ -4,7 +4,6 @@ import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
-import { BreathingPattern, VoiceURLs, BreathingPhase } from "@/components/breathing/types";
 import {
   Select,
   SelectContent,
@@ -82,7 +81,7 @@ const Breathing = () => {
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isExerciseActive, setIsExerciseActive] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("inhale");
+  const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(1);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
@@ -249,7 +248,7 @@ const Breathing = () => {
     }
   };
 
-  const handlePhaseChange = (phase: BreathingPhase) => {
+  const handlePhaseChange = (phase: "start" | "inhale" | "hold" | "exhale" | "pause") => {
     setCurrentPhase(phase);
     
     if (phase === 'inhale' && currentPhase === 'pause') {
