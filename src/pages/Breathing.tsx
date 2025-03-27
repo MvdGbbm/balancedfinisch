@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioPlayer } from "@/components/audio-player";
 import { toast } from "sonner";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 // Define types for breathing patterns
 type BreathingPattern = {
@@ -87,7 +88,7 @@ const Breathing = () => {
   // Voice URL states
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
-  const [audioTestSuccess, setAudioTestSuccess] = useState<boolean>(false);
+  const [voiceUrlsValidated, setVoiceUrlsValidated] = useState<boolean>(false);
 
   // Load breathing patterns and voice URLs from localStorage when component mounts
   useEffect(() => {
@@ -115,17 +116,25 @@ const Breathing = () => {
   }, []);
 
   // Function to load voice URLs from localStorage
-  const loadVoiceUrls = () => {
+  const loadVoiceUrls = async () => {
     // Load Vera voice URLs
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
       try {
         const parsedUrls = JSON.parse(savedVeraUrls);
-        setVeraVoiceUrls(parsedUrls);
-        console.log("Loaded Vera voice URLs:", parsedUrls);
         
-        // Verify if the URLs are valid
-        verifyAudioUrls(parsedUrls, 'vera');
+        // Validate and normalize each URL
+        const validatedUrls = {
+          inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
+          hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
+          exhale: parsedUrls.exhale ? validateAudioUrl(parsedUrls.exhale) : ""
+        };
+        
+        setVeraVoiceUrls(validatedUrls);
+        console.log("Loaded Vera voice URLs:", validatedUrls);
+        
+        // Pre-validate if the URLs are valid and audio files exist
+        await validateAudioFiles(validatedUrls, 'vera');
       } catch (error) {
         console.error("Error loading Vera voice URLs:", error);
         setVeraVoiceUrls(defaultVoiceUrls.vera);
@@ -137,54 +146,57 @@ const Breathing = () => {
     if (savedMarcoUrls) {
       try {
         const parsedUrls = JSON.parse(savedMarcoUrls);
-        setMarcoVoiceUrls(parsedUrls);
-        console.log("Loaded Marco voice URLs:", parsedUrls);
         
-        // Verify if the URLs are valid
-        verifyAudioUrls(parsedUrls, 'marco');
+        // Validate and normalize each URL
+        const validatedUrls = {
+          inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
+          hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
+          exhale: parsedUrls.exhale ? validateAudioUrl(parsedUrls.exhale) : ""
+        };
+        
+        setMarcoVoiceUrls(validatedUrls);
+        console.log("Loaded Marco voice URLs:", validatedUrls);
+        
+        // Pre-validate if the URLs are valid and audio files exist
+        await validateAudioFiles(validatedUrls, 'marco');
       } catch (error) {
         console.error("Error loading Marco voice URLs:", error);
         setMarcoVoiceUrls(defaultVoiceUrls.marco);
       }
     }
+    
+    setVoiceUrlsValidated(true);
   };
   
-  // Function to verify audio URLs are accessible
-  const verifyAudioUrls = async (urls: VoiceURLs, voice: string) => {
+  // Function to validate audio files exist and are playable
+  const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
     if (!urls.inhale || !urls.hold || !urls.exhale) {
-      console.log(`${voice} URLs are not complete, skipping verification`);
-      return;
+      console.log(`${voice} URLs are not complete, skipping validation`);
+      return false;
     }
     
-    console.log(`Verifying ${voice} audio URLs...`);
-    
-    // Pre-check inhale URL
-    const testAudio = new Audio();
-    testAudio.src = urls.inhale;
-    
-    const testPromise = new Promise((resolve) => {
-      testAudio.oncanplaythrough = () => {
-        console.log(`${voice} inhale audio loaded successfully`);
-        setAudioTestSuccess(true);
-        resolve(true);
-      };
-      
-      testAudio.onerror = () => {
-        console.error(`Error loading ${voice} inhale audio`);
-        setAudioTestSuccess(false);
-        resolve(false);
-      };
-    });
-    
-    // Set a timeout to resolve the promise after 5 seconds
-    setTimeout(() => {
-      console.log(`${voice} audio load check timed out`);
-    }, 5000);
+    console.log(`Validating ${voice} audio URLs...`);
     
     try {
-      await testPromise;
+      // Check all URLs in parallel
+      const [inhaleValid, holdValid, exhaleValid] = await Promise.all([
+        preloadAudio(urls.inhale),
+        preloadAudio(urls.hold),
+        preloadAudio(urls.exhale)
+      ]);
+      
+      const allValid = inhaleValid && holdValid && exhaleValid;
+      
+      if (allValid) {
+        console.log(`All ${voice} audio files validated successfully`);
+        return true;
+      } else {
+        console.error(`One or more ${voice} audio files failed validation`);
+        return false;
+      }
     } catch (error) {
-      console.error("Error during audio test:", error);
+      console.error(`Error validating ${voice} audio files:`, error);
+      return false;
     }
   };
 
@@ -195,11 +207,26 @@ const Breathing = () => {
     setActiveVoice(null);
   };
   
-  const handleActivateVoice = (voice: "vera" | "marco") => {
+  const handleActivateVoice = async (voice: "vera" | "marco") => {
+    const urls = voice === "vera" ? veraVoiceUrls : marcoVoiceUrls;
+    
+    // Validate URLs before activating
+    if (!urls.inhale || !urls.hold || !urls.exhale) {
+      toast.error(`${voice === "vera" ? "Vera" : "Marco"} audio URL's ontbreken`);
+      return;
+    }
+    
+    const isValid = await validateAudioFiles(urls, voice);
+    
+    if (!isValid) {
+      toast.error(`Fout bij validatie van ${voice === "vera" ? "Vera" : "Marco"} audio bestanden. Controleer of alle URL's correct zijn.`);
+      return;
+    }
+    
     setActiveVoice(voice);
     setIsExerciseActive(true);
     setCurrentPhase("inhale");
-    console.log(`Activated ${voice} voice with URLs:`, voice === "vera" ? veraVoiceUrls : marcoVoiceUrls);
+    console.log(`Activated ${voice} voice with URLs:`, urls);
   };
   
   const handlePauseVoice = () => {

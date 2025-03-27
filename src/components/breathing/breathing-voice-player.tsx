@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { validateAudioUrl } from "@/components/audio-player/utils";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 interface VoiceUrls {
   inhale: string;
@@ -36,62 +36,43 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 
   // Validate URLs for a voice set
   const validateUrls = (urls: VoiceUrls): boolean => {
-    return Boolean(urls.inhale && urls.hold && urls.exhale);
+    if (!urls.inhale || !urls.hold || !urls.exhale) {
+      return false;
+    }
+    
+    return true;
   };
 
   // Pre-cache audio files to ensure they're loaded before playback
   useEffect(() => {
-    const preloadAudio = async (urlSet: VoiceUrls) => {
-      if (!validateUrls(urlSet)) return;
+    const preloadVoiceAudio = async (urlSet: VoiceUrls, voiceName: string) => {
+      if (!validateUrls(urlSet)) {
+        console.log(`${voiceName} voice URLs are incomplete`);
+        return;
+      }
       
       try {
-        // Create temporary audio elements to preload the files
-        const inhaleAudio = new Audio(urlSet.inhale);
-        const holdAudio = new Audio(urlSet.hold);
-        const exhaleAudio = new Audio(urlSet.exhale);
+        // Validate and test each URL
+        const inhaleResult = await preloadAudio(urlSet.inhale);
+        const holdResult = await preloadAudio(urlSet.hold);
+        const exhaleResult = await preloadAudio(urlSet.exhale);
         
-        // Load the audio files
-        const loadPromises = [
-          new Promise(resolve => {
-            inhaleAudio.addEventListener('canplaythrough', resolve, { once: true });
-            inhaleAudio.addEventListener('error', () => {
-              console.error('Error loading inhale audio');
-              resolve(null);
-            }, { once: true });
-            inhaleAudio.load();
-          }),
-          new Promise(resolve => {
-            holdAudio.addEventListener('canplaythrough', resolve, { once: true });
-            holdAudio.addEventListener('error', () => {
-              console.error('Error loading hold audio');
-              resolve(null);
-            }, { once: true });
-            holdAudio.load();
-          }),
-          new Promise(resolve => {
-            exhaleAudio.addEventListener('canplaythrough', resolve, { once: true });
-            exhaleAudio.addEventListener('error', () => {
-              console.error('Error loading exhale audio');
-              resolve(null);
-            }, { once: true });
-            exhaleAudio.load();
-          })
-        ];
-        
-        // Wait for all audio files to load
-        await Promise.all(loadPromises);
-        console.log('Audio files preloaded successfully');
+        if (inhaleResult && holdResult && exhaleResult) {
+          console.log(`${voiceName} voice audio files preloaded successfully`);
+        } else {
+          console.error(`Failed to preload ${voiceName} voice audio files`);
+        }
       } catch (error) {
-        console.error('Failed to preload audio files:', error);
+        console.error(`Error preloading ${voiceName} voice audio:`, error);
       }
     };
     
     if (validateUrls(veraUrls)) {
-      preloadAudio(veraUrls);
+      preloadVoiceAudio(veraUrls, "Vera");
     }
     
     if (validateUrls(marcoUrls)) {
-      preloadAudio(marcoUrls);
+      preloadVoiceAudio(marcoUrls, "Marco");
     }
   }, [veraUrls, marcoUrls]);
 
@@ -108,13 +89,15 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       setLoading(true);
       try {
-        // Pre-load audio files
-        const verifyInhale = await fetch(veraUrls.inhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
-        const verifyHold = await fetch(veraUrls.hold, { method: 'HEAD' }).catch(() => ({ ok: false }));
-        const verifyExhale = await fetch(veraUrls.exhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        // Test audio files before activation
+        const [inhaleTest, holdTest, exhaleTest] = await Promise.all([
+          preloadAudio(veraUrls.inhale),
+          preloadAudio(veraUrls.hold),
+          preloadAudio(veraUrls.exhale)
+        ]);
         
-        if (!verifyInhale.ok || !verifyHold.ok || !verifyExhale.ok) {
-          throw new Error("Kon niet alle audio bestanden verifiëren");
+        if (!inhaleTest || !holdTest || !exhaleTest) {
+          throw new Error("Kon niet alle audio bestanden laden");
         }
         
         onPlay("vera");
@@ -144,13 +127,15 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       setLoading(true);
       try {
-        // Pre-load audio files
-        const verifyInhale = await fetch(marcoUrls.inhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
-        const verifyHold = await fetch(marcoUrls.hold, { method: 'HEAD' }).catch(() => ({ ok: false }));
-        const verifyExhale = await fetch(marcoUrls.exhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        // Test audio files before activation
+        const [inhaleTest, holdTest, exhaleTest] = await Promise.all([
+          preloadAudio(marcoUrls.inhale),
+          preloadAudio(marcoUrls.hold),
+          preloadAudio(marcoUrls.exhale)
+        ]);
         
-        if (!verifyInhale.ok || !verifyHold.ok || !verifyExhale.ok) {
-          throw new Error("Kon niet alle audio bestanden verifiëren");
+        if (!inhaleTest || !holdTest || !exhaleTest) {
+          throw new Error("Kon niet alle audio bestanden laden");
         }
         
         onPlay("marco");
@@ -214,7 +199,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
       )}
       
       {hasError && (
-        <div className="col-span-2 text-red-500 text-xs text-center mt-1">
+        <div className="text-red-500 text-xs text-center mt-1">
           Fout bij het afspelen van audio. Controleer of alle URL's correct zijn en of de audio bestanden bestaan.
         </div>
       )}

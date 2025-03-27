@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
+import { preloadAudio } from '@/components/audio-player/utils';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
 export type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
@@ -71,8 +72,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   const isMobile = useIsMobile();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
-  const audioReadyRef = useRef<boolean>(false);
   const audioErrorCountRef = useRef<number>(0);
+  const audioLoadingRef = useRef<boolean>(false);
   
   // Use external phase if provided, otherwise use internal phase
   const phase = externalPhase || internalPhase;
@@ -88,15 +89,47 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     // Reset audio error count
     audioErrorCountRef.current = 0;
     
-    // Play inhale audio when technique changes
-    if (voiceUrls && isVoiceActive && audioRef.current) {
-      playAudio('inhale');
+    // Pre-validate voice URLs if available
+    if (voiceUrls && isVoiceActive) {
+      validateVoiceUrls(voiceUrls);
     }
-  }, [technique, externalPhase]);
+  }, [technique, externalPhase, voiceUrls, isVoiceActive]);
   
-  // Function to preload and play audio
-  const playAudio = (phaseType: BreathingPhase) => {
-    if (!voiceUrls || !isVoiceActive || !audioRef.current) return;
+  // Validate all voice URLs at once
+  const validateVoiceUrls = async (urls: { inhale: string; hold: string; exhale: string; }) => {
+    if (!urls.inhale || !urls.hold || !urls.exhale) {
+      console.log("Voice URLs are incomplete, skipping validation");
+      return false;
+    }
+    
+    try {
+      // Test all URLs in parallel
+      const [inhaleValid, holdValid, exhaleValid] = await Promise.all([
+        preloadAudio(urls.inhale),
+        preloadAudio(urls.hold),
+        preloadAudio(urls.exhale)
+      ]);
+      
+      const allValid = inhaleValid && holdValid && exhaleValid;
+      
+      if (!allValid) {
+        console.error("One or more voice audio URLs failed validation");
+        audioErrorCountRef.current = 5; // Set to max to prevent repeated errors
+        toast.error("Fout bij het laden van audio. Controleer of alle URL's correct zijn.");
+        return false;
+      }
+      
+      console.log("All voice URLs validated successfully");
+      return true;
+    } catch (error) {
+      console.error("Error validating voice URLs:", error);
+      return false;
+    }
+  };
+  
+  // Function to safely play audio with proper error handling
+  const playAudio = async (phaseType: BreathingPhase) => {
+    if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
     
     let audioUrl = '';
     switch(phaseType) {
@@ -118,61 +151,63 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       return;
     }
     
-    console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
+    // Prevent multiple simultaneous playback attempts
+    audioLoadingRef.current = true;
     
-    // Create a test audio element to check if the URL is valid
-    const testAudio = new Audio();
-    
-    testAudio.oncanplaythrough = () => {
-      console.log(`${phaseType} audio can play through, setting to main audio element`);
-      audioReadyRef.current = true;
+    try {
+      console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
+      
+      // Preload audio to check if it's valid
+      const isValid = await preloadAudio(audioUrl);
+      
+      if (!isValid) {
+        throw new Error(`Failed to preload ${phaseType} audio`);
+      }
       
       // Now set the actual audio element's source and play
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         audioRef.current.volume = 1.0;
         
-        audioRef.current.play()
-          .then(() => {
-            console.log(`Playing ${phaseType} audio successfully`);
-            audioErrorCountRef.current = 0; // Reset error count on success
-          })
-          .catch(err => {
-            console.error(`Error playing ${phaseType} audio:`, err);
+        try {
+          await audioRef.current.play();
+          console.log(`Playing ${phaseType} audio successfully`);
+          audioErrorCountRef.current = 0; // Reset error count on success
+        } catch (playError) {
+          console.error(`Error playing ${phaseType} audio:`, playError);
+          
+          // Only increment error counter if we haven't reached max
+          if (audioErrorCountRef.current < 5) {
             audioErrorCountRef.current++;
             
-            if (audioErrorCountRef.current <= 3) {
-              console.log(`Retry attempt ${audioErrorCountRef.current} for ${phaseType} audio`);
-            } else if (audioErrorCountRef.current === 4) {
+            if (audioErrorCountRef.current === 3) {
               toast.error("Fout bij afspelen van audio. Controleer de URL's.");
             }
-          });
+          }
+          
+          // If this is a user interaction error, try playing on next user interaction
+          if (playError.name === 'NotAllowedError') {
+            console.log("Audio playback requires user interaction");
+          }
+        }
       }
-    };
-    
-    testAudio.onerror = (error) => {
-      console.error(`Error loading test audio for ${phaseType}:`, error);
-      audioReadyRef.current = false;
+    } catch (error) {
+      console.error(`Error with ${phaseType} audio:`, error);
       audioErrorCountRef.current++;
       
-      if (audioErrorCountRef.current <= 3) {
-        console.log(`Test audio load retry attempt ${audioErrorCountRef.current}`);
-        testAudio.src = audioUrl;
-        testAudio.load();
-      } else if (audioErrorCountRef.current === 4) {
-        toast.error("Kan audio niet laden. Controleer of het bestand bestaat.");
+      if (audioErrorCountRef.current === 3) {
+        toast.error("Fout bij het afspelen van audio. Controleer of alle URL's correct zijn.");
       }
-    };
-    
-    testAudio.src = audioUrl;
-    testAudio.load();
+    } finally {
+      audioLoadingRef.current = false;
+    }
   };
   
   // Play appropriate audio when phase changes or when voice becomes active
   useEffect(() => {
     if (previousPhaseRef.current !== phase) {
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
-      if (phase !== 'pause') {
+      if (phase !== 'pause' && isVoiceActive && voiceUrls) {
         playAudio(phase);
       }
       previousPhaseRef.current = phase;
@@ -227,8 +262,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   };
 
   const circleClass = () => {
-    const duration = getCountForPhase(phase, technique);
-    
     switch(phase) {
       case 'inhale': 
         return `grow-animation`;
@@ -272,7 +305,13 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   return (
     <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
       {/* Hidden audio element to play voice guidance */}
-      <audio ref={audioRef} />
+      <audio ref={audioRef} onError={() => {
+        console.error("Audio element error");
+        audioErrorCountRef.current++;
+        if (audioErrorCountRef.current === 3) {
+          toast.error("Fout bij het afspelen van audio. Controleer of alle URL's correct zijn.");
+        }
+      }} />
       
       <div 
         className={`breathe-circle ${circleSize} ${circleClass()}`}
