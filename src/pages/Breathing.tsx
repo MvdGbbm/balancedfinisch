@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BreathingPhase } from "@/components/breathing/types";
 
 type BreathingPattern = {
   id: string;
@@ -81,7 +82,7 @@ const Breathing = () => {
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isExerciseActive, setIsExerciseActive] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
+  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("start");
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(1);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
@@ -196,6 +197,7 @@ const Breathing = () => {
       setActiveVoice(null);
       setCurrentCycle(1);
       setExerciseCompleted(false);
+      setCurrentPhase("start");
       
       setShowAnimation(true);
     }
@@ -216,13 +218,19 @@ const Breathing = () => {
       return;
     }
     
-    setActiveVoice(voice);
-    setIsExerciseActive(true);
-    setCurrentPhase("inhale");
-    setShowAnimation(true);
-    setCurrentCycle(1);
-    setExerciseCompleted(false);
-    console.log(`Activated ${voice} voice with URLs:`, urls);
+    if (currentPhase === "start" && activeVoice === voice) {
+      setCurrentPhase("inhale");
+      setIsExerciseActive(true);
+      console.log(`Starting exercise with ${voice} voice`);
+    } else {
+      setActiveVoice(voice);
+      setCurrentPhase("start");
+      setShowAnimation(true);
+      setCurrentCycle(1);
+      setExerciseCompleted(false);
+      setIsExerciseActive(false);
+      console.log(`Activated ${voice} voice and set to start phase`);
+    }
   };
 
   const handlePauseVoice = () => {
@@ -232,7 +240,7 @@ const Breathing = () => {
   const handleReset = () => {
     setIsExerciseActive(false);
     setActiveVoice(null);
-    setCurrentPhase("inhale");
+    setCurrentPhase("start");
     setCurrentCycle(1);
     setExerciseCompleted(false);
     
@@ -242,7 +250,7 @@ const Breathing = () => {
     }
   };
 
-  const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
+  const handlePhaseChange = (phase: BreathingPhase) => {
     setCurrentPhase(phase);
     
     if (phase === "inhale" && currentPhase === "pause") {
@@ -330,7 +338,7 @@ const Breathing = () => {
             <BreathingVoicePlayer 
               veraUrls={veraVoiceUrls}
               marcoUrls={marcoVoiceUrls}
-              isActive={isExerciseActive}
+              isActive={isExerciseActive || (currentPhase === "start" && !!activeVoice)}
               onPause={handlePauseVoice}
               onPlay={handleActivateVoice}
               activeVoice={activeVoice}
