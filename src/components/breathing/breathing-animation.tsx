@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { preloadAudio } from '@/components/audio-player/utils';
+
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
 export type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
+
 interface BreathingAnimationProps {
   technique: BreathingTechnique;
   voiceUrls: {
@@ -17,7 +19,12 @@ interface BreathingAnimationProps {
   currentCycle?: number;
   totalCycles?: number;
   exerciseCompleted?: boolean;
+  inhaleTime: number;
+  holdTime: number;
+  exhaleTime: number;
+  pauseTime: number;
 }
+
 const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   technique,
   voiceUrls,
@@ -26,51 +33,27 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   onPhaseChange,
   currentCycle = 1,
   totalCycles = 5,
-  exerciseCompleted = false
+  exerciseCompleted = false,
+  inhaleTime,
+  holdTime,
+  exhaleTime,
+  pauseTime
 }) => {
-  const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
-    if (breathingTechnique === '4-7-8') {
-      switch (currentPhase) {
-        case 'inhale':
-          return 4;
-        case 'hold':
-          return 7;
-        case 'exhale':
-          return 8;
-        case 'pause':
-          return 0;
-        default:
-          return 4;
-      }
-    } else if (breathingTechnique === 'box-breathing') {
-      switch (currentPhase) {
-        case 'inhale':
-          return 4;
-        case 'hold':
-          return 4;
-        case 'exhale':
-          return 4;
-        case 'pause':
-          return 4;
-        default:
-          return 4;
-      }
-    } else if (breathingTechnique === 'diaphragmatic') {
-      switch (currentPhase) {
-        case 'inhale':
-          return 5;
-        case 'hold':
-          return 2;
-        case 'exhale':
-          return 6;
-        case 'pause':
-          return 1;
-        default:
-          return 5;
-      }
+  const getCountForPhase = (currentPhase: BreathingPhase): number => {
+    switch (currentPhase) {
+      case 'inhale':
+        return inhaleTime;
+      case 'hold':
+        return holdTime;
+      case 'exhale':
+        return exhaleTime;
+      case 'pause':
+        return pauseTime;
+      default:
+        return inhaleTime;
     }
-    return 4;
   };
+
   const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
     switch (currentPhase) {
       case 'inhale':
@@ -85,8 +68,9 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         return 'inhale';
     }
   };
+
   const [internalPhase, setInternalPhase] = useState<BreathingPhase>('inhale');
-  const [count, setCount] = useState(getCountForPhase('inhale', technique));
+  const [count, setCount] = useState(getCountForPhase('inhale'));
   const [isActive, setIsActive] = useState(true);
   const isMobile = useIsMobile();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -99,13 +83,13 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     if (!externalPhase) {
       setInternalPhase('inhale');
     }
-    setCount(getCountForPhase(externalPhase || 'inhale', technique));
+    setCount(getCountForPhase(externalPhase || 'inhale'));
     setIsActive(true);
     audioErrorCountRef.current = 0;
     if (voiceUrls && isVoiceActive) {
       validateVoiceUrls(voiceUrls);
     }
-  }, [technique, externalPhase, voiceUrls, isVoiceActive]);
+  }, [technique, externalPhase, voiceUrls, isVoiceActive, inhaleTime, holdTime, exhaleTime, pauseTime]);
 
   const validateVoiceUrls = async (urls: {
     inhale: string;
@@ -222,14 +206,14 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
           } else if (onPhaseChange) {
             onPhaseChange(nextPhase);
           }
-          return getCountForPhase(nextPhase, technique);
+          return getCountForPhase(nextPhase);
         }
         return prevCount - 1;
       });
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [phase, technique, isActive, externalPhase, onPhaseChange, exerciseCompleted]);
+  }, [phase, isActive, externalPhase, onPhaseChange, exerciseCompleted, inhaleTime, holdTime, exhaleTime, pauseTime]);
 
   const getMessage = (): string => {
     switch (phase) {
@@ -266,7 +250,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   };
 
   const animationStyle = () => {
-    const duration = getCountForPhase(phase, technique);
+    const duration = getCountForPhase(phase);
     return {
       animationDuration: `${duration}s`
     };
@@ -318,4 +302,5 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       </div>
     </div>;
 };
+
 export default BreathingAnimation;

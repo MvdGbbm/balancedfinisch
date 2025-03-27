@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
@@ -317,6 +316,10 @@ const Breathing = () => {
                 currentCycle={currentCycle}
                 totalCycles={selectedPattern.cycles}
                 exerciseCompleted={exerciseCompleted}
+                inhaleTime={selectedPattern.inhale}
+                holdTime={selectedPattern.hold1}
+                exhaleTime={selectedPattern.exhale}
+                pauseTime={selectedPattern.hold2}
               />
             </div>
           )}
