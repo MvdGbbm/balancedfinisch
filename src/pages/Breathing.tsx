@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { BreathExercise } from "@/components/breathing/breath-exercise";
-import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
-import BreathingAnimation from "@/components/breathing/breathing-animation";
+import { BreathingAnimation } from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AudioPlayer } from "@/components/audio-player";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type BreathingPattern = {
   id: string;
@@ -186,13 +188,17 @@ const Breathing = () => {
     }
   };
 
-  const handleSelectPattern = (pattern: BreathingPattern) => {
-    setSelectedPattern(pattern);
-    setIsExerciseActive(false);
-    setActiveVoice(null);
-    setShowAnimation(false);
-    setCurrentCycle(1);
-    setExerciseCompleted(false);
+  const handleSelectPattern = (patternId: string) => {
+    const pattern = breathingPatterns.find(p => p.id === patternId);
+    if (pattern) {
+      setSelectedPattern(pattern);
+      setIsExerciseActive(false);
+      setActiveVoice(null);
+      setCurrentCycle(1);
+      setExerciseCompleted(false);
+      
+      setShowAnimation(true);
+    }
   };
 
   const handleActivateVoice = async (voice: "vera" | "marco") => {
@@ -227,7 +233,6 @@ const Breathing = () => {
     setIsExerciseActive(false);
     setActiveVoice(null);
     setCurrentPhase("inhale");
-    setShowAnimation(false);
     setCurrentCycle(1);
     setExerciseCompleted(false);
     
@@ -276,26 +281,28 @@ const Breathing = () => {
         <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
         
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-3">
-            {breathingPatterns.map((pattern) => (
-              <Button
-                key={pattern.id}
-                variant={selectedPattern?.id === pattern.id ? "default" : "outline"}
-                className={`w-full justify-start text-left ${
-                  selectedPattern?.id === pattern.id 
-                    ? "bg-tranquil-400 hover:bg-tranquil-500 border-tranquil-300"
-                    : "hover:bg-tranquil-50/50"
-                }`}
-                onClick={() => handleSelectPattern(pattern)}
-              >
-                <div>
-                  <div className="font-medium">{pattern.name}</div>
-                  {pattern.description && (
-                    <div className="text-xs opacity-80 mt-0.5">{pattern.description}</div>
-                  )}
-                </div>
-              </Button>
-            ))}
+          <div className="w-full">
+            <Select
+              value={selectedPattern?.id}
+              onValueChange={handleSelectPattern}
+              disabled={isExerciseActive}
+            >
+              <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black">
+                <SelectValue placeholder="Kies" />
+              </SelectTrigger>
+              <SelectContent>
+                {breathingPatterns.map((pattern) => (
+                  <SelectItem key={pattern.id} value={pattern.id} className="py-3">
+                    <div>
+                      <div className="font-medium">{pattern.name}</div>
+                      {pattern.description && (
+                        <div className="text-xs text-muted-foreground mt-0.5">{pattern.description}</div>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           {selectedPattern && showAnimation && (
@@ -327,11 +334,6 @@ const Breathing = () => {
               headerText={voicePlayerHeaderText}
             />
           )}
-          
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-3">Ontspannende muziek</h2>
-            <BreathingMusicPlayer />
-          </div>
         </div>
       </div>
     </MobileLayout>
