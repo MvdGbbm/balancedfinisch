@@ -5,11 +5,14 @@ import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-pla
 import { BreathingPattern } from "@/lib/types";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { RefreshCw } from "lucide-react";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
 
 const Breathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeView, setActiveView] = useState<"pattern" | "animation">("pattern");
+  const [selectedTechnique, setSelectedTechnique] = useState<"4-7-8" | "box-breathing" | "diaphragmatic">("4-7-8");
 
   // Load breathing patterns from localStorage
   useEffect(() => {
@@ -53,11 +56,47 @@ const Breathing = () => {
             <h2 className="text-lg font-medium">Ademhalingsoefening</h2>
           </div>
           
-          <BreathExercise 
-            breathingPatterns={breathingPatterns} 
-            onPatternChange={handlePatternChange}
-            selectedPattern={selectedPattern}
-          />
+          <div className="w-full flex justify-center gap-2 mb-4">
+            <button
+              onClick={() => setActiveView("pattern")}
+              className={`px-4 py-2 rounded-lg transition-colors ${activeView === "pattern" 
+                ? "bg-blue-500 text-white" 
+                : "bg-blue-500/20 text-white/80 hover:bg-blue-500/40"}`}
+            >
+              Patroon
+            </button>
+            <button
+              onClick={() => setActiveView("animation")}
+              className={`px-4 py-2 rounded-lg transition-colors ${activeView === "animation" 
+                ? "bg-blue-500 text-white" 
+                : "bg-blue-500/20 text-white/80 hover:bg-blue-500/40"}`}
+            >
+              Animatie
+            </button>
+          </div>
+          
+          {activeView === "pattern" ? (
+            <BreathExercise 
+              breathingPatterns={breathingPatterns} 
+              onPatternChange={handlePatternChange}
+              selectedPattern={selectedPattern}
+            />
+          ) : (
+            <>
+              <div className="mb-4 w-full max-w-xs">
+                <select
+                  value={selectedTechnique}
+                  onChange={(e) => setSelectedTechnique(e.target.value as any)}
+                  className="w-full p-2 rounded-lg bg-navy-900 text-white border border-white/20"
+                >
+                  <option value="4-7-8">4-7-8 Ademtechniek</option>
+                  <option value="box-breathing">Box Breathing</option>
+                  <option value="diaphragmatic">Diafragmatische ademhaling</option>
+                </select>
+              </div>
+              <BreathingAnimation technique={selectedTechnique} />
+            </>
+          )}
         </div>
         
         <BreathingMusicPlayer />
