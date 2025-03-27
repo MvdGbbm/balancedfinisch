@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
-type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
+export type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
 
 interface BreathingAnimationProps {
   technique: BreathingTechnique;
@@ -13,12 +13,16 @@ interface BreathingAnimationProps {
     exhale: string;
   } | null;
   isVoiceActive: boolean;
+  currentPhase?: BreathingPhase;
+  onPhaseChange?: (phase: BreathingPhase) => void;
 }
 
 const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ 
   technique, 
   voiceUrls,
-  isVoiceActive
+  isVoiceActive,
+  currentPhase: externalPhase,
+  onPhaseChange
 }) => {
   const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
     if (breathingTechnique === '4-7-8') {
@@ -60,24 +64,30 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }
   };
 
-  const [phase, setPhase] = useState<BreathingPhase>('inhale');
+  const [internalPhase, setInternalPhase] = useState<BreathingPhase>('inhale');
   const [count, setCount] = useState(getCountForPhase('inhale', technique));
   const [isActive, setIsActive] = useState(true);
   const isMobile = useIsMobile();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
   
+  // Use external phase if provided, otherwise use internal phase
+  const phase = externalPhase || internalPhase;
+  
   // Reset animation state when technique changes
   useEffect(() => {
-    setPhase('inhale');
-    setCount(getCountForPhase('inhale', technique));
+    if (!externalPhase) {
+      setInternalPhase('inhale');
+    }
+    setCount(getCountForPhase(externalPhase || 'inhale', technique));
     setIsActive(true);
-    // Also play inhale audio when technique changes
+    
+    // Play inhale audio when technique changes
     if (voiceUrls && isVoiceActive && audioRef.current) {
       audioRef.current.src = voiceUrls.inhale;
       audioRef.current.play().catch(err => console.error("Error playing audio:", err));
     }
-  }, [technique]);
+  }, [technique, externalPhase]);
   
   // Play appropriate audio when phase changes or when voice becomes active
   useEffect(() => {
@@ -104,6 +114,13 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         // Only play if we have a URL and the animation is active
         if (audioUrl && isActive) {
           console.log("Playing audio for phase:", phase, "URL:", audioUrl);
+          
+          // Preload the audio
+          const tempAudio = new Audio();
+          tempAudio.src = audioUrl;
+          tempAudio.load();
+          
+          // Set the source and play
           audioRef.current.src = audioUrl;
           audioRef.current.play().catch(err => console.error("Error playing audio:", err));
         }
@@ -143,11 +160,17 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       
       if (audioUrl) {
         console.log("Initial play for current phase:", phase, "URL:", audioUrl);
+        
+        // Preload the audio
+        const tempAudio = new Audio();
+        tempAudio.src = audioUrl;
+        tempAudio.load();
+        
         audioRef.current.src = audioUrl;
         audioRef.current.play().catch(err => console.error("Error playing audio:", err));
       }
     }
-  }, [isVoiceActive, voiceUrls, isActive]);
+  }, [isVoiceActive, voiceUrls, isActive, phase]);
   
   // Main breathing timer effect
   useEffect(() => {
@@ -156,8 +179,16 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     const interval = setInterval(() => {
       setCount((prevCount) => {
         if (prevCount <= 1) {
-          setPhase((currentPhase) => getNextPhase(currentPhase));
           const nextPhase = getNextPhase(phase);
+          
+          // If we're using internal phase state, update it
+          if (!externalPhase) {
+            setInternalPhase(nextPhase);
+          } else if (onPhaseChange) {
+            // If we're using external phase, call the change handler
+            onPhaseChange(nextPhase);
+          }
+          
           return getCountForPhase(nextPhase, technique);
         }
         return prevCount - 1;
@@ -165,7 +196,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [phase, technique, isActive]);
+  }, [phase, technique, isActive, externalPhase, onPhaseChange]);
 
   const getMessage = (): string => {
     switch(phase) {

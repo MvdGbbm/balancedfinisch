@@ -32,7 +32,21 @@ export const validateAudioUrl = (url: string | undefined): string => {
     }
   }
   
-  return url;
+  // Handle URL encoding for special characters
+  try {
+    // Only encode parts of the URL that need encoding
+    const urlObj = new URL(url, window.location.origin);
+    // Make sure pathname is properly encoded (file names with spaces, etc.)
+    urlObj.pathname = urlObj.pathname.split('/')
+      .map(segment => segment.includes(' ') ? encodeURIComponent(segment) : segment)
+      .join('/');
+    
+    return urlObj.toString();
+  } catch (error) {
+    console.error("Error encoding URL:", error, url);
+    // If URL parsing fails, try a simpler approach
+    return url;
+  }
 };
 
 export const isStreamUrl = (url: string): boolean => {
@@ -73,4 +87,43 @@ export const getAudioMimeType = (url: string): string => {
   
   // Default to general audio type
   return 'audio/mpeg';
+};
+
+// Preload and test an audio URL
+export const preloadAudio = async (url: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(false);
+      return;
+    }
+    
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      resolve(false);
+      return;
+    }
+    
+    const audio = new Audio();
+    
+    // Set a timeout for loading
+    const timeout = setTimeout(() => {
+      console.warn("Audio preload timed out:", validatedUrl);
+      resolve(false);
+    }, 5000);
+    
+    // Event listeners for success/failure
+    audio.oncanplaythrough = () => {
+      clearTimeout(timeout);
+      resolve(true);
+    };
+    
+    audio.onerror = (error) => {
+      clearTimeout(timeout);
+      console.error("Error preloading audio:", error, validatedUrl);
+      resolve(false);
+    };
+    
+    audio.src = validatedUrl;
+    audio.load();
+  });
 };

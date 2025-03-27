@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import { BreathingPattern } from "@/lib/types";
 import { RefreshCw } from "lucide-react";
-import BreathingAnimation from "@/components/breathing/breathing-animation";
+import BreathingAnimation, { BreathingPhase } from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 const Breathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
@@ -14,8 +14,10 @@ const Breathing = () => {
   const [selectedTechnique, setSelectedTechnique] = useState<"4-7-8" | "box-breathing" | "diaphragmatic">("4-7-8");
   const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("inhale");
+  const [cycle, setCycle] = useState<number>(1);
+  const [totalCycles, setTotalCycles] = useState<number>(5);
 
-  // Updated Voice URLs for different techniques based on the provided image
   const techniqueVoiceUrls = {
     "4-7-8": {
       vera: {
@@ -55,7 +57,21 @@ const Breathing = () => {
     }
   };
 
-  // Load breathing patterns from localStorage (keeping for potential future use)
+  useEffect(() => {
+    const preloadAllAudio = async () => {
+      if (!activeVoice) return;
+      
+      const urls = techniqueVoiceUrls[selectedTechnique][activeVoice];
+      await Promise.all([
+        preloadAudio(urls.inhale),
+        preloadAudio(urls.hold),
+        preloadAudio(urls.exhale)
+      ]);
+    };
+    
+    preloadAllAudio();
+  }, [selectedTechnique, activeVoice]);
+
   useEffect(() => {
     const loadPatterns = () => {
       setIsLoading(true);
@@ -78,7 +94,26 @@ const Breathing = () => {
     loadPatterns();
   }, []);
 
+  useEffect(() => {
+    if (currentPhase === "inhale" && isVoiceActive) {
+      if (cycle > 0) {
+        setCycle(prev => {
+          const newCycle = prev + 1;
+          if (newCycle > totalCycles) {
+            setIsVoiceActive(false);
+            setActiveVoice(null);
+            setCycle(1);
+            return 1;
+          }
+          return newCycle;
+        });
+      }
+    }
+  }, [currentPhase, isVoiceActive]);
+
   const handleVoicePlay = (voice: "vera" | "marco") => {
+    setCurrentPhase("inhale");
+    setCycle(1);
     setIsVoiceActive(true);
     setActiveVoice(voice);
     console.log(`Activating ${voice} voice for ${selectedTechnique}`, 
@@ -88,6 +123,25 @@ const Breathing = () => {
   const handleVoicePause = () => {
     setIsVoiceActive(false);
     setActiveVoice(null);
+  };
+  
+  const handlePhaseChange = (phase: BreathingPhase) => {
+    setCurrentPhase(phase);
+  };
+  
+  const handleReset = () => {
+    setCurrentPhase("inhale");
+    setCycle(1);
+    if (isVoiceActive) {
+      const currentVoice = activeVoice;
+      setIsVoiceActive(false);
+      setActiveVoice(null);
+      setTimeout(() => {
+        if (currentVoice) {
+          handleVoicePlay(currentVoice);
+        }
+      }, 100);
+    }
   };
   
   return (
@@ -113,13 +167,20 @@ const Breathing = () => {
             </select>
           </div>
           
+          {isVoiceActive && (
+            <div className="text-white text-sm mb-0">
+              Cyclus {cycle} van {totalCycles}
+            </div>
+          )}
+          
           <BreathingAnimation 
             technique={selectedTechnique}
             voiceUrls={activeVoice ? techniqueVoiceUrls[selectedTechnique][activeVoice] : null}
             isVoiceActive={isVoiceActive}
+            currentPhase={currentPhase}
+            onPhaseChange={handlePhaseChange}
           />
           
-          {/* Voice player */}
           <BreathingVoicePlayer 
             veraUrls={techniqueVoiceUrls[selectedTechnique].vera}
             marcoUrls={techniqueVoiceUrls[selectedTechnique].marco}
@@ -127,6 +188,7 @@ const Breathing = () => {
             onPause={handleVoicePause}
             onPlay={handleVoicePlay}
             activeVoice={activeVoice}
+            onReset={handleReset}
           />
         </div>
         
