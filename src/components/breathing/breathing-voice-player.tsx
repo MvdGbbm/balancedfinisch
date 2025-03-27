@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+
 interface VoiceUrls {
   inhale: string;
   hold: string;
   exhale: string;
 }
+
 interface BreathingVoicePlayerProps {
   veraUrls: VoiceUrls;
   marcoUrls: VoiceUrls;
@@ -16,7 +18,9 @@ interface BreathingVoicePlayerProps {
   onPlay: (voice: "vera" | "marco") => void;
   activeVoice: "vera" | "marco" | null;
   onReset?: () => void;
+  headerText?: string;
 }
+
 export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   veraUrls,
   marcoUrls,
@@ -24,13 +28,13 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   onPause,
   onPlay,
   activeVoice,
-  onReset
+  onReset,
+  headerText = "Kies een stem voor begeleiding"
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Validate URLs for a voice set
   const validateUrls = (urls: VoiceUrls): boolean => {
     if (!urls.inhale || !urls.hold || !urls.exhale) {
       return false;
@@ -38,7 +42,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     return true;
   };
 
-  // Pre-cache audio files to ensure they're loaded before playback
   useEffect(() => {
     const preloadVoiceAudio = async (urlSet: VoiceUrls, voiceName: string) => {
       if (!validateUrls(urlSet)) {
@@ -46,7 +49,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
         return;
       }
       try {
-        // Validate and test each URL
         const inhaleResult = await preloadAudio(urlSet.inhale);
         const holdResult = await preloadAudio(urlSet.hold);
         const exhaleResult = await preloadAudio(urlSet.exhale);
@@ -67,7 +69,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   }, [veraUrls, marcoUrls]);
 
-  // Handler for Vera voice button
   const handleVeraClick = async () => {
     if (!validateUrls(veraUrls)) {
       setHasError(true);
@@ -79,7 +80,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       setLoading(true);
       try {
-        // Test audio files before activation
         const [inhaleTest, holdTest, exhaleTest] = await Promise.all([preloadAudio(veraUrls.inhale), preloadAudio(veraUrls.hold), preloadAudio(veraUrls.exhale)]);
         if (!inhaleTest || !holdTest || !exhaleTest) {
           throw new Error("Kon niet alle audio bestanden laden");
@@ -98,7 +98,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
-  // Handler for Marco voice button
   const handleMarcoClick = async () => {
     if (!validateUrls(marcoUrls)) {
       setHasError(true);
@@ -110,7 +109,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       setLoading(true);
       try {
-        // Test audio files before activation
         const [inhaleTest, holdTest, exhaleTest] = await Promise.all([preloadAudio(marcoUrls.inhale), preloadAudio(marcoUrls.hold), preloadAudio(marcoUrls.exhale)]);
         if (!inhaleTest || !holdTest || !exhaleTest) {
           throw new Error("Kon niet alle audio bestanden laden");
@@ -129,14 +127,18 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
-  // Reset handler
   const handleReset = () => {
     if (onReset) {
       onReset();
       toast.success("Ademhaling gereset");
     }
   };
+
   return <div className="space-y-3 w-full max-w-xs mx-auto mt-6 my-0 py-0 rounded-none">
+      {headerText && (
+        <p className="text-center text-white/90 text-sm mb-2">{headerText}</p>
+      )}
+      
       <div className="grid grid-cols-2 gap-3 w-full">
         <Button onClick={handleVeraClick} disabled={loading} variant="outline" size="sm" className={`w-full flex items-center justify-center gap-2 rounded-full h-10 border border-tranquil-300/20 
           ${isActive && activeVoice === "vera" ? "bg-teal-700/90 text-white shadow-inner" : "bg-navy-900/80 text-white/80 hover:bg-teal-700/70 hover:text-white"}`}>
@@ -161,7 +163,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
           Fout bij het afspelen van audio. Controleer of alle URL's correct zijn en of de audio bestanden bestaan.
         </div>}
       
-      {/* Hidden audio element to handle preloading */}
       <audio ref={audioRef} style={{
       display: 'none'
     }} />

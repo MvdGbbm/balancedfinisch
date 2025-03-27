@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
@@ -11,7 +10,6 @@ import { AudioPlayer } from "@/components/audio-player";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
-// Define types for breathing patterns
 type BreathingPattern = {
   id: string;
   name: string;
@@ -23,14 +21,12 @@ type BreathingPattern = {
   description?: string;
 };
 
-// Define voice URL type
 type VoiceURLs = {
   inhale: string;
   hold: string;
   exhale: string;
 };
 
-// Default patterns
 const defaultBreathingPatterns: BreathingPattern[] = [
   {
     id: "1",
@@ -64,7 +60,6 @@ const defaultBreathingPatterns: BreathingPattern[] = [
   },
 ];
 
-// Default voice URLs
 const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
     inhale: "",
@@ -86,20 +81,16 @@ const Breathing = () => {
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
   const [showAnimation, setShowAnimation] = useState(false);
   
-  // Voice URL states
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
   const [voiceUrlsValidated, setVoiceUrlsValidated] = useState<boolean>(false);
 
-  // Load breathing patterns and voice URLs from localStorage when component mounts
   useEffect(() => {
-    // Load breathing patterns
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
       try {
         const parsedPatterns = JSON.parse(savedPatterns);
         setBreathingPatterns(parsedPatterns);
-        // Select the first pattern by default
         if (parsedPatterns.length > 0) {
           setSelectedPattern(parsedPatterns[0]);
         }
@@ -112,19 +103,15 @@ const Breathing = () => {
       setSelectedPattern(defaultBreathingPatterns[0]);
     }
     
-    // Load voice URLs from localStorage
     loadVoiceUrls();
   }, []);
 
-  // Function to load voice URLs from localStorage
   const loadVoiceUrls = async () => {
-    // Load Vera voice URLs
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
       try {
         const parsedUrls = JSON.parse(savedVeraUrls);
         
-        // Validate and normalize each URL
         const validatedUrls = {
           inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
           hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
@@ -134,7 +121,6 @@ const Breathing = () => {
         setVeraVoiceUrls(validatedUrls);
         console.log("Loaded Vera voice URLs:", validatedUrls);
         
-        // Pre-validate if the URLs are valid and audio files exist
         await validateAudioFiles(validatedUrls, 'vera');
       } catch (error) {
         console.error("Error loading Vera voice URLs:", error);
@@ -142,13 +128,11 @@ const Breathing = () => {
       }
     }
     
-    // Load Marco voice URLs
     const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
     if (savedMarcoUrls) {
       try {
         const parsedUrls = JSON.parse(savedMarcoUrls);
         
-        // Validate and normalize each URL
         const validatedUrls = {
           inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
           hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
@@ -158,7 +142,6 @@ const Breathing = () => {
         setMarcoVoiceUrls(validatedUrls);
         console.log("Loaded Marco voice URLs:", validatedUrls);
         
-        // Pre-validate if the URLs are valid and audio files exist
         await validateAudioFiles(validatedUrls, 'marco');
       } catch (error) {
         console.error("Error loading Marco voice URLs:", error);
@@ -168,8 +151,7 @@ const Breathing = () => {
     
     setVoiceUrlsValidated(true);
   };
-  
-  // Function to validate audio files exist and are playable
+
   const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
     if (!urls.inhale || !urls.hold || !urls.exhale) {
       console.log(`${voice} URLs are not complete, skipping validation`);
@@ -179,7 +161,6 @@ const Breathing = () => {
     console.log(`Validating ${voice} audio URLs...`);
     
     try {
-      // Check all URLs in parallel
       const [inhaleValid, holdValid, exhaleValid] = await Promise.all([
         preloadAudio(urls.inhale),
         preloadAudio(urls.hold),
@@ -203,16 +184,14 @@ const Breathing = () => {
 
   const handleSelectPattern = (pattern: BreathingPattern) => {
     setSelectedPattern(pattern);
-    // Reset exercise when selecting a new pattern
     setIsExerciseActive(false);
     setActiveVoice(null);
     setShowAnimation(false);
   };
-  
+
   const handleActivateVoice = async (voice: "vera" | "marco") => {
     const urls = voice === "vera" ? veraVoiceUrls : marcoVoiceUrls;
     
-    // Validate URLs before activating
     if (!urls.inhale || !urls.hold || !urls.exhale) {
       toast.error(`${voice === "vera" ? "Vera" : "Marco"} audio URL's ontbreken`);
       return;
@@ -231,21 +210,23 @@ const Breathing = () => {
     setShowAnimation(true);
     console.log(`Activated ${voice} voice with URLs:`, urls);
   };
-  
+
   const handlePauseVoice = () => {
     setIsExerciseActive(false);
   };
-  
+
   const handleReset = () => {
     setIsExerciseActive(false);
     setActiveVoice(null);
     setCurrentPhase("inhale");
     setShowAnimation(false);
   };
-  
+
   const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
     setCurrentPhase(phase);
   };
+
+  const voicePlayerHeaderText = "Kies een stem voor begeleiding";
 
   return (
     <MobileLayout>
@@ -253,7 +234,6 @@ const Breathing = () => {
         <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
         
         <div className="space-y-6">
-          {/* Patterns selection */}
           <div className="grid grid-cols-1 gap-3">
             {breathingPatterns.map((pattern) => (
               <Button
@@ -276,7 +256,6 @@ const Breathing = () => {
             ))}
           </div>
           
-          {/* Breathing animation - only show when a voice is active */}
           {selectedPattern && showAnimation && (
             <div className="mt-8">
               <BreathingAnimation 
@@ -289,7 +268,6 @@ const Breathing = () => {
             </div>
           )}
           
-          {/* Voice Player - always show */}
           {selectedPattern && (
             <BreathingVoicePlayer 
               veraUrls={veraVoiceUrls}
@@ -299,10 +277,10 @@ const Breathing = () => {
               onPlay={handleActivateVoice}
               activeVoice={activeVoice}
               onReset={handleReset}
+              headerText={voicePlayerHeaderText}
             />
           )}
           
-          {/* Music player section */}
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-3">Ontspannende muziek</h2>
             <BreathingMusicPlayer />
