@@ -6,7 +6,7 @@ import { ProgressBar } from "./audio-player/progress-bar";
 import { AudioControls } from "./audio-player/audio-controls";
 import { ErrorMessage } from "./audio-player/error-message";
 import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote, getAudioMimeType, isAACFile } from "./audio-player/utils";
+import { getRandomQuote, getAudioMimeType, isAACFile, validateAudioUrl, preloadAudio } from "./audio-player/utils";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -43,10 +43,17 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [audioKey, setAudioKey] = useState(0); // Add a key to force remounting
   const [isAACFormat, setIsAACFormat] = useState(false);
+  const [validatedUrl, setValidatedUrl] = useState<string>("");
   
+  // Validate and preload the audio when URL changes
   useEffect(() => {
     if (audioUrl) {
-      setIsAACFormat(isAACFile(audioUrl));
+      const cleanUrl = validateAudioUrl(audioUrl);
+      setValidatedUrl(cleanUrl);
+      setIsAACFormat(isAACFile(cleanUrl));
+      
+      // Preload audio file to browser cache
+      preloadAudio(cleanUrl);
     }
   }, [audioUrl]);
   
@@ -71,7 +78,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     handleVolumeChange,
     skipTime
   } = useAudioPlayer({
-    audioUrl: audioUrl || "",
+    audioUrl: validatedUrl || "",
     onEnded,
     onError,
     isPlayingExternal,
@@ -81,17 +88,23 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     title
   });
   
-  // Log the audio URL for debugging
+  // Enhanced logging for audio playback
   useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
-    
-    if (isAACFile(audioUrl)) {
-      console.log('AAC audio format detected:', audioUrl);
+    if (validatedUrl) {
+      console.log(`AudioPlayer attempting to load: ${validatedUrl}`);
+      
+      if (isAACFile(validatedUrl)) {
+        console.log('AAC audio format detected:', validatedUrl);
+      }
+      
+      // Get the MIME type
+      const mimeType = getAudioMimeType(validatedUrl);
+      console.log(`Audio MIME type: ${mimeType} for ${validatedUrl}`);
     }
     
     // Reset player when URL changes
     setAudioKey(prev => prev + 1);
-  }, [audioUrl]);
+  }, [validatedUrl]);
   
   // Expose the audio element ref to parent components
   useImperativeHandle(ref, () => audioRef.current!, []);
@@ -102,7 +115,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   }, [nextAudioRef]);
   
   // Early return with placeholder if no audioUrl
-  if (!audioUrl) {
+  if (!validatedUrl) {
     return (
       <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
         <div className="text-center py-3 text-muted-foreground">
@@ -113,12 +126,12 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   }
   
   // Get the MIME type based on the file extension
-  const audioMimeType = getAudioMimeType(audioUrl);
+  const audioMimeType = getAudioMimeType(validatedUrl);
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
-        <source src={audioUrl} type={audioMimeType} />
+        <source src={validatedUrl} type={audioMimeType} />
         Your browser does not support the audio element.
       </audio>
       
