@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
+import { AudioPreview } from "@/components/audio-player/audio-preview";
 
 interface VoiceUrls {
   inhale: string;
@@ -32,39 +33,15 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [previewVoice, setPreviewVoice] = useState<"vera" | "marco" | null>(null);
+  const [previewType, setPreviewType] = useState<"inhale" | "hold" | "exhale" | null>(null);
 
-  // Preload audio files to check for errors
-  useEffect(() => {
-    const preloadAudio = async (url: string) => {
-      try {
-        if (!url) return;
-        
-        const validatedUrl = validateAudioUrl(url);
-        if (!validatedUrl) return;
-        
-        const audio = new Audio();
-        audio.src = validatedUrl;
-        
-        // Force preload (doesn't need to finish loading)
-        audio.load();
-      } catch (error) {
-        console.error("Error preloading audio:", error);
-      }
-    };
-    
-    // Preload all audio files
-    preloadAudio(veraUrls.inhale);
-    preloadAudio(veraUrls.hold);
-    preloadAudio(veraUrls.exhale);
-    preloadAudio(marcoUrls.inhale);
-    preloadAudio(marcoUrls.hold);
-    preloadAudio(marcoUrls.exhale);
-  }, [veraUrls, marcoUrls]);
-
+  // Validate URLs for a voice set
   const validateUrls = (urls: VoiceUrls): boolean => {
     return Boolean(urls.inhale && urls.hold && urls.exhale);
   };
 
+  // Handler for Vera voice button
   const handleVeraClick = async () => {
     if (!validateUrls(veraUrls)) {
       setHasError(true);
@@ -91,6 +68,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
+  // Handler for Marco voice button
   const handleMarcoClick = async () => {
     if (!validateUrls(marcoUrls)) {
       setHasError(true);
@@ -117,11 +95,32 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
+  // Reset handler
   const handleReset = () => {
     if (onReset) {
       onReset();
       toast.success("Ademhaling gereset");
     }
+  };
+
+  // Show audio preview for a specific voice and audio type
+  const showPreview = (voice: "vera" | "marco", type: "inhale" | "hold" | "exhale") => {
+    setPreviewVoice(voice);
+    setPreviewType(type);
+  };
+
+  // Close the preview
+  const closePreview = () => {
+    setPreviewVoice(null);
+    setPreviewType(null);
+  };
+
+  // Get the URL for the current preview
+  const getPreviewUrl = (): string => {
+    if (!previewVoice || !previewType) return "";
+    
+    const urls = previewVoice === "vera" ? veraUrls : marcoUrls;
+    return urls[previewType] || "";
   };
 
   return (
@@ -149,6 +148,93 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
           Marco
         </Button>
       </div>
+
+      {/* Audio preview section */}
+      {(validateUrls(veraUrls) || validateUrls(marcoUrls)) && (
+        <div className="mt-4 p-2 bg-card/20 rounded-md border border-border/40">
+          <h4 className="text-sm font-medium mb-2">Test audio:</h4>
+          
+          {/* Vera voice previews */}
+          {validateUrls(veraUrls) && (
+            <div className="space-y-1 mb-2">
+              <div className="text-xs font-semibold mb-1">Vera:</div>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => showPreview("vera", "inhale")}
+                >
+                  Inademen
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => showPreview("vera", "hold")}
+                >
+                  Vasthouden
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => showPreview("vera", "exhale")}
+                >
+                  Uitademen
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Marco voice previews */}
+          {validateUrls(marcoUrls) && (
+            <div className="space-y-1">
+              <div className="text-xs font-semibold mb-1">Marco:</div>
+              <div className="flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => showPreview("marco", "inhale")}
+                >
+                  Inademen
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => showPreview("marco", "hold")}
+                >
+                  Vasthouden
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs h-7 px-2"
+                  onClick={() => showPreview("marco", "exhale")}
+                >
+                  Uitademen
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Preview player */}
+          {previewVoice && previewType && (
+            <div className="mt-3">
+              <AudioPreview 
+                url={getPreviewUrl()} 
+                label={`${previewVoice === "vera" ? "Vera" : "Marco"} - ${
+                  previewType === "inhale" ? "Inademen" : 
+                  previewType === "hold" ? "Vasthouden" : "Uitademen"
+                }`}
+                autoPlay
+              />
+            </div>
+          )}
+        </div>
+      )}
       
       {onReset && (
         <Button 
