@@ -29,7 +29,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     
     switch (phase) {
       case 'start':
-        return 'scale-100'; // Static scale for start phase
+        return 'scale-100'; // Default scale for start phase
       case 'inhale':
         return `grow-animation`;
       case 'hold':
@@ -44,10 +44,6 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   };
 
   const animationStyle = () => {
-    // No animation for start phase
-    if (phase === 'start') {
-      return {};
-    }
     return {
       animationDuration: `${animationDuration}s`
     };

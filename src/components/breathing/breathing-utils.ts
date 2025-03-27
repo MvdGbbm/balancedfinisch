@@ -14,7 +14,7 @@ export const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
     case 'pause':
       return 'inhale';
     default:
-      return 'start';
+      return 'inhale';
   }
 };
 
@@ -54,6 +54,6 @@ export const getBreathingMessage = (phase: BreathingPhase): string => {
     case 'pause':
       return '';
     default:
-      return 'Start';
+      return 'Adem in';
   }
 };
