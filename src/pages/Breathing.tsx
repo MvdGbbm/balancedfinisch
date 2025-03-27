@@ -177,7 +177,7 @@ const Breathing = () => {
             technique={selectedTechnique}
             voiceUrls={activeVoice ? techniqueVoiceUrls[selectedTechnique][activeVoice] : null}
             isVoiceActive={isVoiceActive}
-            currentPhase={currentPhase}
+            currentPhase={currentPhase as BreathingPhase}
             onPhaseChange={handlePhaseChange}
           />
           
