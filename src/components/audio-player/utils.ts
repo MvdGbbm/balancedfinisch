@@ -43,3 +43,34 @@ export const isStreamUrl = (url: string): boolean => {
          url.includes('icecast') || 
          url.includes('shoutcast');
 };
+
+// Check if file is likely an AAC audio file
+export const isAACFile = (url: string): boolean => {
+  const lowercaseUrl = url.toLowerCase();
+  return lowercaseUrl.endsWith('.aac') || 
+         lowercaseUrl.endsWith('.m4a') || 
+         lowercaseUrl.includes('audio/aac') || 
+         lowercaseUrl.includes('audio/mp4a');
+};
+
+// Check if browser supports AAC playback
+export const checkAACSupport = (): boolean => {
+  const audio = document.createElement('audio');
+  return audio.canPlayType('audio/aac') !== '' || 
+         audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
+};
+
+// Get appropriate MIME type based on file extension
+export const getAudioMimeType = (url: string): string => {
+  const lowercaseUrl = url.toLowerCase();
+  
+  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
+  if (lowercaseUrl.endsWith('.m4a') || lowercaseUrl.endsWith('.mp4a')) return 'audio/mp4';
+  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
+  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
+  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
+  if (lowercaseUrl.endsWith('.flac')) return 'audio/flac';
+  
+  // Default to general audio type
+  return 'audio/mpeg';
+};
