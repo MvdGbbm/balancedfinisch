@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceUrls {
@@ -17,6 +17,10 @@ interface BreathingVoicePlayerProps {
   onPause: () => void;
   onPlay: (voice: "vera" | "marco") => void;
   activeVoice: "vera" | "marco" | null;
+  onReset?: () => void;
+  currentCycle?: number;
+  totalCycles?: number;
+  currentPhase?: string;
 }
 
 export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
@@ -25,7 +29,11 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   isActive,
   onPause,
   onPlay,
-  activeVoice
+  activeVoice,
+  onReset,
+  currentCycle = 1,
+  totalCycles = 5,
+  currentPhase = "Inademen"
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
 
@@ -70,30 +78,82 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
+  const handleReset = () => {
+    if (onReset) {
+      onReset();
+      toast.info("Ademhalingsoefening gereset");
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
-      <Button 
-        onClick={handleVeraClick} 
-        variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
-        size="lg"
-        className="w-full bg-blue-500 hover:bg-blue-600 border-none"
-      >
-        {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-        Vera
-      </Button>
+    <div className="flex flex-col items-center space-y-4 w-full max-w-md mx-auto">
+      {/* Current phase display */}
+      <h2 className="text-xl font-medium text-white">{currentPhase}</h2>
       
-      <Button 
-        onClick={handleMarcoClick} 
-        variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
-        size="lg"
-        className="w-full bg-blue-500 hover:bg-blue-600 border-none"
-      >
-        {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-        Marco
-      </Button>
+      {/* Audio status */}
+      <p className="text-sm text-gray-300">
+        {isActive ? "Audio speelt af" : ""}
+      </p>
+      
+      {/* Cycle counter */}
+      <p className="text-sm text-gray-400">
+        Cyclus {currentCycle} van {totalCycles}
+      </p>
+      
+      {/* Voice buttons container */}
+      <div className="grid grid-cols-2 gap-3 w-full">
+        <Button 
+          onClick={handleVeraClick}
+          variant="outline"
+          size="lg"
+          className={`w-full border-2 rounded-full ${
+            isActive && activeVoice === "vera" 
+              ? "bg-transparent border-white text-white" 
+              : "bg-white text-navy-950 border-white hover:bg-gray-100"
+          }`}
+        >
+          {isActive && activeVoice === "vera" ? (
+            <Pause className="mr-2 h-4 w-4" />
+          ) : (
+            <Play className="mr-2 h-4 w-4" />
+          )}
+          Vera
+        </Button>
+        
+        <Button 
+          onClick={handleMarcoClick}
+          variant="outline" 
+          size="lg"
+          className={`w-full border-2 rounded-full ${
+            isActive && activeVoice === "marco" 
+              ? "bg-transparent border-white text-white" 
+              : "bg-white text-navy-950 border-white hover:bg-gray-100"
+          }`}
+        >
+          {isActive && activeVoice === "marco" ? (
+            <Pause className="mr-2 h-4 w-4" />
+          ) : (
+            <Play className="mr-2 h-4 w-4" />
+          )}
+          Marco
+        </Button>
+      </div>
+      
+      {/* Reset button */}
+      {onReset && (
+        <Button
+          onClick={handleReset}
+          variant="outline"
+          size="sm"
+          className="mt-4 border border-gray-700 text-white hover:bg-navy-800"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Reset
+        </Button>
+      )}
       
       {hasError && (
-        <div className="col-span-2 text-red-500 text-xs text-center mt-1">
+        <div className="text-red-500 text-xs text-center mt-1">
           Fout bij het afspelen van audio. Controleer de URL.
         </div>
       )}

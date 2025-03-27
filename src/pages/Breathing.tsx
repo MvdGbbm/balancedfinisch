@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
@@ -6,6 +5,7 @@ import { BreathingPattern } from "@/lib/types";
 import { RefreshCw } from "lucide-react";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 const Breathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
@@ -14,8 +14,10 @@ const Breathing = () => {
   const [selectedTechnique, setSelectedTechnique] = useState<"4-7-8" | "box-breathing" | "diaphragmatic">("4-7-8");
   const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+  const [currentCycle, setCurrentCycle] = useState<number>(1);
+  const [totalCycles, setTotalCycles] = useState<number>(5);
+  const [currentPhase, setCurrentPhase] = useState<string>("Inademen");
 
-  // Updated Voice URLs for different techniques based on the provided image
   const techniqueVoiceUrls = {
     "4-7-8": {
       vera: {
@@ -55,7 +57,18 @@ const Breathing = () => {
     }
   };
 
-  // Load breathing patterns from localStorage (keeping for potential future use)
+  useEffect(() => {
+    Object.values(techniqueVoiceUrls).forEach(technique => {
+      Object.values(technique).forEach(voice => {
+        Object.values(voice).forEach(url => {
+          if (url) {
+            preloadAudio(validateAudioUrl(url));
+          }
+        });
+      });
+    });
+  }, []);
+
   useEffect(() => {
     const loadPatterns = () => {
       setIsLoading(true);
@@ -66,6 +79,7 @@ const Breathing = () => {
           setBreathingPatterns(patterns);
           if (patterns.length > 0) {
             setSelectedPattern(patterns[0]);
+            setTotalCycles(patterns[0].cycles || 5);
           }
         }
       } catch (error) {
@@ -81,6 +95,8 @@ const Breathing = () => {
   const handleVoicePlay = (voice: "vera" | "marco") => {
     setIsVoiceActive(true);
     setActiveVoice(voice);
+    setCurrentCycle(1);
+    setCurrentPhase("Inademen");
     console.log(`Activating ${voice} voice for ${selectedTechnique}`, 
       techniqueVoiceUrls[selectedTechnique][voice]);
   };
@@ -90,7 +106,35 @@ const Breathing = () => {
     setActiveVoice(null);
   };
   
-  // Debug logging for voice URLs
+  const handleReset = () => {
+    handleVoicePause();
+    setCurrentCycle(1);
+    setCurrentPhase("Inademen");
+  };
+  
+  useEffect(() => {
+    if (!isVoiceActive) return;
+    
+    const phaseTimer = setTimeout(() => {
+      if (currentPhase === "Inademen") {
+        setCurrentPhase("Vasthouden");
+      } else if (currentPhase === "Vasthouden") {
+        setCurrentPhase("Uitademen");
+      } else if (currentPhase === "Uitademen") {
+        if (currentCycle < totalCycles) {
+          setCurrentCycle(prev => prev + 1);
+          setCurrentPhase("Inademen");
+        } else {
+          handleVoicePause();
+          setCurrentCycle(1);
+          setCurrentPhase("Inademen");
+        }
+      }
+    }, 4000);
+    
+    return () => clearTimeout(phaseTimer);
+  }, [isVoiceActive, currentPhase, currentCycle, totalCycles]);
+  
   useEffect(() => {
     if (activeVoice) {
       const voiceUrls = techniqueVoiceUrls[selectedTechnique][activeVoice];
@@ -103,11 +147,6 @@ const Breathing = () => {
       <div className="space-y-6 animate-fade-in min-h-full p-4 rounded-lg bg-gradient-to-br from-navy-950 to-indigo-950">
         <div className="flex flex-col items-center space-y-4">
           <h1 className="text-2xl font-bold text-center text-white">Ademhalingsoefeningen</h1>
-          
-          <div className="flex items-center gap-2 mb-2 text-white">
-            <RefreshCw className="text-blue-400 h-5 w-5" />
-            <h2 className="text-lg font-medium">Ademhalingsoefening</h2>
-          </div>
           
           <div className="mb-4 w-full max-w-xs">
             <select
@@ -122,23 +161,15 @@ const Breathing = () => {
             </select>
           </div>
           
-          {/* Only show breathing animation when a voice is active */}
           {isVoiceActive && activeVoice && (
             <BreathingAnimation 
               technique={selectedTechnique}
               voiceUrls={techniqueVoiceUrls[selectedTechnique][activeVoice]}
               isVoiceActive={isVoiceActive}
+              currentPhase={currentPhase}
             />
           )}
           
-          {/* Show instruction when no voice is selected */}
-          {!isVoiceActive && (
-            <div className="p-6 text-center bg-blue-900/30 rounded-lg border border-blue-800/50 mb-4">
-              <p className="text-white font-medium">Selecteer Vera of Marco hieronder om te beginnen</p>
-            </div>
-          )}
-          
-          {/* Voice player */}
           <BreathingVoicePlayer 
             veraUrls={techniqueVoiceUrls[selectedTechnique].vera}
             marcoUrls={techniqueVoiceUrls[selectedTechnique].marco}
@@ -146,6 +177,10 @@ const Breathing = () => {
             onPause={handleVoicePause}
             onPlay={handleVoicePlay}
             activeVoice={activeVoice}
+            onReset={handleReset}
+            currentCycle={currentCycle}
+            totalCycles={totalCycles}
+            currentPhase={currentPhase}
           />
         </div>
         
