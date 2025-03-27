@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
@@ -80,6 +81,7 @@ const Breathing = () => {
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
   const [showAnimation, setShowAnimation] = useState(false);
+  const [currentCycle, setCurrentCycle] = useState(1);
   
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
@@ -187,6 +189,7 @@ const Breathing = () => {
     setIsExerciseActive(false);
     setActiveVoice(null);
     setShowAnimation(false);
+    setCurrentCycle(1);
   };
 
   const handleActivateVoice = async (voice: "vera" | "marco") => {
@@ -208,6 +211,7 @@ const Breathing = () => {
     setIsExerciseActive(true);
     setCurrentPhase("inhale");
     setShowAnimation(true);
+    setCurrentCycle(1);
     console.log(`Activated ${voice} voice with URLs:`, urls);
   };
 
@@ -220,10 +224,18 @@ const Breathing = () => {
     setActiveVoice(null);
     setCurrentPhase("inhale");
     setShowAnimation(false);
+    setCurrentCycle(1);
   };
 
   const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
     setCurrentPhase(phase);
+    
+    // Update cycle count when completing a full breath cycle
+    if (phase === "inhale" && currentPhase === "pause") {
+      if (selectedPattern && currentCycle < selectedPattern.cycles) {
+        setCurrentCycle(prevCycle => prevCycle + 1);
+      }
+    }
   };
 
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
@@ -264,6 +276,8 @@ const Breathing = () => {
                 isVoiceActive={isExerciseActive && !!activeVoice}
                 currentPhase={currentPhase}
                 onPhaseChange={handlePhaseChange}
+                currentCycle={currentCycle}
+                totalCycles={selectedPattern.cycles}
               />
             </div>
           )}

@@ -14,29 +14,29 @@ interface BreathingAnimationProps {
   isVoiceActive: boolean;
   currentPhase?: BreathingPhase;
   onPhaseChange?: (phase: BreathingPhase) => void;
+  currentCycle?: number;
+  totalCycles?: number;
 }
 const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   technique,
   voiceUrls,
   isVoiceActive,
   currentPhase: externalPhase,
-  onPhaseChange
+  onPhaseChange,
+  currentCycle = 1,
+  totalCycles = 5
 }) => {
   const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
     if (breathingTechnique === '4-7-8') {
       switch (currentPhase) {
         case 'inhale':
           return 4;
-        // 4 seconds for inhale
         case 'hold':
           return 7;
-        // 7 seconds hold
         case 'exhale':
           return 8;
-        // 8 seconds exhale
         case 'pause':
           return 0;
-        // No pause
         default:
           return 4;
       }
@@ -44,16 +44,12 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       switch (currentPhase) {
         case 'inhale':
           return 4;
-        // 4 counts for inhale
         case 'hold':
           return 4;
-        // 4 counts hold
         case 'exhale':
           return 4;
-        // 4 counts exhale
         case 'pause':
           return 4;
-        // 4 counts pause
         default:
           return 4;
       }
@@ -61,21 +57,17 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       switch (currentPhase) {
         case 'inhale':
           return 5;
-        // 5 seconds for deep inhale
         case 'hold':
           return 2;
-        // 2 seconds slight hold
         case 'exhale':
           return 6;
-        // 6 seconds slow exhale
         case 'pause':
           return 1;
-        // 1 second pause
         default:
           return 5;
       }
     }
-    return 4; // Default
+    return 4;
   };
   const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
     switch (currentPhase) {
@@ -100,10 +92,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   const audioErrorCountRef = useRef<number>(0);
   const audioLoadingRef = useRef<boolean>(false);
 
-  // Use external phase if provided, otherwise use internal phase
   const phase = externalPhase || internalPhase;
 
-  // Reset animation state when technique changes
   useEffect(() => {
     if (!externalPhase) {
       setInternalPhase('inhale');
@@ -111,16 +101,13 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     setCount(getCountForPhase(externalPhase || 'inhale', technique));
     setIsActive(true);
 
-    // Reset audio error count
     audioErrorCountRef.current = 0;
 
-    // Pre-validate voice URLs if available
     if (voiceUrls && isVoiceActive) {
       validateVoiceUrls(voiceUrls);
     }
   }, [technique, externalPhase, voiceUrls, isVoiceActive]);
 
-  // Validate all voice URLs at once
   const validateVoiceUrls = async (urls: {
     inhale: string;
     hold: string;
@@ -131,12 +118,11 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       return false;
     }
     try {
-      // Test all URLs in parallel
       const [inhaleValid, holdValid, exhaleValid] = await Promise.all([preloadAudio(urls.inhale), preloadAudio(urls.hold), preloadAudio(urls.exhale)]);
       const allValid = inhaleValid && holdValid && exhaleValid;
       if (!allValid) {
         console.error("One or more voice audio URLs failed validation");
-        audioErrorCountRef.current = 5; // Set to max to prevent repeated errors
+        audioErrorCountRef.current = 5;
         toast.error("Fout bij het laden van audio. Controleer of alle URL's correct zijn.");
         return false;
       }
@@ -148,7 +134,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }
   };
 
-  // Function to safely play audio with proper error handling
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
     let audioUrl = '';
@@ -170,29 +155,25 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       return;
     }
 
-    // Prevent multiple simultaneous playback attempts
     audioLoadingRef.current = true;
     try {
       console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
 
-      // Preload audio to check if it's valid
       const isValid = await preloadAudio(audioUrl);
       if (!isValid) {
         throw new Error(`Failed to preload ${phaseType} audio`);
       }
 
-      // Now set the actual audio element's source and play
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         audioRef.current.volume = 1.0;
         try {
           await audioRef.current.play();
           console.log(`Playing ${phaseType} audio successfully`);
-          audioErrorCountRef.current = 0; // Reset error count on success
+          audioErrorCountRef.current = 0;
         } catch (playError) {
           console.error(`Error playing ${phaseType} audio:`, playError);
 
-          // Only increment error counter if we haven't reached max
           if (audioErrorCountRef.current < 5) {
             audioErrorCountRef.current++;
             if (audioErrorCountRef.current === 3) {
@@ -200,7 +181,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
             }
           }
 
-          // If this is a user interaction error, try playing on next user interaction
           if (playError.name === 'NotAllowedError') {
             console.log("Audio playback requires user interaction");
           }
@@ -217,7 +197,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }
   };
 
-  // Play appropriate audio when phase changes or when voice becomes active
   useEffect(() => {
     if (previousPhaseRef.current !== phase) {
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
@@ -228,18 +207,15 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }
   }, [phase, voiceUrls, isVoiceActive, isActive]);
 
-  // Stop audio when voice becomes inactive
   useEffect(() => {
     if (!isVoiceActive && audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
-      // Play initial audio
       playAudio(phase);
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
 
-  // Main breathing timer effect
   useEffect(() => {
     if (!isActive) return;
     const interval = setInterval(() => {
@@ -247,11 +223,9 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         if (prevCount <= 1) {
           const nextPhase = getNextPhase(phase);
 
-          // If we're using internal phase state, update it
           if (!externalPhase) {
             setInternalPhase(nextPhase);
           } else if (onPhaseChange) {
-            // If we're using external phase, call the change handler
             onPhaseChange(nextPhase);
           }
           return getCountForPhase(nextPhase, technique);
@@ -261,6 +235,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }, 1000);
     return () => clearInterval(interval);
   }, [phase, technique, isActive, externalPhase, onPhaseChange]);
+
   const getMessage = (): string => {
     switch (phase) {
       case 'inhale':
@@ -271,11 +246,11 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         return 'Adem uit';
       case 'pause':
         return '';
-      // Removed 'Rust' text
       default:
         return 'Adem in';
     }
   };
+
   const circleClass = () => {
     switch (phase) {
       case 'inhale':
@@ -290,29 +265,30 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         return 'scale-100';
     }
   };
+
   const animationStyle = () => {
     const duration = getCountForPhase(phase, technique);
     return {
       animationDuration: `${duration}s`
     };
   };
+
   const toggleActive = () => {
     setIsActive(!isActive);
     if (audioRef.current && isVoiceActive) {
       if (isActive) {
-        // Pausing
         audioRef.current.pause();
       } else {
-        // Resuming
         playAudio(phase);
       }
     }
   };
+
   const shouldShowCounter = phase !== 'pause';
   const circleSize = 'w-48 h-48';
   const innerCircleSize = 'w-40 h-40';
+
   return <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center my-0 rounded-lg">
-      {/* Hidden audio element to play voice guidance */}
       <audio ref={audioRef} onError={() => {
       console.error("Audio element error");
       audioErrorCountRef.current++;
@@ -330,8 +306,10 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         </div>
       </div>
       
-      <div className="mt-16 text-center">
-        
+      <div className="mt-4 text-center">
+        <p className="text-sm text-white/70">
+          Cyclus {currentCycle} van {totalCycles}
+        </p>
       </div>
     </div>;
 };
