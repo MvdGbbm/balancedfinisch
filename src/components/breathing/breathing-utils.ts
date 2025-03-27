@@ -3,6 +3,8 @@ import { BreathingPhase } from './types';
 
 export const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
   switch (currentPhase) {
+    case 'start':
+      return 'inhale';
     case 'inhale':
       return 'hold';
     case 'hold':
@@ -24,6 +26,8 @@ export const getCountForPhase = (
   pauseTime: number
 ): number => {
   switch (currentPhase) {
+    case 'start':
+      return 0;
     case 'inhale':
       return inhaleTime;
     case 'hold':
@@ -39,6 +43,8 @@ export const getCountForPhase = (
 
 export const getBreathingMessage = (phase: BreathingPhase): string => {
   switch (phase) {
+    case 'start':
+      return 'Start';
     case 'inhale':
       return 'Adem in';
     case 'hold':
