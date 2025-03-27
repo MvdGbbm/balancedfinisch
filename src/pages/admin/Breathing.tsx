@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+import { AudioPreview } from "@/components/admin/audio-preview";
 
 type BreathingPattern = {
   id: string;
@@ -504,6 +505,11 @@ const AdminBreathing = () => {
                             <FormControl>
                               <Input {...field} placeholder="https://voorbeeld.com/adem-in.mp3" />
                             </FormControl>
+                            {field.value && (
+                              <div className="mt-2">
+                                <AudioPreview audioUrl={field.value} label="Inademen" />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -517,6 +523,11 @@ const AdminBreathing = () => {
                             <FormControl>
                               <Input {...field} placeholder="https://voorbeeld.com/vasthouden.mp3" />
                             </FormControl>
+                            {field.value && (
+                              <div className="mt-2">
+                                <AudioPreview audioUrl={field.value} label="Vasthouden" />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -530,6 +541,11 @@ const AdminBreathing = () => {
                             <FormControl>
                               <Input {...field} placeholder="https://voorbeeld.com/adem-uit.mp3" />
                             </FormControl>
+                            {field.value && (
+                              <div className="mt-2">
+                                <AudioPreview audioUrl={field.value} label="Uitademen" />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -561,6 +577,11 @@ const AdminBreathing = () => {
                             <FormControl>
                               <Input {...field} placeholder="https://voorbeeld.com/adem-in.mp3" />
                             </FormControl>
+                            {field.value && (
+                              <div className="mt-2">
+                                <AudioPreview audioUrl={field.value} label="Inademen" />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -574,6 +595,11 @@ const AdminBreathing = () => {
                             <FormControl>
                               <Input {...field} placeholder="https://voorbeeld.com/vasthouden.mp3" />
                             </FormControl>
+                            {field.value && (
+                              <div className="mt-2">
+                                <AudioPreview audioUrl={field.value} label="Vasthouden" />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
@@ -587,6 +613,11 @@ const AdminBreathing = () => {
                             <FormControl>
                               <Input {...field} placeholder="https://voorbeeld.com/adem-uit.mp3" />
                             </FormControl>
+                            {field.value && (
+                              <div className="mt-2">
+                                <AudioPreview audioUrl={field.value} label="Uitademen" />
+                              </div>
+                            )}
                           </FormItem>
                         )}
                       />
