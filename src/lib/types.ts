@@ -1,4 +1,3 @@
-
 export interface Meditation {
   id: string;
   title: string;
@@ -70,6 +69,8 @@ export interface BreathingPattern {
   marcoInhaleUrl?: string;
   marcoHoldUrl?: string;
   marcoExhaleUrl?: string;
+  // URL to play at the end of the exercise
+  endUrl?: string;
 }
 
 export interface BreathingVoice {

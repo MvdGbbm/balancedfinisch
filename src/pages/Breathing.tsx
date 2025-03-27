@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
@@ -20,6 +19,7 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
+  endUrl?: string;
 };
 
 type VoiceURLs = {
@@ -82,6 +82,8 @@ const Breathing = () => {
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(1);
+  const [exerciseCompleted, setExerciseCompleted] = useState(false);
+  const endAudioRef = useRef<HTMLAudioElement | null>(null);
   
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
@@ -190,6 +192,7 @@ const Breathing = () => {
     setActiveVoice(null);
     setShowAnimation(false);
     setCurrentCycle(1);
+    setExerciseCompleted(false);
   };
 
   const handleActivateVoice = async (voice: "vera" | "marco") => {
@@ -225,15 +228,40 @@ const Breathing = () => {
     setCurrentPhase("inhale");
     setShowAnimation(false);
     setCurrentCycle(1);
+    setExerciseCompleted(false);
+    
+    if (endAudioRef.current) {
+      endAudioRef.current.pause();
+      endAudioRef.current.currentTime = 0;
+    }
   };
 
   const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
     setCurrentPhase(phase);
     
-    // Update cycle count when completing a full breath cycle
     if (phase === "inhale" && currentPhase === "pause") {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
         setCurrentCycle(prevCycle => prevCycle + 1);
+      } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
+        setIsExerciseActive(false);
+        setExerciseCompleted(true);
+        
+        if (selectedPattern.endUrl) {
+          try {
+            if (endAudioRef.current) {
+              endAudioRef.current.src = selectedPattern.endUrl;
+              endAudioRef.current.load();
+              endAudioRef.current.play().catch(err => {
+                console.error("Error playing end audio:", err);
+                toast.error("Kon audio niet afspelen");
+              });
+            }
+          } catch (error) {
+            console.error("Error with end audio:", error);
+          }
+        }
+        
+        toast.success("Ademhalingsoefening voltooid!");
       }
     }
   };
@@ -281,6 +309,8 @@ const Breathing = () => {
               />
             </div>
           )}
+          
+          <audio ref={endAudioRef} style={{ display: 'none' }} />
           
           {selectedPattern && (
             <BreathingVoicePlayer 
