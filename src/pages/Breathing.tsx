@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
-import { BreathingAnimation } from "@/components/breathing/breathing-animation";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

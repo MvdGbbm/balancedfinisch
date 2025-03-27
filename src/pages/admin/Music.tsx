@@ -38,7 +38,24 @@ const AdminMusic = () => {
       updateSoundscape(currentMusicItem.id, musicData);
       toast.success("Muziek bijgewerkt");
     } else {
-      addSoundscape(musicData);
+      // Make sure we have all required properties for a new Soundscape
+      if (!musicData.title || !musicData.description || !musicData.audioUrl || 
+          !musicData.coverImageUrl || !musicData.category) {
+        toast.error("Alle verplichte velden moeten ingevuld zijn");
+        return;
+      }
+      
+      // Cast to required type with all necessary fields
+      const newMusic: Omit<Soundscape, "id"> = {
+        title: musicData.title,
+        description: musicData.description,
+        audioUrl: musicData.audioUrl,
+        category: musicData.category || "Muziek",
+        coverImageUrl: musicData.coverImageUrl,
+        tags: musicData.tags || [],
+      };
+      
+      addSoundscape(newMusic);
       toast.success("Nieuwe muziek toegevoegd");
     }
   };
