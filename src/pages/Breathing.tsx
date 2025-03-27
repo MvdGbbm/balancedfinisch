@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
@@ -14,19 +15,43 @@ const Breathing = () => {
   const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
 
-  // Voice URLs for different techniques
+  // Updated Voice URLs for different techniques based on the provided image
   const techniqueVoiceUrls = {
     "4-7-8": {
-      vera: "/audio/vera-478.mp3",
-      marco: "/audio/marco-478.mp3"
+      vera: {
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Start%20van%20de%20oefening.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
+      },
+      marco: {
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/crickets.ogg",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/Rain%20norm.ogg",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/cosmic.ogg"
+      }
     },
     "box-breathing": {
-      vera: "/audio/vera-box.mp3",
-      marco: "/audio/marco-box.mp3"
+      vera: {
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Start%20van%20de%20oefening.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
+      },
+      marco: {
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/crickets.ogg",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/Rain%20norm.ogg",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/cosmic.ogg"
+      }
     },
     "diaphragmatic": {
-      vera: "/audio/vera-diaphragmatic.mp3",
-      marco: "/audio/marco-diaphragmatic.mp3"
+      vera: {
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Start%20van%20de%20oefening.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
+      },
+      marco: {
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/crickets.ogg",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/Rain%20norm.ogg",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/cosmic.ogg"
+      }
     }
   };
 
@@ -63,14 +88,6 @@ const Breathing = () => {
     setActiveVoice(null);
   };
   
-  // Get current voice URLs based on selected technique
-  const getVoiceUrls = () => {
-    return {
-      vera: techniqueVoiceUrls[selectedTechnique].vera,
-      marco: techniqueVoiceUrls[selectedTechnique].marco
-    };
-  };
-
   return (
     <MobileLayout>
       <div className="space-y-6 animate-fade-in min-h-full p-4 rounded-lg bg-gradient-to-br from-navy-950 to-indigo-950">
@@ -95,13 +112,15 @@ const Breathing = () => {
           </div>
           
           <BreathingAnimation 
-            technique={selectedTechnique} 
+            technique={selectedTechnique}
+            voiceUrls={activeVoice ? techniqueVoiceUrls[selectedTechnique][activeVoice] : null}
+            isVoiceActive={isVoiceActive}
           />
           
           {/* Voice player */}
           <BreathingVoicePlayer 
-            veraUrl={getVoiceUrls().vera}
-            marcoUrl={getVoiceUrls().marco}
+            veraUrls={techniqueVoiceUrls[selectedTechnique].vera}
+            marcoUrls={techniqueVoiceUrls[selectedTechnique].marco}
             isActive={isVoiceActive}
             onPause={handleVoicePause}
             onPlay={handleVoicePlay}

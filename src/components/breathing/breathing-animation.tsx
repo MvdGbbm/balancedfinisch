@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
@@ -7,9 +7,19 @@ type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
 
 interface BreathingAnimationProps {
   technique: BreathingTechnique;
+  voiceUrls: {
+    inhale: string;
+    hold: string;
+    exhale: string;
+  } | null;
+  isVoiceActive: boolean;
 }
 
-const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) => {
+const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ 
+  technique, 
+  voiceUrls,
+  isVoiceActive
+}) => {
   const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
     if (breathingTechnique === '4-7-8') {
       switch(currentPhase) {
@@ -54,13 +64,52 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) =>
   const [count, setCount] = useState(getCountForPhase('inhale', technique));
   const [isActive, setIsActive] = useState(true);
   const isMobile = useIsMobile();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
+  // Reset animation state when technique changes
   useEffect(() => {
     setPhase('inhale');
     setCount(getCountForPhase('inhale', technique));
     setIsActive(true);
   }, [technique]);
   
+  // Play appropriate audio when phase changes or when voice becomes active
+  useEffect(() => {
+    if (voiceUrls && isVoiceActive && audioRef.current) {
+      let audioUrl = '';
+      
+      // Get the correct audio URL based on the current phase
+      switch(phase) {
+        case 'inhale':
+          audioUrl = voiceUrls.inhale;
+          break;
+        case 'hold':
+          audioUrl = voiceUrls.hold;
+          break;
+        case 'exhale':
+          audioUrl = voiceUrls.exhale;
+          break;
+        default:
+          audioUrl = '';
+      }
+      
+      // Only play if we have a URL and the animation is active
+      if (audioUrl && isActive) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.play().catch(err => console.error("Error playing audio:", err));
+      }
+    }
+  }, [phase, voiceUrls, isVoiceActive, isActive]);
+
+  // Stop audio when voice becomes inactive
+  useEffect(() => {
+    if (!isVoiceActive && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [isVoiceActive]);
+  
+  // Main breathing timer effect
   useEffect(() => {
     if (!isActive) return;
     
@@ -124,6 +173,9 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ technique }) =>
 
   return (
     <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
+      {/* Hidden audio element to play voice guidance */}
+      <audio ref={audioRef} />
+      
       <div 
         className={`breathe-circle ${circleSize} ${circleClass()}`}
         style={animationStyle()}
