@@ -4,7 +4,7 @@ import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
-import { BreathingPhase } from "@/components/breathing/types";
+import { BreathingPattern, VoiceURLs, BreathingPhase } from "@/components/breathing/types";
 import {
   Select,
   SelectContent,
@@ -82,7 +82,7 @@ const Breathing = () => {
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isExerciseActive, setIsExerciseActive] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("start");
+  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("inhale");
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(1);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
@@ -91,7 +91,7 @@ const Breathing = () => {
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
   const [voiceUrlsValidated, setVoiceUrlsValidated] = useState<boolean>(false);
-  
+
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -217,15 +217,15 @@ const Breathing = () => {
       return;
     }
     
-    if (isExerciseActive && activeVoice === voice && currentPhase === "start") {
-      setCurrentPhase("inhale");
-      console.log(`Starting breathing exercise with ${voice} voice`);
+    if (isExerciseActive && activeVoice === voice && currentPhase === 'start') {
+      setCurrentPhase('inhale');
+      console.log('Starting from "Start" phase to "inhale"');
       return;
     }
-    
+
     setActiveVoice(voice);
     setIsExerciseActive(true);
-    setCurrentPhase("start");
+    setCurrentPhase('start');
     setShowAnimation(true);
     setCurrentCycle(1);
     setExerciseCompleted(false);
@@ -252,10 +252,10 @@ const Breathing = () => {
   const handlePhaseChange = (phase: BreathingPhase) => {
     setCurrentPhase(phase);
     
-    if (phase === "inhale" && currentPhase === "pause") {
+    if (phase === 'inhale' && currentPhase === 'pause') {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
         setCurrentCycle(prevCycle => prevCycle + 1);
-      } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
+      } else if (selectedPattern && currentCycle >= selectedPattern.cycles) {
         setIsExerciseActive(false);
         setExerciseCompleted(true);
         setShowAnimation(true);

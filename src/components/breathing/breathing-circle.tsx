@@ -44,6 +44,10 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   };
 
   const animationStyle = () => {
+    // No animation for start phase
+    if (phase === 'start') {
+      return {};
+    }
     return {
       animationDuration: `${animationDuration}s`
     };

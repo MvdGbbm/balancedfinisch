@@ -14,7 +14,7 @@ export const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
     case 'pause':
       return 'inhale';
     default:
-      return 'inhale';
+      return 'start';
   }
 };
 
@@ -27,7 +27,7 @@ export const getCountForPhase = (
 ): number => {
   switch (currentPhase) {
     case 'start':
-      return 0;
+      return 0; // No countdown for start phase
     case 'inhale':
       return inhaleTime;
     case 'hold':
@@ -54,6 +54,6 @@ export const getBreathingMessage = (phase: BreathingPhase): string => {
     case 'pause':
       return '';
     default:
-      return 'Adem in';
+      return 'Start';
   }
 };
