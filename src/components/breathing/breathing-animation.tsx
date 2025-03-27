@@ -1,259 +1,275 @@
 
-import React, { useState, useEffect, useRef } from "react";
-import { validateAudioUrl } from "@/components/audio-player/utils";
+import React, { useState, useEffect, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-interface VoiceUrls {
-  inhale: string;
-  hold: string;
-  exhale: string;
-}
+export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
+export type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
 
-export interface BreathingAnimationProps {
-  technique: "4-7-8" | "box-breathing" | "diaphragmatic";
-  voiceUrls: VoiceUrls;
+interface BreathingAnimationProps {
+  technique: BreathingTechnique;
+  voiceUrls: {
+    inhale: string;
+    hold: string;
+    exhale: string;
+  } | null;
   isVoiceActive: boolean;
-  onPhaseChange?: (phase: string) => void;
-  onCycleChange?: (cycle: number) => void;
-  currentPhase?: string;
+  currentPhase?: BreathingPhase;
+  onPhaseChange?: (phase: BreathingPhase) => void;
 }
 
-const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
-  technique,
+const BreathingAnimation: React.FC<BreathingAnimationProps> = ({ 
+  technique, 
   voiceUrls,
   isVoiceActive,
-  onPhaseChange,
-  onCycleChange,
-  currentPhase
+  currentPhase: externalPhase,
+  onPhaseChange
 }) => {
-  const [circleScale, setCircleScale] = useState<number>(1);
-  const [phase, setPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
-  const [secondsLeft, setSecondsLeft] = useState<number>(4);
-  const [cycle, setCycle] = useState<number>(1);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string>("");
-  
-  // Get timing config based on the selected technique
-  const getTiming = () => {
-    switch (technique) {
-      case "4-7-8":
-        return { inhale: 4, hold1: 7, exhale: 8, hold2: 0, cycles: 5 };
-      case "box-breathing":
-        return { inhale: 4, hold1: 4, exhale: 4, hold2: 4, cycles: 4 };
-      case "diaphragmatic":
-        return { inhale: 4, hold1: 0, exhale: 6, hold2: 0, cycles: 6 };
-      default:
-        return { inhale: 4, hold1: 4, exhale: 4, hold2: 0, cycles: 4 };
-    }
-  };
-  
-  const timingConfig = getTiming();
-  
-  // Reset animation when technique changes
-  useEffect(() => {
-    const timing = getTiming();
-    setPhase("inhale");
-    setSecondsLeft(timing.inhale);
-    setCycle(1);
-    setCircleScale(1);
-  }, [technique]);
-  
-  // Update circle scale based on phase
-  useEffect(() => {
-    if (!isVoiceActive) {
-      setCircleScale(1);
-      return;
+  const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
+    if (breathingTechnique === '4-7-8') {
+      switch(currentPhase) {
+        case 'inhale': return 4; // 4 seconds for inhale
+        case 'hold': return 7;   // 7 seconds hold
+        case 'exhale': return 8; // 8 seconds exhale
+        case 'pause': return 0;  // No pause
+        default: return 4;
+      }
+    } else if (breathingTechnique === 'box-breathing') {
+      switch(currentPhase) {
+        case 'inhale': return 4; // 4 counts for inhale
+        case 'hold': return 4;   // 4 counts hold
+        case 'exhale': return 4; // 4 counts exhale
+        case 'pause': return 4;  // 4 counts pause
+        default: return 4;
+      }
+    } else if (breathingTechnique === 'diaphragmatic') {
+      switch(currentPhase) {
+        case 'inhale': return 5; // 5 seconds for deep inhale
+        case 'hold': return 2;   // 2 seconds slight hold
+        case 'exhale': return 6; // 6 seconds slow exhale
+        case 'pause': return 1;  // 1 second pause
+        default: return 5;
+      }
     }
     
-    switch (phase) {
-      case "inhale":
-        // Gradually expand during inhale
-        setCircleScale(1 + ((timingConfig.inhale - secondsLeft) / timingConfig.inhale) * 0.5);
-        break;
-      case "hold1":
-        // Stay expanded during hold
-        setCircleScale(1.5);
-        break;
-      case "exhale":
-        // Gradually contract during exhale
-        setCircleScale(1.5 - ((timingConfig.exhale - secondsLeft) / timingConfig.exhale) * 0.5);
-        break;
-      case "hold2":
-        // Stay contracted during second hold
-        setCircleScale(1);
-        break;
-      default:
-        setCircleScale(1);
-    }
-  }, [phase, secondsLeft, isVoiceActive, technique, timingConfig]);
+    return 4; // Default
+  };
   
-  // Reset animation when active status changes
+  const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
+    switch (currentPhase) {
+      case 'inhale': return 'hold';
+      case 'hold': return 'exhale';
+      case 'exhale': return 'pause';
+      case 'pause': return 'inhale';
+      default: return 'inhale';
+    }
+  };
+
+  const [internalPhase, setInternalPhase] = useState<BreathingPhase>('inhale');
+  const [count, setCount] = useState(getCountForPhase('inhale', technique));
+  const [isActive, setIsActive] = useState(true);
+  const isMobile = useIsMobile();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousPhaseRef = useRef<BreathingPhase | null>(null);
+  
+  // Use external phase if provided, otherwise use internal phase
+  const phase = externalPhase || internalPhase;
+  
+  // Reset animation state when technique changes
   useEffect(() => {
-    if (!isVoiceActive) {
-      const timing = getTiming();
-      setPhase("inhale");
-      setSecondsLeft(timing.inhale);
-      setCycle(1);
-      setCircleScale(1);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+    if (!externalPhase) {
+      setInternalPhase('inhale');
+    }
+    setCount(getCountForPhase(externalPhase || 'inhale', technique));
+    setIsActive(true);
+    
+    // Play inhale audio when technique changes
+    if (voiceUrls && isVoiceActive && audioRef.current) {
+      audioRef.current.src = voiceUrls.inhale;
+      audioRef.current.play().catch(err => console.error("Error playing audio:", err));
+    }
+  }, [technique, externalPhase]);
+  
+  // Play appropriate audio when phase changes or when voice becomes active
+  useEffect(() => {
+    if (voiceUrls && isVoiceActive && audioRef.current) {
+      // Only play audio if the phase has actually changed or if this is the first time
+      if (previousPhaseRef.current !== phase || previousPhaseRef.current === null) {
+        let audioUrl = '';
+        
+        // Get the correct audio URL based on the current phase
+        switch(phase) {
+          case 'inhale':
+            audioUrl = voiceUrls.inhale;
+            break;
+          case 'hold':
+            audioUrl = voiceUrls.hold;
+            break;
+          case 'exhale':
+            audioUrl = voiceUrls.exhale;
+            break;
+          default:
+            audioUrl = '';
+        }
+        
+        // Only play if we have a URL and the animation is active
+        if (audioUrl && isActive) {
+          console.log("Playing audio for phase:", phase, "URL:", audioUrl);
+          
+          // Preload the audio
+          const tempAudio = new Audio();
+          tempAudio.src = audioUrl;
+          tempAudio.load();
+          
+          // Set the source and play
+          audioRef.current.src = audioUrl;
+          audioRef.current.play().catch(err => console.error("Error playing audio:", err));
+        }
+        
+        // Update previous phase
+        previousPhaseRef.current = phase;
       }
+    }
+  }, [phase, voiceUrls, isVoiceActive, isActive]);
+
+  // Stop audio when voice becomes inactive
+  useEffect(() => {
+    if (!isVoiceActive && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
   }, [isVoiceActive]);
-  
-  // Update audio URL based on the current phase
+
+  // Also play initial audio when voice becomes active
   useEffect(() => {
-    if (!isVoiceActive || !voiceUrls) return;
-    
-    let url = "";
-    switch (phase) {
-      case "inhale":
-        url = voiceUrls.inhale;
-        if (onPhaseChange) onPhaseChange("Adem in");
-        break;
-      case "hold1":
-        url = voiceUrls.hold;
-        if (onPhaseChange) onPhaseChange("Vasthouden");
-        break;
-      case "exhale":
-        url = voiceUrls.exhale;
-        if (onPhaseChange) onPhaseChange("Adem uit");
-        break;
-      case "hold2":
-        url = voiceUrls.hold;
-        if (onPhaseChange) onPhaseChange("Vasthouden");
-        break;
-    }
-    
-    if (url) {
-      const validatedUrl = validateAudioUrl(url);
-      setAudioUrl(validatedUrl);
+    if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
+      // Play the audio for the current phase
+      let audioUrl = '';
+      switch(phase) {
+        case 'inhale':
+          audioUrl = voiceUrls.inhale;
+          break;
+        case 'hold':
+          audioUrl = voiceUrls.hold;
+          break;
+        case 'exhale':
+          audioUrl = voiceUrls.exhale;
+          break;
+        default:
+          audioUrl = '';
+      }
       
-      // Play the audio immediately on phase change
-      if (audioRef.current) {
-        audioRef.current.src = validatedUrl;
-        audioRef.current.load();
-        audioRef.current.play().catch(err => {
-          console.error("Error playing audio:", err);
-        });
-      }
-    }
-  }, [phase, voiceUrls, isVoiceActive]);
-  
-  // Notify parent of cycle changes
-  useEffect(() => {
-    if (onCycleChange) {
-      onCycleChange(cycle);
-    }
-  }, [cycle, onCycleChange]);
-  
-  // Handle breathing timer
-  useEffect(() => {
-    if (!isVoiceActive) return;
-    
-    const timer = setInterval(() => {
-      if (secondsLeft > 1) {
-        setSecondsLeft(prev => prev - 1);
-      } else {
-        // Phase is complete, move to next phase
-        const timing = getTiming();
+      if (audioUrl) {
+        console.log("Initial play for current phase:", phase, "URL:", audioUrl);
         
-        if (phase === "inhale") {
-          if (timing.hold1 > 0) {
-            setPhase("hold1");
-            setSecondsLeft(timing.hold1);
-          } else {
-            setPhase("exhale");
-            setSecondsLeft(timing.exhale);
-          }
-        } else if (phase === "hold1") {
-          setPhase("exhale");
-          setSecondsLeft(timing.exhale);
-        } else if (phase === "exhale") {
-          if (timing.hold2 > 0) {
-            setPhase("hold2");
-            setSecondsLeft(timing.hold2);
-          } else {
-            // Move to next cycle or finish
-            if (cycle < timing.cycles) {
-              setCycle(prev => prev + 1);
-              setPhase("inhale");
-              setSecondsLeft(timing.inhale);
-            } else {
-              // Exercise complete
-              if (onPhaseChange) onPhaseChange("Voltooid");
-              // Reset for next time
-              setCycle(1);
-              setPhase("inhale");
-              setSecondsLeft(timing.inhale);
-            }
-          }
-        } else if (phase === "hold2") {
-          // Move to next cycle or finish
-          if (cycle < timing.cycles) {
-            setCycle(prev => prev + 1);
-            setPhase("inhale");
-            setSecondsLeft(timing.inhale);
-          } else {
-            // Exercise complete
-            if (onPhaseChange) onPhaseChange("Voltooid");
-            // Reset for next time
-            setCycle(1);
-            setPhase("inhale");
-            setSecondsLeft(timing.inhale);
-          }
-        }
+        // Preload the audio
+        const tempAudio = new Audio();
+        tempAudio.src = audioUrl;
+        tempAudio.load();
+        
+        audioRef.current.src = audioUrl;
+        audioRef.current.play().catch(err => console.error("Error playing audio:", err));
       }
+    }
+  }, [isVoiceActive, voiceUrls, isActive, phase]);
+  
+  // Main breathing timer effect
+  useEffect(() => {
+    if (!isActive) return;
+    
+    const interval = setInterval(() => {
+      setCount((prevCount) => {
+        if (prevCount <= 1) {
+          const nextPhase = getNextPhase(phase);
+          
+          // If we're using internal phase state, update it
+          if (!externalPhase) {
+            setInternalPhase(nextPhase);
+          } else if (onPhaseChange) {
+            // If we're using external phase, call the change handler
+            onPhaseChange(nextPhase);
+          }
+          
+          return getCountForPhase(nextPhase, technique);
+        }
+        return prevCount - 1;
+      });
     }, 1000);
     
-    return () => clearInterval(timer);
-  }, [isVoiceActive, phase, secondsLeft, cycle, technique, onPhaseChange]);
-  
-  // Render animation circle with color based on phase
-  const getCircleColor = () => {
-    switch (phase) {
-      case "inhale":
-        return "from-blue-600 to-cyan-500";
-      case "hold1":
-        return "from-purple-500 to-amber-400";  
-      case "exhale":
-        return "from-indigo-600 to-blue-500";
-      case "hold2":
-        return "from-teal-500 to-blue-500";
-      default:
-        return "from-blue-600 to-cyan-500";
+    return () => clearInterval(interval);
+  }, [phase, technique, isActive, externalPhase, onPhaseChange]);
+
+  const getMessage = (): string => {
+    switch(phase) {
+      case 'inhale': return 'Adem in';
+      case 'hold': return 'Houd vast';
+      case 'exhale': return 'Adem uit';
+      case 'pause': return ''; // Removed 'Rust' text
+      default: return 'Adem in';
     }
   };
-  
+
+  const circleClass = () => {
+    const duration = getCountForPhase(phase, technique);
+    
+    switch(phase) {
+      case 'inhale': 
+        return `grow-animation`;
+      case 'hold': 
+        return 'scale-125'; 
+      case 'exhale': 
+        return `shrink-animation`;
+      case 'pause': 
+        return 'scale-100';
+      default: 
+        return 'scale-100';
+    }
+  };
+
+  const animationStyle = () => {
+    const duration = getCountForPhase(phase, technique);
+    
+    return {
+      animationDuration: `${duration}s`
+    };
+  };
+
+  const toggleActive = () => {
+    setIsActive(!isActive);
+  };
+
+  const shouldShowCounter = phase !== 'pause';
+
+  const circleSize = 'w-48 h-48';
+  const innerCircleSize = 'w-40 h-40';
+
   return (
-    <div className="relative h-[250px] w-[250px] mx-auto mb-6 flex items-center justify-center">
-      {/* Background circles for depth */}
-      <div className="absolute inset-0 rounded-full bg-blue-600/10 transform scale-110"></div>
-      <div className="absolute inset-0 rounded-full bg-blue-600/5 transform scale-125"></div>
+    <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center">
+      {/* Hidden audio element to play voice guidance */}
+      <audio ref={audioRef} />
       
-      {/* Animated breathing circle */}
       <div 
-        className={`absolute inset-0 rounded-full bg-gradient-to-r ${getCircleColor()} shadow-lg`}
-        style={{
-          transform: `scale(${circleScale})`,
-          transition: 'transform 1s ease-in-out, background-color 1s ease-in-out'
-        }}
-      ></div>
-      
-      {/* Text overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-10">
-        <p className="text-4xl font-bold">{secondsLeft}</p>
-        <p className="text-lg font-medium mt-1">{currentPhase || 
-          (phase === "inhale" ? "Adem in" : 
-           phase === "hold1" ? "Vasthouden" : 
-           phase === "exhale" ? "Adem uit" : 
-           "Vasthouden")
-        }</p>
-        <p className="text-sm mt-2">Cyclus {cycle}/{timingConfig.cycles}</p>
+        className={`breathe-circle ${circleSize} ${circleClass()}`}
+        style={animationStyle()}
+        onClick={toggleActive}
+      >
+        <div className={`breathe-inner-circle ${innerCircleSize}`}>
+          <div className="flex flex-col items-center justify-center text-center">
+            <p className="text-xl font-light mb-2">{getMessage()}</p>
+            {shouldShowCounter && (
+              <p className="text-3xl font-medium">{count}</p>
+            )}
+          </div>
+        </div>
       </div>
       
-      {/* Hidden audio element */}
-      <audio ref={audioRef} src={audioUrl} preload="auto" style={{ display: 'none' }} />
+      <div className="mt-16 text-center">
+        <button 
+          onClick={toggleActive}
+          className="px-4 py-2 rounded-lg bg-tranquil-400/40 hover:bg-tranquil-400/60 text-foreground transition-colors"
+        >
+          {isActive ? 'Pauze' : 'Hervat'}
+        </button>
+      </div>
     </div>
   );
 };

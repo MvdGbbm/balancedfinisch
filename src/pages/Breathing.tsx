@@ -1,13 +1,11 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import { BreathingPattern } from "@/lib/types";
 import { RefreshCw } from "lucide-react";
-import BreathingAnimation from "@/components/breathing/breathing-animation";
+import BreathingAnimation, { BreathingPhase } from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
-import { toast } from "sonner";
 
 const Breathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
@@ -16,12 +14,9 @@ const Breathing = () => {
   const [selectedTechnique, setSelectedTechnique] = useState<"4-7-8" | "box-breathing" | "diaphragmatic">("4-7-8");
   const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<string>("Gereed");
-  const [currentCycle, setCurrentCycle] = useState<number>(1);
-  const [totalCycles, setTotalCycles] = useState<number>(4);
-  
-  // Reference to track if component is mounted
-  const isMounted = useRef(true);
+  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("inhale");
+  const [cycle, setCycle] = useState<number>(1);
+  const [totalCycles, setTotalCycles] = useState<number>(5);
 
   const techniqueVoiceUrls = {
     "4-7-8": {
@@ -62,58 +57,20 @@ const Breathing = () => {
     }
   };
 
-  // Handle component unmount
   useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Load stored voice URLs from localStorage
-  useEffect(() => {
-    try {
-      // Try to load custom voice URLs for each technique
-      for (const technique of ["4-7-8", "box-breathing", "diaphragmatic"] as const) {
-        // Load Vera voice URLs for this technique
-        const veraKey = `veraVoiceUrls_${technique}`;
-        const savedVeraUrls = localStorage.getItem(veraKey);
-        if (savedVeraUrls) {
-          const parsedUrls = JSON.parse(savedVeraUrls);
-          if (parsedUrls.inhale && parsedUrls.hold && parsedUrls.exhale) {
-            techniqueVoiceUrls[technique].vera = parsedUrls;
-            console.log(`Loaded custom Vera URLs for ${technique}:`, parsedUrls);
-          }
-        }
-        
-        // Load Marco voice URLs for this technique
-        const marcoKey = `marcoVoiceUrls_${technique}`;
-        const savedMarcoUrls = localStorage.getItem(marcoKey);
-        if (savedMarcoUrls) {
-          const parsedUrls = JSON.parse(savedMarcoUrls);
-          if (parsedUrls.inhale && parsedUrls.hold && parsedUrls.exhale) {
-            techniqueVoiceUrls[technique].marco = parsedUrls;
-            console.log(`Loaded custom Marco URLs for ${technique}:`, parsedUrls);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error loading voice URLs from localStorage:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    Object.keys(techniqueVoiceUrls).forEach(technique => {
-      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.inhale);
-      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.hold);
-      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.exhale);
+    const preloadAllAudio = async () => {
+      if (!activeVoice) return;
       
-      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.inhale);
-      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.hold);
-      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.exhale);
-    });
+      const urls = techniqueVoiceUrls[selectedTechnique][activeVoice];
+      await Promise.all([
+        preloadAudio(urls.inhale),
+        preloadAudio(urls.hold),
+        preloadAudio(urls.exhale)
+      ]);
+    };
     
-    console.log("Preloading all breathing audio files");
-  }, []);
+    preloadAllAudio();
+  }, [selectedTechnique, activeVoice]);
 
   useEffect(() => {
     const loadPatterns = () => {
@@ -125,10 +82,6 @@ const Breathing = () => {
           setBreathingPatterns(patterns);
           if (patterns.length > 0) {
             setSelectedPattern(patterns[0]);
-            
-            // Set total cycles based on the selected pattern
-            const defaultPattern = patterns.find(p => p.name.includes("4-7-8")) || patterns[0];
-            setTotalCycles(defaultPattern.cycles || 4);
           }
         }
       } catch (error) {
@@ -141,99 +94,53 @@ const Breathing = () => {
     loadPatterns();
   }, []);
 
+  useEffect(() => {
+    if (currentPhase === "inhale" && isVoiceActive) {
+      if (cycle > 0) {
+        setCycle(prev => {
+          const newCycle = prev + 1;
+          if (newCycle > totalCycles) {
+            setIsVoiceActive(false);
+            setActiveVoice(null);
+            setCycle(1);
+            return 1;
+          }
+          return newCycle;
+        });
+      }
+    }
+  }, [currentPhase, isVoiceActive]);
+
   const handleVoicePlay = (voice: "vera" | "marco") => {
+    setCurrentPhase("inhale");
+    setCycle(1);
     setIsVoiceActive(true);
     setActiveVoice(voice);
-    setCurrentPhase("Adem in");
-    setCurrentCycle(1);
-    
     console.log(`Activating ${voice} voice for ${selectedTechnique}`, 
       techniqueVoiceUrls[selectedTechnique][voice]);
-    
-    const urls = techniqueVoiceUrls[selectedTechnique][voice];
-    const validInhale = validateAudioUrl(urls.inhale);
-    const validHold = validateAudioUrl(urls.hold);
-    const validExhale = validateAudioUrl(urls.exhale);
-    
-    console.log("Validated URLs for breathing:");
-    console.log("Inhale:", validInhale);
-    console.log("Hold:", validHold);
-    console.log("Exhale:", validExhale);
-    
-    preloadAudio(validInhale);
-    preloadAudio(validHold);
-    preloadAudio(validExhale);
   };
 
   const handleVoicePause = () => {
     setIsVoiceActive(false);
     setActiveVoice(null);
-    setCurrentPhase("Gepauzeerd");
-    toast.info("Ademhalingsoefening gepauzeerd");
+  };
+  
+  const handlePhaseChange = (phase: BreathingPhase) => {
+    setCurrentPhase(phase);
   };
   
   const handleReset = () => {
-    setIsVoiceActive(false);
-    setActiveVoice(null);
-    setCurrentPhase("Gereed");
-    setCurrentCycle(1);
-    toast.info("Ademhalingsoefening gereset");
-  };
-  
-  const handleTechniqueChange = (technique: "4-7-8" | "box-breathing" | "diaphragmatic") => {
+    setCurrentPhase("inhale");
+    setCycle(1);
     if (isVoiceActive) {
+      const currentVoice = activeVoice;
       setIsVoiceActive(false);
       setActiveVoice(null);
-      setCurrentPhase("Gereed");
-    }
-    
-    setSelectedTechnique(technique);
-    toast.info(`Ademhalingstechniek gewijzigd naar ${technique}`);
-    
-    // Set total cycles based on the selected technique
-    const pattern = breathingPatterns.find(p => {
-      if (technique === "4-7-8" && p.name.includes("4-7-8")) return true;
-      if (technique === "box-breathing" && p.name.toLowerCase().includes("box")) return true;
-      if (technique === "diaphragmatic" && p.name.toLowerCase().includes("diaphragm")) return true;
-      return false;
-    });
-    
-    if (pattern) {
-      setTotalCycles(pattern.cycles || 4);
-    } else {
-      // Default cycles if no matching pattern found
-      setTotalCycles(technique === "4-7-8" ? 5 : technique === "box-breathing" ? 4 : 6);
-    }
-    
-    const veraUrls = techniqueVoiceUrls[technique].vera;
-    const marcoUrls = techniqueVoiceUrls[technique].marco;
-    
-    preloadAudio(veraUrls.inhale);
-    preloadAudio(veraUrls.hold);
-    preloadAudio(veraUrls.exhale);
-    preloadAudio(marcoUrls.inhale);
-    preloadAudio(marcoUrls.hold);
-    preloadAudio(marcoUrls.exhale);
-  };
-  
-  useEffect(() => {
-    if (activeVoice) {
-      const voiceUrls = techniqueVoiceUrls[selectedTechnique][activeVoice];
-      console.log(`Active voice URLs for ${activeVoice}:`, voiceUrls);
-    }
-  }, [activeVoice, selectedTechnique]);
-  
-  // Update the currentPhase based on animation feedback
-  const handlePhaseChange = (phase: string) => {
-    if (isMounted.current) {
-      setCurrentPhase(phase);
-    }
-  };
-  
-  // Update the currentCycle based on animation feedback
-  const handleCycleChange = (cycle: number) => {
-    if (isMounted.current) {
-      setCurrentCycle(cycle);
+      setTimeout(() => {
+        if (currentVoice) {
+          handleVoicePlay(currentVoice);
+        }
+      }, 100);
     }
   };
   
@@ -251,9 +158,8 @@ const Breathing = () => {
           <div className="mb-4 w-full max-w-xs">
             <select
               value={selectedTechnique}
-              onChange={(e) => handleTechniqueChange(e.target.value as any)}
+              onChange={(e) => setSelectedTechnique(e.target.value as any)}
               className="w-full p-2 rounded-lg bg-slate-800 text-white border border-white/20"
-              disabled={isVoiceActive}
             >
               <option value="4-7-8">4-7-8 Ademtechniek</option>
               <option value="box-breathing">Box Breathing</option>
@@ -261,22 +167,19 @@ const Breathing = () => {
             </select>
           </div>
           
-          {isVoiceActive && activeVoice && (
-            <BreathingAnimation 
-              technique={selectedTechnique}
-              voiceUrls={techniqueVoiceUrls[selectedTechnique][activeVoice]}
-              isVoiceActive={isVoiceActive}
-              onPhaseChange={handlePhaseChange}
-              onCycleChange={handleCycleChange}
-              currentPhase={currentPhase}
-            />
-          )}
-          
-          {!isVoiceActive && (
-            <div className="p-6 text-center bg-blue-900/30 rounded-lg border border-blue-800/50 mb-4">
-              <p className="text-white font-medium">Selecteer Vera of Marco hieronder om te beginnen</p>
+          {isVoiceActive && (
+            <div className="text-white text-sm mb-0">
+              Cyclus {cycle} van {totalCycles}
             </div>
           )}
+          
+          <BreathingAnimation 
+            technique={selectedTechnique}
+            voiceUrls={activeVoice ? techniqueVoiceUrls[selectedTechnique][activeVoice] : null}
+            isVoiceActive={isVoiceActive}
+            currentPhase={currentPhase as BreathingPhase}
+            onPhaseChange={handlePhaseChange}
+          />
           
           <BreathingVoicePlayer 
             veraUrls={techniqueVoiceUrls[selectedTechnique].vera}
@@ -286,9 +189,6 @@ const Breathing = () => {
             onPlay={handleVoicePlay}
             activeVoice={activeVoice}
             onReset={handleReset}
-            currentPhase={currentPhase}
-            currentCycle={currentCycle}
-            totalCycles={totalCycles}
           />
         </div>
         

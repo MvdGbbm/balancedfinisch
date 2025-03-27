@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+import { validateAudioUrl } from "@/components/audio-player/utils";
 
 interface VoiceUrls {
   inhale: string;
@@ -19,9 +19,6 @@ interface BreathingVoicePlayerProps {
   onPlay: (voice: "vera" | "marco") => void;
   activeVoice: "vera" | "marco" | null;
   onReset?: () => void;
-  currentPhase?: string;
-  currentCycle?: number;
-  totalCycles?: number;
 }
 
 export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
@@ -31,153 +28,111 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   onPause,
   onPlay,
   activeVoice,
-  onReset,
-  currentPhase,
-  currentCycle,
-  totalCycles
+  onReset
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
-  const veraAudioRef = useRef<HTMLAudioElement | null>(null);
-  const marcoAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  // Preload all audio files when the component mounts
+  // Preload audio files to check for errors
   useEffect(() => {
-    // Preload Vera audio
-    if (validateUrls(veraUrls)) {
-      preloadAudio(veraUrls.inhale);
-      preloadAudio(veraUrls.hold);
-      preloadAudio(veraUrls.exhale);
-      console.log("Preloaded Vera audio URLs:", veraUrls);
-    }
+    const preloadAudio = async (url: string) => {
+      try {
+        if (!url) return;
+        
+        const validatedUrl = validateAudioUrl(url);
+        if (!validatedUrl) return;
+        
+        const audio = new Audio();
+        audio.src = validatedUrl;
+        
+        // Force preload (doesn't need to finish loading)
+        audio.load();
+      } catch (error) {
+        console.error("Error preloading audio:", error);
+      }
+    };
     
-    // Preload Marco audio
-    if (validateUrls(marcoUrls)) {
-      preloadAudio(marcoUrls.inhale);
-      preloadAudio(marcoUrls.hold);
-      preloadAudio(marcoUrls.exhale);
-      console.log("Preloaded Marco audio URLs:", marcoUrls);
-    }
+    // Preload all audio files
+    preloadAudio(veraUrls.inhale);
+    preloadAudio(veraUrls.hold);
+    preloadAudio(veraUrls.exhale);
+    preloadAudio(marcoUrls.inhale);
+    preloadAudio(marcoUrls.hold);
+    preloadAudio(marcoUrls.exhale);
   }, [veraUrls, marcoUrls]);
 
   const validateUrls = (urls: VoiceUrls): boolean => {
-    // Validate that the voice URLs are available
-    return !!urls.inhale && !!urls.hold && !!urls.exhale;
-  };
-  
-  // Test audio playback directly
-  const testAudioPlayback = async (url: string, voiceName: string) => {
-    if (!url) {
-      console.error(`Empty ${voiceName} audio URL`);
-      return false;
-    }
-    
-    const validatedUrl = validateAudioUrl(url);
-    console.log(`Testing ${voiceName} audio URL:`, validatedUrl);
-    
-    try {
-      const audio = new Audio();
-      audio.src = validatedUrl;
-      audio.preload = 'auto';
-      
-      // Create a promise that resolves when the audio can play or rejects on error
-      const canPlay = new Promise<boolean>((resolve, reject) => {
-        audio.addEventListener('canplaythrough', () => resolve(true), { once: true });
-        audio.addEventListener('error', (e) => {
-          console.error(`Error loading ${voiceName} audio:`, e);
-          reject(new Error(`Cannot play ${voiceName} audio`));
-        }, { once: true });
-      });
-      
-      // Try to load the audio
-      audio.load();
-      
-      // Wait for the audio to be ready or error
-      await canPlay;
-      return true;
-    } catch (error) {
-      console.error(`Failed to load ${voiceName} audio:`, error);
-      return false;
-    }
+    return Boolean(urls.inhale && urls.hold && urls.exhale);
   };
 
   const handleVeraClick = async () => {
-    // Validate URLs before activating
     if (!validateUrls(veraUrls)) {
-      toast.error("Vera audio URLs zijn niet geconfigureerd");
       setHasError(true);
+      toast.error("Vera audio URL's ontbreken");
       return;
     }
     
     if (isActive && activeVoice === "vera") {
       onPause();
     } else {
-      // Test "inhale" audio to ensure it works
-      const canPlay = await testAudioPlayback(veraUrls.inhale, "Vera inhale");
-      
-      if (!canPlay) {
-        toast.error("Kan Vera audio niet afspelen. Controleer de URLs.");
+      setLoading(true);
+      try {
+        onPlay("vera");
+        toast.success("Vera stem geactiveerd");
+        console.log("Vera audio activated");
+        setHasError(false);
+      } catch (error) {
+        console.error("Error activating Vera audio:", error);
         setHasError(true);
-        return;
+        toast.error("Fout bij het activeren van Vera audio");
+      } finally {
+        setLoading(false);
       }
-      
-      setHasError(false);
-      onPlay("vera");
-      toast.success("Vera stem geactiveerd");
-      console.log("Vera audio activated with URLs:", veraUrls);
     }
   };
 
   const handleMarcoClick = async () => {
-    // Validate URLs before activating
     if (!validateUrls(marcoUrls)) {
-      toast.error("Marco audio URLs zijn niet geconfigureerd");
       setHasError(true);
+      toast.error("Marco audio URL's ontbreken");
       return;
     }
     
     if (isActive && activeVoice === "marco") {
       onPause();
     } else {
-      // Test "inhale" audio to ensure it works
-      const canPlay = await testAudioPlayback(marcoUrls.inhale, "Marco inhale");
-      
-      if (!canPlay) {
-        toast.error("Kan Marco audio niet afspelen. Controleer de URLs.");
+      setLoading(true);
+      try {
+        onPlay("marco");
+        toast.success("Marco stem geactiveerd");
+        console.log("Marco audio activated");
+        setHasError(false);
+      } catch (error) {
+        console.error("Error activating Marco audio:", error);
         setHasError(true);
-        return;
+        toast.error("Fout bij het activeren van Marco audio");
+      } finally {
+        setLoading(false);
       }
-      
-      setHasError(false);
-      onPlay("marco");
-      toast.success("Marco stem geactiveerd");
-      console.log("Marco audio activated with URLs:", marcoUrls);
+    }
+  };
+
+  const handleReset = () => {
+    if (onReset) {
+      onReset();
+      toast.success("Ademhaling gereset");
     }
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-xs mx-auto mt-2">
-      {/* Status indicator for active phase and cycle */}
-      {isActive && currentPhase && (
-        <div className="mb-3 text-center">
-          <div className="text-sm text-blue-200 font-medium">{currentPhase}</div>
-          {currentCycle && totalCycles && (
-            <div className="text-xs text-blue-100">
-              Cyclus {currentCycle} van {totalCycles}
-            </div>
-          )}
-        </div>
-      )}
-      
+    <div className="space-y-3 w-full max-w-xs mx-auto mt-6">
       <div className="grid grid-cols-2 gap-3 w-full">
-        {/* Hidden audio elements for preloading */}
-        <audio ref={veraAudioRef} preload="auto" style={{ display: 'none' }} />
-        <audio ref={marcoAudioRef} preload="auto" style={{ display: 'none' }} />
-        
         <Button 
           onClick={handleVeraClick} 
+          disabled={loading}
           variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
           size="lg"
-          className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+          className={`w-full ${isActive && activeVoice === "vera" ? "bg-tranquil-600" : "bg-tranquil-500"} hover:bg-tranquil-600 border-none`}
         >
           {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
           Vera
@@ -185,31 +140,33 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
         
         <Button 
           onClick={handleMarcoClick} 
+          disabled={loading}
           variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
           size="lg"
-          className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+          className={`w-full ${isActive && activeVoice === "marco" ? "bg-tranquil-600" : "bg-tranquil-500"} hover:bg-tranquil-600 border-none`}
         >
           {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
           Marco
         </Button>
-        
-        {hasError && (
-          <div className="col-span-2 text-red-500 text-xs text-center mt-1">
-            Fout bij het afspelen van audio. Controleer de URL.
-          </div>
-        )}
-        
-        {onReset && (
-          <Button 
-            onClick={onReset}
-            variant="outline" 
-            size="sm"
-            className="col-span-2 mt-3 bg-transparent border-blue-400/30 hover:bg-blue-900/20"
-          >
-            <RefreshCw className="mr-2 h-4 w-4" /> Reset
-          </Button>
-        )}
       </div>
+      
+      {onReset && (
+        <Button 
+          onClick={handleReset}
+          variant="outline"
+          size="sm"
+          className="w-full bg-transparent border-tranquil-300 text-tranquil-700 hover:bg-tranquil-100/30"
+        >
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Reset
+        </Button>
+      )}
+      
+      {hasError && (
+        <div className="col-span-2 text-red-500 text-xs text-center mt-1">
+          Fout bij het afspelen van audio. Controleer de URL.
+        </div>
+      )}
     </div>
   );
 };
