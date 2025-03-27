@@ -10,7 +10,6 @@ import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils"
 import { toast } from "sonner";
 
 const Breathing = () => {
-  // Set up state for patterns, selected pattern, etc.
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -24,45 +23,44 @@ const Breathing = () => {
   // Reference to track if component is mounted
   const isMounted = useRef(true);
 
-  // Voice URL structures for different techniques
-  const [techniqueVoiceUrls, setTechniqueVoiceUrls] = useState({
+  const techniqueVoiceUrls = {
     "4-7-8": {
       vera: {
-        inhale: "",
-        hold: "",
-        exhale: ""
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
       },
       marco: {
-        inhale: "",
-        hold: "",
-        exhale: ""
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
       }
     },
     "box-breathing": {
       vera: {
-        inhale: "",
-        hold: "",
-        exhale: ""
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
       },
       marco: {
-        inhale: "",
-        hold: "",
-        exhale: ""
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
       }
     },
     "diaphragmatic": {
       vera: {
-        inhale: "",
-        hold: "",
-        exhale: ""
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
       },
       marco: {
-        inhale: "",
-        hold: "",
-        exhale: ""
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
       }
     }
-  });
+  };
 
   // Handle component unmount
   useEffect(() => {
@@ -74,49 +72,6 @@ const Breathing = () => {
   // Load stored voice URLs from localStorage
   useEffect(() => {
     try {
-      // Default fallback URLs in case configuration is missing
-      const defaultVoiceUrls = {
-        "4-7-8": {
-          vera: {
-            inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
-            hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
-            exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
-          },
-          marco: {
-            inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
-            hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
-            exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
-          }
-        },
-        "box-breathing": {
-          vera: {
-            inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
-            hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
-            exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
-          },
-          marco: {
-            inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
-            hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
-            exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
-          }
-        },
-        "diaphragmatic": {
-          vera: {
-            inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
-            hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
-            exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
-          },
-          marco: {
-            inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
-            hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
-            exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
-          }
-        }
-      };
-
-      // Create a deep copy of the default URLs
-      const updatedTechniqueUrls = JSON.parse(JSON.stringify(defaultVoiceUrls));
-      
       // Try to load custom voice URLs for each technique
       for (const technique of ["4-7-8", "box-breathing", "diaphragmatic"] as const) {
         // Load Vera voice URLs for this technique
@@ -125,7 +80,7 @@ const Breathing = () => {
         if (savedVeraUrls) {
           const parsedUrls = JSON.parse(savedVeraUrls);
           if (parsedUrls.inhale && parsedUrls.hold && parsedUrls.exhale) {
-            updatedTechniqueUrls[technique].vera = parsedUrls;
+            techniqueVoiceUrls[technique].vera = parsedUrls;
             console.log(`Loaded custom Vera URLs for ${technique}:`, parsedUrls);
           }
         }
@@ -136,38 +91,30 @@ const Breathing = () => {
         if (savedMarcoUrls) {
           const parsedUrls = JSON.parse(savedMarcoUrls);
           if (parsedUrls.inhale && parsedUrls.hold && parsedUrls.exhale) {
-            updatedTechniqueUrls[technique].marco = parsedUrls;
+            techniqueVoiceUrls[technique].marco = parsedUrls;
             console.log(`Loaded custom Marco URLs for ${technique}:`, parsedUrls);
           }
         }
       }
-      
-      // Update state with the loaded URLs
-      setTechniqueVoiceUrls(updatedTechniqueUrls);
     } catch (error) {
       console.error("Error loading voice URLs from localStorage:", error);
-      // Default URLs will remain from initial state
     }
   }, []);
 
-  // Preload audio files to prevent delay
   useEffect(() => {
-    const techniques = Object.keys(techniqueVoiceUrls) as Array<keyof typeof techniqueVoiceUrls>;
-    
-    techniques.forEach(technique => {
-      preloadAudio(techniqueVoiceUrls[technique].vera.inhale);
-      preloadAudio(techniqueVoiceUrls[technique].vera.hold);
-      preloadAudio(techniqueVoiceUrls[technique].vera.exhale);
+    Object.keys(techniqueVoiceUrls).forEach(technique => {
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.inhale);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.hold);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.exhale);
       
-      preloadAudio(techniqueVoiceUrls[technique].marco.inhale);
-      preloadAudio(techniqueVoiceUrls[technique].marco.hold);
-      preloadAudio(techniqueVoiceUrls[technique].marco.exhale);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.inhale);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.hold);
+      preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].marco.exhale);
     });
     
     console.log("Preloading all breathing audio files");
-  }, [techniqueVoiceUrls]);
+  }, []);
 
-  // Load breathing patterns
   useEffect(() => {
     const loadPatterns = () => {
       setIsLoading(true);
@@ -194,7 +141,6 @@ const Breathing = () => {
     loadPatterns();
   }, []);
 
-  // Handle voice activation
   const handleVoicePlay = (voice: "vera" | "marco") => {
     setIsVoiceActive(true);
     setActiveVoice(voice);
@@ -205,13 +151,11 @@ const Breathing = () => {
       techniqueVoiceUrls[selectedTechnique][voice]);
     
     const urls = techniqueVoiceUrls[selectedTechnique][voice];
-    
-    // Validate and preload the audio files
     const validInhale = validateAudioUrl(urls.inhale);
     const validHold = validateAudioUrl(urls.hold);
     const validExhale = validateAudioUrl(urls.exhale);
     
-    console.log("Using validated URLs for breathing:");
+    console.log("Validated URLs for breathing:");
     console.log("Inhale:", validInhale);
     console.log("Hold:", validHold);
     console.log("Exhale:", validExhale);
@@ -221,7 +165,6 @@ const Breathing = () => {
     preloadAudio(validExhale);
   };
 
-  // Handle voice pause
   const handleVoicePause = () => {
     setIsVoiceActive(false);
     setActiveVoice(null);
@@ -229,7 +172,6 @@ const Breathing = () => {
     toast.info("Ademhalingsoefening gepauzeerd");
   };
   
-  // Handle reset
   const handleReset = () => {
     setIsVoiceActive(false);
     setActiveVoice(null);
@@ -238,7 +180,6 @@ const Breathing = () => {
     toast.info("Ademhalingsoefening gereset");
   };
   
-  // Handle technique change
   const handleTechniqueChange = (technique: "4-7-8" | "box-breathing" | "diaphragmatic") => {
     if (isVoiceActive) {
       setIsVoiceActive(false);
@@ -264,7 +205,6 @@ const Breathing = () => {
       setTotalCycles(technique === "4-7-8" ? 5 : technique === "box-breathing" ? 4 : 6);
     }
     
-    // Preload the audio for the selected technique
     const veraUrls = techniqueVoiceUrls[technique].vera;
     const marcoUrls = techniqueVoiceUrls[technique].marco;
     
@@ -276,13 +216,12 @@ const Breathing = () => {
     preloadAudio(marcoUrls.exhale);
   };
   
-  // Update active voice URLs for debugging
   useEffect(() => {
     if (activeVoice) {
       const voiceUrls = techniqueVoiceUrls[selectedTechnique][activeVoice];
       console.log(`Active voice URLs for ${activeVoice}:`, voiceUrls);
     }
-  }, [activeVoice, selectedTechnique, techniqueVoiceUrls]);
+  }, [activeVoice, selectedTechnique]);
   
   // Update the currentPhase based on animation feedback
   const handlePhaseChange = (phase: string) => {
