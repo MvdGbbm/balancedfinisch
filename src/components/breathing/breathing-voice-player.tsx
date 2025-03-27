@@ -1,10 +1,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw, Volume2 } from "lucide-react";
+import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
-import { AudioPreview } from "@/components/audio-player/audio-preview";
 
 interface VoiceUrls {
   inhale: string;
@@ -33,8 +32,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [previewVoice, setPreviewVoice] = useState<"vera" | "marco" | null>(null);
-  const [previewType, setPreviewType] = useState<"inhale" | "hold" | "exhale" | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Validate URLs for a voice set
@@ -178,67 +175,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
-  // Show audio preview for a specific voice and audio type
-  const showPreview = (voice: "vera" | "marco", type: "inhale" | "hold" | "exhale") => {
-    setPreviewVoice(voice);
-    setPreviewType(type);
-    
-    // Create a URL for testing
-    const urls = voice === "vera" ? veraUrls : marcoUrls;
-    const url = urls[type];
-    
-    if (!url) {
-      toast.error(`Geen ${type} URL voor ${voice}`);
-      return;
-    }
-    
-    console.log(`Testing ${voice} ${type} audio: ${url}`);
-    
-    // Test the URL with a HEAD request before playing
-    fetch(url, { method: 'HEAD' })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response;
-      })
-      .then(() => {
-        console.log(`${voice} ${type} audio URL is valid`);
-      })
-      .catch(error => {
-        console.error(`Error testing ${voice} ${type} audio:`, error);
-        toast.error(`Fout bij laden van ${voice} ${type} audio. Controleer de URL.`);
-      });
-  };
-
-  // Close the preview
-  const closePreview = () => {
-    setPreviewVoice(null);
-    setPreviewType(null);
-  };
-
-  // Get the URL for the current preview
-  const getPreviewUrl = (): string => {
-    if (!previewVoice || !previewType) return "";
-    
-    const urls = previewVoice === "vera" ? veraUrls : marcoUrls;
-    return urls[previewType] || "";
-  };
-
-  // Format button label based on voice and type
-  const getButtonLabel = (type: "inhale" | "hold" | "exhale"): string => {
-    switch (type) {
-      case "inhale":
-        return "Inademen";
-      case "hold":
-        return "Vasthouden";
-      case "exhale":
-        return "Uitademen";
-      default:
-        return type;
-    }
-  };
-
   return (
     <div className="space-y-3 w-full max-w-xs mx-auto mt-6">
       <div className="grid grid-cols-2 gap-3 w-full">
@@ -264,93 +200,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
           Marco
         </Button>
       </div>
-
-      {/* Audio preview section */}
-      {(validateUrls(veraUrls) || validateUrls(marcoUrls)) && (
-        <div className="mt-4 p-3 bg-card/20 rounded-md border border-border/40">
-          <h4 className="text-sm font-medium mb-2 flex items-center">
-            <Volume2 className="h-4 w-4 mr-1" />
-            Test audio:
-          </h4>
-          
-          {/* Vera voice previews */}
-          {validateUrls(veraUrls) && (
-            <div className="space-y-1 mb-3">
-              <div className="text-xs font-semibold mb-1">Vera:</div>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  onClick={() => showPreview("vera", "inhale")}
-                >
-                  {getButtonLabel("inhale")}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  onClick={() => showPreview("vera", "hold")}
-                >
-                  {getButtonLabel("hold")}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  onClick={() => showPreview("vera", "exhale")}
-                >
-                  {getButtonLabel("exhale")}
-                </Button>
-              </div>
-            </div>
-          )}
-          
-          {/* Marco voice previews */}
-          {validateUrls(marcoUrls) && (
-            <div className="space-y-1">
-              <div className="text-xs font-semibold mb-1">Marco:</div>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  onClick={() => showPreview("marco", "inhale")}
-                >
-                  {getButtonLabel("inhale")}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  onClick={() => showPreview("marco", "hold")}
-                >
-                  {getButtonLabel("hold")}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="text-xs h-7 px-2"
-                  onClick={() => showPreview("marco", "exhale")}
-                >
-                  {getButtonLabel("exhale")}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Preview player */}
-          {previewVoice && previewType && (
-            <div className="mt-3">
-              <AudioPreview 
-                url={getPreviewUrl()} 
-                label={`${previewVoice === "vera" ? "Vera" : "Marco"} - ${getButtonLabel(previewType)}`}
-                autoPlay
-              />
-            </div>
-          )}
-        </div>
-      )}
       
       {onReset && (
         <Button 
