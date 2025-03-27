@@ -12,56 +12,44 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
-
-type BreathingPattern = {
-  id: string;
-  name: string;
-  inhale: number;
-  hold1: number;
-  exhale: number;
-  hold2: number;
-  cycles: number;
-  description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-};
-
-const defaultBreathingPatterns: BreathingPattern[] = [
-  {
-    id: "1",
-    name: "4-7-8 Techniek",
-    description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
-    inhale: 4,
-    hold1: 7,
-    exhale: 8,
-    hold2: 0,
-    cycles: 5,
-  },
-  {
-    id: "2",
-    name: "Box Breathing",
-    description: "Vierkante ademhaling voor focus en kalmte",
-    inhale: 4,
-    hold1: 4,
-    exhale: 4,
-    hold2: 4, 
-    cycles: 4,
-  },
-  {
-    id: "3",
-    name: "Relaxerende Ademhaling",
-    description: "Eenvoudige techniek voor diepe ontspanning",
-    inhale: 4,
-    hold1: 2,
-    exhale: 6,
-    hold2: 0,
-    cycles: 6,
-  },
-];
+import { BreathingPattern } from "@/lib/types";
 
 export function BreathExercise() {
+  // Default breathing patterns
+  const defaultBreathingPatterns: BreathingPattern[] = [
+    {
+      id: "1",
+      name: "4-7-8 Techniek",
+      description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
+      inhale: 4,
+      hold1: 7,
+      exhale: 8,
+      hold2: 0,
+      cycles: 5,
+    },
+    {
+      id: "2",
+      name: "Box Breathing",
+      description: "Vierkante ademhaling voor focus en kalmte",
+      inhale: 4,
+      hold1: 4,
+      exhale: 4,
+      hold2: 4, 
+      cycles: 4,
+    },
+    {
+      id: "3",
+      name: "Relaxerende Ademhaling",
+      description: "Eenvoudige techniek voor diepe ontspanning",
+      inhale: 4,
+      hold1: 2,
+      exhale: 6,
+      hold2: 0,
+      cycles: 6,
+    },
+  ];
+
+  // State
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [currentPattern, setCurrentPattern] = useState<BreathingPattern>(breathingPatterns[0]);
   const [isActive, setIsActive] = useState(false);
