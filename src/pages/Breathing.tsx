@@ -84,6 +84,7 @@ const Breathing = () => {
   const [isExerciseActive, setIsExerciseActive] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
+  const [showAnimation, setShowAnimation] = useState(false);
   
   // Voice URL states
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
@@ -205,6 +206,7 @@ const Breathing = () => {
     // Reset exercise when selecting a new pattern
     setIsExerciseActive(false);
     setActiveVoice(null);
+    setShowAnimation(false);
   };
   
   const handleActivateVoice = async (voice: "vera" | "marco") => {
@@ -226,6 +228,7 @@ const Breathing = () => {
     setActiveVoice(voice);
     setIsExerciseActive(true);
     setCurrentPhase("inhale");
+    setShowAnimation(true);
     console.log(`Activated ${voice} voice with URLs:`, urls);
   };
   
@@ -237,6 +240,7 @@ const Breathing = () => {
     setIsExerciseActive(false);
     setActiveVoice(null);
     setCurrentPhase("inhale");
+    setShowAnimation(false);
   };
   
   const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
@@ -272,8 +276,8 @@ const Breathing = () => {
             ))}
           </div>
           
-          {/* Breathing animation */}
-          {selectedPattern && (
+          {/* Breathing animation - only show when a voice is active */}
+          {selectedPattern && showAnimation && (
             <div className="mt-8">
               <BreathingAnimation 
                 technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
@@ -282,17 +286,20 @@ const Breathing = () => {
                 currentPhase={currentPhase}
                 onPhaseChange={handlePhaseChange}
               />
-              
-              <BreathingVoicePlayer 
-                veraUrls={veraVoiceUrls}
-                marcoUrls={marcoVoiceUrls}
-                isActive={isExerciseActive}
-                onPause={handlePauseVoice}
-                onPlay={handleActivateVoice}
-                activeVoice={activeVoice}
-                onReset={handleReset}
-              />
             </div>
+          )}
+          
+          {/* Voice Player - always show */}
+          {selectedPattern && (
+            <BreathingVoicePlayer 
+              veraUrls={veraVoiceUrls}
+              marcoUrls={marcoVoiceUrls}
+              isActive={isExerciseActive}
+              onPause={handlePauseVoice}
+              onPlay={handleActivateVoice}
+              activeVoice={activeVoice}
+              onReset={handleReset}
+            />
           )}
           
           {/* Music player section */}
