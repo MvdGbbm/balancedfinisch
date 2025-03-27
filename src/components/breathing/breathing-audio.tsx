@@ -6,6 +6,7 @@ import { preloadAudio } from '@/components/audio-player/utils';
 
 interface BreathingAudioProps {
   voiceUrls: {
+    start?: string;
     inhale: string;
     hold: string;
     exhale: string;
@@ -27,6 +28,7 @@ export const useBreathingAudio = ({
   const audioLoadingRef = useRef<boolean>(false);
 
   const validateVoiceUrls = async (urls: {
+    start?: string;
     inhale: string;
     hold: string;
     exhale: string;
@@ -36,12 +38,16 @@ export const useBreathingAudio = ({
       return false;
     }
     try {
-      const [inhaleValid, holdValid, exhaleValid] = await Promise.all([
-        preloadAudio(urls.inhale), 
-        preloadAudio(urls.hold), 
-        preloadAudio(urls.exhale)
-      ]);
-      const allValid = inhaleValid && holdValid && exhaleValid;
+      const urlsToValidate = [urls.inhale, urls.hold, urls.exhale];
+      if (urls.start) {
+        urlsToValidate.push(urls.start);
+      }
+      
+      const validationPromises = urlsToValidate.map(url => preloadAudio(url));
+      const validationResults = await Promise.all(validationPromises);
+      
+      const allValid = validationResults.every(result => result === true);
+      
       if (!allValid) {
         console.error("One or more voice audio URLs failed validation");
         audioErrorCountRef.current = 5;
@@ -60,6 +66,9 @@ export const useBreathingAudio = ({
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
     let audioUrl = '';
     switch (phaseType) {
+      case 'start':
+        audioUrl = voiceUrls.start || '';
+        break;
       case 'inhale':
         audioUrl = voiceUrls.inhale;
         break;

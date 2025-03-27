@@ -5,6 +5,7 @@ import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 interface VoiceUrls {
+  start?: string;
   inhale: string;
   hold: string;
   exhale: string;
@@ -50,10 +51,17 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
       }
       try {
         // Validate and test each URL
-        const inhaleResult = await preloadAudio(urlSet.inhale);
-        const holdResult = await preloadAudio(urlSet.hold);
-        const exhaleResult = await preloadAudio(urlSet.exhale);
-        if (inhaleResult && holdResult && exhaleResult) {
+        const urlsToPreload = [urlSet.inhale, urlSet.hold, urlSet.exhale];
+        if (urlSet.start) {
+          urlsToPreload.push(urlSet.start);
+        }
+        
+        const preloadPromises = urlsToPreload.map(url => preloadAudio(url));
+        const preloadResults = await Promise.all(preloadPromises);
+        
+        const allPreloaded = preloadResults.every(result => result === true);
+        
+        if (allPreloaded) {
           console.log(`${voiceName} voice audio files preloaded successfully`);
         } else {
           console.error(`Failed to preload ${voiceName} voice audio files`);
@@ -62,6 +70,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
         console.error(`Error preloading ${voiceName} voice audio:`, error);
       }
     };
+    
     if (validateUrls(veraUrls)) {
       preloadVoiceAudio(veraUrls, "Vera");
     }
@@ -83,10 +92,20 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
       setLoading(true);
       try {
         // Test audio files before activation
-        const [inhaleTest, holdTest, exhaleTest] = await Promise.all([preloadAudio(veraUrls.inhale), preloadAudio(veraUrls.hold), preloadAudio(veraUrls.exhale)]);
-        if (!inhaleTest || !holdTest || !exhaleTest) {
+        const urlsToTest = [veraUrls.inhale, veraUrls.hold, veraUrls.exhale];
+        if (veraUrls.start) {
+          urlsToTest.push(veraUrls.start);
+        }
+        
+        const testPromises = urlsToTest.map(url => preloadAudio(url));
+        const testResults = await Promise.all(testPromises);
+        
+        const allValid = testResults.every(result => result === true);
+        
+        if (!allValid) {
           throw new Error("Kon niet alle audio bestanden laden");
         }
+        
         onPlay("vera");
         toast.success("Vera stem geactiveerd");
         console.log("Vera audio activated with URLs:", veraUrls);
@@ -114,10 +133,20 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
       setLoading(true);
       try {
         // Test audio files before activation
-        const [inhaleTest, holdTest, exhaleTest] = await Promise.all([preloadAudio(marcoUrls.inhale), preloadAudio(marcoUrls.hold), preloadAudio(marcoUrls.exhale)]);
-        if (!inhaleTest || !holdTest || !exhaleTest) {
+        const urlsToTest = [marcoUrls.inhale, marcoUrls.hold, marcoUrls.exhale];
+        if (marcoUrls.start) {
+          urlsToTest.push(marcoUrls.start);
+        }
+        
+        const testPromises = urlsToTest.map(url => preloadAudio(url));
+        const testResults = await Promise.all(testPromises);
+        
+        const allValid = testResults.every(result => result === true);
+        
+        if (!allValid) {
           throw new Error("Kon niet alle audio bestanden laden");
         }
+        
         onPlay("marco");
         toast.success("Marco stem geactiveerd");
         console.log("Marco audio activated with URLs:", marcoUrls);

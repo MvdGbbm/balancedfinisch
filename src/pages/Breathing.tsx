@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BreathingPhase } from "@/components/breathing/types";
 
 type BreathingPattern = {
   id: string;
@@ -21,10 +23,12 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
+  startUrl?: string;
   endUrl?: string;
 };
 
 type VoiceURLs = {
+  start?: string;
   inhale: string;
   hold: string;
   exhale: string;
@@ -40,6 +44,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 8,
     hold2: 0,
     cycles: 5,
+    startUrl: "",
   },
   {
     id: "2",
@@ -50,6 +55,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 4,
     hold2: 4, 
     cycles: 4,
+    startUrl: "",
   },
   {
     id: "3",
@@ -60,16 +66,19 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 6,
     hold2: 0,
     cycles: 6,
+    startUrl: "",
   },
 ];
 
 const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
+    start: "",
     inhale: "",
     hold: "",
     exhale: "",
   },
   marco: {
+    start: "",
     inhale: "",
     hold: "",
     exhale: "",
@@ -81,10 +90,11 @@ const Breathing = () => {
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isExerciseActive, setIsExerciseActive] = useState(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold" | "exhale" | "pause">("inhale");
+  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("start");
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(1);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
+  const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
   
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
@@ -119,6 +129,7 @@ const Breathing = () => {
         const parsedUrls = JSON.parse(savedVeraUrls);
         
         const validatedUrls = {
+          start: parsedUrls.start ? validateAudioUrl(parsedUrls.start) : "",
           inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
           hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
           exhale: parsedUrls.exhale ? validateAudioUrl(parsedUrls.exhale) : ""
@@ -140,6 +151,7 @@ const Breathing = () => {
         const parsedUrls = JSON.parse(savedMarcoUrls);
         
         const validatedUrls = {
+          start: parsedUrls.start ? validateAudioUrl(parsedUrls.start) : "",
           inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
           hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
           exhale: parsedUrls.exhale ? validateAudioUrl(parsedUrls.exhale) : ""
@@ -159,7 +171,13 @@ const Breathing = () => {
   };
 
   const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
-    if (!urls.inhale || !urls.hold || !urls.exhale) {
+    const urlsToValidate = [urls.inhale, urls.hold, urls.exhale].filter(Boolean);
+    
+    if (urls.start) {
+      urlsToValidate.push(urls.start);
+    }
+    
+    if (urlsToValidate.length === 0) {
       console.log(`${voice} URLs are not complete, skipping validation`);
       return false;
     }
@@ -167,13 +185,10 @@ const Breathing = () => {
     console.log(`Validating ${voice} audio URLs...`);
     
     try {
-      const [inhaleValid, holdValid, exhaleValid] = await Promise.all([
-        preloadAudio(urls.inhale),
-        preloadAudio(urls.hold),
-        preloadAudio(urls.exhale)
-      ]);
+      const validationPromises = urlsToValidate.map(url => preloadAudio(url));
+      const validationResults = await Promise.all(validationPromises);
       
-      const allValid = inhaleValid && holdValid && exhaleValid;
+      const allValid = validationResults.every(result => result === true);
       
       if (allValid) {
         console.log(`All ${voice} audio files validated successfully`);
@@ -194,6 +209,7 @@ const Breathing = () => {
       setSelectedPattern(pattern);
       setIsExerciseActive(false);
       setActiveVoice(null);
+      setCurrentPhase("start");
       setCurrentCycle(1);
       setExerciseCompleted(false);
       
@@ -216,9 +232,21 @@ const Breathing = () => {
       return;
     }
     
+    if (selectedPattern?.startUrl && startAudioRef.current) {
+      startAudioRef.current.src = selectedPattern.startUrl;
+      startAudioRef.current.load();
+      
+      try {
+        await startAudioRef.current.play();
+        console.log("Playing start audio:", selectedPattern.startUrl);
+      } catch (error) {
+        console.error("Error playing start audio:", error);
+      }
+    }
+    
     setActiveVoice(voice);
     setIsExerciseActive(true);
-    setCurrentPhase("inhale");
+    setCurrentPhase("start");
     setShowAnimation(true);
     setCurrentCycle(1);
     setExerciseCompleted(false);
@@ -232,9 +260,14 @@ const Breathing = () => {
   const handleReset = () => {
     setIsExerciseActive(false);
     setActiveVoice(null);
-    setCurrentPhase("inhale");
+    setCurrentPhase("start");
     setCurrentCycle(1);
     setExerciseCompleted(false);
+    
+    if (startAudioRef.current) {
+      startAudioRef.current.pause();
+      startAudioRef.current.currentTime = 0;
+    }
     
     if (endAudioRef.current) {
       endAudioRef.current.pause();
@@ -242,7 +275,7 @@ const Breathing = () => {
     }
   };
 
-  const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
+  const handlePhaseChange = (phase: BreathingPhase) => {
     setCurrentPhase(phase);
     
     if (phase === "inhale" && currentPhase === "pause") {
@@ -324,6 +357,7 @@ const Breathing = () => {
             </div>
           )}
           
+          <audio ref={startAudioRef} style={{ display: 'none' }} />
           <audio ref={endAudioRef} style={{ display: 'none' }} />
           
           {selectedPattern && (

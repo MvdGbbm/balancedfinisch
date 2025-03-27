@@ -28,6 +28,8 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     }
     
     switch (phase) {
+      case 'start':
+        return 'scale-100'; // No animation for start phase
       case 'inhale':
         return `grow-animation`;
       case 'hold':
@@ -47,7 +49,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     };
   };
 
-  const shouldShowCounter = phase !== 'pause' && !exerciseCompleted;
+  const shouldShowCounter = (phase !== 'pause' && phase !== 'start') && !exerciseCompleted;
   const circleSize = 'w-48 h-48';
   const innerCircleSize = 'w-40 h-40';
 
@@ -63,6 +65,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
             {!exerciseCompleted ? (
               <>
                 <p className="text-xl font-light mb-2">{getBreathingMessage(phase)}</p>
+                {phase === 'start' && <p className="text-3xl font-medium">{count}</p>}
                 {shouldShowCounter && <p className="text-3xl font-medium">{count}</p>}
               </>
             ) : (
@@ -74,7 +77,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
       
       <div className="mt-4 text-center">
         <p className="text-sm text-white/70 my-0 py-[11px]">
-          Cyclus {currentCycle} van {totalCycles}
+          {phase === 'start' ? 'Voorbereiding' : `Cyclus ${currentCycle} van ${totalCycles}`}
         </p>
       </div>
     </div>

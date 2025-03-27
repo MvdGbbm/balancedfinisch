@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,9 +21,11 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
+  startUrl: string;
   endUrl: string;
 };
 type VoiceURLs = {
+  start?: string;
   inhale: string;
   hold: string;
   exhale: string;
@@ -36,6 +39,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [{
   exhale: 8,
   hold2: 0,
   cycles: 5,
+  startUrl: "",
   endUrl: ""
 }, {
   id: "2",
@@ -46,6 +50,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [{
   exhale: 4,
   hold2: 4,
   cycles: 4,
+  startUrl: "",
   endUrl: ""
 }, {
   id: "3",
@@ -56,15 +61,18 @@ const defaultBreathingPatterns: BreathingPattern[] = [{
   exhale: 6,
   hold2: 0,
   cycles: 6,
+  startUrl: "",
   endUrl: ""
 }];
 const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
+    start: "",
     inhale: "",
     hold: "",
     exhale: ""
   },
   marco: {
+    start: "",
     inhale: "",
     hold: "",
     exhale: ""
@@ -124,6 +132,7 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
+      startUrl: "",
       endUrl: ""
     }
   });
@@ -156,6 +165,7 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
+      startUrl: "",
       endUrl: ""
     };
     setSelectedPattern(newPattern);
@@ -201,6 +211,7 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
+      startUrl: "",
       endUrl: ""
     });
     saveToLocalStorage(filtered);
@@ -345,6 +356,16 @@ const AdminBreathing = () => {
                               </FormControl>
                             </FormItem>} />
 
+                        <FormField control={patternForm.control} name="startUrl" render={({
+                      field
+                    }) => <FormItem>
+                              <FormLabel>Audio URL bij begin oefening</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="https://voorbeeld.com/start.mp3" />
+                              </FormControl>
+                              <div className="text-xs text-muted-foreground">Deze audio wordt afgespeeld wanneer de ademhalingsoefening begint.</div>
+                            </FormItem>} />
+
                         <FormField control={patternForm.control} name="endUrl" render={({
                       field
                     }) => <FormItem>
@@ -383,6 +404,15 @@ const AdminBreathing = () => {
                 <CardContent>
                   <Form {...veraForm}>
                     <form onSubmit={veraForm.handleSubmit(onVeraSubmit)} className="space-y-4">
+                      <FormField control={veraForm.control} name="start" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Start Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/start.mp3" />
+                            </FormControl>
+                          </FormItem>} />
+                          
                       <FormField control={veraForm.control} name="inhale" render={({
                       field
                     }) => <FormItem>
@@ -428,6 +458,15 @@ const AdminBreathing = () => {
                 <CardContent>
                   <Form {...marcoForm}>
                     <form onSubmit={marcoForm.handleSubmit(onMarcoSubmit)} className="space-y-4">
+                      <FormField control={marcoForm.control} name="start" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Start Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/start.mp3" />
+                            </FormControl>
+                          </FormItem>} />
+
                       <FormField control={marcoForm.control} name="inhale" render={({
                       field
                     }) => <FormItem>
@@ -470,8 +509,6 @@ const AdminBreathing = () => {
         </Tabs>
         
         <div className="mt-8">
-          
-          
           <BreathingExerciseTest pattern={selectedPattern} />
         </div>
       </div>
