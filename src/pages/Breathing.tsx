@@ -19,38 +19,38 @@ const Breathing = () => {
   const techniqueVoiceUrls = {
     "4-7-8": {
       vera: {
-        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Start%20van%20de%20oefening.mp3",
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
         hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
         exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
       },
       marco: {
-        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/crickets.ogg",
-        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/Rain%20norm.ogg",
-        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/cosmic.ogg"
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
       }
     },
     "box-breathing": {
       vera: {
-        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Start%20van%20de%20oefening.mp3",
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
         hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
         exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
       },
       marco: {
-        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/crickets.ogg",
-        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/Rain%20norm.ogg",
-        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/cosmic.ogg"
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
       }
     },
     "diaphragmatic": {
       vera: {
-        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Start%20van%20de%20oefening.mp3",
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vera%20-%20Adem%20in.mp3",
         hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/vasthouden%20Vera.mp3",
         exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Vera.mp3"
       },
       marco: {
-        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/crickets.ogg",
-        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/Rain%20norm.ogg",
-        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/geluiden/cosmic.ogg"
+        inhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Marco%20-%20Adem%20in.mp3",
+        hold: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Vasthouden%20Marco.mp3",
+        exhale: "https://lxsltsktjzgmoqwarhps.supabase.co/storage/v1/object/public/voice/Adem%20uit%20Marco.mp3"
       }
     }
   };
@@ -81,6 +81,8 @@ const Breathing = () => {
   const handleVoicePlay = (voice: "vera" | "marco") => {
     setIsVoiceActive(true);
     setActiveVoice(voice);
+    console.log(`Activating ${voice} voice for ${selectedTechnique}`, 
+      techniqueVoiceUrls[selectedTechnique][voice]);
   };
 
   const handleVoicePause = () => {
@@ -103,7 +105,7 @@ const Breathing = () => {
             <select
               value={selectedTechnique}
               onChange={(e) => setSelectedTechnique(e.target.value as any)}
-              className="w-full p-2 rounded-lg bg-navy-900 text-white border border-white/20"
+              className="w-full p-2 rounded-lg bg-slate-800 text-white border border-white/20"
             >
               <option value="4-7-8">4-7-8 Ademtechniek</option>
               <option value="box-breathing">Box Breathing</option>

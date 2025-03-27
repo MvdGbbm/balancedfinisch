@@ -35,6 +35,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       onPlay("vera");
       toast.success("Vera stem geactiveerd");
+      console.log("Vera audio URLs:", veraUrls);
     }
   };
 
@@ -44,6 +45,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       onPlay("marco");
       toast.success("Marco stem geactiveerd");
+      console.log("Marco audio URLs:", marcoUrls);
     }
   };
 
