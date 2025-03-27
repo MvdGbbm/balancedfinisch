@@ -1,9 +1,8 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause } from "lucide-react";
 import { toast } from "sonner";
-import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 interface VoiceUrls {
   inhale: string;
@@ -29,70 +28,13 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   activeVoice
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
-  const veraAudioRef = useRef<HTMLAudioElement | null>(null);
-  const marcoAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Preload all audio files when the component mounts
-  useEffect(() => {
-    // Preload Vera audio
-    if (validateUrls(veraUrls)) {
-      preloadAudio(veraUrls.inhale);
-      preloadAudio(veraUrls.hold);
-      preloadAudio(veraUrls.exhale);
-      console.log("Preloaded Vera audio URLs:", veraUrls);
-    }
-    
-    // Preload Marco audio
-    if (validateUrls(marcoUrls)) {
-      preloadAudio(marcoUrls.inhale);
-      preloadAudio(marcoUrls.hold);
-      preloadAudio(marcoUrls.exhale);
-      console.log("Preloaded Marco audio URLs:", marcoUrls);
-    }
-  }, [veraUrls, marcoUrls]);
 
   const validateUrls = (urls: VoiceUrls): boolean => {
     // Validate that the voice URLs are available
     return !!urls.inhale && !!urls.hold && !!urls.exhale;
   };
-  
-  // Test audio playback directly
-  const testAudioPlayback = async (url: string, voiceName: string) => {
-    if (!url) {
-      console.error(`Empty ${voiceName} audio URL`);
-      return false;
-    }
-    
-    const validatedUrl = validateAudioUrl(url);
-    console.log(`Testing ${voiceName} audio URL:`, validatedUrl);
-    
-    try {
-      const audio = new Audio();
-      audio.src = validatedUrl;
-      audio.preload = 'auto';
-      
-      // Create a promise that resolves when the audio can play or rejects on error
-      const canPlay = new Promise<boolean>((resolve, reject) => {
-        audio.addEventListener('canplaythrough', () => resolve(true), { once: true });
-        audio.addEventListener('error', (e) => {
-          console.error(`Error loading ${voiceName} audio:`, e);
-          reject(new Error(`Cannot play ${voiceName} audio`));
-        }, { once: true });
-      });
-      
-      // Try to load the audio
-      audio.load();
-      
-      // Wait for the audio to be ready or error
-      await canPlay;
-      return true;
-    } catch (error) {
-      console.error(`Failed to load ${voiceName} audio:`, error);
-      return false;
-    }
-  };
 
-  const handleVeraClick = async () => {
+  const handleVeraClick = () => {
     // Validate URLs before activating
     if (!validateUrls(veraUrls)) {
       toast.error("Vera audio URLs zijn niet geconfigureerd");
@@ -103,15 +45,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     if (isActive && activeVoice === "vera") {
       onPause();
     } else {
-      // Test "inhale" audio to ensure it works
-      const canPlay = await testAudioPlayback(veraUrls.inhale, "Vera inhale");
-      
-      if (!canPlay) {
-        toast.error("Kan Vera audio niet afspelen. Controleer de URLs.");
-        setHasError(true);
-        return;
-      }
-      
       setHasError(false);
       onPlay("vera");
       toast.success("Vera stem geactiveerd");
@@ -119,7 +52,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
-  const handleMarcoClick = async () => {
+  const handleMarcoClick = () => {
     // Validate URLs before activating
     if (!validateUrls(marcoUrls)) {
       toast.error("Marco audio URLs zijn niet geconfigureerd");
@@ -130,15 +63,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     if (isActive && activeVoice === "marco") {
       onPause();
     } else {
-      // Test "inhale" audio to ensure it works
-      const canPlay = await testAudioPlayback(marcoUrls.inhale, "Marco inhale");
-      
-      if (!canPlay) {
-        toast.error("Kan Marco audio niet afspelen. Controleer de URLs.");
-        setHasError(true);
-        return;
-      }
-      
       setHasError(false);
       onPlay("marco");
       toast.success("Marco stem geactiveerd");
@@ -148,10 +72,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 
   return (
     <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
-      {/* Hidden audio elements for preloading */}
-      <audio ref={veraAudioRef} preload="auto" style={{ display: 'none' }} />
-      <audio ref={marcoAudioRef} preload="auto" style={{ display: 'none' }} />
-      
       <Button 
         onClick={handleVeraClick} 
         variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
