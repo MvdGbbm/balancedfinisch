@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
@@ -257,24 +256,6 @@ const Breathing = () => {
     setIsExerciseActive(false);
   };
 
-  const handleReset = () => {
-    setIsExerciseActive(false);
-    setActiveVoice(null);
-    setCurrentPhase("start");
-    setCurrentCycle(1);
-    setExerciseCompleted(false);
-    
-    if (startAudioRef.current) {
-      startAudioRef.current.pause();
-      startAudioRef.current.currentTime = 0;
-    }
-    
-    if (endAudioRef.current) {
-      endAudioRef.current.pause();
-      endAudioRef.current.currentTime = 0;
-    }
-  };
-
   const handlePhaseChange = (phase: BreathingPhase) => {
     setCurrentPhase(phase);
     
@@ -368,7 +349,6 @@ const Breathing = () => {
               onPause={handlePauseVoice}
               onPlay={handleActivateVoice}
               activeVoice={activeVoice}
-              onReset={handleReset}
               headerText={voicePlayerHeaderText}
             />
           )}

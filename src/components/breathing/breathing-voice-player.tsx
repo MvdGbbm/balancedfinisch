@@ -1,15 +1,16 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+
 interface VoiceUrls {
   start?: string;
   inhale: string;
   hold: string;
   exhale: string;
 }
+
 interface BreathingVoicePlayerProps {
   veraUrls: VoiceUrls;
   marcoUrls: VoiceUrls;
@@ -17,9 +18,9 @@ interface BreathingVoicePlayerProps {
   onPause: () => void;
   onPlay: (voice: "vera" | "marco") => void;
   activeVoice: "vera" | "marco" | null;
-  onReset?: () => void;
   headerText?: string;
 }
+
 export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   veraUrls,
   marcoUrls,
@@ -27,7 +28,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   onPause,
   onPlay,
   activeVoice,
-  onReset,
   headerText
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
@@ -161,13 +161,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     }
   };
 
-  // Reset handler
-  const handleReset = () => {
-    if (onReset) {
-      onReset();
-      toast.success("Ademhaling gereset");
-    }
-  };
   return <div className="space-y-3 w-full max-w-xs mx-auto mt-6 my-0 py-0 rounded-none">
       {headerText && (
         <h3 className="text-center text-sm text-white/80 mb-2">{headerText}</h3>
@@ -185,12 +178,6 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
           <span className="text-sm font-medium">Marco</span>
         </Button>
       </div>
-      
-      {onReset && <Button onClick={handleReset} variant="outline" size="sm" className="w-full flex items-center justify-center gap-2 py-2 h-9 rounded-full border-white/10 
-                    bg-transparent hover:bg-navy-900/80 text-white/70 hover:text-white">
-          <RefreshCw className="h-3.5 w-3.5 opacity-80" />
-          <span className="text-sm font-medium">Reset</span>
-        </Button>}
       
       {hasError && <div className="text-red-500 text-xs text-center mt-1">
           Fout bij het afspelen van audio. Controleer of alle URL's correct zijn en of de audio bestanden bestaan.
