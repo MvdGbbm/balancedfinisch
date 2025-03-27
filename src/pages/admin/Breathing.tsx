@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,6 @@ import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-tes
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
-// Define types for breathing patterns
 type BreathingPattern = {
   id: string;
   name: string;
@@ -29,14 +27,12 @@ type BreathingPattern = {
   hold2Url?: string;
 };
 
-// Define voice URL type
 type VoiceURLs = {
   inhale: string;
   hold: string;
   exhale: string;
 };
 
-// Sample data - in a real application this would come from the database
 const defaultBreathingPatterns: BreathingPattern[] = [
   {
     id: "1",
@@ -70,7 +66,6 @@ const defaultBreathingPatterns: BreathingPattern[] = [
   },
 ];
 
-// Default voice URLs
 const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
     inhale: "",
@@ -89,11 +84,9 @@ const AdminBreathing = () => {
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [activeTab, setActiveTab] = useState<"patterns" | "voices">("patterns");
   
-  // Voice URL states
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
   
-  // Load breathing patterns from localStorage when component mounts
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -102,21 +95,17 @@ const AdminBreathing = () => {
         setBreathingPatterns(parsedPatterns);
       } catch (error) {
         console.error("Error loading breathing patterns:", error);
-        // If there's an error, use default patterns
         setBreathingPatterns(defaultBreathingPatterns);
         localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
       }
     } else {
-      // If no saved patterns, initialize with defaults
       localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
     }
     
-    // Load voice URLs from localStorage
     loadVoiceUrls();
   }, []);
   
   const loadVoiceUrls = () => {
-    // Load Vera voice URLs
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
       try {
@@ -128,7 +117,6 @@ const AdminBreathing = () => {
       }
     }
     
-    // Load Marco voice URLs
     const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
     if (savedMarcoUrls) {
       try {
@@ -141,7 +129,6 @@ const AdminBreathing = () => {
     }
   };
   
-  // Form for editing patterns
   const patternForm = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -159,7 +146,6 @@ const AdminBreathing = () => {
     }
   });
 
-  // Form for voice URLs
   const veraForm = useForm<VoiceURLs>({
     defaultValues: veraVoiceUrls
   });
@@ -168,7 +154,6 @@ const AdminBreathing = () => {
     defaultValues: marcoVoiceUrls
   });
 
-  // Update form values when voice URLs change
   useEffect(() => {
     veraForm.reset(veraVoiceUrls);
   }, [veraVoiceUrls]);
@@ -185,7 +170,6 @@ const AdminBreathing = () => {
   };
 
   const handleCreateNew = () => {
-    // Generate a temporary ID for the new pattern
     const newId = `temp_${Date.now()}`;
     const newPattern = {
       id: newId,
@@ -201,25 +185,21 @@ const AdminBreathing = () => {
     patternForm.reset(newPattern);
   };
 
-  // Save breathing patterns to localStorage
   const saveToLocalStorage = (patterns: BreathingPattern[]) => {
     localStorage.setItem('breathingPatterns', JSON.stringify(patterns));
   };
 
   const handleSave = (data: BreathingPattern) => {
-    // If selectedPattern exists in breathingPatterns, update it
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
     let updated: BreathingPattern[];
     
     if (existingPatternIndex >= 0) {
-      // Update existing pattern
       updated = [...breathingPatterns];
       updated[existingPatternIndex] = { ...data, id: selectedPattern!.id };
       setBreathingPatterns(updated);
       setSelectedPattern(updated[existingPatternIndex]);
       toast.success("Ademhalingstechniek bijgewerkt");
     } else {
-      // Add new pattern with a permanent ID
       const newPattern = {
         ...data,
         id: `${Date.now()}`
@@ -230,7 +210,6 @@ const AdminBreathing = () => {
       toast.success("Nieuwe ademhalingstechniek toegevoegd");
     }
     
-    // Save to localStorage
     saveToLocalStorage(updated);
   };
 
@@ -251,33 +230,29 @@ const AdminBreathing = () => {
     saveToLocalStorage(filtered);
     toast.success("Ademhalingstechniek verwijderd");
   };
-  
-  // Handle voice URL changes
+
   const handleVeraUrlChange = (field: keyof VoiceURLs, value: string) => {
     const updatedUrls = { ...veraVoiceUrls, [field]: value };
     setVeraVoiceUrls(updatedUrls);
   };
-  
+
   const handleMarcoUrlChange = (field: keyof VoiceURLs, value: string) => {
     const updatedUrls = { ...marcoVoiceUrls, [field]: value };
     setMarcoVoiceUrls(updatedUrls);
   };
-  
-  // Save voice URLs to localStorage
+
   const saveVoiceUrls = () => {
     localStorage.setItem('veraVoiceUrls', JSON.stringify(veraVoiceUrls));
     localStorage.setItem('marcoVoiceUrls', JSON.stringify(marcoVoiceUrls));
     toast.success("Stem audio URLs opgeslagen");
   };
 
-  // Save Vera voice URLs form
   const onVeraSubmit = (data: VoiceURLs) => {
     setVeraVoiceUrls(data);
     localStorage.setItem('veraVoiceUrls', JSON.stringify(data));
     toast.success("Vera stem configuratie opgeslagen");
   };
 
-  // Save Marco voice URLs form
   const onMarcoSubmit = (data: VoiceURLs) => {
     setMarcoVoiceUrls(data);
     localStorage.setItem('marcoVoiceUrls', JSON.stringify(data));
@@ -313,7 +288,6 @@ const AdminBreathing = () => {
           
           <TabsContent value="patterns">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* List of breathing patterns */}
               <Card className="lg:col-span-1">
                 <CardHeader>
                   <CardTitle>Ademhalingstechnieken</CardTitle>
@@ -334,7 +308,6 @@ const AdminBreathing = () => {
                 </CardContent>
               </Card>
 
-              {/* Edit form */}
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>
@@ -530,7 +503,6 @@ const AdminBreathing = () => {
           
           <TabsContent value="voices">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Vera Voice Config */}
               <Card>
                 <CardHeader>
                   <CardTitle>Vera Stem Configuratie</CardTitle>
@@ -543,9 +515,14 @@ const AdminBreathing = () => {
                         name="inhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Inademen Audio URL</FormLabel>
+                            <FormLabel>Audio URL voor inademen</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." />
+                              <Input 
+                                {...field} 
+                                placeholder="Voer URL in" 
+                                type="password"
+                                className="font-mono"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -556,9 +533,14 @@ const AdminBreathing = () => {
                         name="hold"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Vasthouden Audio URL</FormLabel>
+                            <FormLabel>Audio URL voor vasthouden</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." />
+                              <Input 
+                                {...field} 
+                                placeholder="Voer URL in"
+                                type="password"
+                                className="font-mono"
+                              />
                             </FormControl>
                             <p className="text-xs text-muted-foreground">Deze audio wordt gebruikt voor beide vasthoud-fases</p>
                           </FormItem>
@@ -570,9 +552,14 @@ const AdminBreathing = () => {
                         name="exhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Uitademen Audio URL</FormLabel>
+                            <FormLabel>Audio URL voor uitademen</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." />
+                              <Input 
+                                {...field} 
+                                placeholder="Voer URL in"
+                                type="password"
+                                className="font-mono"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -589,7 +576,6 @@ const AdminBreathing = () => {
                 </CardContent>
               </Card>
               
-              {/* Marco Voice Config */}
               <Card>
                 <CardHeader>
                   <CardTitle>Marco Stem Configuratie</CardTitle>
@@ -602,9 +588,14 @@ const AdminBreathing = () => {
                         name="inhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Inademen Audio URL</FormLabel>
+                            <FormLabel>Audio URL voor inademen</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." />
+                              <Input 
+                                {...field} 
+                                placeholder="Voer URL in"
+                                type="password"
+                                className="font-mono"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -615,9 +606,14 @@ const AdminBreathing = () => {
                         name="hold"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Vasthouden Audio URL</FormLabel>
+                            <FormLabel>Audio URL voor vasthouden</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." />
+                              <Input 
+                                {...field} 
+                                placeholder="Voer URL in"
+                                type="password"
+                                className="font-mono"
+                              />
                             </FormControl>
                             <p className="text-xs text-muted-foreground">Deze audio wordt gebruikt voor beide vasthoud-fases</p>
                           </FormItem>
@@ -629,9 +625,14 @@ const AdminBreathing = () => {
                         name="exhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Uitademen Audio URL</FormLabel>
+                            <FormLabel>Audio URL voor uitademen</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="https://..." />
+                              <Input 
+                                {...field} 
+                                placeholder="Voer URL in"
+                                type="password"
+                                className="font-mono"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -651,7 +652,6 @@ const AdminBreathing = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Test section for breathing exercise with audio */}
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
           <p className="text-muted-foreground mb-4">
