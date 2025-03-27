@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
@@ -37,8 +38,18 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   totalCycles
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
   const veraAudioRef = useRef<HTMLAudioElement | null>(null);
   const marcoAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Calculate progress based on current cycle
+  useEffect(() => {
+    if (currentCycle && totalCycles && totalCycles > 0) {
+      setProgressPercentage((currentCycle / totalCycles) * 100);
+    } else {
+      setProgressPercentage(0);
+    }
+  }, [currentCycle, totalCycles]);
 
   // Preload all audio files when the component mounts
   useEffect(() => {
@@ -165,6 +176,17 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
               Cyclus {currentCycle} van {totalCycles}
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Progress indicator */}
+      {isActive && currentCycle && totalCycles && (
+        <div className="w-full mb-3">
+          <Progress 
+            value={progressPercentage} 
+            className="h-2 bg-blue-900/30"
+            indicatorColor="bg-blue-400"
+          />
         </div>
       )}
       
