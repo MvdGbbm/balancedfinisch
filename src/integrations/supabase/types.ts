@@ -9,7 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      radio_streams: {
+        Row: {
+          description: string | null
+          id: string
+          is_active: boolean
+          position: number | null
+          title: string
+          url: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          position?: number | null
+          title: string
+          url: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          position?: number | null
+          title?: string
+          url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
