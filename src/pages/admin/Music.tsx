@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -111,6 +110,8 @@ const AdminMusic = () => {
       toast.error("Vul alle verplichte velden in");
       return;
     }
+    
+    console.log("Saving with audioUrl:", audioUrl);
     
     if (currentMusicItem) {
       updateSoundscape(currentMusicItem.id, {
@@ -298,13 +299,14 @@ const AdminMusic = () => {
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="audioUrl">Audio URL</Label>
+                <Label htmlFor="audioUrl">Audio URL <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
                     placeholder="URL naar audio bestand"
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
+                    required
                   />
                   <Button 
                     type="button" 
@@ -324,13 +326,14 @@ const AdminMusic = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="coverImageUrl">Cover Afbeelding URL</Label>
+                <Label htmlFor="coverImageUrl">Cover Afbeelding URL <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2">
                   <Input
                     id="coverImageUrl"
                     placeholder="URL naar afbeelding"
                     value={coverImageUrl}
                     onChange={(e) => setCoverImageUrl(e.target.value)}
+                    required
                   />
                   <Button 
                     type="button" 
