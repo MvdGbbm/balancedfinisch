@@ -20,8 +20,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   exhaleTime,
   pauseTime
 }) => {
-  const [internalPhase, setInternalPhase] = useState<BreathingPhase>('start');
-  const [count, setCount] = useState(getCountForPhase('start', inhaleTime, holdTime, exhaleTime, pauseTime));
+  const [internalPhase, setInternalPhase] = useState<BreathingPhase>('inhale');
+  const [count, setCount] = useState(getCountForPhase('inhale', inhaleTime, holdTime, exhaleTime, pauseTime));
   const [isActive, setIsActive] = useState(true);
   const isMobile = useIsMobile();
   
@@ -29,14 +29,14 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
 
   useEffect(() => {
     if (!externalPhase) {
-      setInternalPhase('start');
+      setInternalPhase('inhale');
     }
-    setCount(getCountForPhase(externalPhase || 'start', inhaleTime, holdTime, exhaleTime, pauseTime));
+    setCount(getCountForPhase(externalPhase || 'inhale', inhaleTime, holdTime, exhaleTime, pauseTime));
     setIsActive(true);
   }, [technique, externalPhase, inhaleTime, holdTime, exhaleTime, pauseTime]);
 
   useEffect(() => {
-    if (!isActive || exerciseCompleted || phase === 'start') return;
+    if (!isActive || exerciseCompleted) return;
     
     const interval = setInterval(() => {
       setCount(prevCount => {
