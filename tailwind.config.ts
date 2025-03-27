@@ -66,6 +66,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				navy: {
+					900: '#0F1628',  // Adding the navy-900 color
+					950: 'hsl(var(--navy-950))'
+				},
+				tranquil: {
+					400: 'hsl(var(--tranquil-400))'
 				}
 			},
 			borderRadius: {
