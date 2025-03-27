@@ -8,7 +8,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { useForm } from "react-hook-form";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { AudioPreview } from "@/components/admin/audio-preview";
@@ -29,6 +28,8 @@ type VoiceURLs = {
   hold: string;
   exhale: string;
 };
+
+type TechniqueVoiceUrls = Record<string, VoiceURLs>;
 
 const defaultBreathingPatterns: BreathingPattern[] = [
   {
@@ -63,31 +64,18 @@ const defaultBreathingPatterns: BreathingPattern[] = [
   },
 ];
 
-const defaultVoiceUrls: Record<string, VoiceURLs> = {
-  vera: {
-    inhale: "",
-    hold: "",
-    exhale: "",
-  },
-  marco: {
-    inhale: "",
-    hold: "",
-    exhale: "",
-  }
-};
-
 const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [activeTab, setActiveTab] = useState<"patterns" | "voices">("patterns");
   
-  const [veraVoiceUrls, setVeraVoiceUrls] = useState<Record<string, VoiceURLs>>({
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<TechniqueVoiceUrls>({
     "4-7-8": { inhale: "", hold: "", exhale: "" },
     "box-breathing": { inhale: "", hold: "", exhale: "" },
     "diaphragmatic": { inhale: "", hold: "", exhale: "" }
   });
   
-  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<Record<string, VoiceURLs>>({
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<TechniqueVoiceUrls>({
     "4-7-8": { inhale: "", hold: "", exhale: "" },
     "box-breathing": { inhale: "", hold: "", exhale: "" },
     "diaphragmatic": { inhale: "", hold: "", exhale: "" }
@@ -116,13 +104,13 @@ const AdminBreathing = () => {
   const loadVoiceUrls = () => {
     const techniques = ["4-7-8", "box-breathing", "diaphragmatic"];
     
-    const newVeraUrls: Record<string, VoiceURLs> = {
+    const newVeraUrls: TechniqueVoiceUrls = {
       "4-7-8": { inhale: "", hold: "", exhale: "" },
       "box-breathing": { inhale: "", hold: "", exhale: "" },
       "diaphragmatic": { inhale: "", hold: "", exhale: "" }
     };
     
-    const newMarcoUrls: Record<string, VoiceURLs> = {
+    const newMarcoUrls: TechniqueVoiceUrls = {
       "4-7-8": { inhale: "", hold: "", exhale: "" },
       "box-breathing": { inhale: "", hold: "", exhale: "" },
       "diaphragmatic": { inhale: "", hold: "", exhale: "" }
@@ -252,22 +240,6 @@ const AdminBreathing = () => {
     });
     saveToLocalStorage(filtered);
     toast.success("Ademhalingstechniek verwijderd");
-  };
-
-  const handleVeraUrlChange = (field: keyof VoiceURLs, value: string) => {
-    const updatedUrls = { ...veraVoiceUrls, [field]: value };
-    setVeraVoiceUrls(updatedUrls);
-  };
-
-  const handleMarcoUrlChange = (field: keyof VoiceURLs, value: string) => {
-    const updatedUrls = { ...marcoVoiceUrls, [field]: value };
-    setMarcoVoiceUrls(updatedUrls);
-  };
-
-  const saveVoiceUrls = () => {
-    localStorage.setItem('veraVoiceUrls', JSON.stringify(veraVoiceUrls));
-    localStorage.setItem('marcoVoiceUrls', JSON.stringify(marcoVoiceUrls));
-    toast.success("Stem audio URLs opgeslagen");
   };
 
   const onVeraSubmit = (data: VoiceURLs) => {
@@ -635,14 +607,6 @@ const AdminBreathing = () => {
             </div>
           </TabsContent>
         </Tabs>
-        
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
-          <p className="text-muted-foreground mb-4">
-            Test de ademhalingsoefening met audio begeleiding hieronder. Selecteer Vera of Marco om hun stem te horen.
-          </p>
-          <BreathingExerciseTest pattern={selectedPattern} />
-        </div>
       </div>
     </AdminLayout>
   );
