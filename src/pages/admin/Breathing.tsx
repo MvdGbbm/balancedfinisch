@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -253,13 +254,17 @@ const AdminBreathing = () => {
     toast.success("Ademhalingstechniek verwijderd");
   };
 
-  const handleVeraUrlChange = (field: keyof VoiceURLs, value: string) => {
-    const updatedUrls = { ...veraVoiceUrls, [field]: value };
+  const handleVeraUrlChange = (technique: string, field: keyof VoiceURLs, value: string) => {
+    // Fix: Create a proper copy of the state to avoid type errors
+    const updatedUrls = { ...veraVoiceUrls };
+    updatedUrls[technique] = { ...updatedUrls[technique], [field]: value };
     setVeraVoiceUrls(updatedUrls);
   };
 
-  const handleMarcoUrlChange = (field: keyof VoiceURLs, value: string) => {
-    const updatedUrls = { ...marcoVoiceUrls, [field]: value };
+  const handleMarcoUrlChange = (technique: string, field: keyof VoiceURLs, value: string) => {
+    // Fix: Create a proper copy of the state to avoid type errors
+    const updatedUrls = { ...marcoVoiceUrls };
+    updatedUrls[technique] = { ...updatedUrls[technique], [field]: value };
     setMarcoVoiceUrls(updatedUrls);
   };
 
@@ -270,10 +275,9 @@ const AdminBreathing = () => {
   };
 
   const onVeraSubmit = (data: VoiceURLs) => {
-    const updatedVeraUrls = {
-      ...veraVoiceUrls,
-      [activeTechnique]: data
-    };
+    // Fix: Create a proper copy of the state to avoid type errors
+    const updatedVeraUrls = { ...veraVoiceUrls };
+    updatedVeraUrls[activeTechnique] = data;
     
     setVeraVoiceUrls(updatedVeraUrls);
     localStorage.setItem(`veraVoiceUrls_${activeTechnique}`, JSON.stringify(data));
@@ -281,10 +285,9 @@ const AdminBreathing = () => {
   };
 
   const onMarcoSubmit = (data: VoiceURLs) => {
-    const updatedMarcoUrls = {
-      ...marcoVoiceUrls,
-      [activeTechnique]: data
-    };
+    // Fix: Create a proper copy of the state to avoid type errors
+    const updatedMarcoUrls = { ...marcoVoiceUrls };
+    updatedMarcoUrls[activeTechnique] = data;
     
     setMarcoVoiceUrls(updatedMarcoUrls);
     localStorage.setItem(`marcoVoiceUrls_${activeTechnique}`, JSON.stringify(data));
