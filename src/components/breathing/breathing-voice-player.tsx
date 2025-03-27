@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
@@ -16,6 +17,7 @@ interface BreathingVoicePlayerProps {
   onPlay: (voice: "vera" | "marco") => void;
   activeVoice: "vera" | "marco" | null;
   onReset?: () => void;
+  headerText?: string; // Added the headerText prop as optional
 }
 export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   veraUrls,
@@ -24,7 +26,8 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   onPause,
   onPlay,
   activeVoice,
-  onReset
+  onReset,
+  headerText = "Kies een stem voor begeleiding" // Default value if not provided
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -136,7 +139,10 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
       toast.success("Ademhaling gereset");
     }
   };
+  
   return <div className="space-y-3 w-full max-w-xs mx-auto mt-6 my-0 py-0 rounded-none">
+      {headerText && <h3 className="text-center text-sm font-medium text-white/80 mb-2">{headerText}</h3>}
+      
       <div className="grid grid-cols-2 gap-3 w-full">
         <Button onClick={handleVeraClick} disabled={loading} variant="outline" size="sm" className={`w-full flex items-center justify-center gap-2 rounded-full h-10 border border-tranquil-300/20 
           ${isActive && activeVoice === "vera" ? "bg-teal-700/90 text-white shadow-inner" : "bg-navy-900/80 text-white/80 hover:bg-teal-700/70 hover:text-white"}`}>
