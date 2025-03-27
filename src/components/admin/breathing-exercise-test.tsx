@@ -189,7 +189,7 @@ export function BreathingExerciseTest({
     if (!pattern) return;
     let timer: number | null = null;
     let progressTimer: number | null = null;
-    if (isActive) {
+    if (isActive && !exerciseCompleted) {
       timer = window.setInterval(() => {
         if (secondsLeft > 1) {
           setSecondsLeft(seconds => seconds - 1);
@@ -319,7 +319,7 @@ export function BreathingExerciseTest({
       if (timer) clearInterval(timer);
       if (progressTimer) clearInterval(progressTimer);
     };
-  }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
+  }, [isActive, currentPhase, secondsLeft, currentCycle, pattern, exerciseCompleted]);
 
   const getInstructions = () => {
     switch (currentPhase) {
@@ -434,18 +434,26 @@ export function BreathingExerciseTest({
                   currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : 
                   "bg-gradient-to-r from-blue-500 to-indigo-500"}`}
               style={{
-                transform: `scale(${circleScale})`,
+                transform: exerciseCompleted ? "scale(1)" : `scale(${circleScale})`,
                 transition: 'transform 1s ease-in-out'
               }}
             />
             <div className="absolute inset-0 flex items-center justify-center">
-              <p className="text-white text-5xl font-bold">{secondsLeft}</p>
+              {exerciseCompleted ? (
+                <p className="text-white text-2xl font-bold">Voltooid</p>
+              ) : (
+                <p className="text-white text-5xl font-bold">{secondsLeft}</p>
+              )}
             </div>
           </div>
           
           <div className="text-center space-y-2">
-            <p className="text-2xl font-medium">{getInstructions()}</p>
-            {currentAudioUrl && <p className={`text-xs ${audioError ? "text-red-500" : "text-primary"}`}>
+            {!exerciseCompleted ? (
+              <p className="text-2xl font-medium">{getInstructions()}</p>
+            ) : (
+              <p className="text-2xl font-medium">Oefening voltooid</p>
+            )}
+            {currentAudioUrl && !exerciseCompleted && <p className={`text-xs ${audioError ? "text-red-500" : "text-primary"}`}>
                 {audioError ? "Audio fout" : "Audio speelt af"}
               </p>}
             <p className="text-sm text-muted-foreground">
@@ -456,6 +464,7 @@ export function BreathingExerciseTest({
           <div className="flex items-center gap-3 flex-wrap justify-center">
             <Button 
               onClick={startWithVera} 
+              disabled={exerciseCompleted}
               variant={isActive && activeVoice === "vera" ? "secondary" : "default"} 
               size="lg"
             >
@@ -465,6 +474,7 @@ export function BreathingExerciseTest({
             
             <Button 
               onClick={startWithMarco} 
+              disabled={exerciseCompleted}
               variant={isActive && activeVoice === "marco" ? "secondary" : "default"} 
               size="lg"
             >

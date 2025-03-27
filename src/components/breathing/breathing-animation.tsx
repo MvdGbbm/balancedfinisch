@@ -16,6 +16,7 @@ interface BreathingAnimationProps {
   onPhaseChange?: (phase: BreathingPhase) => void;
   currentCycle?: number;
   totalCycles?: number;
+  exerciseCompleted?: boolean;
 }
 const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   technique,
@@ -24,7 +25,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   currentPhase: externalPhase,
   onPhaseChange,
   currentCycle = 1,
-  totalCycles = 5
+  totalCycles = 5,
+  exerciseCompleted = false
 }) => {
   const getCountForPhase = (currentPhase: BreathingPhase, breathingTechnique: BreathingTechnique): number => {
     if (breathingTechnique === '4-7-8') {
@@ -203,7 +205,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive || exerciseCompleted) return;
+    
     const interval = setInterval(() => {
       setCount(prevCount => {
         if (prevCount <= 1) {
@@ -218,8 +221,9 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         return prevCount - 1;
       });
     }, 1000);
+    
     return () => clearInterval(interval);
-  }, [phase, technique, isActive, externalPhase, onPhaseChange]);
+  }, [phase, technique, isActive, externalPhase, onPhaseChange, exerciseCompleted]);
   const getMessage = (): string => {
     switch (phase) {
       case 'inhale':
@@ -235,6 +239,10 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     }
   };
   const circleClass = () => {
+    if (exerciseCompleted) {
+      return 'scale-100'; // Reset to default scale when exercise is completed
+    }
+    
     switch (phase) {
       case 'inhale':
         return `grow-animation`;
@@ -264,7 +272,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       }
     }
   };
-  const shouldShowCounter = phase !== 'pause';
+  const shouldShowCounter = phase !== 'pause' && !exerciseCompleted;
   const circleSize = 'w-48 h-48';
   const innerCircleSize = 'w-40 h-40';
   return <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center my-0 rounded-lg">
@@ -279,8 +287,14 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       <div className={`breathe-circle ${circleSize} ${circleClass()}`} style={animationStyle()} onClick={toggleActive}>
         <div className={`breathe-inner-circle ${innerCircleSize}`}>
           <div className="flex flex-col items-center justify-center text-center">
-            <p className="text-xl font-light mb-2">{getMessage()}</p>
-            {shouldShowCounter && <p className="text-3xl font-medium">{count}</p>}
+            {!exerciseCompleted ? (
+              <>
+                <p className="text-xl font-light mb-2">{getMessage()}</p>
+                {shouldShowCounter && <p className="text-3xl font-medium">{count}</p>}
+              </>
+            ) : (
+              <p className="text-xl font-light">Voltooid</p>
+            )}
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
@@ -243,8 +244,10 @@ const Breathing = () => {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
         setCurrentCycle(prevCycle => prevCycle + 1);
       } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
+        // End of exercise
         setIsExerciseActive(false);
         setExerciseCompleted(true);
+        setShowAnimation(true); // Keep showing animation but in completed state
         
         if (selectedPattern.endUrl) {
           try {
@@ -306,6 +309,7 @@ const Breathing = () => {
                 onPhaseChange={handlePhaseChange}
                 currentCycle={currentCycle}
                 totalCycles={selectedPattern.cycles}
+                exerciseCompleted={exerciseCompleted}
               />
             </div>
           )}
