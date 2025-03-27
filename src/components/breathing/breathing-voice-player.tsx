@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
@@ -18,6 +18,10 @@ interface BreathingVoicePlayerProps {
   onPause: () => void;
   onPlay: (voice: "vera" | "marco") => void;
   activeVoice: "vera" | "marco" | null;
+  onReset?: () => void;
+  currentPhase?: string;
+  currentCycle?: number;
+  totalCycles?: number;
 }
 
 export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
@@ -26,7 +30,11 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   isActive,
   onPause,
   onPlay,
-  activeVoice
+  activeVoice,
+  onReset,
+  currentPhase,
+  currentCycle,
+  totalCycles
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
   const veraAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -147,36 +155,61 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
-      {/* Hidden audio elements for preloading */}
-      <audio ref={veraAudioRef} preload="auto" style={{ display: 'none' }} />
-      <audio ref={marcoAudioRef} preload="auto" style={{ display: 'none' }} />
-      
-      <Button 
-        onClick={handleVeraClick} 
-        variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
-        size="lg"
-        className="w-full bg-blue-500 hover:bg-blue-600 border-none"
-      >
-        {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-        Vera
-      </Button>
-      
-      <Button 
-        onClick={handleMarcoClick} 
-        variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
-        size="lg"
-        className="w-full bg-blue-500 hover:bg-blue-600 border-none"
-      >
-        {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-        Marco
-      </Button>
-      
-      {hasError && (
-        <div className="col-span-2 text-red-500 text-xs text-center mt-1">
-          Fout bij het afspelen van audio. Controleer de URL.
+    <div className="flex flex-col items-center w-full max-w-xs mx-auto mt-2">
+      {/* Status indicator for active phase and cycle */}
+      {isActive && currentPhase && (
+        <div className="mb-3 text-center">
+          <div className="text-sm text-blue-200 font-medium">{currentPhase}</div>
+          {currentCycle && totalCycles && (
+            <div className="text-xs text-blue-100">
+              Cyclus {currentCycle} van {totalCycles}
+            </div>
+          )}
         </div>
       )}
+      
+      <div className="grid grid-cols-2 gap-3 w-full">
+        {/* Hidden audio elements for preloading */}
+        <audio ref={veraAudioRef} preload="auto" style={{ display: 'none' }} />
+        <audio ref={marcoAudioRef} preload="auto" style={{ display: 'none' }} />
+        
+        <Button 
+          onClick={handleVeraClick} 
+          variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
+          size="lg"
+          className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+        >
+          {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+          Vera
+        </Button>
+        
+        <Button 
+          onClick={handleMarcoClick} 
+          variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
+          size="lg"
+          className="w-full bg-blue-500 hover:bg-blue-600 border-none"
+        >
+          {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+          Marco
+        </Button>
+        
+        {hasError && (
+          <div className="col-span-2 text-red-500 text-xs text-center mt-1">
+            Fout bij het afspelen van audio. Controleer de URL.
+          </div>
+        )}
+        
+        {onReset && (
+          <Button 
+            onClick={onReset}
+            variant="outline" 
+            size="sm"
+            className="col-span-2 mt-3 bg-transparent border-blue-400/30 hover:bg-blue-900/20"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Reset
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

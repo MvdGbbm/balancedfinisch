@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import { BreathingPattern } from "@/lib/types";
@@ -15,6 +16,12 @@ const Breathing = () => {
   const [selectedTechnique, setSelectedTechnique] = useState<"4-7-8" | "box-breathing" | "diaphragmatic">("4-7-8");
   const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
   const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<string>("Gereed");
+  const [currentCycle, setCurrentCycle] = useState<number>(1);
+  const [totalCycles, setTotalCycles] = useState<number>(4);
+  
+  // Reference to track if component is mounted
+  const isMounted = useRef(true);
 
   const techniqueVoiceUrls = {
     "4-7-8": {
@@ -55,6 +62,45 @@ const Breathing = () => {
     }
   };
 
+  // Handle component unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Load stored voice URLs from localStorage
+  useEffect(() => {
+    try {
+      // Try to load custom voice URLs for each technique
+      for (const technique of ["4-7-8", "box-breathing", "diaphragmatic"] as const) {
+        // Load Vera voice URLs for this technique
+        const veraKey = `veraVoiceUrls_${technique}`;
+        const savedVeraUrls = localStorage.getItem(veraKey);
+        if (savedVeraUrls) {
+          const parsedUrls = JSON.parse(savedVeraUrls);
+          if (parsedUrls.inhale && parsedUrls.hold && parsedUrls.exhale) {
+            techniqueVoiceUrls[technique].vera = parsedUrls;
+            console.log(`Loaded custom Vera URLs for ${technique}:`, parsedUrls);
+          }
+        }
+        
+        // Load Marco voice URLs for this technique
+        const marcoKey = `marcoVoiceUrls_${technique}`;
+        const savedMarcoUrls = localStorage.getItem(marcoKey);
+        if (savedMarcoUrls) {
+          const parsedUrls = JSON.parse(savedMarcoUrls);
+          if (parsedUrls.inhale && parsedUrls.hold && parsedUrls.exhale) {
+            techniqueVoiceUrls[technique].marco = parsedUrls;
+            console.log(`Loaded custom Marco URLs for ${technique}:`, parsedUrls);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading voice URLs from localStorage:", error);
+    }
+  }, []);
+
   useEffect(() => {
     Object.keys(techniqueVoiceUrls).forEach(technique => {
       preloadAudio(techniqueVoiceUrls[technique as keyof typeof techniqueVoiceUrls].vera.inhale);
@@ -79,6 +125,10 @@ const Breathing = () => {
           setBreathingPatterns(patterns);
           if (patterns.length > 0) {
             setSelectedPattern(patterns[0]);
+            
+            // Set total cycles based on the selected pattern
+            const defaultPattern = patterns.find(p => p.name.includes("4-7-8")) || patterns[0];
+            setTotalCycles(defaultPattern.cycles || 4);
           }
         }
       } catch (error) {
@@ -94,6 +144,9 @@ const Breathing = () => {
   const handleVoicePlay = (voice: "vera" | "marco") => {
     setIsVoiceActive(true);
     setActiveVoice(voice);
+    setCurrentPhase("Adem in");
+    setCurrentCycle(1);
+    
     console.log(`Activating ${voice} voice for ${selectedTechnique}`, 
       techniqueVoiceUrls[selectedTechnique][voice]);
     
@@ -115,17 +168,42 @@ const Breathing = () => {
   const handleVoicePause = () => {
     setIsVoiceActive(false);
     setActiveVoice(null);
+    setCurrentPhase("Gepauzeerd");
     toast.info("Ademhalingsoefening gepauzeerd");
+  };
+  
+  const handleReset = () => {
+    setIsVoiceActive(false);
+    setActiveVoice(null);
+    setCurrentPhase("Gereed");
+    setCurrentCycle(1);
+    toast.info("Ademhalingsoefening gereset");
   };
   
   const handleTechniqueChange = (technique: "4-7-8" | "box-breathing" | "diaphragmatic") => {
     if (isVoiceActive) {
       setIsVoiceActive(false);
       setActiveVoice(null);
+      setCurrentPhase("Gereed");
     }
     
     setSelectedTechnique(technique);
     toast.info(`Ademhalingstechniek gewijzigd naar ${technique}`);
+    
+    // Set total cycles based on the selected technique
+    const pattern = breathingPatterns.find(p => {
+      if (technique === "4-7-8" && p.name.includes("4-7-8")) return true;
+      if (technique === "box-breathing" && p.name.toLowerCase().includes("box")) return true;
+      if (technique === "diaphragmatic" && p.name.toLowerCase().includes("diaphragm")) return true;
+      return false;
+    });
+    
+    if (pattern) {
+      setTotalCycles(pattern.cycles || 4);
+    } else {
+      // Default cycles if no matching pattern found
+      setTotalCycles(technique === "4-7-8" ? 5 : technique === "box-breathing" ? 4 : 6);
+    }
     
     const veraUrls = techniqueVoiceUrls[technique].vera;
     const marcoUrls = techniqueVoiceUrls[technique].marco;
@@ -144,6 +222,20 @@ const Breathing = () => {
       console.log(`Active voice URLs for ${activeVoice}:`, voiceUrls);
     }
   }, [activeVoice, selectedTechnique]);
+  
+  // Update the currentPhase based on animation feedback
+  const handlePhaseChange = (phase: string) => {
+    if (isMounted.current) {
+      setCurrentPhase(phase);
+    }
+  };
+  
+  // Update the currentCycle based on animation feedback
+  const handleCycleChange = (cycle: number) => {
+    if (isMounted.current) {
+      setCurrentCycle(cycle);
+    }
+  };
   
   return (
     <MobileLayout>
@@ -174,6 +266,9 @@ const Breathing = () => {
               technique={selectedTechnique}
               voiceUrls={techniqueVoiceUrls[selectedTechnique][activeVoice]}
               isVoiceActive={isVoiceActive}
+              onPhaseChange={handlePhaseChange}
+              onCycleChange={handleCycleChange}
+              currentPhase={currentPhase}
             />
           )}
           
@@ -190,6 +285,10 @@ const Breathing = () => {
             onPause={handleVoicePause}
             onPlay={handleVoicePlay}
             activeVoice={activeVoice}
+            onReset={handleReset}
+            currentPhase={currentPhase}
+            currentCycle={currentCycle}
+            totalCycles={totalCycles}
           />
         </div>
         
