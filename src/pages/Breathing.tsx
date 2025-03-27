@@ -216,9 +216,15 @@ const Breathing = () => {
       return;
     }
     
+    if (isExerciseActive && activeVoice === voice && currentPhase === 'start') {
+      setCurrentPhase('inhale');
+      console.log('Starting from "Start" phase to "inhale"');
+      return;
+    }
+
     setActiveVoice(voice);
     setIsExerciseActive(true);
-    setCurrentPhase("inhale");
+    setCurrentPhase('start');
     setShowAnimation(true);
     setCurrentCycle(1);
     setExerciseCompleted(false);
@@ -242,13 +248,13 @@ const Breathing = () => {
     }
   };
 
-  const handlePhaseChange = (phase: "inhale" | "hold" | "exhale" | "pause") => {
+  const handlePhaseChange = (phase: "start" | "inhale" | "hold" | "exhale" | "pause") => {
     setCurrentPhase(phase);
     
-    if (phase === "inhale" && currentPhase === "pause") {
+    if (phase === 'inhale' && currentPhase === 'pause') {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
         setCurrentCycle(prevCycle => prevCycle + 1);
-      } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
+      } else if (selectedPattern && currentCycle >= selectedPattern.cycles) {
         setIsExerciseActive(false);
         setExerciseCompleted(true);
         setShowAnimation(true);

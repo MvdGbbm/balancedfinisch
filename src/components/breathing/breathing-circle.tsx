@@ -28,6 +28,8 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     }
     
     switch (phase) {
+      case 'start':
+        return 'scale-100'; // Static scale for start phase
       case 'inhale':
         return `grow-animation`;
       case 'hold':
@@ -42,12 +44,16 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   };
 
   const animationStyle = () => {
+    // No animation for start phase
+    if (phase === 'start') {
+      return {};
+    }
     return {
       animationDuration: `${animationDuration}s`
     };
   };
 
-  const shouldShowCounter = phase !== 'pause' && !exerciseCompleted;
+  const shouldShowCounter = phase !== 'pause' && phase !== 'start' && !exerciseCompleted;
   const circleSize = 'w-48 h-48';
   const innerCircleSize = 'w-40 h-40';
 
