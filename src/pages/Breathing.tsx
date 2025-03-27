@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
@@ -216,6 +215,7 @@ const Breathing = () => {
     setCurrentPhase("inhale");
     setShowAnimation(true);
     setCurrentCycle(1);
+    setExerciseCompleted(false);
     console.log(`Activated ${voice} voice with URLs:`, urls);
   };
 
@@ -244,10 +244,9 @@ const Breathing = () => {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
         setCurrentCycle(prevCycle => prevCycle + 1);
       } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
-        // End of exercise
         setIsExerciseActive(false);
         setExerciseCompleted(true);
-        setShowAnimation(true); // Keep showing animation but in completed state
+        setShowAnimation(true);
         
         if (selectedPattern.endUrl) {
           try {

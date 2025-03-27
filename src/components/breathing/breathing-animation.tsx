@@ -94,6 +94,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   const audioErrorCountRef = useRef<number>(0);
   const audioLoadingRef = useRef<boolean>(false);
   const phase = externalPhase || internalPhase;
+
   useEffect(() => {
     if (!externalPhase) {
       setInternalPhase('inhale');
@@ -105,6 +106,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       validateVoiceUrls(voiceUrls);
     }
   }, [technique, externalPhase, voiceUrls, isVoiceActive]);
+
   const validateVoiceUrls = async (urls: {
     inhale: string;
     hold: string;
@@ -130,6 +132,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       return false;
     }
   };
+
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
     let audioUrl = '';
@@ -187,6 +190,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       audioLoadingRef.current = false;
     }
   };
+
   useEffect(() => {
     if (previousPhaseRef.current !== phase) {
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
@@ -196,6 +200,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       previousPhaseRef.current = phase;
     }
   }, [phase, voiceUrls, isVoiceActive, isActive]);
+
   useEffect(() => {
     if (!isVoiceActive && audioRef.current) {
       audioRef.current.pause();
@@ -204,6 +209,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       playAudio(phase);
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
+
   useEffect(() => {
     if (!isActive || exerciseCompleted) return;
     
@@ -224,6 +230,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     
     return () => clearInterval(interval);
   }, [phase, technique, isActive, externalPhase, onPhaseChange, exerciseCompleted]);
+
   const getMessage = (): string => {
     switch (phase) {
       case 'inhale':
@@ -238,6 +245,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         return 'Adem in';
     }
   };
+
   const circleClass = () => {
     if (exerciseCompleted) {
       return 'scale-100'; // Reset to default scale when exercise is completed
@@ -256,12 +264,14 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         return 'scale-100';
     }
   };
+
   const animationStyle = () => {
     const duration = getCountForPhase(phase, technique);
     return {
       animationDuration: `${duration}s`
     };
   };
+
   const toggleActive = () => {
     setIsActive(!isActive);
     if (audioRef.current && isVoiceActive) {
@@ -272,17 +282,19 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       }
     }
   };
+
   const shouldShowCounter = phase !== 'pause' && !exerciseCompleted;
   const circleSize = 'w-48 h-48';
   const innerCircleSize = 'w-40 h-40';
+
   return <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center my-0 rounded-lg">
       <audio ref={audioRef} onError={() => {
-      console.error("Audio element error");
-      audioErrorCountRef.current++;
-      if (audioErrorCountRef.current === 3) {
-        toast.error("Fout bij het afspelen van audio. Controleer of alle URL's correct zijn.");
-      }
-    }} />
+        console.error("Audio element error");
+        audioErrorCountRef.current++;
+        if (audioErrorCountRef.current === 3) {
+          toast.error("Fout bij het afspelen van audio. Controleer of alle URL's correct zijn.");
+        }
+      }} />
       
       <div className={`breathe-circle ${circleSize} ${circleClass()}`} style={animationStyle()} onClick={toggleActive}>
         <div className={`breathe-inner-circle ${innerCircleSize}`}>
