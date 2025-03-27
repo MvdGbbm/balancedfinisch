@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
@@ -253,6 +252,21 @@ const Breathing = () => {
         <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
         
         <div className="space-y-6">
+          {/* Voice Player - moved higher up in the layout */}
+          {selectedPattern && (
+            <div className="mb-6">
+              <BreathingVoicePlayer 
+                veraUrls={veraVoiceUrls}
+                marcoUrls={marcoVoiceUrls}
+                isActive={isExerciseActive}
+                onPause={handlePauseVoice}
+                onPlay={handleActivateVoice}
+                activeVoice={activeVoice}
+                onReset={handleReset}
+              />
+            </div>
+          )}
+          
           {/* Patterns selection */}
           <div className="grid grid-cols-1 gap-3">
             {breathingPatterns.map((pattern) => (
@@ -287,19 +301,6 @@ const Breathing = () => {
                 onPhaseChange={handlePhaseChange}
               />
             </div>
-          )}
-          
-          {/* Voice Player - always show */}
-          {selectedPattern && (
-            <BreathingVoicePlayer 
-              veraUrls={veraVoiceUrls}
-              marcoUrls={marcoVoiceUrls}
-              isActive={isExerciseActive}
-              onPause={handlePauseVoice}
-              onPlay={handleActivateVoice}
-              activeVoice={activeVoice}
-              onReset={handleReset}
-            />
           )}
           
           {/* Music player section */}
