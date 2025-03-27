@@ -24,8 +24,29 @@ export const validateAudioUrl = (url: string | undefined): string => {
   // Remove any trailing or leading whitespace
   url = url.trim();
   
-  // Handle special characters in URLs
-  url = encodeURI(decodeURI(url));
+  // Test if the URL is already properly encoded or contains spaces
+  const needsEncoding = url.includes(' ') || 
+                        /%20/i.test(url) === false && 
+                        /[\u00A0-\u9999]/g.test(url);
+  
+  // Only encode if not already encoded and contains special characters
+  if (needsEncoding) {
+    // First decode in case it's partially encoded
+    try {
+      url = decodeURI(url);
+    } catch (e) {
+      console.warn("Error decoding URL:", e);
+      // Continue with original URL if decoding fails
+    }
+    
+    // Then encode properly
+    try {
+      url = encodeURI(url);
+    } catch (e) {
+      console.warn("Error encoding URL:", e);
+      // Continue with original URL if encoding fails
+    }
+  }
   
   // Ensure URL has valid protocol
   if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
@@ -35,8 +56,11 @@ export const validateAudioUrl = (url: string | undefined): string => {
     }
   }
   
-  // Remove any spaces and replace with encoded spaces
-  url = url.replace(/ /g, '%20');
+  // Fix common encoding issues for special characters in filenames
+  url = url.replace(/%20/g, '%20')  // Ensure spaces are encoded properly
+           .replace(/\+/g, '%2B')   // Encode plus signs
+           .replace(/#/g, '%23')    // Encode hash symbols
+           .replace(/&/g, '%26');   // Encode ampersands
   
   console.log("Validated audio URL:", url);
   return url;
@@ -106,11 +130,36 @@ export const validateAudioFileExists = async (url: string): Promise<boolean> => 
 export const preloadAudio = (url: string): void => {
   if (!url) return;
   
-  const audio = new Audio();
-  audio.src = url;
-  audio.preload = 'auto';
+  try {
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) return;
+    
+    const audio = new Audio();
+    audio.src = validatedUrl;
+    audio.preload = 'auto';
+    
+    // Log any loading errors
+    audio.addEventListener('error', (e) => {
+      console.error("Error preloading audio:", e, "URL:", validatedUrl);
+    });
+    
+    // Just trigger loading without playing
+    audio.load();
+    console.log("Preloading audio:", validatedUrl);
+  } catch (e) {
+    console.error("Error in preloadAudio:", e);
+  }
+};
+
+// Special function for voice files with Dutch names
+export const processVoiceAudioUrl = (url: string, phase: string): string => {
+  if (!url) return '';
   
-  // Just trigger loading without playing
-  audio.load();
-  console.log("Preloading audio:", url);
+  // Process URL for special Dutch characters and spaces
+  let processedUrl = validateAudioUrl(url);
+  
+  // Log for debugging
+  console.log(`Processing voice audio for phase "${phase}": ${processedUrl}`);
+  
+  return processedUrl;
 };
