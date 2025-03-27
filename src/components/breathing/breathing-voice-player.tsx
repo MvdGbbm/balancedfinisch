@@ -166,23 +166,33 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
         <Button 
           onClick={handleVeraClick} 
           disabled={loading}
-          variant={isActive && activeVoice === "vera" ? "secondary" : "default"}
-          size="lg"
-          className={`w-full ${isActive && activeVoice === "vera" ? "bg-tranquil-600" : "bg-tranquil-500"} hover:bg-tranquil-600 border-none`}
+          variant="outline"
+          size="sm"
+          className={`w-full flex items-center justify-center gap-2 rounded-full h-10 border border-tranquil-300/20 
+          ${isActive && activeVoice === "vera" 
+            ? "bg-teal-700/90 text-white shadow-inner" 
+            : "bg-navy-900/80 text-white/80 hover:bg-teal-700/70 hover:text-white"}`}
         >
-          {isActive && activeVoice === "vera" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-          Vera
+          {isActive && activeVoice === "vera" 
+            ? <Pause className="h-3.5 w-3.5 opacity-90" /> 
+            : <Play className="h-3.5 w-3.5 opacity-90" />}
+          <span className="text-sm font-medium">Vera</span>
         </Button>
         
         <Button 
           onClick={handleMarcoClick} 
           disabled={loading}
-          variant={isActive && activeVoice === "marco" ? "secondary" : "default"}
-          size="lg"
-          className={`w-full ${isActive && activeVoice === "marco" ? "bg-tranquil-600" : "bg-tranquil-500"} hover:bg-tranquil-600 border-none`}
+          variant="outline"
+          size="sm"
+          className={`w-full flex items-center justify-center gap-2 rounded-full h-10 border border-tranquil-300/20
+          ${isActive && activeVoice === "marco" 
+            ? "bg-teal-700/90 text-white shadow-inner" 
+            : "bg-navy-900/80 text-white/80 hover:bg-teal-700/70 hover:text-white"}`}
         >
-          {isActive && activeVoice === "marco" ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-          Marco
+          {isActive && activeVoice === "marco" 
+            ? <Pause className="h-3.5 w-3.5 opacity-90" /> 
+            : <Play className="h-3.5 w-3.5 opacity-90" />}
+          <span className="text-sm font-medium">Marco</span>
         </Button>
       </div>
       
@@ -191,10 +201,11 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
           onClick={handleReset}
           variant="outline"
           size="sm"
-          className="w-full bg-transparent border-tranquil-300 text-tranquil-700 hover:bg-tranquil-100/30"
+          className="w-full flex items-center justify-center gap-2 py-2 h-9 rounded-full border-white/10 
+                    bg-transparent hover:bg-navy-900/80 text-white/70 hover:text-white"
         >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Reset
+          <RefreshCw className="h-3.5 w-3.5 opacity-80" />
+          <span className="text-sm font-medium">Reset</span>
         </Button>
       )}
       
