@@ -6,6 +6,7 @@ import { BreathingPattern } from "@/lib/types";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { RefreshCw } from "lucide-react";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
+import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 
 const Breathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>([]);
@@ -13,6 +14,24 @@ const Breathing = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeView, setActiveView] = useState<"pattern" | "animation">("pattern");
   const [selectedTechnique, setSelectedTechnique] = useState<"4-7-8" | "box-breathing" | "diaphragmatic">("4-7-8");
+  const [isVoiceActive, setIsVoiceActive] = useState<boolean>(false);
+  const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+
+  // Voice URLs for different techniques
+  const techniqueVoiceUrls = {
+    "4-7-8": {
+      vera: "/audio/vera-478.mp3",
+      marco: "/audio/marco-478.mp3"
+    },
+    "box-breathing": {
+      vera: "/audio/vera-box.mp3",
+      marco: "/audio/marco-box.mp3"
+    },
+    "diaphragmatic": {
+      vera: "/audio/vera-diaphragmatic.mp3",
+      marco: "/audio/marco-diaphragmatic.mp3"
+    }
+  };
 
   // Load breathing patterns from localStorage
   useEffect(() => {
@@ -43,6 +62,24 @@ const Breathing = () => {
     if (pattern) {
       setSelectedPattern(pattern);
     }
+  };
+
+  const handleVoicePlay = (voice: "vera" | "marco") => {
+    setIsVoiceActive(true);
+    setActiveVoice(voice);
+  };
+
+  const handleVoicePause = () => {
+    setIsVoiceActive(false);
+    setActiveVoice(null);
+  };
+  
+  // Get current voice URLs based on selected technique
+  const getVoiceUrls = () => {
+    return {
+      vera: techniqueVoiceUrls[selectedTechnique].vera,
+      marco: techniqueVoiceUrls[selectedTechnique].marco
+    };
   };
 
   return (
@@ -94,7 +131,19 @@ const Breathing = () => {
                   <option value="diaphragmatic">Diafragmatische ademhaling</option>
                 </select>
               </div>
-              <BreathingAnimation technique={selectedTechnique} />
+              <BreathingAnimation 
+                technique={selectedTechnique} 
+              />
+              
+              {/* Voice player for animation view */}
+              <BreathingVoicePlayer 
+                veraUrl={getVoiceUrls().vera}
+                marcoUrl={getVoiceUrls().marco}
+                isActive={isVoiceActive}
+                onPause={handleVoicePause}
+                onPlay={handleVoicePlay}
+                activeVoice={activeVoice}
+              />
             </>
           )}
         </div>
