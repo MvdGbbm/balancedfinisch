@@ -29,44 +29,23 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 }) => {
   const [hasError, setHasError] = useState<boolean>(false);
 
-  const validateUrls = (urls: VoiceUrls): boolean => {
-    // Validate that the voice URLs are available
-    return !!urls.inhale && !!urls.hold && !!urls.exhale;
-  };
-
   const handleVeraClick = () => {
-    // Validate URLs before activating
-    if (!validateUrls(veraUrls)) {
-      toast.error("Vera audio URLs zijn niet geconfigureerd");
-      setHasError(true);
-      return;
-    }
-    
     if (isActive && activeVoice === "vera") {
       onPause();
     } else {
-      setHasError(false);
       onPlay("vera");
       toast.success("Vera stem geactiveerd");
-      console.log("Vera audio activated with URLs:", veraUrls);
+      console.log("Vera audio activated");
     }
   };
 
   const handleMarcoClick = () => {
-    // Validate URLs before activating
-    if (!validateUrls(marcoUrls)) {
-      toast.error("Marco audio URLs zijn niet geconfigureerd");
-      setHasError(true);
-      return;
-    }
-    
     if (isActive && activeVoice === "marco") {
       onPause();
     } else {
-      setHasError(false);
       onPlay("marco");
       toast.success("Marco stem geactiveerd");
-      console.log("Marco audio activated with URLs:", marcoUrls);
+      console.log("Marco audio activated");
     }
   };
 

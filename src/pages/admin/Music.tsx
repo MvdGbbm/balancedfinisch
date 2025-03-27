@@ -38,24 +38,7 @@ const AdminMusic = () => {
       updateSoundscape(currentMusicItem.id, musicData);
       toast.success("Muziek bijgewerkt");
     } else {
-      // Check if all required fields are provided for new soundscape
-      if (!musicData.title || !musicData.description || !musicData.audioUrl || 
-          !musicData.category || !musicData.coverImageUrl) {
-        toast.error("Alle verplichte velden moeten ingevuld zijn");
-        return;
-      }
-      
-      // Create a complete new soundscape object with required fields
-      const newSoundscape: Omit<Soundscape, "id"> = {
-        title: musicData.title,
-        description: musicData.description,
-        audioUrl: musicData.audioUrl,
-        category: musicData.category || "Muziek", // Default to "Muziek" if not provided
-        coverImageUrl: musicData.coverImageUrl,
-        tags: musicData.tags || [],
-      };
-      
-      addSoundscape(newSoundscape);
+      addSoundscape(musicData);
       toast.success("Nieuwe muziek toegevoegd");
     }
   };

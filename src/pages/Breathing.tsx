@@ -90,14 +90,6 @@ const Breathing = () => {
     setActiveVoice(null);
   };
   
-  // Debug logging for voice URLs
-  useEffect(() => {
-    if (activeVoice) {
-      const voiceUrls = techniqueVoiceUrls[selectedTechnique][activeVoice];
-      console.log(`Active voice URLs for ${activeVoice}:`, voiceUrls);
-    }
-  }, [activeVoice, selectedTechnique]);
-  
   return (
     <MobileLayout>
       <div className="space-y-6 animate-fade-in min-h-full p-4 rounded-lg bg-gradient-to-br from-navy-950 to-indigo-950">
@@ -114,7 +106,6 @@ const Breathing = () => {
               value={selectedTechnique}
               onChange={(e) => setSelectedTechnique(e.target.value as any)}
               className="w-full p-2 rounded-lg bg-slate-800 text-white border border-white/20"
-              disabled={isVoiceActive}
             >
               <option value="4-7-8">4-7-8 Ademtechniek</option>
               <option value="box-breathing">Box Breathing</option>
@@ -122,21 +113,11 @@ const Breathing = () => {
             </select>
           </div>
           
-          {/* Only show breathing animation when a voice is active */}
-          {isVoiceActive && activeVoice && (
-            <BreathingAnimation 
-              technique={selectedTechnique}
-              voiceUrls={techniqueVoiceUrls[selectedTechnique][activeVoice]}
-              isVoiceActive={isVoiceActive}
-            />
-          )}
-          
-          {/* Show instruction when no voice is selected */}
-          {!isVoiceActive && (
-            <div className="p-6 text-center bg-blue-900/30 rounded-lg border border-blue-800/50 mb-4">
-              <p className="text-white font-medium">Selecteer Vera of Marco hieronder om te beginnen</p>
-            </div>
-          )}
+          <BreathingAnimation 
+            technique={selectedTechnique}
+            voiceUrls={activeVoice ? techniqueVoiceUrls[selectedTechnique][activeVoice] : null}
+            isVoiceActive={isVoiceActive}
+          />
           
           {/* Voice player */}
           <BreathingVoicePlayer 
