@@ -87,6 +87,7 @@ const Breathing = () => {
   // Voice URL states
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
+  const [audioTestSuccess, setAudioTestSuccess] = useState<boolean>(false);
 
   // Load breathing patterns and voice URLs from localStorage when component mounts
   useEffect(() => {
@@ -122,6 +123,9 @@ const Breathing = () => {
         const parsedUrls = JSON.parse(savedVeraUrls);
         setVeraVoiceUrls(parsedUrls);
         console.log("Loaded Vera voice URLs:", parsedUrls);
+        
+        // Verify if the URLs are valid
+        verifyAudioUrls(parsedUrls, 'vera');
       } catch (error) {
         console.error("Error loading Vera voice URLs:", error);
         setVeraVoiceUrls(defaultVoiceUrls.vera);
@@ -135,10 +139,52 @@ const Breathing = () => {
         const parsedUrls = JSON.parse(savedMarcoUrls);
         setMarcoVoiceUrls(parsedUrls);
         console.log("Loaded Marco voice URLs:", parsedUrls);
+        
+        // Verify if the URLs are valid
+        verifyAudioUrls(parsedUrls, 'marco');
       } catch (error) {
         console.error("Error loading Marco voice URLs:", error);
         setMarcoVoiceUrls(defaultVoiceUrls.marco);
       }
+    }
+  };
+  
+  // Function to verify audio URLs are accessible
+  const verifyAudioUrls = async (urls: VoiceURLs, voice: string) => {
+    if (!urls.inhale || !urls.hold || !urls.exhale) {
+      console.log(`${voice} URLs are not complete, skipping verification`);
+      return;
+    }
+    
+    console.log(`Verifying ${voice} audio URLs...`);
+    
+    // Pre-check inhale URL
+    const testAudio = new Audio();
+    testAudio.src = urls.inhale;
+    
+    const testPromise = new Promise((resolve) => {
+      testAudio.oncanplaythrough = () => {
+        console.log(`${voice} inhale audio loaded successfully`);
+        setAudioTestSuccess(true);
+        resolve(true);
+      };
+      
+      testAudio.onerror = () => {
+        console.error(`Error loading ${voice} inhale audio`);
+        setAudioTestSuccess(false);
+        resolve(false);
+      };
+    });
+    
+    // Set a timeout to resolve the promise after 5 seconds
+    setTimeout(() => {
+      console.log(`${voice} audio load check timed out`);
+    }, 5000);
+    
+    try {
+      await testPromise;
+    } catch (error) {
+      console.error("Error during audio test:", error);
     }
   };
 
@@ -153,6 +199,7 @@ const Breathing = () => {
     setActiveVoice(voice);
     setIsExerciseActive(true);
     setCurrentPhase("inhale");
+    console.log(`Activated ${voice} voice with URLs:`, voice === "vera" ? veraVoiceUrls : marcoVoiceUrls);
   };
   
   const handlePauseVoice = () => {

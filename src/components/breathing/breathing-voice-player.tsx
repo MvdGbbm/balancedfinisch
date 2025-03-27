@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw } from "lucide-react";
+import { Play, Pause, RefreshCw, Volume2 } from "lucide-react";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
 import { AudioPreview } from "@/components/audio-player/audio-preview";
@@ -35,11 +35,68 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [previewVoice, setPreviewVoice] = useState<"vera" | "marco" | null>(null);
   const [previewType, setPreviewType] = useState<"inhale" | "hold" | "exhale" | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Validate URLs for a voice set
   const validateUrls = (urls: VoiceUrls): boolean => {
     return Boolean(urls.inhale && urls.hold && urls.exhale);
   };
+
+  // Pre-cache audio files to ensure they're loaded before playback
+  useEffect(() => {
+    const preloadAudio = async (urlSet: VoiceUrls) => {
+      if (!validateUrls(urlSet)) return;
+      
+      try {
+        // Create temporary audio elements to preload the files
+        const inhaleAudio = new Audio(urlSet.inhale);
+        const holdAudio = new Audio(urlSet.hold);
+        const exhaleAudio = new Audio(urlSet.exhale);
+        
+        // Load the audio files
+        const loadPromises = [
+          new Promise(resolve => {
+            inhaleAudio.addEventListener('canplaythrough', resolve, { once: true });
+            inhaleAudio.addEventListener('error', () => {
+              console.error('Error loading inhale audio');
+              resolve(null);
+            }, { once: true });
+            inhaleAudio.load();
+          }),
+          new Promise(resolve => {
+            holdAudio.addEventListener('canplaythrough', resolve, { once: true });
+            holdAudio.addEventListener('error', () => {
+              console.error('Error loading hold audio');
+              resolve(null);
+            }, { once: true });
+            holdAudio.load();
+          }),
+          new Promise(resolve => {
+            exhaleAudio.addEventListener('canplaythrough', resolve, { once: true });
+            exhaleAudio.addEventListener('error', () => {
+              console.error('Error loading exhale audio');
+              resolve(null);
+            }, { once: true });
+            exhaleAudio.load();
+          })
+        ];
+        
+        // Wait for all audio files to load
+        await Promise.all(loadPromises);
+        console.log('Audio files preloaded successfully');
+      } catch (error) {
+        console.error('Failed to preload audio files:', error);
+      }
+    };
+    
+    if (validateUrls(veraUrls)) {
+      preloadAudio(veraUrls);
+    }
+    
+    if (validateUrls(marcoUrls)) {
+      preloadAudio(marcoUrls);
+    }
+  }, [veraUrls, marcoUrls]);
 
   // Handler for Vera voice button
   const handleVeraClick = async () => {
@@ -54,14 +111,23 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       setLoading(true);
       try {
+        // Pre-load audio files
+        const verifyInhale = await fetch(veraUrls.inhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        const verifyHold = await fetch(veraUrls.hold, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        const verifyExhale = await fetch(veraUrls.exhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        
+        if (!verifyInhale.ok || !verifyHold.ok || !verifyExhale.ok) {
+          throw new Error("Kon niet alle audio bestanden verifiëren");
+        }
+        
         onPlay("vera");
         toast.success("Vera stem geactiveerd");
-        console.log("Vera audio activated");
+        console.log("Vera audio activated with URLs:", veraUrls);
         setHasError(false);
       } catch (error) {
         console.error("Error activating Vera audio:", error);
         setHasError(true);
-        toast.error("Fout bij het activeren van Vera audio");
+        toast.error("Fout bij het activeren van Vera audio. Controleer of alle URL's correct zijn.");
       } finally {
         setLoading(false);
       }
@@ -81,14 +147,23 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     } else {
       setLoading(true);
       try {
+        // Pre-load audio files
+        const verifyInhale = await fetch(marcoUrls.inhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        const verifyHold = await fetch(marcoUrls.hold, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        const verifyExhale = await fetch(marcoUrls.exhale, { method: 'HEAD' }).catch(() => ({ ok: false }));
+        
+        if (!verifyInhale.ok || !verifyHold.ok || !verifyExhale.ok) {
+          throw new Error("Kon niet alle audio bestanden verifiëren");
+        }
+        
         onPlay("marco");
         toast.success("Marco stem geactiveerd");
-        console.log("Marco audio activated");
+        console.log("Marco audio activated with URLs:", marcoUrls);
         setHasError(false);
       } catch (error) {
         console.error("Error activating Marco audio:", error);
         setHasError(true);
-        toast.error("Fout bij het activeren van Marco audio");
+        toast.error("Fout bij het activeren van Marco audio. Controleer of alle URL's correct zijn.");
       } finally {
         setLoading(false);
       }
@@ -107,6 +182,33 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
   const showPreview = (voice: "vera" | "marco", type: "inhale" | "hold" | "exhale") => {
     setPreviewVoice(voice);
     setPreviewType(type);
+    
+    // Create a URL for testing
+    const urls = voice === "vera" ? veraUrls : marcoUrls;
+    const url = urls[type];
+    
+    if (!url) {
+      toast.error(`Geen ${type} URL voor ${voice}`);
+      return;
+    }
+    
+    console.log(`Testing ${voice} ${type} audio: ${url}`);
+    
+    // Test the URL with a HEAD request before playing
+    fetch(url, { method: 'HEAD' })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response;
+      })
+      .then(() => {
+        console.log(`${voice} ${type} audio URL is valid`);
+      })
+      .catch(error => {
+        console.error(`Error testing ${voice} ${type} audio:`, error);
+        toast.error(`Fout bij laden van ${voice} ${type} audio. Controleer de URL.`);
+      });
   };
 
   // Close the preview
@@ -121,6 +223,20 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
     
     const urls = previewVoice === "vera" ? veraUrls : marcoUrls;
     return urls[previewType] || "";
+  };
+
+  // Format button label based on voice and type
+  const getButtonLabel = (type: "inhale" | "hold" | "exhale"): string => {
+    switch (type) {
+      case "inhale":
+        return "Inademen";
+      case "hold":
+        return "Vasthouden";
+      case "exhale":
+        return "Uitademen";
+      default:
+        return type;
+    }
   };
 
   return (
@@ -151,12 +267,15 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
 
       {/* Audio preview section */}
       {(validateUrls(veraUrls) || validateUrls(marcoUrls)) && (
-        <div className="mt-4 p-2 bg-card/20 rounded-md border border-border/40">
-          <h4 className="text-sm font-medium mb-2">Test audio:</h4>
+        <div className="mt-4 p-3 bg-card/20 rounded-md border border-border/40">
+          <h4 className="text-sm font-medium mb-2 flex items-center">
+            <Volume2 className="h-4 w-4 mr-1" />
+            Test audio:
+          </h4>
           
           {/* Vera voice previews */}
           {validateUrls(veraUrls) && (
-            <div className="space-y-1 mb-2">
+            <div className="space-y-1 mb-3">
               <div className="text-xs font-semibold mb-1">Vera:</div>
               <div className="flex space-x-2">
                 <Button 
@@ -165,7 +284,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
                   className="text-xs h-7 px-2"
                   onClick={() => showPreview("vera", "inhale")}
                 >
-                  Inademen
+                  {getButtonLabel("inhale")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -173,7 +292,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
                   className="text-xs h-7 px-2"
                   onClick={() => showPreview("vera", "hold")}
                 >
-                  Vasthouden
+                  {getButtonLabel("hold")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -181,7 +300,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
                   className="text-xs h-7 px-2"
                   onClick={() => showPreview("vera", "exhale")}
                 >
-                  Uitademen
+                  {getButtonLabel("exhale")}
                 </Button>
               </div>
             </div>
@@ -198,7 +317,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
                   className="text-xs h-7 px-2"
                   onClick={() => showPreview("marco", "inhale")}
                 >
-                  Inademen
+                  {getButtonLabel("inhale")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -206,7 +325,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
                   className="text-xs h-7 px-2"
                   onClick={() => showPreview("marco", "hold")}
                 >
-                  Vasthouden
+                  {getButtonLabel("hold")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -214,7 +333,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
                   className="text-xs h-7 px-2"
                   onClick={() => showPreview("marco", "exhale")}
                 >
-                  Uitademen
+                  {getButtonLabel("exhale")}
                 </Button>
               </div>
             </div>
@@ -225,10 +344,7 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
             <div className="mt-3">
               <AudioPreview 
                 url={getPreviewUrl()} 
-                label={`${previewVoice === "vera" ? "Vera" : "Marco"} - ${
-                  previewType === "inhale" ? "Inademen" : 
-                  previewType === "hold" ? "Vasthouden" : "Uitademen"
-                }`}
+                label={`${previewVoice === "vera" ? "Vera" : "Marco"} - ${getButtonLabel(previewType)}`}
                 autoPlay
               />
             </div>
@@ -250,9 +366,12 @@ export const BreathingVoicePlayer: React.FC<BreathingVoicePlayerProps> = ({
       
       {hasError && (
         <div className="col-span-2 text-red-500 text-xs text-center mt-1">
-          Fout bij het afspelen van audio. Controleer de URL.
+          Fout bij het afspelen van audio. Controleer of alle URL's correct zijn en of de audio bestanden bestaan.
         </div>
       )}
+      
+      {/* Hidden audio element to handle preloading */}
+      <audio ref={audioRef} style={{ display: 'none' }} />
     </div>
   );
 };

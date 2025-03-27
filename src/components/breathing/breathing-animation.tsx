@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from 'sonner';
 
 export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
 export type BreathingPhase = 'inhale' | 'hold' | 'exhale' | 'pause';
@@ -70,6 +71,8 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   const isMobile = useIsMobile();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
+  const audioReadyRef = useRef<boolean>(false);
+  const audioErrorCountRef = useRef<number>(0);
   
   // Use external phase if provided, otherwise use internal phase
   const phase = externalPhase || internalPhase;
@@ -82,52 +85,97 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     setCount(getCountForPhase(externalPhase || 'inhale', technique));
     setIsActive(true);
     
+    // Reset audio error count
+    audioErrorCountRef.current = 0;
+    
     // Play inhale audio when technique changes
     if (voiceUrls && isVoiceActive && audioRef.current) {
-      audioRef.current.src = voiceUrls.inhale;
-      audioRef.current.play().catch(err => console.error("Error playing audio:", err));
+      playAudio('inhale');
     }
   }, [technique, externalPhase]);
   
+  // Function to preload and play audio
+  const playAudio = (phaseType: BreathingPhase) => {
+    if (!voiceUrls || !isVoiceActive || !audioRef.current) return;
+    
+    let audioUrl = '';
+    switch(phaseType) {
+      case 'inhale':
+        audioUrl = voiceUrls.inhale;
+        break;
+      case 'hold':
+        audioUrl = voiceUrls.hold;
+        break;
+      case 'exhale':
+        audioUrl = voiceUrls.exhale;
+        break;
+      default:
+        audioUrl = '';
+    }
+    
+    if (!audioUrl) {
+      console.log(`No audio URL for ${phaseType} phase`);
+      return;
+    }
+    
+    console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
+    
+    // Create a test audio element to check if the URL is valid
+    const testAudio = new Audio();
+    
+    testAudio.oncanplaythrough = () => {
+      console.log(`${phaseType} audio can play through, setting to main audio element`);
+      audioReadyRef.current = true;
+      
+      // Now set the actual audio element's source and play
+      if (audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.volume = 1.0;
+        
+        audioRef.current.play()
+          .then(() => {
+            console.log(`Playing ${phaseType} audio successfully`);
+            audioErrorCountRef.current = 0; // Reset error count on success
+          })
+          .catch(err => {
+            console.error(`Error playing ${phaseType} audio:`, err);
+            audioErrorCountRef.current++;
+            
+            if (audioErrorCountRef.current <= 3) {
+              console.log(`Retry attempt ${audioErrorCountRef.current} for ${phaseType} audio`);
+            } else if (audioErrorCountRef.current === 4) {
+              toast.error("Fout bij afspelen van audio. Controleer de URL's.");
+            }
+          });
+      }
+    };
+    
+    testAudio.onerror = (error) => {
+      console.error(`Error loading test audio for ${phaseType}:`, error);
+      audioReadyRef.current = false;
+      audioErrorCountRef.current++;
+      
+      if (audioErrorCountRef.current <= 3) {
+        console.log(`Test audio load retry attempt ${audioErrorCountRef.current}`);
+        testAudio.src = audioUrl;
+        testAudio.load();
+      } else if (audioErrorCountRef.current === 4) {
+        toast.error("Kan audio niet laden. Controleer of het bestand bestaat.");
+      }
+    };
+    
+    testAudio.src = audioUrl;
+    testAudio.load();
+  };
+  
   // Play appropriate audio when phase changes or when voice becomes active
   useEffect(() => {
-    if (voiceUrls && isVoiceActive && audioRef.current) {
-      // Only play audio if the phase has actually changed or if this is the first time
-      if (previousPhaseRef.current !== phase || previousPhaseRef.current === null) {
-        let audioUrl = '';
-        
-        // Get the correct audio URL based on the current phase
-        switch(phase) {
-          case 'inhale':
-            audioUrl = voiceUrls.inhale;
-            break;
-          case 'hold':
-            audioUrl = voiceUrls.hold;
-            break;
-          case 'exhale':
-            audioUrl = voiceUrls.exhale;
-            break;
-          default:
-            audioUrl = '';
-        }
-        
-        // Only play if we have a URL and the animation is active
-        if (audioUrl && isActive) {
-          console.log("Playing audio for phase:", phase, "URL:", audioUrl);
-          
-          // Preload the audio
-          const tempAudio = new Audio();
-          tempAudio.src = audioUrl;
-          tempAudio.load();
-          
-          // Set the source and play
-          audioRef.current.src = audioUrl;
-          audioRef.current.play().catch(err => console.error("Error playing audio:", err));
-        }
-        
-        // Update previous phase
-        previousPhaseRef.current = phase;
+    if (previousPhaseRef.current !== phase) {
+      console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
+      if (phase !== 'pause') {
+        playAudio(phase);
       }
+      previousPhaseRef.current = phase;
     }
   }, [phase, voiceUrls, isVoiceActive, isActive]);
 
@@ -136,39 +184,9 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     if (!isVoiceActive && audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-    }
-  }, [isVoiceActive]);
-
-  // Also play initial audio when voice becomes active
-  useEffect(() => {
-    if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
-      // Play the audio for the current phase
-      let audioUrl = '';
-      switch(phase) {
-        case 'inhale':
-          audioUrl = voiceUrls.inhale;
-          break;
-        case 'hold':
-          audioUrl = voiceUrls.hold;
-          break;
-        case 'exhale':
-          audioUrl = voiceUrls.exhale;
-          break;
-        default:
-          audioUrl = '';
-      }
-      
-      if (audioUrl) {
-        console.log("Initial play for current phase:", phase, "URL:", audioUrl);
-        
-        // Preload the audio
-        const tempAudio = new Audio();
-        tempAudio.src = audioUrl;
-        tempAudio.load();
-        
-        audioRef.current.src = audioUrl;
-        audioRef.current.play().catch(err => console.error("Error playing audio:", err));
-      }
+    } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
+      // Play initial audio
+      playAudio(phase);
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
   
@@ -235,6 +253,15 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
 
   const toggleActive = () => {
     setIsActive(!isActive);
+    if (audioRef.current && isVoiceActive) {
+      if (isActive) {
+        // Pausing
+        audioRef.current.pause();
+      } else {
+        // Resuming
+        playAudio(phase);
+      }
+    }
   };
 
   const shouldShowCounter = phase !== 'pause';
