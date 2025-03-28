@@ -1,3 +1,4 @@
+
 import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -20,6 +21,7 @@ import Admin from "./pages/Admin";
 import AdminMeditations from "./pages/admin/Meditations";
 import AdminQuotes from "./pages/admin/Quotes";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
+import AdminMusic from "./pages/admin/Music";
 import AdminStreams from "./pages/admin/Streams";
 import AdminBreathing from "./pages/admin/Breathing";
 
@@ -47,6 +49,7 @@ const router = createBrowserRouter(
       <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
+      <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
       <Route path="*" element={<NotFound />} />
