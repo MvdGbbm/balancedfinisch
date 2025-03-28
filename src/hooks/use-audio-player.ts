@@ -11,6 +11,7 @@ interface UseAudioPlayerProps {
   nextAudioUrl?: string;
   onCrossfadeStart?: () => void;
   title?: string;
+  volume?: number;
 }
 
 export const useAudioPlayer = ({
@@ -21,12 +22,13 @@ export const useAudioPlayer = ({
   onPlayPauseChange,
   nextAudioUrl,
   onCrossfadeStart,
-  title
+  title,
+  volume: initialVolume
 }: UseAudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(0.8);
+  const [volume, setVolume] = useState(initialVolume !== undefined ? initialVolume : 0.8);
   const [isLooping, setIsLooping] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -39,6 +41,16 @@ export const useAudioPlayer = ({
   const nextAudioRef = useRef<HTMLAudioElement | null>(null);
   const crossfadeTimeoutRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
+
+  // Update volume when initialVolume changes
+  useEffect(() => {
+    if (initialVolume !== undefined) {
+      setVolume(initialVolume);
+      if (audioRef.current) {
+        audioRef.current.volume = initialVolume;
+      }
+    }
+  }, [initialVolume]);
 
   // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds

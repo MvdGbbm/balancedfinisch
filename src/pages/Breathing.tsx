@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
+import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 import {
@@ -11,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BreathingPhase } from "@/components/breathing/types";
 
 type BreathingPattern = {
@@ -95,6 +97,8 @@ const Breathing = () => {
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [activeTab, setActiveTab] = useState("exercise");
+  const [voiceVolume, setVoiceVolume] = useState(0.8);
   
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
@@ -287,6 +291,10 @@ const Breathing = () => {
     }
   };
 
+  const handleVoiceVolumeChange = (newValue: number[]) => {
+    setVoiceVolume(newValue[0]);
+  };
+
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
 
   return (
@@ -294,65 +302,78 @@ const Breathing = () => {
       <div className="container py-6 animate-fade-in">
         <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
         
-        <div className="space-y-6">
-          <div className="w-full">
-            <Select
-              value={selectedPattern?.id}
-              onValueChange={handleSelectPattern}
-              disabled={isExerciseActive}
-            >
-              <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black">
-                <SelectValue placeholder="Kies" />
-              </SelectTrigger>
-              <SelectContent>
-                {breathingPatterns.map((pattern) => (
-                  <SelectItem key={pattern.id} value={pattern.id} className="py-3">
-                    <div>
-                      <div className="font-medium">{pattern.name}</div>
-                      {pattern.description && (
-                        <div className="text-xs text-muted-foreground mt-0.5">{pattern.description}</div>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="exercise" className="flex-1">Ademhaling</TabsTrigger>
+            <TabsTrigger value="music" className="flex-1">Muziek</TabsTrigger>
+          </TabsList>
           
-          {selectedPattern && showAnimation && (
-            <div className="mt-8">
-              <BreathingAnimation 
-                technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
-                voiceUrls={activeVoice === "vera" ? veraVoiceUrls : activeVoice === "marco" ? marcoVoiceUrls : null}
-                isVoiceActive={isExerciseActive && !!activeVoice}
-                currentPhase={currentPhase}
-                onPhaseChange={handlePhaseChange}
-                currentCycle={currentCycle}
-                totalCycles={selectedPattern.cycles}
-                exerciseCompleted={exerciseCompleted}
-                inhaleTime={selectedPattern.inhale}
-                holdTime={selectedPattern.hold1}
-                exhaleTime={selectedPattern.exhale}
-                pauseTime={selectedPattern.hold2}
-              />
+          <TabsContent value="exercise" className="space-y-6">
+            <div className="w-full">
+              <Select
+                value={selectedPattern?.id}
+                onValueChange={handleSelectPattern}
+                disabled={isExerciseActive}
+              >
+                <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black">
+                  <SelectValue placeholder="Kies" />
+                </SelectTrigger>
+                <SelectContent>
+                  {breathingPatterns.map((pattern) => (
+                    <SelectItem key={pattern.id} value={pattern.id} className="py-3">
+                      <div>
+                        <div className="font-medium">{pattern.name}</div>
+                        {pattern.description && (
+                          <div className="text-xs text-muted-foreground mt-0.5">{pattern.description}</div>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
+            
+            {selectedPattern && showAnimation && (
+              <div className="mt-8">
+                <BreathingAnimation 
+                  technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
+                  voiceUrls={activeVoice === "vera" ? veraVoiceUrls : activeVoice === "marco" ? marcoVoiceUrls : null}
+                  isVoiceActive={isExerciseActive && !!activeVoice}
+                  currentPhase={currentPhase}
+                  onPhaseChange={handlePhaseChange}
+                  currentCycle={currentCycle}
+                  totalCycles={selectedPattern.cycles}
+                  exerciseCompleted={exerciseCompleted}
+                  inhaleTime={selectedPattern.inhale}
+                  holdTime={selectedPattern.hold1}
+                  exhaleTime={selectedPattern.exhale}
+                  pauseTime={selectedPattern.hold2}
+                />
+              </div>
+            )}
+            
+            <audio ref={startAudioRef} style={{ display: 'none' }} />
+            <audio ref={endAudioRef} style={{ display: 'none' }} />
+            
+            {selectedPattern && (
+              <BreathingVoicePlayer 
+                veraUrls={veraVoiceUrls}
+                marcoUrls={marcoVoiceUrls}
+                isActive={isExerciseActive}
+                onPause={handlePauseVoice}
+                onPlay={handleActivateVoice}
+                activeVoice={activeVoice}
+                headerText={voicePlayerHeaderText}
+                volume={voiceVolume}
+                onVolumeChange={handleVoiceVolumeChange}
+              />
+            )}
+          </TabsContent>
           
-          <audio ref={startAudioRef} style={{ display: 'none' }} />
-          <audio ref={endAudioRef} style={{ display: 'none' }} />
-          
-          {selectedPattern && (
-            <BreathingVoicePlayer 
-              veraUrls={veraVoiceUrls}
-              marcoUrls={marcoVoiceUrls}
-              isActive={isExerciseActive}
-              onPause={handlePauseVoice}
-              onPlay={handleActivateVoice}
-              activeVoice={activeVoice}
-              headerText={voicePlayerHeaderText}
-            />
-          )}
-        </div>
+          <TabsContent value="music">
+            <BreathingMusicPlayer />
+          </TabsContent>
+        </Tabs>
       </div>
     </MobileLayout>
   );

@@ -37,4 +37,5 @@ export interface AudioPlayerProps {
   onPlayPauseChange?: (isPlaying: boolean) => void;
   nextAudioUrl?: string;
   onCrossfadeStart?: () => void;
+  volume?: number;
 }

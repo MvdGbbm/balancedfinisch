@@ -6,19 +6,21 @@ import { AudioPlayer } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Soundscape } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Music, Sliders } from "lucide-react";
+import { Music, Sliders, Volume2 } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 
 export function BreathingMusicPlayer() {
   const { soundscapes } = useApp();
   const [selectedSoundscape, setSelectedSoundscape] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showEqualizer, setShowEqualizer] = useState(false);
+  const [musicVolume, setMusicVolume] = useState(0.8);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Filter soundscapes to only include those with the "Persoonlijke Meditatie" category
@@ -39,6 +41,10 @@ export function BreathingMusicPlayer() {
       setSelectedSoundscape(selected);
       setIsPlaying(true);
     }
+  };
+
+  const handleVolumeChange = (newValue: number[]) => {
+    setMusicVolume(newValue[0]);
   };
 
   return (
@@ -87,7 +93,20 @@ export function BreathingMusicPlayer() {
                   ref={audioRef}
                   isPlayingExternal={isPlaying}
                   onPlayPauseChange={setIsPlaying}
+                  volume={musicVolume}
                 />
+                
+                <div className="flex items-center space-x-2 mt-2">
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                  <Slider
+                    value={[musicVolume]}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onValueChange={handleVolumeChange}
+                    className="w-full"
+                  />
+                </div>
                 
                 {isPlaying && (
                   <div className="flex justify-end mt-2">
