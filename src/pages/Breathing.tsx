@@ -12,8 +12,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BreathingPhase } from "@/components/breathing/types";
-import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import { BreathingVolumeControls } from "@/components/breathing/breathing-volume-controls";
+import { useApp } from "@/context/AppContext";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Play, Pause, StopCircle, Volume2, Music as MusicIcon } from "lucide-react";
+import { AudioPlayer } from "@/components/audio-player";
+import { Badge } from "@/components/ui/badge";
+import { Soundscape } from "@/lib/types";
 
 type BreathingPattern = {
   id: string;
@@ -106,6 +112,12 @@ const Breathing = () => {
   const [voiceVolume, setVoiceVolume] = useState<number>(0.8);
   const [musicVolume, setMusicVolume] = useState<number>(0.5);
 
+  const { soundscapes } = useApp();
+  const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
+  const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
+  const [isTrackPlaying, setIsTrackPlaying] = useState(false);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -305,6 +317,28 @@ const Breathing = () => {
 
   const handleMusicVolumeChange = (volume: number) => {
     setMusicVolume(volume);
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.volume = volume;
+    }
+  };
+
+  const handlePlayTrack = (track: Soundscape) => {
+    if (currentTrack?.id === track.id && isTrackPlaying) {
+      setIsTrackPlaying(false);
+      setCurrentTrack(null);
+      toast({
+        title: "Muziek gestopt",
+        description: `${track.title} is gestopt met afspelen`
+      });
+      return;
+    }
+    
+    setCurrentTrack(track);
+    setIsTrackPlaying(true);
+    toast({
+      title: "Muziek gestart",
+      description: `Nu afspelend: ${track.title}`
+    });
   };
 
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
@@ -382,12 +416,75 @@ const Breathing = () => {
           />
           
           <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">Muziek op de achtergrond</h3>
-            <BreathingMusicPlayer 
-              onVolumeChange={handleMusicVolumeChange}
-              volume={musicVolume}
-            />
+            <h3 className="text-lg font-semibold mb-3">Ontspannende Muziek</h3>
+            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pb-4">
+              {musicTracks.map((track) => (
+                <Card 
+                  key={track.id} 
+                  className={`overflow-hidden border-muted bg-background/30 backdrop-blur-sm ${
+                    currentTrack?.id === track.id && isTrackPlaying
+                      ? 'border-primary'
+                      : ''
+                  }`}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-12 h-12 rounded-md bg-cover bg-center mr-3" 
+                        style={{ backgroundImage: `url(${track.coverImageUrl})` }}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <h4 className="font-medium truncate">{track.title}</h4>
+                          {currentTrack?.id === track.id && isTrackPlaying && (
+                            <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                              Speelt nu
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{track.description}</p>
+                      </div>
+                      <Button
+                        variant={currentTrack?.id === track.id && isTrackPlaying ? "destructive" : "outline"}
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handlePlayTrack(track)}
+                      >
+                        {currentTrack?.id === track.id && isTrackPlaying ? (
+                          <StopCircle className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {musicTracks.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Geen muziek gevonden</p>
+                </div>
+              )}
+            </div>
           </div>
+          
+          {currentTrack && isTrackPlaying && (
+            <div className="mt-4 p-3 border rounded-md bg-background/50">
+              <div className="flex items-center mb-2">
+                <Volume2 className="h-4 w-4 text-primary mr-2 animate-pulse" />
+                <h4 className="font-medium text-sm">Nu afspelend: {currentTrack.title}</h4>
+              </div>
+              <AudioPlayer 
+                audioUrl={currentTrack.audioUrl} 
+                className="w-full"
+                isPlayingExternal={isTrackPlaying}
+                onPlayPauseChange={setIsTrackPlaying}
+                volume={musicVolume}
+                ref={audioPlayerRef}
+              />
+            </div>
+          )}
         </div>
       </div>
     </MobileLayout>
