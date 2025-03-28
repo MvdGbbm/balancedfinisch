@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 // Define the ExerciseType type
 type ExerciseType = "box" | "4-7-8";
@@ -23,19 +24,19 @@ const Breathing = () => {
   const [showMusicPlayer, setShowMusicPlayer] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(0.8);
   
-  // Voice guidance audio URLs
+  // Correcte URL's voor audiobestanden - relatieve paden vanaf public folder
   const veraUrls = {
-    start: "/audio/vera_breathing_start.mp3",
-    inhale: "/audio/vera_breathing_inhale.mp3",
-    hold: "/audio/vera_breathing_hold.mp3",
-    exhale: "/audio/vera_breathing_exhale.mp3",
+    start: "./audio/vera_breathing_start.mp3",
+    inhale: "./audio/vera_breathing_inhale.mp3",
+    hold: "./audio/vera_breathing_hold.mp3",
+    exhale: "./audio/vera_breathing_exhale.mp3",
   };
 
   const marcoUrls = {
-    start: "/audio/marco_breathing_start.mp3",
-    inhale: "/audio/marco_breathing_inhale.mp3",
-    hold: "/audio/marco_breathing_hold.mp3",
-    exhale: "/audio/marco_breathing_exhale.mp3",
+    start: "./audio/marco_breathing_start.mp3",
+    inhale: "./audio/marco_breathing_inhale.mp3",
+    hold: "./audio/marco_breathing_hold.mp3",
+    exhale: "./audio/marco_breathing_exhale.mp3",
   };
 
   // Map exerciseType to the proper technique format expected by BreathingAnimation
@@ -67,11 +68,13 @@ const Breathing = () => {
   const handlePlayVoice = (voice: "vera" | "marco") => {
     setIsPlayingVoice(true);
     setActiveVoice(voice);
+    toast.info(`Stembegeleiding ${voice === "vera" ? "Vera" : "Marco"} geactiveerd`);
   };
 
   const handlePauseVoice = () => {
     setIsPlayingVoice(false);
     setActiveVoice(null);
+    toast.info("Stembegeleiding gepauzeerd");
   };
 
   const handleVoiceVolumeChange = (newValue: number[]) => {
@@ -81,6 +84,15 @@ const Breathing = () => {
   const toggleMusicPlayer = () => {
     setShowMusicPlayer(!showMusicPlayer);
   };
+
+  // Logging om probleemdiagnose te doen
+  useEffect(() => {
+    console.log("Audio URLs:", {
+      vera: veraUrls,
+      marco: marcoUrls,
+      activeVoice
+    });
+  }, [activeVoice]);
 
   return (
     <MobileLayout>
