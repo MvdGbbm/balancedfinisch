@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-// Define the ExerciseType type that was missing
+// Define the ExerciseType type
 type ExerciseType = "box" | "4-7-8";
 
 const Breathing = () => {
@@ -135,7 +135,7 @@ const Breathing = () => {
           />
           
           <BreathExercise 
-            technique={getTechnique(exerciseType)}
+            exerciseType={exerciseType}
             activeVoice={activeVoice}
             isPlayingVoice={isPlayingVoice}
           />
