@@ -6,7 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle } from "lucide-react";
 import { ErrorMessage } from "./error-message";
-import { validateAudioUrl, preloadAudio } from "./utils";
+import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "./utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface AudioPreviewProps {
@@ -45,9 +45,16 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   // Set validated URL when the URL changes
   useEffect(() => {
     if (url) {
-      const fixedUrl = validateAudioUrl(url);
+      const originalUrl = url;
+      let fixedUrl = validateAudioUrl(url);
+      
+      // Handle Supabase storage URLs
+      if (fixedUrl.includes('supabase.co')) {
+        fixedUrl = fixSupabaseStorageUrl(fixedUrl);
+      }
+      
       setValidatedUrl(fixedUrl);
-      setIsValidUrl(!!fixedUrl && fixedUrl === url); // Check if URL needed fixing
+      setIsValidUrl(!!fixedUrl && (fixedUrl === originalUrl || fixedUrl === url)); // Check if URL needed fixing
       
       // Reset states when URL changes
       setError(false);
@@ -56,12 +63,20 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       setIsPlaying(false);
       setRetryCount(0);
       
+      console.log("Audio URL processed:", {
+        original: url,
+        validated: fixedUrl,
+        isValid: !!fixedUrl
+      });
+      
       // Pre-validate audio URL
       preloadAudio(fixedUrl).then(success => {
         if (!success && !error) {
           console.warn("Audio preload check failed:", fixedUrl);
           setError(true);
           if (onError) onError();
+        } else if (success) {
+          console.log("Audio preload succeeded:", fixedUrl);
         }
       });
     }
@@ -117,7 +132,19 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
         
         setTimeout(() => {
           if (audio) {
-            audio.load();
+            // Try with a different approach
+            if (validatedUrl.includes('supabase.co')) {
+              const correctedUrl = fixSupabaseStorageUrl(validatedUrl);
+              if (correctedUrl !== validatedUrl) {
+                console.log("Trying with corrected Supabase URL:", correctedUrl);
+                audio.src = correctedUrl;
+                setValidatedUrl(correctedUrl);
+              } else {
+                audio.load();
+              }
+            } else {
+              audio.load();
+            }
           }
         }, 1000);
       } else if (onError) {
@@ -135,12 +162,28 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     audio.addEventListener("loadeddata", handleLoadedData);
     audio.addEventListener("error", handleError);
     audio.addEventListener("ended", handleEnded);
+    
+    // Add additional event listeners for troubleshooting
+    audio.addEventListener("stalled", () => {
+      console.warn("Audio playback stalled:", validatedUrl);
+    });
+    
+    audio.addEventListener("waiting", () => {
+      console.log("Audio waiting for data:", validatedUrl);
+    });
+    
+    audio.addEventListener("canplay", () => {
+      console.log("Audio can play:", validatedUrl);
+    });
 
     return () => {
       audio.removeEventListener("timeupdate", updateProgress);
       audio.removeEventListener("loadeddata", handleLoadedData);
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("stalled", () => {});
+      audio.removeEventListener("waiting", () => {});
+      audio.removeEventListener("canplay", () => {});
     };
   }, [validatedUrl, onEnded, onError, onLoaded, retryCount, maxRetries]);
 
@@ -188,8 +231,19 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     setIsRetrying(true);
     setError(false);
     
+    // Check if it's a Supabase URL and fix it if needed
+    let retryUrl = validatedUrl;
+    if (validatedUrl.includes('supabase.co')) {
+      retryUrl = fixSupabaseStorageUrl(validatedUrl);
+      if (retryUrl !== validatedUrl) {
+        console.log("Retrying with fixed Supabase URL:", retryUrl);
+        setValidatedUrl(retryUrl);
+      }
+    }
+    
     // Force reload the audio
     const audio = audioRef.current;
+    audio.src = retryUrl;
     audio.load();
     
     audio.oncanplaythrough = () => {
@@ -253,7 +307,14 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
 
   return (
     <div className="p-2 rounded-md bg-muted/20 space-y-2 border border-border/50">
-      <audio ref={audioRef} src={validatedUrl} preload="metadata" />
+      <audio 
+        ref={audioRef} 
+        preload="metadata" 
+        src={validatedUrl}
+      >
+        <source src={validatedUrl} type={getAudioMimeType(validatedUrl)} />
+        Your browser does not support the audio element.
+      </audio>
 
       {error ? (
         <ErrorMessage 
