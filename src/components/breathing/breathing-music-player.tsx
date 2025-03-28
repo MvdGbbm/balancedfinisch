@@ -25,6 +25,7 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
   const meditationMusic = soundscapes.filter(
     soundscape => soundscape.category === "Meditatie" || 
                  soundscape.category === "Ontspanning" || 
+                 soundscape.category === "Muziek" ||
                  soundscape.category === "Persoonlijke Meditatie"
   );
   
