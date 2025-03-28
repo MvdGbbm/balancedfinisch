@@ -15,8 +15,10 @@ import {
   SelectTrigger,
   SelectValue 
 } from "@/components/ui/select";
-import { Music, Volume2 } from "lucide-react";
+import { Music, Volume2, Play } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -34,6 +36,7 @@ interface AudioPlayerProps {
   onCrossfadeStart?: () => void;
   volume?: number;
   showMusicSelector?: boolean;
+  showMusicCard?: boolean;
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
@@ -51,7 +54,8 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   nextAudioUrl,
   onCrossfadeStart,
   volume,
-  showMusicSelector = false
+  showMusicSelector = false,
+  showMusicCard = true
 }, ref) => {
   const { soundscapes } = useApp();
   const [randomQuote] = useState(getRandomQuote);
@@ -116,6 +120,14 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   // Handle music selection change
   const handleMusicChange = (value: string) => {
     setSelectedMusic(value);
+    if (onPlayPauseChange) {
+      onPlayPauseChange(true);
+    }
+  };
+  
+  // Handle play track from music card
+  const handlePlayTrack = (track: Soundscape) => {
+    setSelectedMusic(track.audioUrl);
     if (onPlayPauseChange) {
       onPlayPauseChange(true);
     }
@@ -187,7 +199,43 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
         </div>
       )}
       
-      {isPlaying && (
+      {showMusicCard && showMusicSelector && musicTracks.length > 0 && (
+        <div className="space-y-3 mb-4">
+          <h3 className="text-base font-semibold">Zachte Pianomuziek</h3>
+          <p className="text-sm text-muted-foreground">Rustige pianomuziek om bij te ontspannen en mediteren.</p>
+          
+          <Card className="border-muted bg-background/30 backdrop-blur-sm">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${
+                  isPlaying ? 'bg-primary/20' : 'bg-blue-100/10 dark:bg-blue-900/20'
+                }`}>
+                  <Music className="h-5 w-5 text-blue-500 dark:text-blue-300" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium">
+                    {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || "Zachte Pianomuziek"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Rustige pianomuziek om bij te ontspannen en mediteren.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline"
+                  size="sm" 
+                  onClick={togglePlay}
+                  className="flex items-center gap-1"
+                >
+                  <Play className="h-4 w-4" />
+                  {isPlaying ? 'Nu spelend' : 'Voorluisteren'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      
+      {isPlaying && !showMusicCard && (
         <div className="py-2 px-3 bg-background/30 border border-muted rounded-md flex items-center">
           <Volume2 className="h-4 w-4 text-primary mr-2" />
           <p className="text-sm">

@@ -94,5 +94,14 @@ export const soundscapes: Soundscape[] = [
     coverImageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3",
     tags: ["natuur", "geluiden", "ontspanning"],
     isFavorite: true
+  },
+  {
+    id: "sound-11",
+    title: "Zachte Pianomuziek",
+    description: "Rustige pianomuziek om bij te ontspannen en mediteren.",
+    audioUrl: "https://example.com/soundscapes/piano2.mp3",
+    category: "Muziek",
+    coverImageUrl: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?ixlib=rb-4.0.3",
+    tags: ["piano", "muziek", "instrumentaal"],
   }
 ];
