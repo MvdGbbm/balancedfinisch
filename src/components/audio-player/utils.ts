@@ -32,10 +32,13 @@ export const validateAudioUrl = (url: string | undefined): string => {
   
   // Ensure URL has valid protocol
   if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
-    // If it's a relative path, add leading slash
-    if (!url.startsWith('/')) {
-      url = '/' + url;
-    }
+    // Add https:// protocol if missing
+    url = 'https://' + url;
+  }
+  
+  // Handle protocol-relative URLs (//example.com/file.mp3)
+  if (url.startsWith('//')) {
+    url = 'https:' + url;
   }
   
   // Handle URL encoding for special characters

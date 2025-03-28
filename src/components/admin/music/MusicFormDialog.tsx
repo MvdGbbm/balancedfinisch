@@ -39,6 +39,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const [validatedUrl, setValidatedUrl] = useState("");
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -53,6 +54,15 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     }
   }, [currentMusic, isOpen]);
   
+  useEffect(() => {
+    if (audioUrl) {
+      const fixedUrl = validateAudioUrl(audioUrl);
+      setValidatedUrl(fixedUrl);
+    } else {
+      setValidatedUrl("");
+    }
+  }, [audioUrl]);
+  
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -60,6 +70,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     setCoverImageUrl("");
     setTags([]);
     setIsPreviewPlaying(false);
+    setValidatedUrl("");
   };
   
   const handleAudioPreview = () => {
@@ -81,20 +92,27 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       return;
     }
     
-    // Validate and fix audio URL before saving
-    const validatedAudioUrl = validateAudioUrl(audioUrl);
+    // Validate URLs before saving
+    const processedAudioUrl = validateAudioUrl(audioUrl);
+    let processedCoverImageUrl = coverImageUrl;
     
-    console.log("Saving with audioUrl:", validatedAudioUrl);
+    // Basic validation for image URL
+    if (!coverImageUrl.startsWith('http://') && !coverImageUrl.startsWith('https://')) {
+      processedCoverImageUrl = 'https://' + coverImageUrl.replace(/^\/\//, '');
+    }
+    
+    console.log("Saving music with audioUrl:", processedAudioUrl);
     
     onSave({
       title,
       description,
-      audioUrl: validatedAudioUrl,
+      audioUrl: processedAudioUrl,
       category: "Muziek",
-      coverImageUrl,
+      coverImageUrl: processedCoverImageUrl,
       tags,
     });
     
+    toast.success("Muziek succesvol opgeslagen");
     onOpenChange(false);
     resetForm();
   };
@@ -109,11 +127,6 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     }
   };
 
-  // Fix URL if it has double protocols before passing it to audio player
-  const getFixedAudioUrl = () => {
-    return validateAudioUrl(audioUrl);
-  };
-  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -175,6 +188,12 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
                   {isPreviewPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                 </Button>
               </div>
+              {validatedUrl && validatedUrl !== audioUrl && (
+                <div className="text-xs text-amber-500 flex items-center mt-1">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  URL wordt aangepast naar: {validatedUrl}
+                </div>
+              )}
               {isValidUrl(audioUrl) && (
                 <div className="text-xs text-muted-foreground flex items-center mt-1">
                   <ExternalLink className="h-3 w-3 mr-1" />
@@ -228,7 +247,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
                 <Label>Audio Preview</Label>
                 <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
                 <AudioPlayer 
-                  audioUrl={getFixedAudioUrl()} 
+                  audioUrl={validatedUrl || audioUrl} 
                   isPlayingExternal={isPreviewPlaying}
                   onPlayPauseChange={setIsPreviewPlaying}
                   onError={handleAudioError}
