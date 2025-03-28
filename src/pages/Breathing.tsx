@@ -326,19 +326,13 @@ const Breathing = () => {
     if (currentTrack?.id === track.id && isTrackPlaying) {
       setIsTrackPlaying(false);
       setCurrentTrack(null);
-      toast({
-        title: "Muziek gestopt",
-        description: `${track.title} is gestopt met afspelen`
-      });
+      toast.info(`${track.title} is gestopt met afspelen`);
       return;
     }
     
     setCurrentTrack(track);
     setIsTrackPlaying(true);
-    toast({
-      title: "Muziek gestart",
-      description: `Nu afspelend: ${track.title}`
-    });
+    toast.success(`Nu afspelend: ${track.title}`);
   };
 
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
