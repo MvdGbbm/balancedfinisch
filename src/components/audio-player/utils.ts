@@ -120,7 +120,7 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
       audio.removeAttribute('src');
       audio.load();
       resolve(false);
-    }, 5000);
+    }, 8000); // Increase timeout to 8 seconds for slower connections
     
     // Event listeners for success/failure
     audio.oncanplaythrough = () => {
@@ -137,6 +137,15 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
       audio.load();
       resolve(false);
     };
+    
+    // Add additional catch for network errors
+    audio.addEventListener('stalled', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load stalled:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
     
     audio.src = validatedUrl;
     audio.load();

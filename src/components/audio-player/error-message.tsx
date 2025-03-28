@@ -27,8 +27,17 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
         onClick={handleRetry}
         disabled={isRetrying}
       >
-        <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRetrying ? 'animate-spin' : ''}`} />
-        {isRetrying ? "Opnieuw laden..." : "Opnieuw proberen"}
+        {isRetrying ? (
+          <>
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            Opnieuw laden...
+          </>
+        ) : (
+          <>
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            Opnieuw proberen
+          </>
+        )}
       </Button>
     </div>
   );

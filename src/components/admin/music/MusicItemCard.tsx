@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Play, Pause, Volume2 } from "lucide-react";
+import { Edit, Trash2, Play, Pause, Volume2, AlertCircle, RefreshCw } from "lucide-react";
 import { AudioPreview } from "@/components/audio-player/audio-preview";
 import { Soundscape } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
   const [audioError, setAudioError] = useState(false);
   const [isAudioLoaded, setIsAudioLoaded] = useState(false);
   const [isValidatingUrl, setIsValidatingUrl] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -34,6 +35,10 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
         setIsAudioLoaded(success);
         setAudioError(!success);
         setIsValidatingUrl(false);
+        
+        if (!success) {
+          console.warn("Audio validation failed for:", musicItem.audioUrl);
+        }
       });
     }
   }, [musicItem.audioUrl]);
@@ -41,7 +46,7 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
   const handleTogglePlay = () => {
     if (audioError) {
       // If there's an error, try to reload the audio
-      setAudioError(false);
+      handleRetryAudio();
       return;
     }
     
@@ -63,6 +68,32 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
     setAudioError(false);
   };
   
+  const handleRetryAudio = () => {
+    setIsRetrying(true);
+    setAudioError(false);
+    
+    // Revalidate the URL
+    preloadAudio(musicItem.audioUrl).then(success => {
+      setIsRetrying(false);
+      
+      if (success) {
+        setIsAudioLoaded(true);
+        setIsPlaying(true);
+        toast({
+          title: "Audio hersteld",
+          description: "Audio kon succesvol worden geladen."
+        });
+      } else {
+        setAudioError(true);
+        toast({
+          variant: "destructive",
+          title: "Audio probleem blijft",
+          description: "Kon de audio niet laden. Controleer of de URL correct is."
+        });
+      }
+    });
+  };
+  
   const validatedAudioUrl = validateAudioUrl(musicItem.audioUrl);
   
   return (
@@ -82,6 +113,10 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
             >
               {isValidatingUrl ? (
                 <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : isRetrying ? (
+                <RefreshCw className="h-5 w-5 animate-spin" />
+              ) : audioError ? (
+                <AlertCircle className="h-5 w-5" />
               ) : isPlaying ? (
                 <Pause className="h-5 w-5" />
               ) : (
