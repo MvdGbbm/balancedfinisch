@@ -15,7 +15,20 @@ import { BreathingPhase } from "@/components/breathing/types";
 import { BreathingVolumeControls } from "@/components/breathing/breathing-volume-controls";
 import { useApp } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
-import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
+import { Card, CardContent } from "@/components/ui/card";
+import { Play, Pause, StopCircle, Volume2, Music as MusicIcon, ChevronDown } from "lucide-react";
+import { AudioPlayer } from "@/components/audio-player";
+import { Badge } from "@/components/ui/badge";
+import { Soundscape } from "@/lib/types";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type BreathingPattern = {
   id: string;
@@ -313,28 +326,31 @@ const Breathing = () => {
 
   const handleMusicVolumeChange = (volume: number) => {
     setMusicVolume(volume);
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.volume = volume;
+    }
   };
 
   const handlePlayTrack = (track: Soundscape) => {
     if (currentTrack?.id === track.id && isTrackPlaying) {
       setIsTrackPlaying(false);
       setCurrentTrack(null);
-      toast({
-        title: "Muziek gestopt",
-        description: `${track.title} is gestopt met afspelen`
-      });
+      toast.info(`${track.title} is gestopt met afspelen`);
       return;
     }
     
     setCurrentTrack(track);
     setIsTrackPlaying(true);
-    toast({
-      title: "Muziek gestart",
-      description: `Nu afspelend: ${track.title}`
-    });
+    toast.success(`Nu afspelend: ${track.title}`);
   };
 
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
+
+  const meditationMusic = soundscapes.filter(
+    soundscape => soundscape.category === "Meditatie" || 
+                 soundscape.category === "Ontspanning" || 
+                 soundscape.category === "Persoonlijke Meditatie"
+  );
 
   return (
     <MobileLayout>
@@ -409,11 +425,67 @@ const Breathing = () => {
           />
           
           <div className="mt-6">
-            <BreathingMusicPlayer 
-              volume={musicVolume}
-              onVolumeChange={handleMusicVolumeChange}
-            />
+            <h3 className="text-lg font-semibold mb-3">Muziek op de achtergrond</h3>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full flex justify-between items-center">
+                  <div className="flex items-center">
+                    <MusicIcon className="mr-2 h-4 w-4" />
+                    <span>{currentTrack ? currentTrack.title : "Kies een muziekstuk"}</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-full min-w-[240px] max-h-[300px] overflow-y-auto">
+                <DropdownMenuLabel>Ontspannende Muziek</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  {meditationMusic.length === 0 ? (
+                    <DropdownMenuItem disabled>Geen muziek gevonden</DropdownMenuItem>
+                  ) : (
+                    meditationMusic.map((track) => (
+                      <DropdownMenuItem 
+                        key={track.id} 
+                        className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}
+                        onClick={() => handlePlayTrack(track)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-6 h-6 rounded-sm bg-cover bg-center" 
+                            style={{ backgroundImage: `url(${track.coverImageUrl})` }}
+                          />
+                          <span>{track.title}</span>
+                        </div>
+                        {currentTrack?.id === track.id && isTrackPlaying && (
+                          <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                            Speelt
+                          </Badge>
+                        )}
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+          
+          {currentTrack && isTrackPlaying && (
+            <div className="mt-4 p-3 border rounded-md bg-background/50">
+              <div className="flex items-center mb-2">
+                <Volume2 className="h-4 w-4 text-primary mr-2 animate-pulse" />
+                <h4 className="font-medium text-sm">Nu afspelend: {currentTrack.title}</h4>
+              </div>
+              <AudioPlayer 
+                audioUrl={currentTrack.audioUrl} 
+                className="w-full"
+                isPlayingExternal={isTrackPlaying}
+                onPlayPauseChange={setIsTrackPlaying}
+                volume={musicVolume}
+                ref={audioPlayerRef}
+              />
+            </div>
+          )}
         </div>
       </div>
     </MobileLayout>
