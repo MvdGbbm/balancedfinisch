@@ -24,6 +24,12 @@ export const validateAudioUrl = (url: string | undefined): string => {
   // Remove any trailing or leading whitespace
   url = url.trim();
   
+  // Fix URLs with double protocols (https://http:// or https://https://)
+  if (url.match(/^https?:\/\/https?:\/\//)) {
+    console.log("Fixing URL with double protocol:", url);
+    url = url.replace(/^https?:\/\//, '');
+  }
+  
   // Ensure URL has valid protocol
   if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
     // If it's a relative path, add leading slash

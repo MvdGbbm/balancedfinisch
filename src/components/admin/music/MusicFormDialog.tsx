@@ -18,6 +18,7 @@ import { AudioPlayer } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { TagInput } from "./TagInput";
 import { Soundscape } from "@/lib/types";
+import { validateAudioUrl } from "@/components/audio-player/utils";
 
 interface MusicFormDialogProps {
   isOpen: boolean;
@@ -80,12 +81,15 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       return;
     }
     
-    console.log("Saving with audioUrl:", audioUrl);
+    // Validate and fix audio URL before saving
+    const validatedAudioUrl = validateAudioUrl(audioUrl);
+    
+    console.log("Saving with audioUrl:", validatedAudioUrl);
     
     onSave({
       title,
       description,
-      audioUrl,
+      audioUrl: validatedAudioUrl,
       category: "Muziek",
       coverImageUrl,
       tags,
@@ -103,6 +107,11 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     } catch (e) {
       return false;
     }
+  };
+
+  // Fix URL if it has double protocols before passing it to audio player
+  const getFixedAudioUrl = () => {
+    return validateAudioUrl(audioUrl);
   };
   
   return (
@@ -219,7 +228,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
                 <Label>Audio Preview</Label>
                 <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
                 <AudioPlayer 
-                  audioUrl={audioUrl} 
+                  audioUrl={getFixedAudioUrl()} 
                   isPlayingExternal={isPreviewPlaying}
                   onPlayPauseChange={setIsPreviewPlaying}
                   onError={handleAudioError}

@@ -6,7 +6,7 @@ import { ProgressBar } from "./audio-player/progress-bar";
 import { AudioControls } from "./audio-player/audio-controls";
 import { ErrorMessage } from "./audio-player/error-message";
 import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote, getAudioMimeType, isAACFile } from "./audio-player/utils";
+import { getRandomQuote, getAudioMimeType, isAACFile, validateAudioUrl } from "./audio-player/utils";
 import { Soundscape } from "@/lib/types";
 import { 
   Select,
@@ -58,16 +58,27 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [audioKey, setAudioKey] = useState(0); 
   const [isAACFormat, setIsAACFormat] = useState(false);
-  const [selectedMusic, setSelectedMusic] = useState<string>(audioUrl);
+  const [selectedMusic, setSelectedMusic] = useState<string>("");
   
   // Filter music tracks
   const musicTracks = soundscapes.filter(track => track.category === "Muziek");
   
+  // Process and fix audio URL if needed
+  const processedAudioUrl = audioUrl ? validateAudioUrl(audioUrl) : "";
+  const processedSelectedMusic = selectedMusic ? validateAudioUrl(selectedMusic) : "";
+  const effectiveAudioUrl = processedSelectedMusic || processedAudioUrl || "";
+  
   useEffect(() => {
-    if (audioUrl) {
-      setIsAACFormat(isAACFile(audioUrl));
+    if (!selectedMusic && audioUrl) {
+      setSelectedMusic(audioUrl);
     }
   }, [audioUrl]);
+  
+  useEffect(() => {
+    if (effectiveAudioUrl) {
+      setIsAACFormat(isAACFile(effectiveAudioUrl));
+    }
+  }, [effectiveAudioUrl]);
   
   // Initialize all hooks unconditionally
   const {
@@ -90,12 +101,12 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     handleVolumeChange,
     skipTime
   } = useAudioPlayer({
-    audioUrl: selectedMusic || audioUrl || "",
+    audioUrl: effectiveAudioUrl,
     onEnded,
     onError,
     isPlayingExternal,
     onPlayPauseChange,
-    nextAudioUrl,
+    nextAudioUrl: nextAudioUrl ? validateAudioUrl(nextAudioUrl) : undefined,
     onCrossfadeStart,
     title,
     volume
@@ -103,15 +114,15 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   
   // Log the audio URL for debugging
   useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
+    console.log(`AudioPlayer attempting to load: ${effectiveAudioUrl || "no URL provided"}`);
     
-    if (isAACFile(audioUrl)) {
-      console.log('AAC audio format detected:', audioUrl);
+    if (isAACFile(effectiveAudioUrl)) {
+      console.log('AAC audio format detected:', effectiveAudioUrl);
     }
     
     // Reset player when URL changes
     setAudioKey(prev => prev + 1);
-  }, [audioUrl]);
+  }, [effectiveAudioUrl]);
   
   // Handle music selection change
   const handleMusicChange = (value: string) => {
@@ -130,7 +141,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   }, [nextAudioRef]);
   
   // Early return with placeholder if no audioUrl
-  if (!audioUrl && !selectedMusic) {
+  if (!effectiveAudioUrl) {
     return (
       <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
         <div className="text-center py-3 text-muted-foreground">
@@ -141,18 +152,18 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   }
   
   // Get the MIME type based on the file extension
-  const audioMimeType = getAudioMimeType(selectedMusic || audioUrl);
+  const audioMimeType = getAudioMimeType(effectiveAudioUrl);
   
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
-        <source src={selectedMusic || audioUrl} type={audioMimeType} />
+        <source src={effectiveAudioUrl} type={audioMimeType} />
         Your browser does not support the audio element.
       </audio>
       
       {nextAudioUrl && (
         <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous">
-          <source src={nextAudioUrl} type={getAudioMimeType(nextAudioUrl)} />
+          <source src={validateAudioUrl(nextAudioUrl)} type={getAudioMimeType(nextAudioUrl)} />
         </audio>
       )}
       
