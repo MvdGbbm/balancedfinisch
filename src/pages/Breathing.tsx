@@ -1,10 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { BreathingAnimation } from "@/components/breathing/breathing-animation";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathExercise } from "@/components/breathing/breath-exercise";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
-import { ExerciseType } from "@/components/breathing/types";
 import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
 import { Wand2, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+
+// Define the ExerciseType type that was missing
+type ExerciseType = "box" | "4-7-8";
 
 const Breathing = () => {
   const [exerciseType, setExerciseType] = useState<ExerciseType>("box");
@@ -35,6 +37,32 @@ const Breathing = () => {
     hold: "/audio/marco_breathing_hold.mp3",
     exhale: "/audio/marco_breathing_exhale.mp3",
   };
+
+  // Map exerciseType to the proper technique format expected by BreathingAnimation
+  const getTechnique = (type: ExerciseType): "box-breathing" | "4-7-8" => {
+    return type === "box" ? "box-breathing" : "4-7-8";
+  };
+
+  // Define breathing times based on technique
+  const getBreathingTimes = (type: ExerciseType) => {
+    if (type === "box") {
+      return {
+        inhaleTime: 4,
+        holdTime: 4,
+        exhaleTime: 4,
+        pauseTime: 4
+      };
+    } else {
+      return {
+        inhaleTime: 4,
+        holdTime: 7,
+        exhaleTime: 8,
+        pauseTime: 0
+      };
+    }
+  };
+
+  const breathingTimes = getBreathingTimes(exerciseType);
 
   const handlePlayVoice = (voice: "vera" | "marco") => {
     setIsPlayingVoice(true);
@@ -97,12 +125,17 @@ const Breathing = () => {
 
         <div className="space-y-8">
           <BreathingAnimation 
-            exerciseType={exerciseType} 
-            isActive={true} 
+            technique={getTechnique(exerciseType)}
+            voiceUrls={activeVoice === "vera" ? veraUrls : activeVoice === "marco" ? marcoUrls : null}
+            isVoiceActive={isPlayingVoice}
+            inhaleTime={breathingTimes.inhaleTime}
+            holdTime={breathingTimes.holdTime}
+            exhaleTime={breathingTimes.exhaleTime}
+            pauseTime={breathingTimes.pauseTime}
           />
           
           <BreathExercise 
-            exerciseType={exerciseType}
+            technique={getTechnique(exerciseType)}
             activeVoice={activeVoice}
             isPlayingVoice={isPlayingVoice}
           />
