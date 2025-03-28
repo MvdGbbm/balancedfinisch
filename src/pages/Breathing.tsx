@@ -12,6 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BreathingPhase } from "@/components/breathing/types";
+import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
+import { BreathingVolumeControls } from "@/components/breathing/breathing-volume-controls";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type BreathingPattern = {
   id: string;
@@ -95,10 +98,14 @@ const Breathing = () => {
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [activeTab, setActiveTab] = useState<"exercise" | "music">("exercise");
   
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
   const [voiceUrlsValidated, setVoiceUrlsValidated] = useState<boolean>(false);
+  
+  const [voiceVolume, setVoiceVolume] = useState<number>(0.8);
+  const [musicVolume, setMusicVolume] = useState<number>(0.5);
 
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
@@ -287,6 +294,20 @@ const Breathing = () => {
     }
   };
 
+  const handleVoiceVolumeChange = (volume: number) => {
+    setVoiceVolume(volume);
+    if (startAudioRef.current) {
+      startAudioRef.current.volume = volume;
+    }
+    if (endAudioRef.current) {
+      endAudioRef.current.volume = volume;
+    }
+  };
+
+  const handleMusicVolumeChange = (volume: number) => {
+    setMusicVolume(volume);
+  };
+
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
 
   return (
@@ -352,6 +373,32 @@ const Breathing = () => {
               headerText={voicePlayerHeaderText}
             />
           )}
+          
+          <BreathingVolumeControls 
+            voiceVolume={voiceVolume}
+            musicVolume={musicVolume}
+            onVoiceVolumeChange={handleVoiceVolumeChange}
+            onMusicVolumeChange={handleMusicVolumeChange}
+            className="mt-4"
+          />
+          
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "exercise" | "music")} className="mt-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="exercise">Oefening</TabsTrigger>
+              <TabsTrigger value="music">Muziek</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="exercise" className="mt-4">
+              {/* Current exercise content is already shown above */}
+            </TabsContent>
+            
+            <TabsContent value="music" className="mt-4">
+              <BreathingMusicPlayer 
+                onVolumeChange={handleMusicVolumeChange}
+                volume={musicVolume}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MobileLayout>
