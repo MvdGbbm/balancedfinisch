@@ -141,6 +141,7 @@ const Breathing = () => {
                 inhale: 4,
                 hold1: 7,
                 exhale: 8,
+                hold2: 0, // Add hold2 property with a value of 0 for this pattern
                 cycles: 5
               }
             ]}
@@ -158,6 +159,7 @@ const Breathing = () => {
               inhale: 4,
               hold1: 7,
               exhale: 8,
+              hold2: 0, // Add hold2 property with a value of 0 for this pattern
               cycles: 5
             }}
             onPatternChange={(patternId) => {
