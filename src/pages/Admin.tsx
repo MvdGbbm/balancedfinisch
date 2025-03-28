@@ -10,7 +10,8 @@ import {
   Music, 
   Radio, 
   RefreshCw, 
-  LayoutGrid 
+  LayoutGrid,
+  CreditCard
 } from "lucide-react";
 
 interface AdminTileProps {
@@ -95,6 +96,13 @@ const Admin: React.FC = () => {
       icon: <RefreshCw className="h-5 w-5" style={{ color: "#EAB308" }} />,
       path: "/admin/breathing",
       color: "#EAB308" // Yellow
+    },
+    {
+      title: "50 Monthly Credits",
+      description: "Beheer maandelijkse credits",
+      icon: <CreditCard className="h-5 w-5" style={{ color: "#6366F1" }} />,
+      path: "/admin/credits",
+      color: "#6366F1" // Indigo
     }
   ];
 
