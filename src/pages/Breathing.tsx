@@ -16,19 +16,10 @@ import { BreathingVolumeControls } from "@/components/breathing/breathing-volume
 import { useApp } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, StopCircle, Volume2, Music as MusicIcon, ChevronDown } from "lucide-react";
+import { Play, Pause, StopCircle, Volume2, Music as MusicIcon } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Badge } from "@/components/ui/badge";
 import { Soundscape } from "@/lib/types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 type BreathingPattern = {
   id: string;
@@ -335,22 +326,22 @@ const Breathing = () => {
     if (currentTrack?.id === track.id && isTrackPlaying) {
       setIsTrackPlaying(false);
       setCurrentTrack(null);
-      toast.info(`${track.title} is gestopt met afspelen`);
+      toast({
+        title: "Muziek gestopt",
+        description: `${track.title} is gestopt met afspelen`
+      });
       return;
     }
     
     setCurrentTrack(track);
     setIsTrackPlaying(true);
-    toast.success(`Nu afspelend: ${track.title}`);
+    toast({
+      title: "Muziek gestart",
+      description: `Nu afspelend: ${track.title}`
+    });
   };
 
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
-
-  const meditationMusic = soundscapes.filter(
-    soundscape => soundscape.category === "Meditatie" || 
-                 soundscape.category === "Ontspanning" || 
-                 soundscape.category === "Persoonlijke Meditatie"
-  );
 
   return (
     <MobileLayout>
@@ -425,49 +416,57 @@ const Breathing = () => {
           />
           
           <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">Muziek op de achtergrond</h3>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full flex justify-between items-center">
-                  <div className="flex items-center">
-                    <MusicIcon className="mr-2 h-4 w-4" />
-                    <span>{currentTrack ? currentTrack.title : "Kies een muziekstuk"}</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full min-w-[240px] max-h-[300px] overflow-y-auto">
-                <DropdownMenuLabel>Ontspannende Muziek</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  {meditationMusic.length === 0 ? (
-                    <DropdownMenuItem disabled>Geen muziek gevonden</DropdownMenuItem>
-                  ) : (
-                    meditationMusic.map((track) => (
-                      <DropdownMenuItem 
-                        key={track.id} 
-                        className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}
+            <h3 className="text-lg font-semibold mb-3">Ontspannende Muziek</h3>
+            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pb-4">
+              {musicTracks.map((track) => (
+                <Card 
+                  key={track.id} 
+                  className={`overflow-hidden border-muted bg-background/30 backdrop-blur-sm ${
+                    currentTrack?.id === track.id && isTrackPlaying
+                      ? 'border-primary'
+                      : ''
+                  }`}
+                >
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-12 h-12 rounded-md bg-cover bg-center mr-3" 
+                        style={{ backgroundImage: `url(${track.coverImageUrl})` }}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <h4 className="font-medium truncate">{track.title}</h4>
+                          {currentTrack?.id === track.id && isTrackPlaying && (
+                            <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                              Speelt nu
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{track.description}</p>
+                      </div>
+                      <Button
+                        variant={currentTrack?.id === track.id && isTrackPlaying ? "destructive" : "outline"}
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => handlePlayTrack(track)}
                       >
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-6 h-6 rounded-sm bg-cover bg-center" 
-                            style={{ backgroundImage: `url(${track.coverImageUrl})` }}
-                          />
-                          <span>{track.title}</span>
-                        </div>
-                        {currentTrack?.id === track.id && isTrackPlaying && (
-                          <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                            Speelt
-                          </Badge>
+                        {currentTrack?.id === track.id && isTrackPlaying ? (
+                          <StopCircle className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
                         )}
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {musicTracks.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Geen muziek gevonden</p>
+                </div>
+              )}
+            </div>
           </div>
           
           {currentTrack && isTrackPlaying && (
