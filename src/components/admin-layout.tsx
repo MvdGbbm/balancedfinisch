@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -7,7 +6,6 @@ import {
   Sun, 
   Lock, 
   Headphones, 
-  Music, 
   Quote, 
   Home, 
   RefreshCw,
@@ -59,12 +57,6 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       icon: Waves, 
       label: "Soundscapes", 
       description: "/admin/soundscapes"
-    },
-    { 
-      path: "/admin/music", 
-      icon: Music, 
-      label: "Muziek", 
-      description: "/admin/muziek"
     },
     { 
       path: "/admin/streams", 

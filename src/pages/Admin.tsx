@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
@@ -7,7 +6,6 @@ import {
   Headphones, 
   Quote, 
   Waves, 
-  Music, 
   Radio, 
   RefreshCw, 
   LayoutGrid 
@@ -74,13 +72,6 @@ const Admin: React.FC = () => {
       icon: <Waves className="h-5 w-5" style={{ color: "#0EA5E9" }} />,
       path: "/admin/soundscapes",
       color: "#0EA5E9" // Blue
-    },
-    {
-      title: "Muziek",
-      description: "Beheer muziekbibliotheek",
-      icon: <Music className="h-5 w-5" style={{ color: "#10B981" }} />,
-      path: "/admin/music",
-      color: "#10B981" // Green
     },
     {
       title: "Streaming Links",
