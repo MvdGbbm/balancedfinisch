@@ -22,7 +22,6 @@ interface AudioPlayerProps {
   onPlayPauseChange?: (isPlaying: boolean) => void;
   nextAudioUrl?: string;
   onCrossfadeStart?: () => void;
-  volume?: number; // Add volume prop
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
@@ -38,8 +37,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   isPlayingExternal,
   onPlayPauseChange,
   nextAudioUrl,
-  onCrossfadeStart,
-  volume // Accept volume prop
+  onCrossfadeStart
 }, ref) => {
   const [randomQuote] = useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -59,7 +57,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     isPlaying,
     duration,
     currentTime,
-    volume: audioVolume,
+    volume,
     isLooping,
     isLoaded,
     loadError,
@@ -80,8 +78,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     onPlayPauseChange,
     nextAudioUrl,
     onCrossfadeStart,
-    title,
-    volume // Pass the volume prop to useAudioPlayer
+    title
   });
   
   // Log the audio URL for debugging
@@ -172,7 +169,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
           toggleLoop={toggleLoop}
           isCrossfading={isCrossfading}
           isLiveStream={isLiveStream}
-          volume={audioVolume}
+          volume={volume}
           handleVolumeChange={handleVolumeChange}
           loadError={loadError}
         />
