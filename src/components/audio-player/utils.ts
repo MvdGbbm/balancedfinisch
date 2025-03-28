@@ -1,3 +1,4 @@
+
 import { quotes, colorGradients } from "@/data/quotes";
 
 export const formatTime = (time: number) => {
@@ -24,6 +25,8 @@ export const validateAudioUrl = (url: string): string => {
   if (!url) return "";
   
   try {
+    url = url.trim();
+    
     // Check if the URL has multiple protocol prefixes (e.g., https://https://)
     const protocolRegex = /^(https?:\/\/)+/i;
     const protocolMatch = url.match(protocolRegex);
@@ -37,6 +40,12 @@ export const validateAudioUrl = (url: string): string => {
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       url = 'https://' + url;
     }
+    
+    // Remove trailing slashes before file extension
+    url = url.replace(/\/+(\w+\.\w+)$/, '/$1');
+    
+    // Fix common typos in domain names
+    url = url.replace(/([^:])\/\/+/g, '$1/');
 
     // Create URL object to validate (will throw if invalid)
     new URL(url);
@@ -108,22 +117,54 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
     // Set a timeout for loading
     const timeout = setTimeout(() => {
       console.warn("Audio preload timed out:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
       resolve(false);
     }, 5000);
     
     // Event listeners for success/failure
     audio.oncanplaythrough = () => {
       clearTimeout(timeout);
+      audio.removeAttribute('src');
+      audio.load();
       resolve(true);
     };
     
     audio.onerror = (error) => {
       clearTimeout(timeout);
       console.error("Error preloading audio:", error, validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
       resolve(false);
     };
     
     audio.src = validatedUrl;
     audio.load();
   });
+};
+
+// Check if a URL exists (can be loaded)
+export const checkUrlExists = async (url: string): Promise<boolean> => {
+  try {
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) return false;
+    
+    // For audio files, use preloadAudio
+    if (/\.(mp3|ogg|wav|aac|m4a|flac)$/i.test(validatedUrl)) {
+      return await preloadAudio(validatedUrl);
+    }
+    
+    // For other URLs, try a HEAD request with CORS proxy if needed
+    const response = await fetch(validatedUrl, { 
+      method: 'HEAD',
+      mode: 'no-cors' // This prevents CORS errors but also means we can't check the status
+    });
+    
+    // Since we used no-cors, we can't check the status
+    // We'll assume it succeeded if we got here without an error
+    return true;
+  } catch (error) {
+    console.error("Error checking if URL exists:", url, error);
+    return false;
+  }
 };

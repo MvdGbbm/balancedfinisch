@@ -1,11 +1,13 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Play, Pause, Volume2 } from "lucide-react";
 import { AudioPreview } from "@/components/audio-player/audio-preview";
 import { Soundscape } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface MusicItemCardProps {
   musicItem: Soundscape;
@@ -20,19 +22,48 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioError, setAudioError] = useState(false);
+  const [isAudioLoaded, setIsAudioLoaded] = useState(false);
+  const [isValidatingUrl, setIsValidatingUrl] = useState(false);
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    // Validate audio URL on mount
+    if (musicItem.audioUrl) {
+      setIsValidatingUrl(true);
+      preloadAudio(musicItem.audioUrl).then(success => {
+        setIsAudioLoaded(success);
+        setAudioError(!success);
+        setIsValidatingUrl(false);
+      });
+    }
+  }, [musicItem.audioUrl]);
   
   const handleTogglePlay = () => {
-    setIsPlaying(!isPlaying);
-    // Reset error state when trying to play
-    if (!isPlaying) {
+    if (audioError) {
+      // If there's an error, try to reload the audio
       setAudioError(false);
+      return;
     }
+    
+    setIsPlaying(!isPlaying);
   };
   
   const handleAudioError = () => {
     setIsPlaying(false);
     setAudioError(true);
+    toast({
+      variant: "destructive",
+      title: "Audio probleem",
+      description: "Er is een probleem met het laden van de audio. Controleer of de URL correct is."
+    });
   };
+
+  const handleAudioLoaded = () => {
+    setIsAudioLoaded(true);
+    setAudioError(false);
+  };
+  
+  const validatedAudioUrl = validateAudioUrl(musicItem.audioUrl);
   
   return (
     <Card className="overflow-hidden border-muted bg-background/50 backdrop-blur-sm hover:shadow-md transition-all">
@@ -47,8 +78,15 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
               size="icon"
               className="h-10 w-10 text-white hover:text-white hover:bg-black/20"
               onClick={handleTogglePlay}
+              disabled={isValidatingUrl}
             >
-              {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+              {isValidatingUrl ? (
+                <div className="h-5 w-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="h-5 w-5" />
+              ) : (
+                <Play className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>
@@ -91,19 +129,14 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
       </div>
       
       <CardFooter className="p-0 border-t">
-        {audioError ? (
-          <div className="w-full p-2 text-xs text-destructive bg-destructive/10 text-center">
-            Kan audio niet laden. Controleer de URL.
-          </div>
-        ) : (
-          <AudioPreview 
-            url={musicItem.audioUrl} 
-            autoPlay={isPlaying}
-            onEnded={() => setIsPlaying(false)}
-            onError={handleAudioError}
-            showControls={true}
-          />
-        )}
+        <AudioPreview 
+          url={musicItem.audioUrl} 
+          autoPlay={isPlaying}
+          onEnded={() => setIsPlaying(false)}
+          onError={handleAudioError}
+          onLoaded={handleAudioLoaded}
+          showControls={true}
+        />
       </CardFooter>
     </Card>
   );

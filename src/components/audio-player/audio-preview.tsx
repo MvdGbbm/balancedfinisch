@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { ErrorMessage } from "./error-message";
-import { validateAudioUrl } from "./utils";
+import { validateAudioUrl, preloadAudio } from "./utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface AudioPreviewProps {
   url: string;
@@ -16,6 +16,7 @@ interface AudioPreviewProps {
   autoPlay?: boolean;
   onEnded?: () => void;
   onError?: () => void;
+  onLoaded?: () => void;
 }
 
 export const AudioPreview: React.FC<AudioPreviewProps> = ({
@@ -24,7 +25,8 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   showControls = true,
   autoPlay = false,
   onEnded,
-  onError
+  onError,
+  onLoaded
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -33,21 +35,37 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isValidUrl, setIsValidUrl] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [validatedUrl, setValidatedUrl] = useState("");
+  const { toast } = useToast();
+  const maxRetries = 2;
+  const [retryCount, setRetryCount] = useState(0);
 
   // Set validated URL when the URL changes
   useEffect(() => {
     if (url) {
       const fixedUrl = validateAudioUrl(url);
       setValidatedUrl(fixedUrl);
+      setIsValidUrl(!!fixedUrl && fixedUrl === url); // Check if URL needed fixing
+      
       // Reset states when URL changes
       setError(false);
       setLoaded(false);
       setProgress(0);
       setIsPlaying(false);
+      setRetryCount(0);
+      
+      // Pre-validate audio URL
+      preloadAudio(fixedUrl).then(success => {
+        if (!success && !error) {
+          console.warn("Audio preload check failed:", fixedUrl);
+          setError(true);
+          if (onError) onError();
+        }
+      });
     }
-  }, [url]);
+  }, [url, onError]);
 
   // Auto-play when requested and URL is valid
   useEffect(() => {
@@ -81,15 +99,30 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     };
 
     const handleLoadedData = () => {
+      console.log("Audio loaded successfully:", validatedUrl);
       setLoaded(true);
       setError(false);
+      if (onLoaded) onLoaded();
     };
 
-    const handleError = () => {
-      console.error("Error loading audio:", validatedUrl);
+    const handleError = (e: Event) => {
+      console.error("Error loading audio:", validatedUrl, e);
       setError(true);
       setIsPlaying(false);
-      if (onError) onError();
+      
+      if (retryCount < maxRetries) {
+        // Auto-retry once
+        console.log(`Auto-retrying (${retryCount + 1}/${maxRetries})...`);
+        setRetryCount(prev => prev + 1);
+        
+        setTimeout(() => {
+          if (audio) {
+            audio.load();
+          }
+        }, 1000);
+      } else if (onError) {
+        onError();
+      }
     };
 
     const handleEnded = () => {
@@ -109,7 +142,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [validatedUrl, onEnded, onError]);
+  }, [validatedUrl, onEnded, onError, onLoaded, retryCount, maxRetries]);
 
   // Apply volume settings
   useEffect(() => {
@@ -164,12 +197,21 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       audio.play()
         .then(() => {
           setIsPlaying(true);
+          toast({
+            title: "Audio hersteld",
+            description: "De audio speelt nu af."
+          });
         })
         .catch(err => {
           console.error("Error retrying audio play:", err);
           setError(true);
           setIsRetrying(false);
           if (onError) onError();
+          toast({
+            variant: "destructive",
+            title: "Fout bij afspelen",
+            description: "Audio kon niet worden afgespeeld. Controleer de URL."
+          });
         });
     };
     
@@ -177,6 +219,11 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       setError(true);
       setIsRetrying(false);
       if (onError) onError();
+      toast({
+        variant: "destructive",
+        title: "Fout bij laden",
+        description: "Audio kon niet worden geladen. Controleer de URL."
+      });
     };
   };
 
@@ -209,7 +256,11 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       <audio ref={audioRef} src={validatedUrl} preload="metadata" />
 
       {error ? (
-        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
+        <ErrorMessage 
+          handleRetry={handleRetry} 
+          isRetrying={isRetrying} 
+          message={!isValidUrl ? "Ongeldige URL. Controleer het formaat." : "Kan audio niet laden. Controleer de URL."}
+        />
       ) : (
         <>
           <div className="text-sm font-medium truncate" title={url}>
