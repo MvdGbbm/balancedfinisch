@@ -19,6 +19,20 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
   onDelete,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioError, setAudioError] = useState(false);
+  
+  const handleTogglePlay = () => {
+    setIsPlaying(!isPlaying);
+    // Reset error state when trying to play
+    if (!isPlaying) {
+      setAudioError(false);
+    }
+  };
+  
+  const handleAudioError = () => {
+    setIsPlaying(false);
+    setAudioError(true);
+  };
   
   return (
     <Card className="overflow-hidden border-muted bg-background/50 backdrop-blur-sm hover:shadow-md transition-all">
@@ -32,7 +46,7 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
               variant="ghost" 
               size="icon"
               className="h-10 w-10 text-white hover:text-white hover:bg-black/20"
-              onClick={() => setIsPlaying(!isPlaying)}
+              onClick={handleTogglePlay}
             >
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
             </Button>
@@ -77,12 +91,19 @@ export const MusicItemCard: React.FC<MusicItemCardProps> = ({
       </div>
       
       <CardFooter className="p-0 border-t">
-        <AudioPreview 
-          url={musicItem.audioUrl} 
-          autoPlay={isPlaying}
-          onEnded={() => setIsPlaying(false)}
-          showControls={true}
-        />
+        {audioError ? (
+          <div className="w-full p-2 text-xs text-destructive bg-destructive/10 text-center">
+            Kan audio niet laden. Controleer de URL.
+          </div>
+        ) : (
+          <AudioPreview 
+            url={musicItem.audioUrl} 
+            autoPlay={isPlaying}
+            onEnded={() => setIsPlaying(false)}
+            onError={handleAudioError}
+            showControls={true}
+          />
+        )}
       </CardFooter>
     </Card>
   );

@@ -6,6 +6,8 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { ErrorMessage } from "./error-message";
+import { validateAudioUrl } from "./utils";
 
 interface AudioPreviewProps {
   url: string;
@@ -13,6 +15,7 @@ interface AudioPreviewProps {
   showControls?: boolean;
   autoPlay?: boolean;
   onEnded?: () => void;
+  onError?: () => void;
 }
 
 export const AudioPreview: React.FC<AudioPreviewProps> = ({
@@ -20,7 +23,8 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   label,
   showControls = true,
   autoPlay = false,
-  onEnded
+  onEnded,
+  onError
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -28,19 +32,26 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [validatedUrl, setValidatedUrl] = useState("");
 
-  // Reset state when URL changes
+  // Set validated URL when the URL changes
   useEffect(() => {
-    setError(false);
-    setLoaded(false);
-    setProgress(0);
-    setIsPlaying(false);
+    if (url) {
+      const fixedUrl = validateAudioUrl(url);
+      setValidatedUrl(fixedUrl);
+      // Reset states when URL changes
+      setError(false);
+      setLoaded(false);
+      setProgress(0);
+      setIsPlaying(false);
+    }
   }, [url]);
 
   // Auto-play when requested and URL is valid
   useEffect(() => {
-    if (audioRef.current && autoPlay && url && !error) {
+    if (audioRef.current && autoPlay && validatedUrl && !error) {
       try {
         audioRef.current.play()
           .then(() => {
@@ -49,13 +60,15 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
           .catch(err => {
             console.error("Error auto-playing audio:", err);
             setError(true);
+            if (onError) onError();
           });
       } catch (err) {
         console.error("Error playing audio:", err);
         setError(true);
+        if (onError) onError();
       }
     }
-  }, [autoPlay, url, error]);
+  }, [autoPlay, validatedUrl, error, onError]);
 
   // Update progress during playback
   useEffect(() => {
@@ -73,9 +86,10 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     };
 
     const handleError = () => {
-      console.error("Error loading audio:", url);
+      console.error("Error loading audio:", validatedUrl);
       setError(true);
       setIsPlaying(false);
+      if (onError) onError();
     };
 
     const handleEnded = () => {
@@ -95,7 +109,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       audio.removeEventListener("error", handleError);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [url, onEnded]);
+  }, [validatedUrl, onEnded, onError]);
 
   // Apply volume settings
   useEffect(() => {
@@ -105,12 +119,13 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   }, [volume, muted]);
 
   const togglePlay = () => {
-    if (!audioRef.current || !url) return;
+    if (!audioRef.current || !validatedUrl) return;
 
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      setError(false); // Reset error on manual play attempt
       audioRef.current.play()
         .then(() => {
           setIsPlaying(true);
@@ -118,6 +133,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
         .catch(err => {
           console.error("Error playing audio:", err);
           setError(true);
+          if (onError) onError();
         });
     }
   };
@@ -131,6 +147,37 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     if (values[0] > 0 && muted) {
       setMuted(false);
     }
+  };
+
+  const handleRetry = () => {
+    if (!audioRef.current || !validatedUrl) return;
+    
+    setIsRetrying(true);
+    setError(false);
+    
+    // Force reload the audio
+    const audio = audioRef.current;
+    audio.load();
+    
+    audio.oncanplaythrough = () => {
+      setIsRetrying(false);
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(err => {
+          console.error("Error retrying audio play:", err);
+          setError(true);
+          setIsRetrying(false);
+          if (onError) onError();
+        });
+    };
+    
+    audio.onerror = () => {
+      setError(true);
+      setIsRetrying(false);
+      if (onError) onError();
+    };
   };
 
   // Extract filename from URL for better display
@@ -147,7 +194,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     }
   };
 
-  const displayUrl = label || getFileNameFromUrl(url);
+  const displayUrl = label || getFileNameFromUrl(validatedUrl || url);
 
   if (!url) {
     return (
@@ -159,15 +206,10 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
 
   return (
     <div className="p-2 rounded-md bg-muted/20 space-y-2 border border-border/50">
-      <audio ref={audioRef} src={url} preload="metadata" />
+      <audio ref={audioRef} src={validatedUrl} preload="metadata" />
 
       {error ? (
-        <Alert variant="destructive" className="py-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Kon audio niet laden. Controleer de URL.
-          </AlertDescription>
-        </Alert>
+        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
       ) : (
         <>
           <div className="text-sm font-medium truncate" title={url}>

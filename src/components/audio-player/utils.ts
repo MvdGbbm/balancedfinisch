@@ -1,4 +1,3 @@
-
 import { quotes, colorGradients } from "@/data/quotes";
 
 export const formatTime = (time: number) => {
@@ -18,42 +17,34 @@ export const getRandomQuote = () => {
   };
 };
 
-export const validateAudioUrl = (url: string | undefined): string => {
-  if (!url) return '';
+/**
+ * Validates and fixes audio URLs to ensure proper format
+ */
+export const validateAudioUrl = (url: string): string => {
+  if (!url) return "";
   
-  // Remove any trailing or leading whitespace
-  url = url.trim();
-  
-  // Fix URLs with double protocols (https://http:// or https://https://)
-  if (url.match(/^https?:\/\/https?:\/\//)) {
-    console.log("Fixing URL with double protocol:", url);
-    url = url.replace(/^https?:\/\//, '');
-  }
-  
-  // Ensure URL has valid protocol
-  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
-    // Add https:// protocol if missing
-    url = 'https://' + url;
-  }
-  
-  // Handle protocol-relative URLs (//example.com/file.mp3)
-  if (url.startsWith('//')) {
-    url = 'https:' + url;
-  }
-  
-  // Handle URL encoding for special characters
   try {
-    // Only encode parts of the URL that need encoding
-    const urlObj = new URL(url, window.location.origin);
-    // Make sure pathname is properly encoded (file names with spaces, etc.)
-    urlObj.pathname = urlObj.pathname.split('/')
-      .map(segment => segment.includes(' ') ? encodeURIComponent(segment) : segment)
-      .join('/');
+    // Check if the URL has multiple protocol prefixes (e.g., https://https://)
+    const protocolRegex = /^(https?:\/\/)+/i;
+    const protocolMatch = url.match(protocolRegex);
     
-    return urlObj.toString();
+    if (protocolMatch && protocolMatch[0] !== 'http://' && protocolMatch[0] !== 'https://') {
+      // Fix double/triple protocols by keeping only one https:// prefix
+      url = url.replace(protocolRegex, 'https://');
+    }
+    
+    // Add protocol if missing
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+
+    // Create URL object to validate (will throw if invalid)
+    new URL(url);
+    
+    return url;
   } catch (error) {
-    console.error("Error encoding URL:", error, url);
-    // If URL parsing fails, try a simpler approach
+    console.error("Invalid URL format:", url, error);
+    // Return original URL if we can't parse it
     return url;
   }
 };

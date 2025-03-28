@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 interface ErrorMessageProps {
   handleRetry: () => void;
@@ -13,7 +14,10 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
 }) => {
   return (
     <div className="p-2 rounded-md bg-destructive/10 text-destructive text-center">
-      <p className="text-sm">Er is een probleem met het laden van de audio.</p>
+      <div className="flex items-center justify-center gap-1 mb-1">
+        <AlertCircle className="h-3.5 w-3.5" />
+        <p className="text-sm">Er is een probleem met het laden van de audio.</p>
+      </div>
       <Button 
         variant="outline" 
         size="sm" 
@@ -21,6 +25,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
         onClick={handleRetry}
         disabled={isRetrying}
       >
+        <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRetrying ? 'animate-spin' : ''}`} />
         {isRetrying ? "Opnieuw laden..." : "Opnieuw proberen"}
       </Button>
     </div>
