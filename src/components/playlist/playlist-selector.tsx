@@ -25,6 +25,7 @@ interface PlaylistSelectorProps {
   onCreateNew: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  triggerElement?: React.ReactNode;
 }
 
 export function PlaylistSelector({ 
@@ -32,7 +33,8 @@ export function PlaylistSelector({
   onSelect, 
   onCreateNew, 
   open, 
-  onOpenChange 
+  onOpenChange,
+  triggerElement
 }: PlaylistSelectorProps) {
   const [activeTab, setActiveTab] = useState<string>("playlists");
   const { soundscapes } = useApp();
@@ -43,14 +45,16 @@ export function PlaylistSelector({
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
-        >
-          <Plus className="h-4 w-4" />
-          Toevoegen aan
-        </Button>
+        {triggerElement || (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
+          >
+            <Plus className="h-4 w-4" />
+            Toevoegen aan
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
