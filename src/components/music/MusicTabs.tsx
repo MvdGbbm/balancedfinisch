@@ -12,10 +12,7 @@ export const MusicTabs: React.FC<MusicTabsProps> = ({
   onTabChange
 }) => {
   return (
-    <TabsList className="grid grid-cols-3 mb-4 sticky top-0 z-30 bg-background">
-      <TabsTrigger value="music" onClick={() => onTabChange("music")}>
-        Muziek
-      </TabsTrigger>
+    <TabsList className="grid grid-cols-2 mb-4 sticky top-0 z-30 bg-background">
       <TabsTrigger value="playlists" onClick={() => onTabChange("playlists")}>
         Afspeellijsten
       </TabsTrigger>
