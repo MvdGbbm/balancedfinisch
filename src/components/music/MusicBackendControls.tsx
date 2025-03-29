@@ -33,7 +33,7 @@ export const MusicBackendControls: React.FC<MusicBackendControlsProps> = ({
             variant="outline"
             size="icon"
             title="Wis cachegeheugen"
-            className="flex-shrink-0"
+            className="flex-shrink-0 border-none bg-background/30 hover:bg-destructive/20"
           >
             <Trash className="h-4 w-4 text-destructive" />
           </Button>
@@ -63,7 +63,7 @@ export const MusicBackendControls: React.FC<MusicBackendControlsProps> = ({
         size="icon"
         onClick={onRefresh}
         disabled={isLoading}
-        className="flex-shrink-0"
+        className="flex-shrink-0 border-none bg-background/30 hover:bg-primary/20"
         title="Pagina verversen"
       >
         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />

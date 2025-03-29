@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { MobileLayout } from "@/components/mobile-layout";
