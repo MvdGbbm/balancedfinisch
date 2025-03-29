@@ -1,27 +1,115 @@
 
+import { toast } from "sonner";
+
+/**
+ * Validates and normalizes an audio URL
+ */
 export const validateAudioUrl = (url: string): string | null => {
-  try {
-    new URL(url);
-    if (url.startsWith('blob:')) {
-      return url;
-    }
-    const isAllowedExtension = /\.(mp3|wav|ogg|aac|m4a)$/i.test(url);
-    return isAllowedExtension ? url : null;
-  } catch (e) {
-    return null;
+  if (!url) return null;
+  
+  // Clean up URL
+  url = url.trim();
+  
+  // Add https if protocol is missing
+  if (!/^https?:\/\//i.test(url) && !url.startsWith('data:')) {
+    url = 'https://' + url.replace(/^\/\//, '');
   }
+  
+  // Handle Supabase storage URLs
+  if (url.includes('supabase.co')) {
+    url = fixSupabaseStorageUrl(url);
+  }
+  
+  return url;
 };
 
-export const checkUrlExists = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url, { method: 'HEAD' });
-    return response.ok;
-  } catch (error) {
-    console.error("Error checking URL:", url, error);
-    return false;
-  }
+/**
+ * Checks if a URL points to a streaming resource
+ */
+export const isStreamUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  // Common streaming extensions and patterns
+  const streamPatterns = [
+    /\.m3u8$/i,
+    /\.mpd$/i,
+    /\bstream\b/i,
+    /\blive\b/i,
+    /\bradio\b/i,
+    /\bshoutcast\b/i,
+    /\bicecast\b/i
+  ];
+  
+  return streamPatterns.some(pattern => pattern.test(url));
 };
 
+/**
+ * Formats time in seconds to MM:SS format
+ */
+export const formatTime = (seconds: number): string => {
+  if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Gets MIME type based on audio URL extension
+ */
+export const getAudioMimeType = (url: string): string => {
+  if (!url) return 'audio/mpeg';
+  
+  const lowerUrl = url.toLowerCase();
+  
+  if (lowerUrl.endsWith('.mp3')) return 'audio/mpeg';
+  if (lowerUrl.endsWith('.wav')) return 'audio/wav';
+  if (lowerUrl.endsWith('.ogg')) return 'audio/ogg';
+  if (lowerUrl.endsWith('.aac')) return 'audio/aac';
+  if (lowerUrl.endsWith('.m4a')) return 'audio/mp4';
+  if (lowerUrl.endsWith('.flac')) return 'audio/flac';
+  
+  // Default to MP3 if unknown
+  return 'audio/mpeg';
+};
+
+/**
+ * Checks if file is AAC format
+ */
+export const isAACFile = (url: string): boolean => {
+  if (!url) return false;
+  const lowerUrl = url.toLowerCase();
+  return lowerUrl.endsWith('.aac') || lowerUrl.endsWith('.m4a');
+};
+
+/**
+ * Fixes Supabase storage URLs to ensure proper format
+ */
+export const fixSupabaseStorageUrl = (url: string): string => {
+  if (!url) return url;
+  
+  // Remove double slashes in path (except after protocol)
+  url = url.replace(/(https?:\/\/)([^/]*)\/\/+/g, '$1$2/');
+  
+  // Ensure correct public URL format
+  if (url.includes('supabase.co') && url.includes('/storage/v1/object/public/')) {
+    // URL is already in the correct format
+    return url;
+  }
+  
+  if (url.includes('supabase.co') && url.includes('/storage/v1/object/')) {
+    // Convert internal URL to public URL
+    return url.replace('/storage/v1/object/', '/storage/v1/object/public/');
+  }
+  
+  return url;
+};
+
+/**
+ * Attempts to preload audio and verifies if it can be played
+ * Returns a promise that resolves to true if audio is playable, false otherwise
+ */
 export const preloadAudio = async (url: string): Promise<boolean> => {
   return new Promise<boolean>((resolve) => {
     if (!url) {
@@ -29,171 +117,71 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
       return;
     }
     
-    const audio = new Audio();
-    audio.src = url;
-    
-    audio.oncanplaythrough = () => {
-      resolve(true);
-    };
-    
-    audio.onerror = () => {
+    try {
+      const audio = new Audio();
+      let timeoutId: number | null = null;
+      
+      // Set up timeout to catch hanging requests
+      timeoutId = window.setTimeout(() => {
+        console.warn('Audio preload timed out for:', url);
+        audio.src = '';
+        audio.removeEventListener('loadeddata', onSuccess);
+        audio.removeEventListener('canplaythrough', onSuccess);
+        audio.removeEventListener('error', onError);
+        resolve(false);
+      }, 8000); // 8 second timeout
+      
+      const clearHandlers = () => {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        audio.removeEventListener('loadeddata', onSuccess);
+        audio.removeEventListener('canplaythrough', onSuccess);
+        audio.removeEventListener('error', onError);
+      };
+      
+      const onSuccess = () => {
+        clearHandlers();
+        console.log('Audio preloaded successfully:', url);
+        resolve(true);
+      };
+      
+      const onError = (e: Event) => {
+        clearHandlers();
+        console.error('Audio preload failed:', url, e);
+        resolve(false);
+      };
+      
+      audio.addEventListener('loadeddata', onSuccess);
+      audio.addEventListener('canplaythrough', onSuccess);
+      audio.addEventListener('error', onError);
+      
+      // Start loading the audio
+      audio.src = url;
+      audio.load();
+      
+    } catch (error) {
+      console.error('Exception during audio preload:', error);
       resolve(false);
-    };
-    
-    // Set timeout to prevent hanging
-    const timeout = setTimeout(() => {
-      resolve(false);
-    }, 5000);
-    
-    // Clean up timeout when resolved
-    audio.oncanplaythrough = () => {
-      clearTimeout(timeout);
-      resolve(true);
-    };
-    
-    audio.onerror = () => {
-      clearTimeout(timeout);
-      resolve(false);
-    };
-    
-    audio.load();
+    }
   });
 };
 
-// Format time in mm:ss format
-export const formatTime = (time: number): string => {
-  if (isNaN(time) || !isFinite(time)) return "00:00";
+/**
+ * Returns a random quote about sound, music or listening
+ */
+export const getRandomQuote = (): { text: string; author: string } => {
+  const quotes = [
+    { text: "Muziek geeft de ziel een stem.", author: "Plato" },
+    { text: "Muziek is de universele taal van de mensheid.", author: "Henry Wadsworth Longfellow" },
+    { text: "Waar woorden falen, spreekt muziek.", author: "Hans Christian Andersen" },
+    { text: "Stilte is even belangrijk als geluid.", author: "Miles Davis" },
+    { text: "Luister naar de stilte. Het heeft zoveel te zeggen.", author: "Rumi" },
+    { text: "De muziek drukt uit wat niet gezegd kan worden en waarover het onmogelijk is om te zwijgen.", author: "Victor Hugo" },
+    { text: "Zonder muziek zou het leven een vergissing zijn.", author: "Friedrich Nietzsche" },
+    { text: "Muziek is de kortste weg naar het hart.", author: "Søren Kierkegaard" }
+  ];
   
-  const minutes = Math.floor(time / 60);
-  const seconds = Math.floor(time % 60);
-  
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-};
-
-// Check if URL is for AAC audio file
-export const isAACFile = (url: string): boolean => {
-  return /\.(aac|m4a)$/i.test(url) || url.includes('audio/aac') || url.includes('audio/mp4');
-};
-
-// Get MIME type based on file extension
-export const getAudioMimeType = (url: string): string => {
-  if (!url) return '';
-  
-  const extension = url.split('.').pop()?.toLowerCase();
-  
-  switch (extension) {
-    case 'mp3':
-      return 'audio/mpeg';
-    case 'wav':
-      return 'audio/wav';
-    case 'ogg':
-      return 'audio/ogg';
-    case 'aac':
-      return 'audio/aac';
-    case 'm4a':
-      return 'audio/mp4';
-    default:
-      return 'audio/mpeg'; // Default to MP3
-  }
-};
-
-// Check if URL is for a live stream
-export const isStreamUrl = (url: string): boolean => {
-  return url.includes('.m3u8') || 
-         url.includes('stream') || 
-         url.includes('live') || 
-         url.includes('radio') ||
-         url.endsWith('.pls') ||
-         url.endsWith('.xspf');
-};
-
-// Fix Supabase storage URLs (sometimes they have incorrect formats)
-export const fixSupabaseStorageUrl = (url: string): string => {
-  if (!url) return '';
-  
-  // If it's already a valid URL, return it
-  try {
-    new URL(url);
-    
-    // Fix common issues with Supabase URLs
-    if (url.includes('supabase.co') || url.includes('supabase.in')) {
-      // Remove any double slashes except after protocol
-      url = url.replace(/(https?:\/\/)|(\/\/)+/g, (match, protocol) => {
-        return protocol || '/';
-      });
-      
-      // Ensure proper storage path format
-      if (!url.includes('/storage/v1/object/public/')) {
-        url = url.replace(/\/storage\/v\d\/object\//, '/storage/v1/object/public/');
-      }
-    }
-    
-    return url;
-  } catch (e) {
-    // If it's not a valid URL, try to fix it
-    if (url.startsWith('//')) {
-      return 'https:' + url;
-    }
-    
-    return url;
-  }
-};
-
-// Random quotes for audio player display
-const quotes = [
-  {
-    id: "1",
-    text: "Muziek geeft een ziel aan het universum, vleugels aan de geest, vlucht aan de verbeelding en leven aan alles.",
-    author: "Plato"
-  },
-  {
-    id: "2",
-    text: "Waar woorden falen, spreekt muziek.",
-    author: "Hans Christian Andersen"
-  },
-  {
-    id: "3",
-    text: "Zonder muziek zou het leven een vergissing zijn.",
-    author: "Friedrich Nietzsche"
-  },
-  {
-    id: "4",
-    text: "Muziek is de universele taal van de mensheid.",
-    author: "Henry Wadsworth Longfellow"
-  },
-  {
-    id: "5",
-    text: "Muziek geeft kleur aan de lucht overal.",
-    author: "Irvin Berlin"
-  },
-  {
-    id: "6",
-    text: "Muziek is de kortste weg naar het hart.",
-    author: "Zoltán Kodály"
-  },
-  {
-    id: "7",
-    text: "Als ik muziek kon vertellen, had ik geen muziek nodig.",
-    author: "Claude Debussy"
-  },
-  {
-    id: "8",
-    text: "Muziek is de stilte tussen de noten.",
-    author: "Claude Debussy"
-  },
-  {
-    id: "9",
-    text: "Na stilte, komt muziek het dichtst bij het uitdrukken van het onuitsprekelijke.",
-    author: "Aldous Huxley"
-  },
-  {
-    id: "10",
-    text: "Alles in het leven is muziek.",
-    author: "Thomas Carlyle"
-  }
-];
-
-export const getRandomQuote = () => {
-  const randomIndex = Math.floor(Math.random() * quotes.length);
-  return quotes[randomIndex];
+  return quotes[Math.floor(Math.random() * quotes.length)];
 };

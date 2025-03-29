@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { AudioPlayer } from "@/components/audio-player";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag, AlertTriangle } from "lucide-react";
+import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Soundscape } from "@/lib/types";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
+
 const AdminSoundscapes = () => {
   const {
     soundscapes,
@@ -34,6 +36,7 @@ const AdminSoundscapes = () => {
   const [isAudioValid, setIsAudioValid] = useState(true);
   const [isValidatingAudio, setIsValidatingAudio] = useState(false);
   const [audioErrorMessage, setAudioErrorMessage] = useState("");
+  const [validatedAudioUrl, setValidatedAudioUrl] = useState("");
 
   // Extract unique categories from existing soundscapes
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -42,6 +45,7 @@ const AdminSoundscapes = () => {
     const categories = [...new Set(soundscapes.map(s => s.category))];
     setAvailableCategories(categories);
   }, [soundscapes]);
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
@@ -52,12 +56,15 @@ const AdminSoundscapes = () => {
     setTagInput("");
     setIsAudioValid(true);
     setAudioErrorMessage("");
+    setValidatedAudioUrl("");
   };
+
   const handleOpenNew = () => {
     setCurrentSoundscape(null);
     resetForm();
     setIsDialogOpen(true);
   };
+
   const handleEdit = (soundscape: Soundscape) => {
     setCurrentSoundscape(soundscape);
     setTitle(soundscape.title);
@@ -71,39 +78,53 @@ const AdminSoundscapes = () => {
     // Validate audio when editing
     validateAudioOnChange(soundscape.audioUrl);
   };
+
   const handleDelete = (id: string) => {
     if (window.confirm("Weet je zeker dat je deze soundscape wilt verwijderen?")) {
       deleteSoundscape(id);
     }
   };
+
   const handleAddTag = () => {
     if (tagInput && !tags.includes(tagInput)) {
       setTags([...tags, tagInput]);
       setTagInput("");
     }
   };
+
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter(t => t !== tag));
   };
+
   const validateAudioOnChange = async (url: string) => {
     if (!url) {
       setIsAudioValid(true);
       setAudioErrorMessage("");
+      setValidatedAudioUrl("");
       return;
     }
+
     setIsValidatingAudio(true);
+    setAudioErrorMessage(""); // Clear previous error message
+    
+    // First normalize the URL
     const validatedUrl = validateAudioUrl(url);
     if (!validatedUrl) {
       setIsAudioValid(false);
       setAudioErrorMessage("Ongeldige audio URL. Gebruik een directe link naar een .mp3, .wav, .ogg, .aac of .m4a bestand.");
       setIsValidatingAudio(false);
+      setValidatedAudioUrl("");
       return;
     }
+    
+    setValidatedAudioUrl(validatedUrl);
+    
     try {
+      // Then check if it's playable
       const canPlay = await preloadAudio(validatedUrl);
       if (!canPlay) {
         setIsAudioValid(false);
-        setAudioErrorMessage("Kon audio niet laden. Controleer of de URL toegankelijk is.");
+        setAudioErrorMessage("Kon audio niet laden. Controleer of de URL toegankelijk is en niet privé/beveiligd is.");
       } else {
         setIsAudioValid(true);
         setAudioErrorMessage("");
@@ -115,37 +136,53 @@ const AdminSoundscapes = () => {
       setIsValidatingAudio(false);
     }
   };
+
+  const handleRetryAudioValidation = () => {
+    if (audioUrl) {
+      validateAudioOnChange(audioUrl);
+    }
+  };
+
   const handleSave = () => {
     if (!title || !description || !audioUrl || !category || !coverImageUrl) {
       toast.error("Vul alle verplichte velden in");
       return;
     }
+
     if (!isAudioValid) {
       toast.error("De audio URL is ongeldig. Corrigeer dit eerst.");
       return;
     }
+
+    // Use the validated URL if available
+    const finalAudioUrl = validatedAudioUrl || audioUrl;
+
     if (currentSoundscape) {
       updateSoundscape(currentSoundscape.id, {
         title,
         description,
-        audioUrl,
+        audioUrl: finalAudioUrl,
         category,
         coverImageUrl,
         tags
       });
+      toast.success("Soundscape bijgewerkt!");
     } else {
       addSoundscape({
         title,
         description,
-        audioUrl,
+        audioUrl: finalAudioUrl,
         category,
         coverImageUrl,
         tags
       });
+      toast.success("Nieuwe soundscape toegevoegd!");
     }
+    
     setIsDialogOpen(false);
     resetForm();
   };
+
   const groupedSoundscapes = soundscapes.reduce((acc, soundscape) => {
     const category = soundscape.category;
     if (!acc[category]) {
@@ -154,6 +191,7 @@ const AdminSoundscapes = () => {
     acc[category].push(soundscape);
     return acc;
   }, {} as Record<string, Soundscape[]>);
+
   return <AdminLayout>
       <div className="space-y-4 animate-fade-in">
         <div className="flex justify-between items-center">
@@ -175,8 +213,8 @@ const AdminSoundscapes = () => {
                 {soundscapesList.map(soundscape => <Card key={soundscape.id} className="overflow-hidden rounded-none">
                     <div className="aspect-video bg-cover bg-center relative max-h-36">
                       <img src={soundscape.coverImageUrl} alt={soundscape.title} className="w-full h-full object-cover" loading="lazy" onError={e => {
-                  e.currentTarget.src = "https://via.placeholder.com/300x150?text=Afbeelding+niet+gevonden";
-                }} />
+                        e.currentTarget.src = "https://via.placeholder.com/300x150?text=Afbeelding+niet+gevonden";
+                      }} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                       <div className="absolute bottom-3 left-3 right-3">
                         <h3 className="text-white font-medium">{soundscape.title}</h3>
@@ -284,17 +322,68 @@ const AdminSoundscapes = () => {
                 <Label htmlFor="audioUrl">Audio URL <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2">
                   <Input id="audioUrl" placeholder="URL naar audio bestand" value={audioUrl} onChange={e => {
-                  setAudioUrl(e.target.value);
-                  validateAudioOnChange(e.target.value);
-                }} className={!isAudioValid ? "border-red-500" : ""} />
-                  <Button type="button" variant="outline" className="shrink-0" disabled={isValidatingAudio || !audioUrl}>
-                    {isValidatingAudio ? <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" /> : <FileAudio className="h-4 w-4" />}
+                    setAudioUrl(e.target.value);
+                    validateAudioOnChange(e.target.value);
+                  }} className={!isAudioValid ? "border-red-500" : ""} />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="shrink-0" 
+                    onClick={handleRetryAudioValidation}
+                    disabled={isValidatingAudio || !audioUrl}
+                  >
+                    {isValidatingAudio ? (
+                      <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
-                {!isAudioValid && audioErrorMessage && <div className="text-xs text-red-500 flex items-center mt-1">
+                
+                {validatedAudioUrl && validatedAudioUrl !== audioUrl && (
+                  <div className="text-xs text-amber-500 flex items-center mt-1">
+                    <FileAudio className="h-3 w-3 mr-1" />
+                    URL wordt geoptimaliseerd: {validatedAudioUrl}
+                  </div>
+                )}
+                
+                {!isAudioValid && audioErrorMessage && (
+                  <div className="text-xs text-red-500 flex items-center mt-1">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     {audioErrorMessage}
-                  </div>}
+                  </div>
+                )}
+
+                {!isAudioValid && (
+                  <div className="bg-red-50 p-3 rounded mt-2 text-sm border border-red-200">
+                    <h4 className="font-medium text-red-800 mb-1">Mogelijke oplossingen:</h4>
+                    <ul className="list-disc list-inside text-red-700 space-y-1 text-xs">
+                      <li>Controleer of de URL naar een geldig audiobestand verwijst (.mp3, .wav, .ogg, etc.)</li>
+                      <li>Controleer of het bestand toegankelijk is (niet privé)</li>
+                      <li>Upload het bestand naar een publieke hosting service</li>
+                      <li>Gebruik een direct download-link, geen streaming- of paginalink</li>
+                    </ul>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2 bg-white" 
+                      onClick={handleRetryAudioValidation}
+                      disabled={isValidatingAudio}
+                    >
+                      {isValidatingAudio ? (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                          Valideren...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3 w-3 mr-1" />
+                          Opnieuw proberen
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
@@ -309,14 +398,14 @@ const AdminSoundscapes = () => {
               
               {coverImageUrl && <div className="mt-4 bg-cover bg-center rounded-md overflow-hidden relative h-32">
                   <img src={coverImageUrl} alt="Preview" className="w-full h-full object-cover" onError={e => {
-                e.currentTarget.src = "https://via.placeholder.com/300x150?text=Ongeldige+URL";
-                toast.error("Kon de afbeelding niet laden. Controleer de URL.");
-              }} />
+                    e.currentTarget.src = "https://via.placeholder.com/300x150?text=Ongeldige+URL";
+                    toast.error("Kon de afbeelding niet laden. Controleer de URL.");
+                  }} />
                 </div>}
               
-              {audioUrl && isAudioValid && <div className="mt-4">
+              {audioUrl && isAudioValid && validatedAudioUrl && <div className="mt-4">
                   <Label>Audio Preview</Label>
-                  <AudioPlayer audioUrl={audioUrl} />
+                  <AudioPlayer audioUrl={validatedAudioUrl} />
                 </div>}
             </div>
           </div>
@@ -333,4 +422,5 @@ const AdminSoundscapes = () => {
       </Dialog>
     </AdminLayout>;
 };
+
 export default AdminSoundscapes;
