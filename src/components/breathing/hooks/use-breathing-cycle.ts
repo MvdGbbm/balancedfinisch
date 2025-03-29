@@ -40,20 +40,20 @@ export function useBreathingCycle(selectedPattern: BreathingPattern | null) {
       } else {
         // Move to next phase
         if (currentPhase === "inhale") {
-          // Skip hold1 phase if hold1 is 0 seconds
+          // Skip hold1 phase if hold1 is 0 seconds or less
           if (selectedPattern.hold1 <= 0) {
             setCurrentPhase("exhale");
             setSecondsLeft(selectedPattern.exhale);
           } else {
             setCurrentPhase("hold1");
-            setSecondsLeft(selectedPattern.hold1 || 1);
+            setSecondsLeft(selectedPattern.hold1);
           }
         } else if (currentPhase === "hold1") {
           setCurrentPhase("exhale");
           setSecondsLeft(selectedPattern.exhale);
         } else if (currentPhase === "exhale") {
-          // Skip hold2 phase if hold2 is 0 seconds
-          if (!selectedPattern.hold2 || selectedPattern.hold2 <= 0) {
+          // Skip hold2 phase if hold2 is 0 seconds or less
+          if (selectedPattern.hold2 <= 0) {
             if (currentCycle < selectedPattern.cycles) {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");

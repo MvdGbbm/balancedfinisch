@@ -94,7 +94,7 @@ export const useBreathingState = ({
         setProgress(0);
         
         if (currentPhaseLocal === "inhale") {
-          // Skip hold phase if holdDuration is 0
+          // Skip hold phase if holdDuration is 0 or less
           if (holdDuration <= 0) {
             setPhase("exhale");
             currentPhaseLocal = "exhale";
