@@ -155,7 +155,12 @@ export const useBreathingAudio = ({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
-      playAudio(phase);
+      // Don't try to play audio for hold phase if no URL exists
+      if (phase === 'hold' && !voiceUrls.hold) {
+        console.log('Skipping initial hold audio because no URL is provided');
+      } else {
+        playAudio(phase);
+      }
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
 
