@@ -20,7 +20,7 @@ export const RadioPlayer: React.FC<RadioPlayerProps> = ({
           <Volume2 className="h-5 w-5 text-primary mr-2 animate-pulse" />
           <div>
             <h3 className="font-medium text-sm">Radio Stream</h3>
-            <p className="text-xs text-muted-foreground">Streaming actief in de achtergrond</p>
+            <p className="text-xs text-muted-foreground">{streamTitle}</p>
           </div>
           <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary animate-pulse">
             Live

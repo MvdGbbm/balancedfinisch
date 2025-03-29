@@ -50,16 +50,27 @@ export function useRadioStreams() {
   });
 
   const handleStreamPlay = (stream: RadioStream) => {
-    setHiddenIframeUrl(stream.url);
-    
-    toast({
-      title: "Radio link geopend",
-      description: `"${stream.title}" speelt nu in de achtergrond`
-    });
-    
-    setIsStreamPlaying(true);
-    setStreamUrl(stream.url);
-    setStreamTitle(stream.title);
+    // Rather than trying to use the audio player, use iframe for streams
+    // as they're better supported this way for radio streams
+    if (stream.url) {
+      // Don't use audio element for streams, use iframe instead
+      setHiddenIframeUrl(stream.url);
+      
+      toast({
+        title: "Radio link geopend",
+        description: `"${stream.title}" speelt nu in de achtergrond`
+      });
+      
+      setIsStreamPlaying(true);
+      setStreamUrl(stream.url);
+      setStreamTitle(stream.title);
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Ongeldige URL",
+        description: "De stream URL is leeg of ongeldig."
+      });
+    }
   };
 
   const handleStreamStop = () => {
