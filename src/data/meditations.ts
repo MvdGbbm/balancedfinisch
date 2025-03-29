@@ -1,3 +1,4 @@
+
 import { Meditation } from "@/lib/types";
 
 export const meditations: Meditation[] = [
@@ -12,8 +13,7 @@ export const meditations: Meditation[] = [
     tags: ["beginners", "focus", "ochtend"],
     createdAt: "2023-01-01T08:00:00Z",
     veraLink: "https://example.com/vera/ochtend-meditatie",
-    marcoLink: "https://example.com/marco/ochtend-meditatie",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/ochtend-meditatie"
   },
   {
     id: "med-2",
@@ -26,8 +26,7 @@ export const meditations: Meditation[] = [
     coverImageUrl: "/images/breathing.jpg",
     createdAt: "2023-01-02T10:30:00Z",
     veraLink: "https://example.com/vera/ademhalingsmeditatie",
-    marcoLink: "https://example.com/marco/ademhalingsmeditatie",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/ademhalingsmeditatie"
   },
   {
     id: "med-3",
@@ -40,8 +39,7 @@ export const meditations: Meditation[] = [
     tags: ["slaap", "ontspanning", "avond"],
     createdAt: "2023-01-03T22:00:00Z",
     veraLink: "https://example.com/vera/slaapmeditatie",
-    marcoLink: "https://example.com/marco/slaapmeditatie",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/slaapmeditatie"
   },
   {
     id: "med-4",
@@ -54,8 +52,7 @@ export const meditations: Meditation[] = [
     tags: ["focus", "werk", "productiviteit"],
     createdAt: "2023-01-04T13:00:00Z",
     veraLink: "https://example.com/vera/werkfocus-meditatie",
-    marcoLink: "https://example.com/marco/werkfocus-meditatie",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/werkfocus-meditatie"
   },
   {
     id: "med-5",
@@ -68,8 +65,7 @@ export const meditations: Meditation[] = [
     tags: ["lichaamsbewustzijn", "ontspanning", "mindfulness"],
     createdAt: "2023-01-05T16:45:00Z",
     veraLink: "https://example.com/vera/lichaamsscan-meditatie",
-    marcoLink: "https://example.com/marco/lichaamsscan-meditatie",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/lichaamsscan-meditatie"
   },
   {
     id: "med-6",
@@ -82,8 +78,7 @@ export const meditations: Meditation[] = [
     tags: ["dankbaarheid", "positiviteit", "geluk"],
     createdAt: "2023-01-06T09:15:00Z",
     veraLink: "https://example.com/vera/dankbaarheidsmeditatie",
-    marcoLink: "https://example.com/marco/dankbaarheidsmeditatie",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/dankbaarheidsmeditatie"
   },
   {
     id: "med-7",
@@ -96,8 +91,7 @@ export const meditations: Meditation[] = [
     tags: ["muziek", "ontspanning", "piano"],
     createdAt: "2023-01-07T14:30:00Z",
     veraLink: "https://example.com/vera/rustgevende-piano",
-    marcoLink: "https://example.com/marco/rustgevende-piano",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/rustgevende-piano"
   },
   {
     id: "med-8",
@@ -110,8 +104,7 @@ export const meditations: Meditation[] = [
     tags: ["natuur", "ontspanning", "ambient"],
     createdAt: "2023-01-08T11:45:00Z",
     veraLink: "https://example.com/vera/natuurgeluiden",
-    marcoLink: "https://example.com/marco/natuurgeluiden",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/natuurgeluiden"
   },
   {
     id: "med-9",
@@ -124,7 +117,6 @@ export const meditations: Meditation[] = [
     tags: ["klankschalen", "meditatie", "spiritueel"],
     createdAt: "2023-01-09T18:20:00Z",
     veraLink: "https://example.com/vera/meditatieve-bowls",
-    marcoLink: "https://example.com/marco/meditatieve-bowls",
-    isFavorite: false
+    marcoLink: "https://example.com/marco/meditatieve-bowls"
   },
 ];

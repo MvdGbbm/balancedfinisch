@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -43,39 +44,32 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
 
   // Set validated URL when the URL changes
   useEffect(() => {
-    if (!url) {
-      setError(true);
-      setIsValidUrl(false);
-      console.warn("Empty URL provided to AudioPreview");
-      return;
-    }
-
-    const originalUrl = url;
-    let fixedUrl = validateAudioUrl(url);
-    
-    // Handle Supabase storage URLs
-    if (fixedUrl && fixedUrl.includes('supabase.co')) {
-      fixedUrl = fixSupabaseStorageUrl(fixedUrl);
-    }
-    
-    setValidatedUrl(fixedUrl || '');
-    setIsValidUrl(!!fixedUrl && (fixedUrl === originalUrl || fixedUrl === url));
-    
-    // Reset states when URL changes
-    setError(false);
-    setLoaded(false);
-    setProgress(0);
-    setIsPlaying(false);
-    setRetryCount(0);
-    
-    console.log("Audio URL processed:", {
-      original: url,
-      validated: fixedUrl,
-      isValid: !!fixedUrl
-    });
-    
-    // Pre-validate audio URL
-    if (fixedUrl) {
+    if (url) {
+      const originalUrl = url;
+      let fixedUrl = validateAudioUrl(url);
+      
+      // Handle Supabase storage URLs
+      if (fixedUrl.includes('supabase.co')) {
+        fixedUrl = fixSupabaseStorageUrl(fixedUrl);
+      }
+      
+      setValidatedUrl(fixedUrl);
+      setIsValidUrl(!!fixedUrl && (fixedUrl === originalUrl || fixedUrl === url)); // Check if URL needed fixing
+      
+      // Reset states when URL changes
+      setError(false);
+      setLoaded(false);
+      setProgress(0);
+      setIsPlaying(false);
+      setRetryCount(0);
+      
+      console.log("Audio URL processed:", {
+        original: url,
+        validated: fixedUrl,
+        isValid: !!fixedUrl
+      });
+      
+      // Pre-validate audio URL
       preloadAudio(fixedUrl).then(success => {
         if (!success && !error) {
           console.warn("Audio preload check failed:", fixedUrl);
@@ -85,11 +79,8 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
           console.log("Audio preload succeeded:", fixedUrl);
         }
       });
-    } else {
-      setError(true);
-      if (onError) onError();
     }
-  }, [url, onError, error]);
+  }, [url, onError]);
 
   // Auto-play when requested and URL is valid
   useEffect(() => {

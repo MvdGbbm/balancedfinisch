@@ -1,63 +1,90 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Meditation } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, Music, Heart } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Play, ImageOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MeditationCardProps {
   meditation: Meditation;
-  isSelected?: boolean;
-  onClick?: (meditation: Meditation) => void;
+  isSelected: boolean;
+  onClick: (meditation: Meditation) => void;
 }
 
-export const MeditationCard: React.FC<MeditationCardProps> = ({
-  meditation,
-  isSelected = false,
-  onClick
-}) => {
-  const handleClick = () => {
-    if (onClick) {
-      onClick(meditation);
-    }
+export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCardProps) => {
+  const [imageError, setImageError] = useState(false);
+  
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    onClick(meditation); // Use the same click handler to open the meditation
+  };
+
+  // Check if meditation has audio URL before rendering play button
+  const hasAudio = !!meditation.audioUrl;
+  
+  const handleImageError = () => {
+    setImageError(true);
+    console.error(`Failed to load image for meditation: ${meditation.title}`);
   };
 
   return (
     <Card 
-      className={`cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-primary ring-2 ring-primary/30' : ''}`}
-      onClick={handleClick}
+      key={meditation.id} 
+      className={cn(
+        "overflow-hidden cursor-pointer transition-all hover:shadow-md animate-slide-in",
+        isSelected 
+          ? "ring-2 ring-primary/50 bg-primary/5" 
+          : "neo-morphism hover:translate-y-[-2px]"
+      )}
+      onClick={() => onClick(meditation)}
     >
-      <CardContent className="p-3 flex items-center gap-3">
-        <div 
-          className="h-12 w-12 rounded-md bg-cover bg-center flex-shrink-0"
-          style={{ 
-            backgroundImage: meditation.coverImageUrl 
-              ? `url(${meditation.coverImageUrl})` 
-              : "none" 
-          }}
-        >
-          {!meditation.coverImageUrl && (
-            <div className="h-full w-full flex items-center justify-center bg-muted rounded-md">
-              <Music className="text-muted-foreground h-6 w-6" />
+      <div className="flex h-20">
+        {!imageError ? (
+          <div
+            className="w-20 bg-cover bg-center"
+            style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
+            onError={handleImageError}
+          >
+            {/* Dit is een achtergrondafbeelding dus we voegen een extra img toe voor foutafhandeling */}
+            <img 
+              src={meditation.coverImageUrl} 
+              alt="" 
+              className="hidden" 
+              onError={handleImageError} 
+            />
+          </div>
+        ) : (
+          <div className="w-20 bg-muted flex items-center justify-center">
+            <ImageOff className="h-8 w-8 text-muted-foreground" />
+          </div>
+        )}
+        <CardContent className="flex-1 p-2.5 flex flex-col justify-between">
+          <div>
+            <h3 className="font-medium text-sm mb-0.5 line-clamp-1">{meditation.title}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {meditation.description}
+            </p>
+          </div>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 mr-1" />
+              {meditation.duration} min
             </div>
-          )}
-        </div>
-        
-        <div className="flex-grow">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm">{meditation.title}</h3>
-            {meditation.isFavorite && (
-              <Heart className="h-4 w-4 text-red-500 fill-red-500" />
+            {hasAudio && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-6 w-6 text-primary hover:text-primary/70 hover:bg-primary/10"
+                onClick={handlePlayClick}
+                aria-label="Speel meditatie af"
+              >
+                <Play className="h-3 w-3" />
+              </Button>
             )}
           </div>
-          
-          <div className="flex items-center mt-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3 mr-1" />
-            <span>{meditation.duration} min</span>
-            <span className="mx-2">•</span>
-            <span>{meditation.category}</span>
-          </div>
-        </div>
-      </CardContent>
+        </CardContent>
+      </div>
     </Card>
   );
 };

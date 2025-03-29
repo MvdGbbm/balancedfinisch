@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/admin-layout";
@@ -50,10 +51,12 @@ const AdminMusic = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
+  // Filter music tracks from soundscapes
   const musicTracks = soundscapes.filter(
     (track) => track.category === "Muziek"
   );
 
+  // Filter tracks based on search query
   const filteredTracks = searchQuery
     ? musicTracks.filter(
         (track) =>
@@ -65,47 +68,44 @@ const AdminMusic = () => {
       )
     : musicTracks;
 
+  // Query to fetch music tracks from Supabase
   const { isLoading } = useQuery({
     queryKey: ["music"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("soundscapes")
-          .select("*")
-          .eq("category", "Muziek");
+      const { data, error } = await supabase
+        .from("soundscapes")
+        .select("*")
+        .eq("category", "Muziek");
 
-        if (error) {
-          console.error("Error fetching music:", error);
-          throw new Error(error.message);
-        }
-
-        if (data) {
-          const formattedData: Soundscape[] = data.map((item) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description || "",
-            audioUrl: item.audio_url,
-            category: item.category,
-            coverImageUrl: item.cover_image_url,
-            tags: item.tags || [],
-          }));
-
-          const nonMusicTracks = soundscapes.filter(
-            (track) => track.category !== "Muziek"
-          );
-          setSoundscapes([...nonMusicTracks, ...formattedData]);
-          return formattedData;
-        }
-
-        return [];
-      } catch (err) {
-        console.error("Failed to fetch music tracks:", err);
-        toast.error("Kon muziek niet laden. Probeer het later opnieuw.");
-        return [];
+      if (error) {
+        throw new Error(error.message);
       }
+
+      // Update app context with fetched soundscapes
+      if (data) {
+        const formattedData: Soundscape[] = data.map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description || "",
+          audioUrl: item.audio_url,
+          category: item.category,
+          coverImageUrl: item.cover_image_url,
+          tags: item.tags || [],
+        }));
+
+        // Merge with existing soundscapes, replacing music category items
+        const nonMusicTracks = soundscapes.filter(
+          (track) => track.category !== "Muziek"
+        );
+        setSoundscapes([...nonMusicTracks, ...formattedData]);
+        return formattedData;
+      }
+
+      return [];
     },
   });
 
+  // Mutation to create or update a music track
   const mutation = useMutation({
     mutationFn: async (music: Partial<Soundscape>) => {
       const isEdit = !!music.id;
@@ -122,6 +122,7 @@ const AdminMusic = () => {
       let result;
       
       if (isEdit && music.id) {
+        // Update existing track
         const { data, error } = await supabase
           .from("soundscapes")
           .update(musicData)
@@ -131,6 +132,7 @@ const AdminMusic = () => {
         if (error) throw error;
         result = data?.[0];
       } else {
+        // Create new track
         const { data, error } = await supabase
           .from("soundscapes")
           .insert(musicData)
@@ -155,6 +157,7 @@ const AdminMusic = () => {
     },
   });
 
+  // Mutation to delete a music track
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -168,11 +171,13 @@ const AdminMusic = () => {
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ["music"] });
       
+      // Update local state
       const updatedSoundscapes = soundscapes.filter(s => s.id !== id);
       setSoundscapes(updatedSoundscapes);
       
       toast.success("Muziek verwijderd");
       
+      // Stop preview if the deleted track was playing
       if (currentMusic?.id === id && isPlaying) {
         setIsPlaying(false);
         setPreviewUrl(null);
@@ -199,18 +204,22 @@ const AdminMusic = () => {
 
   const handlePreviewToggle = (track: Soundscape) => {
     if (previewUrl === track.audioUrl && isPlaying) {
+      // Stop current preview
       setIsPlaying(false);
       setPreviewUrl(null);
     } else {
+      // Stop current preview if any
       if (isPlaying && audioRef.current) {
         audioRef.current.pause();
       }
       
+      // Start new preview
       setPreviewUrl(track.audioUrl);
       setIsPlaying(true);
     }
   };
 
+  // Handle audio play/pause
   useEffect(() => {
     if (audioRef.current) {
       if (isPlaying && previewUrl) {
@@ -382,6 +391,7 @@ const AdminMusic = () => {
         )}
       </div>
 
+      {/* Create Dialog */}
       <MusicFormDialog
         isOpen={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
@@ -389,6 +399,7 @@ const AdminMusic = () => {
         currentMusic={null}
       />
 
+      {/* Edit Dialog */}
       <MusicFormDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
@@ -396,6 +407,7 @@ const AdminMusic = () => {
         currentMusic={currentMusic}
       />
 
+      {/* Hidden audio player for previews */}
       <audio ref={audioRef} style={{ display: "none" }} />
     </AdminLayout>
   );
