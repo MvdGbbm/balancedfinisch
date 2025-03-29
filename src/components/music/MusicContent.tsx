@@ -60,23 +60,15 @@ export const MusicContent: React.FC<MusicContentProps> = ({
 
   const handleAddToPlaylistClick = (track: Soundscape) => {
     setTrackToAdd(track);
-    setShowPlaylistSelector(true);
-  };
-
-  const handleSelectPlaylist = (playlistId: string) => {
-    if (trackToAdd) {
-      handleAddToPlaylist(trackToAdd, playlistId);
-    }
-    setShowPlaylistSelector(false);
-    setTrackToAdd(null);
+    setShowPlaylistCreator(true);
   };
 
   return (
     <>
-      <TabsContent value="muziek" className="space-y-2">
-        {musicTracks.length > 0 ? (
-          <div className="flex flex-col divide-y divide-border">
-            {musicTracks.map((track) => (
+      <TabsContent value="muziek" className="space-y-2 mt-2">
+        <div className="grid grid-cols-1 gap-1">
+          {musicTracks.length > 0 ? (
+            musicTracks.map((track) => (
               <MusicTrackCard
                 key={track.id}
                 track={track}
@@ -86,25 +78,29 @@ export const MusicContent: React.FC<MusicContentProps> = ({
                 onStop={handleStopPlaylist}
                 onAddToPlaylist={handleAddToPlaylistClick}
               />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen muziek gevonden</p>
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Geen muziek gevonden</p>
+            </div>
+          )}
+        </div>
       </TabsContent>
 
-      <TabsContent value="playlists" className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => setShowPlaylistCreator(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe afspeellijst
+      <TabsContent value="playlists" className="space-y-4 mt-2">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-medium">Mijn afspeellijsten</h2>
+          <Button 
+            size="sm"
+            onClick={() => setShowPlaylistCreator(true)}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Nieuwe lijst
           </Button>
         </div>
         
         {playlists.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-2">
             {playlists.map((playlist) => {
               const playlistTracks = getPlaylistTracks(playlist);
               const isCurrentPlaylist = selectedPlaylist?.id === playlist.id && isPlaying;
@@ -128,23 +124,24 @@ export const MusicContent: React.FC<MusicContentProps> = ({
             })}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen afspeellijsten gevonden</p>
+          <div className="text-center py-6 bg-background/30 rounded-lg border border-muted">
+            <p className="text-muted-foreground mb-2">Geen afspeellijsten gevonden</p>
             <Button 
               variant="outline" 
-              className="mt-2"
+              size="sm"
               onClick={() => setShowPlaylistCreator(true)}
             >
+              <Plus className="h-3.5 w-3.5 mr-1" />
               Maak je eerste afspeellijst
             </Button>
           </div>
         )}
       </TabsContent>
       
-      <TabsContent value="radio" className="space-y-4">
+      <TabsContent value="radio" className="space-y-4 mt-2">
         {isLoadingStreams ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+          <div className="flex justify-center py-6">
+            <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full"></div>
           </div>
         ) : radioStreams.length > 0 ? (
           <div className="grid grid-cols-1 gap-2">
@@ -159,22 +156,11 @@ export const MusicContent: React.FC<MusicContentProps> = ({
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen radiolinks gevonden</p>
+          <div className="text-center py-6 bg-background/30 rounded-lg border border-muted">
+            <p className="text-muted-foreground">Geen radiostreams gevonden</p>
           </div>
         )}
       </TabsContent>
-
-      <PlaylistSelector
-        open={showPlaylistSelector}
-        onOpenChange={setShowPlaylistSelector}
-        playlists={playlists}
-        onSelect={handleSelectPlaylist}
-        onCreateNew={() => {
-          setShowPlaylistSelector(false);
-          setShowPlaylistCreator(true);
-        }}
-      />
     </>
   );
 };
