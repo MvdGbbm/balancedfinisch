@@ -1,27 +1,8 @@
 
 import React from 'react';
 import { BreathingCircle } from './breathing-circle';
-import { BreathingPhase } from './types';
-import { BreathingPhaseDisplay } from './breathing-phase-display';
+import { BreathingPhaseDisplay } from '../breathing-circle/breathing-phase-display';
 import { BreathingAudio } from './audio/breathing-audio';
-
-interface BreathingAnimationProps {
-  isActive: boolean;
-  phase: BreathingPhase;
-  secondsLeft: number;
-  inhaleDuration: number;
-  holdDuration: number;
-  exhaleDuration: number;
-  voiceUrls: {
-    start?: string;
-    inhale: string;
-    hold: string;
-    exhale: string;
-    end?: string;
-  } | null;
-  isVoiceActive: boolean;
-  showPhaseText?: boolean;
-}
 
 export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   isActive,
@@ -47,8 +28,8 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       {showPhaseText && (
         <div className="absolute">
           <BreathingPhaseDisplay 
-            phase={phase} 
-            secondsLeft={secondsLeft} 
+            activePhase={phase} 
+            phaseTimeLeft={secondsLeft} 
           />
         </div>
       )}
@@ -62,3 +43,6 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     </div>
   );
 };
+
+// Adding default export to fix any potential issues with imports
+export default BreathingAnimation;

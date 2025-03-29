@@ -17,7 +17,7 @@ interface BreathingAudioProps {
   isActive: boolean;
 }
 
-const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
+export const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
   const { audioRef } = useBreathingAudio(props);
 
   return <AudioElement audioRef={audioRef} />;
