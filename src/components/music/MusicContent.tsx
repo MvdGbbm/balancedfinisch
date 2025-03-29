@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -8,6 +8,8 @@ import { Playlist } from "@/components/playlist/types";
 import { PlaylistCard } from "./PlaylistCard";
 import { RadioStreamCard } from "./RadioStreamCard";
 import { RadioStream } from "@/hooks/use-radio-streams";
+import { MusicTrackCard } from "./MusicTrackCard";
+import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 
 interface MusicContentProps {
   activeTab: string;
@@ -52,8 +54,46 @@ export const MusicContent: React.FC<MusicContentProps> = ({
   handleStreamStop,
   getPlaylistTracks
 }) => {
+  const [showPlaylistSelector, setShowPlaylistSelector] = useState(false);
+  const [trackToAdd, setTrackToAdd] = useState<Soundscape | null>(null);
+
+  const handleAddToPlaylistClick = (track: Soundscape) => {
+    setTrackToAdd(track);
+    setShowPlaylistSelector(true);
+  };
+
+  const handleSelectPlaylist = (playlistId: string) => {
+    if (trackToAdd) {
+      handleAddToPlaylist(trackToAdd, playlistId);
+    }
+    setShowPlaylistSelector(false);
+    setTrackToAdd(null);
+  };
+
   return (
     <>
+      <TabsContent value="muziek" className="space-y-4">
+        {musicTracks.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {musicTracks.map((track) => (
+              <MusicTrackCard
+                key={track.id}
+                track={track}
+                isPlaying={isPlaying}
+                isCurrentTrack={currentTrack?.id === track.id && !previewTrack}
+                onPlay={handlePreviewTrack}
+                onStop={handleStopPlaylist}
+                onAddToPlaylist={handleAddToPlaylistClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Geen muziek gevonden</p>
+          </div>
+        )}
+      </TabsContent>
+
       <TabsContent value="playlists" className="space-y-4">
         <div className="flex justify-end">
           <Button onClick={() => setShowPlaylistCreator(true)}>
@@ -123,6 +163,17 @@ export const MusicContent: React.FC<MusicContentProps> = ({
           </div>
         )}
       </TabsContent>
+
+      <PlaylistSelector
+        open={showPlaylistSelector}
+        onOpenChange={setShowPlaylistSelector}
+        playlists={playlists}
+        onSelect={handleSelectPlaylist}
+        onCreateNew={() => {
+          setShowPlaylistSelector(false);
+          setShowPlaylistCreator(true);
+        }}
+      />
     </>
   );
 };
