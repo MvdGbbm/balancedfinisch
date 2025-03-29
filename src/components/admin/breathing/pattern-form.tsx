@@ -26,8 +26,7 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
       exhale: 4,
       hold2: 0,
       cycles: 4,
-      startUrl: "",
-      endUrl: ""
+      startUrl: ""
     }
   });
 
@@ -47,8 +46,7 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
         exhale: 4,
         hold2: 0,
         cycles: 4,
-        startUrl: "",
-        endUrl: ""
+        startUrl: ""
       });
     }
   }, [selectedPattern, form]);
@@ -208,22 +206,6 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
                   </FormControl>
                   <div className="text-xs text-muted-foreground">
                     Deze audio wordt afgespeeld wanneer de ademhalingsoefening begint.
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="endUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Audio URL bij einde oefening</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="https://voorbeeld.com/einde.mp3" />
-                  </FormControl>
-                  <div className="text-xs text-muted-foreground">
-                    Deze audio wordt afgespeeld wanneer de ademhalingsoefening is voltooid.
                   </div>
                 </FormItem>
               )}

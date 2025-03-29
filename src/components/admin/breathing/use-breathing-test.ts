@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { BreathingPattern, VoiceURLs } from "./types";
@@ -17,14 +16,18 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>({
+    start: "",
     inhale: "",
     hold: "",
-    exhale: ""
+    exhale: "",
+    end: ""
   });
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>({
+    start: "",
     inhale: "",
     hold: "",
-    exhale: ""
+    exhale: "",
+    end: ""
   });
 
   // Load voice URLs from localStorage
@@ -63,7 +66,6 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
     
     if (pattern) {
       setSecondsLeft(pattern.inhale);
-      setCurrentAudioUrl(pattern.inhaleUrl || "");
     }
   }, [pattern]);
 
@@ -96,21 +98,6 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
           break;
         case "exhale":
           url = marcoVoiceUrls.exhale || "";
-          break;
-      }
-    } else {
-      switch (currentPhase) {
-        case "inhale":
-          url = pattern.inhaleUrl || "";
-          break;
-        case "hold1":
-          url = pattern.hold1Url || "";
-          break;
-        case "exhale":
-          url = pattern.exhaleUrl || "";
-          break;
-        case "hold2":
-          url = pattern.hold2Url || "";
           break;
       }
     }
@@ -227,10 +214,24 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
       audioRef.current.currentTime = 0;
     }
     
-    if (pattern.endUrl) {
+    // Use voice-specific end audio if available
+    const getEndAudioUrl = () => {
+      if (activeVoice === "vera" && veraVoiceUrls.end) {
+        return veraVoiceUrls.end;
+      } else if (activeVoice === "marco" && marcoVoiceUrls.end) {
+        return marcoVoiceUrls.end;
+      } else if (pattern.startUrl) {
+        return pattern.startUrl; // Fallback to pattern start URL if no end URL is set
+      }
+      return "";
+    };
+
+    const endAudioUrl = getEndAudioUrl();
+    
+    if (endAudioUrl) {
       try {
         if (endAudioRef.current) {
-          endAudioRef.current.src = pattern.endUrl;
+          endAudioRef.current.src = endAudioUrl;
           endAudioRef.current.load();
           endAudioRef.current.play().catch(err => {
             console.error("Error playing end audio:", err);
@@ -268,7 +269,7 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
       endAudioRef.current.currentTime = 0;
     }
     
-    setCurrentAudioUrl(pattern.inhaleUrl || "");
+    setCurrentAudioUrl("");
   };
 
   // Function to start with Vera voice

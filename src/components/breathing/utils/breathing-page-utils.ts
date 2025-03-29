@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 import { BreathingPattern, VoiceURLs } from "../types/breathing-page-types";
@@ -45,12 +44,14 @@ export const defaultVoiceUrls: Record<string, VoiceURLs> = {
     inhale: "",
     hold: "",
     exhale: "",
+    end: "",
   },
   marco: {
     start: "",
     inhale: "",
     hold: "",
     exhale: "",
+    end: "",
   }
 };
 

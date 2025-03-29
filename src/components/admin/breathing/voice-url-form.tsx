@@ -84,6 +84,22 @@ export function VoiceUrlForm({ title, voiceUrls, onSave }: VoiceUrlFormProps) {
               )}
             />
             
+            <FormField
+              control={form.control}
+              name="end"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Audio URL bij einde oefening</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://voorbeeld.com/einde.mp3" />
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground">
+                    Deze audio wordt afgespeeld wanneer de ademhalingsoefening is voltooid.
+                  </div>
+                </FormItem>
+              )}
+            />
+            
             <div className="flex justify-end">
               <Button type="submit">
                 <Save className="mr-2 h-4 w-4" />

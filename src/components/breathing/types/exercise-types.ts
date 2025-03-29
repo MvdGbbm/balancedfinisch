@@ -11,6 +11,7 @@ export interface VoiceUrls {
   inhale: string;
   hold: string;
   exhale: string;
+  end?: string;
 }
 
 export type ActiveVoice = "none" | "vera" | "marco";

@@ -1,4 +1,3 @@
-
 import { BreathingPhase } from "@/components/breathing/types";
 import { Soundscape } from "@/lib/types";
 
@@ -12,7 +11,6 @@ export interface BreathingPattern {
   cycles: number;
   description?: string;
   startUrl?: string;
-  endUrl?: string;
 }
 
 export interface VoiceURLs {
@@ -20,6 +18,7 @@ export interface VoiceURLs {
   inhale: string;
   hold: string;
   exhale: string;
+  end?: string;
 }
 
 export interface BreathingPageState {

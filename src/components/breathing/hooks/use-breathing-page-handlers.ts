@@ -129,10 +129,22 @@ export const useBreathingPageHandlers = ({
         setExerciseCompleted(true);
         setShowAnimation(true);
         
-        if (selectedPattern.endUrl) {
+        const getEndAudioUrl = () => {
+          if (activeVoice === "vera" && veraVoiceUrls.end) {
+            return veraVoiceUrls.end;
+          } else if (activeVoice === "marco" && marcoVoiceUrls.end) {
+            return marcoVoiceUrls.end;
+          } else {
+            return selectedPattern.startUrl; // Fallback to pattern start URL if no end URL is set
+          }
+        };
+
+        const endAudioUrl = getEndAudioUrl();
+        
+        if (endAudioUrl) {
           try {
             if (endAudioRef.current) {
-              endAudioRef.current.src = selectedPattern.endUrl;
+              endAudioRef.current.src = endAudioUrl;
               endAudioRef.current.load();
               endAudioRef.current.play().catch(err => {
                 console.error("Error playing end audio:", err);
