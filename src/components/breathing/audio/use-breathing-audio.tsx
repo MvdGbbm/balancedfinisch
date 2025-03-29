@@ -231,3 +231,5 @@ export const useBreathingAudio = ({
     playAudio
   };
 };
+
+export default useBreathingAudio;

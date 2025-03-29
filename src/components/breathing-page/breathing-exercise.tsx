@@ -40,21 +40,24 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
       {selectedPattern && showAnimation && (
         <div className="mt-8">
           <BreathingAnimation 
-            technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
+            isActive={isExerciseActive}
+            phase={currentPhase}
+            secondsLeft={selectedPattern ? 
+              (currentPhase === "inhale" ? selectedPattern.inhale : 
+              currentPhase === "hold" ? selectedPattern.hold1 : 
+              currentPhase === "exhale" ? selectedPattern.exhale : 0) : 0
+            }
+            inhaleDuration={selectedPattern.inhale}
+            holdDuration={selectedPattern.hold1}
+            exhaleDuration={selectedPattern.exhale}
             voiceUrls={null}
             isVoiceActive={isExerciseActive}
-            currentPhase={currentPhase}
-            onPhaseChange={onPhaseChange}
-            currentCycle={currentCycle}
-            totalCycles={selectedPattern.cycles}
-            exerciseCompleted={exerciseCompleted}
-            inhaleTime={selectedPattern.inhale}
-            holdTime={selectedPattern.hold1}
-            exhaleTime={selectedPattern.exhale}
-            pauseTime={selectedPattern.hold2}
+            showPhaseText={true}
           />
         </div>
       )}
     </div>
   );
 };
+
+export default BreathingExercise;

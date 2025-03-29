@@ -5,7 +5,48 @@ import { BreathingPhase } from "@/components/breathing/types";
 import { BreathingPattern, VoiceURLs } from "@/components/breathing-page/types";
 import { Soundscape } from "@/lib/types";
 import { loadVoiceUrls, handleActivateVoice } from "@/components/breathing-page/utils";
-import { defaultBreathingPatterns, defaultVoiceUrls } from "@/components/breathing-page/constants";
+
+// Default breathing patterns to prevent undefined errors
+const defaultBreathingPatterns: BreathingPattern[] = [
+  {
+    id: "1",
+    name: "4-7-8 Techniek",
+    description: "Inademen voor 4, vasthouden voor 7, uitademen voor 8",
+    inhale: 4,
+    hold1: 7,
+    exhale: 8,
+    hold2: 0,
+    cycles: 3
+  },
+  {
+    id: "2",
+    name: "Box Breathing",
+    description: "Inademen voor 4, vasthouden voor 4, uitademen voor 4, vasthouden voor 4",
+    inhale: 4,
+    hold1: 4,
+    exhale: 4,
+    hold2: 4,
+    cycles: 4
+  }
+];
+
+// Default voice URLs
+const defaultVoiceUrls = {
+  vera: {
+    inhale: "",
+    hold: "",
+    exhale: "",
+    start: "",
+    end: ""
+  },
+  marco: {
+    inhale: "",
+    hold: "",
+    exhale: "",
+    start: "",
+    end: ""
+  }
+};
 
 export function useBreathingExercise() {
   // Pattern state
@@ -35,9 +76,6 @@ export function useBreathingExercise() {
 
   // Music state
   const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
-  const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
-  const [isTrackPlaying, setIsTrackPlaying] = useState(false);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Load patterns and voice URLs on initialization
   useEffect(() => {
@@ -140,22 +178,6 @@ export function useBreathingExercise() {
 
   const handleMusicVolumeChange = (volume: number) => {
     setMusicVolume(volume);
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.volume = volume;
-    }
-  };
-
-  const handlePlayTrack = (track: Soundscape) => {
-    if (currentTrack?.id === track.id && isTrackPlaying) {
-      setIsTrackPlaying(false);
-      setCurrentTrack(null);
-      toast.info(`${track.title} is gestopt met afspelen`);
-      return;
-    }
-    
-    setCurrentTrack(track);
-    setIsTrackPlaying(true);
-    toast.success(`Nu afspelend: ${track.title}`);
   };
 
   return {
@@ -173,13 +195,10 @@ export function useBreathingExercise() {
     voiceVolume,
     musicVolume,
     musicTracks,
-    currentTrack,
-    isTrackPlaying,
     
     // Refs
     startAudioRef,
     endAudioRef,
-    audioPlayerRef,
     
     // Handlers
     setMusicTracks,
@@ -189,7 +208,5 @@ export function useBreathingExercise() {
     handlePhaseChange,
     handleVoiceVolumeChange,
     handleMusicVolumeChange,
-    handlePlayTrack,
-    setIsTrackPlaying
   };
 }

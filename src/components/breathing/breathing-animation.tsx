@@ -35,6 +35,20 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   isVoiceActive,
   showPhaseText = true
 }) => {
+  // Map breathing phase to circle phase
+  const mapPhaseToCirclePhase = (breathingPhase: BreathingPhase) => {
+    switch (breathingPhase) {
+      case 'inhale': return 'inhale';
+      case 'hold': return 'hold';
+      case 'exhale': return 'exhale';
+      case 'start': 
+      case 'pause':
+      default: return 'rest';
+    }
+  };
+
+  const circlePhase = mapPhaseToCirclePhase(phase);
+  
   return (
     <div className="relative flex flex-col items-center justify-center">
       <BreathingCircle
@@ -43,12 +57,18 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         inhaleDuration={inhaleDuration}
         holdDuration={holdDuration} 
         exhaleDuration={exhaleDuration}
+        count={secondsLeft}
+        exerciseCompleted={false}
+        currentCycle={1}
+        totalCycles={1}
+        animationDuration={1}
+        onToggleActive={() => {}}
       />
       
       {showPhaseText && (
         <div className="absolute">
           <BreathingPhaseDisplay 
-            activePhase={phase} 
+            activePhase={circlePhase} 
             phaseTimeLeft={secondsLeft} 
           />
         </div>
