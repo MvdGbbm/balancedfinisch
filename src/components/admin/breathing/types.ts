@@ -9,6 +9,10 @@ export interface BreathingPattern {
   hold2: number;
   cycles: number;
   startUrl?: string;
+  endUrl?: string;
+  animationEnabled?: boolean;
+  animationStyle?: "grow" | "glow" | "pulse" | "fade" | "none";
+  animationColor?: string;
 }
 
 export interface VoiceURLs {

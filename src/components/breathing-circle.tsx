@@ -13,7 +13,10 @@ export function BreathingCircle({
   onBreathComplete,
   isActive = false,
   currentPhase = "rest",
-  secondsLeft = 0
+  secondsLeft = 0,
+  animationEnabled = true,
+  animationStyle = "grow",
+  animationColor = "#00b8d9"
 }: BreathingCircleProps) {
   const breathingState = useBreathingState({
     isActive,
@@ -34,6 +37,9 @@ export function BreathingCircle({
       inhaleDuration={inhaleDuration}
       holdDuration={holdDuration}
       exhaleDuration={exhaleDuration}
+      animationEnabled={animationEnabled}
+      animationStyle={animationStyle}
+      animationColor={animationColor}
     />
   );
 }

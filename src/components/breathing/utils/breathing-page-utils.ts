@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 import { BreathingPattern, VoiceURLs } from "../types/breathing-page-types";
@@ -13,6 +14,10 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 0,
     cycles: 5,
     startUrl: "",
+    endUrl: "",
+    animationEnabled: true,
+    animationStyle: "grow",
+    animationColor: "#00b8d9"
   },
   {
     id: "2",
@@ -24,6 +29,10 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 4, 
     cycles: 4,
     startUrl: "",
+    endUrl: "",
+    animationEnabled: true,
+    animationStyle: "glow",
+    animationColor: "#0ea5e9"
   },
   {
     id: "3",
@@ -35,6 +44,10 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 0,
     cycles: 6,
     startUrl: "",
+    endUrl: "",
+    animationEnabled: true,
+    animationStyle: "pulse",
+    animationColor: "#10b981"
   },
 ];
 
