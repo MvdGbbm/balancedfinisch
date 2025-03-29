@@ -1,11 +1,12 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { BreathingPhaseDisplayProps } from "./types";
 
-export function BreathingPhaseDisplay({ 
+// Using memo to prevent unnecessary re-renders
+export const BreathingPhaseDisplay = memo(({ 
   activePhase, 
   phaseTimeLeft 
-}: BreathingPhaseDisplayProps) {
+}: BreathingPhaseDisplayProps) => {
   const getPhaseText = () => {
     switch (activePhase) {
       case "inhale": return "Adem in";
@@ -35,4 +36,7 @@ export function BreathingPhaseDisplay({
       </div>
     </div>
   );
-}
+});
+
+// Add display name for debugging
+BreathingPhaseDisplay.displayName = "BreathingPhaseDisplay";

@@ -1,49 +1,50 @@
 
-import React from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { PatternSelectorProps } from './types';
-import { Info } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Check, ChevronRight } from "lucide-react";
+import { BreathingPattern } from "./types";
+
+interface PatternSelectorProps {
+  patterns: BreathingPattern[];
+  selectedPattern: BreathingPattern | null;
+  onSelect: (patternId: string) => void;
+}
 
 export const PatternSelector: React.FC<PatternSelectorProps> = ({
-  breathingPatterns,
+  patterns,
   selectedPattern,
-  isExerciseActive,
-  onSelectPattern
+  onSelect
 }) => {
   return (
-    <div className="w-full">
-      <div className="mb-2 flex items-center">
-        <h3 className="text-md font-medium">Kies een ademhalingstechniek</h3>
-        <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" title="Selecteer een ademhalingspatroon om te beginnen" />
-      </div>
-      
-      <Select
-        value={selectedPattern?.id}
-        onValueChange={onSelectPattern}
-        disabled={isExerciseActive}
-      >
-        <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black focus:ring-offset-background">
-          <SelectValue placeholder="Kies een techniek" />
-        </SelectTrigger>
-        <SelectContent>
-          {breathingPatterns.map((pattern) => (
-            <SelectItem key={pattern.id} value={pattern.id} className="py-3">
-              <div>
-                <div className="font-medium">{pattern.name}</div>
-                {pattern.description && (
-                  <div className="text-xs text-muted-foreground mt-0.5">{pattern.description}</div>
-                )}
+    <Card className="border-none shadow-md bg-black/5 backdrop-blur-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg font-medium">Selecteer een Ademhaling Oefening</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="space-y-0.5">
+          {patterns.map((pattern) => (
+            <Button
+              key={pattern.id}
+              variant="ghost"
+              className={`w-full justify-between px-6 py-3 h-auto ${
+                selectedPattern?.id === pattern.id ? "bg-primary/10" : ""
+              }`}
+              onClick={() => onSelect(pattern.id)}
+            >
+              <div className="flex items-start flex-col text-left">
+                <span className="font-medium">{pattern.name}</span>
+                <span className="text-xs text-muted-foreground">{pattern.description}</span>
               </div>
-            </SelectItem>
+              {selectedPattern?.id === pattern.id ? (
+                <Check className="h-5 w-5 text-primary" aria-label="Selected" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-muted-foreground" aria-label="Select" />
+              )}
+            </Button>
           ))}
-        </SelectContent>
-      </Select>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

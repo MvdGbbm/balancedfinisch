@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { BreathingPhase } from "@/components/breathing/types";
 import { BreathingPattern, VoiceURLs } from "@/components/breathing-page/types";
@@ -77,8 +76,8 @@ export function useBreathingExercise() {
   // Music state
   const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
 
-  // Load patterns and voice URLs on initialization
-  useEffect(() => {
+  // Load patterns and voice URLs on initialization - optimized with useCallback
+  const initializeBreathingData = useCallback(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
       try {
@@ -98,8 +97,13 @@ export function useBreathingExercise() {
     
     loadVoiceUrls(setVeraVoiceUrls, setMarcoVoiceUrls, defaultVoiceUrls, setVoiceUrlsValidated);
   }, []);
+  
+  useEffect(() => {
+    initializeBreathingData();
+  }, [initializeBreathingData]);
 
-  const handleSelectPattern = (patternId: string) => {
+  // Use useCallback for handlers to prevent unnecessary re-renders
+  const handleSelectPattern = useCallback((patternId: string) => {
     const pattern = breathingPatterns.find(p => p.id === patternId);
     if (pattern) {
       setSelectedPattern(pattern);
@@ -111,7 +115,7 @@ export function useBreathingExercise() {
       
       setShowAnimation(true);
     }
-  };
+  }, [breathingPatterns]);
 
   const onActivateVoice = async (voice: "vera" | "marco") => {
     await handleActivateVoice(
@@ -133,7 +137,7 @@ export function useBreathingExercise() {
     setIsExerciseActive(false);
   };
 
-  const handlePhaseChange = (phase: BreathingPhase) => {
+  const handlePhaseChange = useCallback((phase: BreathingPhase) => {
     setCurrentPhase(phase);
     
     if (phase === "inhale" && currentPhase === "pause") {
@@ -143,9 +147,9 @@ export function useBreathingExercise() {
         handleExerciseComplete();
       }
     }
-  };
+  }, [currentPhase, currentCycle, selectedPattern]);
 
-  const handleExerciseComplete = () => {
+  const handleExerciseComplete = useCallback(() => {
     setIsExerciseActive(false);
     setExerciseCompleted(true);
     setShowAnimation(true);
@@ -164,7 +168,7 @@ export function useBreathingExercise() {
     }
     
     toast.success("Ademhalingsoefening voltooid!");
-  };
+  }, [selectedPattern]);
 
   const handleVoiceVolumeChange = (volume: number) => {
     setVoiceVolume(volume);

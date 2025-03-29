@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { Soundscape } from "@/lib/types";
 import { useApp } from "@/context/AppContext";
@@ -11,7 +11,7 @@ export function useBreathingMusic() {
   const [isTrackPlaying, setIsTrackPlaying] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   
-  // Filter music tracks
+  // Filter music tracks - using useEffect with dependency
   useEffect(() => {
     const filteredTracks = soundscapes.filter(
       soundscape => soundscape.category === "Muziek"
@@ -19,18 +19,28 @@ export function useBreathingMusic() {
     setMusicTracks(filteredTracks);
   }, [soundscapes]);
 
-  const handlePlayTrack = (track: Soundscape) => {
+  // Memoize the play track handler to prevent unnecessary re-renders
+  const handlePlayTrack = useCallback((track: Soundscape) => {
     if (currentTrack?.id === track.id && isTrackPlaying) {
       setIsTrackPlaying(false);
       setCurrentTrack(null);
+      
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+      
       toast.info(`${track.title} is gestopt met afspelen`);
       return;
+    }
+    
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
     }
     
     setCurrentTrack(track);
     setIsTrackPlaying(true);
     toast.success(`Nu afspelend: ${track.title}`);
-  };
+  }, [currentTrack, isTrackPlaying]);
 
   return {
     musicTracks,

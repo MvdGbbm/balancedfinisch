@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { BreathingMusicPlayer } from "@/components/breathing-page/music-player";
 import { Soundscape } from "@/lib/types";
 
@@ -13,7 +13,7 @@ interface BreathingMusicSectionProps {
   onTrackPlayPauseChange: (isPlaying: boolean) => void;
 }
 
-export const BreathingMusicSection: React.FC<BreathingMusicSectionProps> = ({
+export const BreathingMusicSection = memo(({
   musicTracks,
   currentTrack,
   isTrackPlaying,
@@ -21,9 +21,12 @@ export const BreathingMusicSection: React.FC<BreathingMusicSectionProps> = ({
   onPlayTrack,
   audioPlayerRef,
   onTrackPlayPauseChange
-}) => {
-  // Filter music tracks to only include those from the Music category
-  const musicOnlyTracks = musicTracks.filter(track => track.category === "Muziek");
+}: BreathingMusicSectionProps) => {
+  // Use useMemo to prevent unnecessary filtering on each render
+  const musicOnlyTracks = useMemo(() => 
+    musicTracks.filter(track => track.category === "Muziek"),
+    [musicTracks]
+  );
   
   return (
     <BreathingMusicPlayer
@@ -36,4 +39,7 @@ export const BreathingMusicSection: React.FC<BreathingMusicSectionProps> = ({
       onTrackPlayPauseChange={onTrackPlayPauseChange}
     />
   );
-};
+});
+
+// Add display name for debugging
+BreathingMusicSection.displayName = "BreathingMusicSection";

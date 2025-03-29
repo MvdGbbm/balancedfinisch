@@ -1,29 +1,35 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { cn } from "@/lib/utils";
 import { BreathingCircleVisualProps } from "./types";
 
-export function BreathingCircleVisual({ 
+export const BreathingCircleVisual = memo(({ 
   circleScale, 
   transitionDuration, 
   className,
   children
-}: BreathingCircleVisualProps) {
+}: BreathingCircleVisualProps) => {
+  // Use CSS custom properties for better performance
+  const styleProperties = {
+    "--circle-scale": circleScale,
+    "--transition-duration": `${transitionDuration}ms`,
+  } as React.CSSProperties;
+
   return (
     <>
-      {/* Outer glow effect */}
+      {/* Outer glow effect - optimized to use transform instead of scaling width/height */}
       <div 
-        className="absolute inset-0 rounded-full bg-cyan-400 opacity-20 blur-xl"
+        className="absolute inset-0 rounded-full bg-cyan-400 opacity-20 blur-xl transform-gpu"
         style={{
           transform: `scale(${circleScale * 1.2})`,
           transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
         }}
       />
       
-      {/* Main circle */}
+      {/* Main circle - using transform-gpu for hardware acceleration */}
       <div 
         className={cn(
-          "absolute inset-0 flex items-center justify-center rounded-full", 
+          "absolute inset-0 flex items-center justify-center rounded-full transform-gpu", 
           className
         )}
         style={{
@@ -32,10 +38,10 @@ export function BreathingCircleVisual({
         }}
       >
         <div 
-          className="h-full w-full rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg"
+          className="h-full w-full rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg will-change-transform"
           style={{
             transition: `background ${transitionDuration}ms ease-in-out, 
-                        box-shadow ${transitionDuration}ms ease-in-out`
+                      box-shadow ${transitionDuration}ms ease-in-out`
           }}
         >
           <div className="text-center">
@@ -45,4 +51,7 @@ export function BreathingCircleVisual({
       </div>
     </>
   );
-}
+});
+
+// Add display name for debugging
+BreathingCircleVisual.displayName = "BreathingCircleVisual";

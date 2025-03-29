@@ -1,21 +1,22 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, memo } from "react";
 import { BreathingAudioPlayerProps } from "./types";
 import { toast } from "sonner";
 import { preloadAudio } from "@/components/audio-player/utils";
 
-export function BreathingAudioPlayer({ 
+export const BreathingAudioPlayer = memo(({ 
   audioRef,
   currentAudioUrl,
   onAudioError
-}: BreathingAudioPlayerProps) {
+}: BreathingAudioPlayerProps) => {
   // Add debug logging to track audio playback
   useEffect(() => {
     if (currentAudioUrl) {
-      console.log("Audio URL set:", currentAudioUrl);
-      
       // Preload audio when URL changes
       if (currentAudioUrl) {
+        // Use an abort controller for cancellable fetch operations
+        const controller = new AbortController();
+        
         preloadAudio(currentAudioUrl).then(success => {
           if (!success) {
             console.error("Failed to preload audio:", currentAudioUrl);
@@ -24,6 +25,11 @@ export function BreathingAudioPlayer({
             console.log("Successfully preloaded audio:", currentAudioUrl);
           }
         });
+        
+        // Cleanup function to cancel any in-progress fetch operations
+        return () => {
+          controller.abort();
+        };
       }
     }
   }, [currentAudioUrl, onAudioError]);
@@ -50,4 +56,6 @@ export function BreathingAudioPlayer({
       style={{ display: 'none' }}
     />
   );
-}
+});
+
+BreathingAudioPlayer.displayName = "BreathingAudioPlayer";

@@ -1,11 +1,12 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { BreathingCircleProps } from "./types";
 import { BreathingCircleVisual } from "./breathing-circle-visual";
 import { BreathingPhaseDisplay } from "./breathing-phase-display";
 import { useBreathingAnimation } from "./use-breathing-animation";
 
-export function BreathingCircle({
+// Using memo to prevent unnecessary re-renders
+export const BreathingCircle = memo(({
   inhaleDuration = 4000,
   holdDuration = 2000,
   exhaleDuration = 6000,
@@ -15,7 +16,7 @@ export function BreathingCircle({
   currentPhase = "rest",
   secondsLeft = 0,
   holdEnabled = true
-}: BreathingCircleProps) {
+}: BreathingCircleProps) => {
   const { 
     phase, 
     phaseTimeLeft, 
@@ -48,7 +49,10 @@ export function BreathingCircle({
       </div>
     </div>
   );
-}
+});
+
+// Add display name for debugging
+BreathingCircle.displayName = "BreathingCircle";
 
 // Make sure to export as default for components that import it that way
 export default BreathingCircle;

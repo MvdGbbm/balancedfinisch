@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 import { VoiceURLs } from "@/components/breathing-page/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,14 +13,14 @@ interface BreathingVoiceSectionProps {
   activeVoice: "vera" | "marco" | null;
 }
 
-export const BreathingVoiceSection: React.FC<BreathingVoiceSectionProps> = ({
+export const BreathingVoiceSection = memo(({
   veraVoiceUrls,
   marcoVoiceUrls,
   isActive,
   onPause,
   onPlay,
   activeVoice
-}) => {
+}: BreathingVoiceSectionProps) => {
   return (
     <Card className="border-none shadow-md bg-black/5 backdrop-blur-sm">
       <CardHeader className="pb-2">
@@ -39,4 +39,7 @@ export const BreathingVoiceSection: React.FC<BreathingVoiceSectionProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
+
+// Add display name for debugging
+BreathingVoiceSection.displayName = "BreathingVoiceSection";
