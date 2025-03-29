@@ -1,9 +1,9 @@
 
 import React from "react";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingPhase } from "@/components/breathing/types";
 import { PatternSelector } from "@/components/breathing-page/pattern-selector";
 import { BreathingPattern } from "@/components/breathing-page/types";
-import { BreathingCircle } from "@/components/breathing-circle";
 
 interface BreathingExerciseProps {
   breathingPatterns: BreathingPattern[];
@@ -28,9 +28,6 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
   onSelectPattern,
   onPhaseChange
 }) => {
-  // Determine if hold phase should be enabled based on the pattern
-  const holdEnabled = selectedPattern && selectedPattern.hold1 > 0;
-
   return (
     <div className="space-y-6">
       <PatternSelector 
@@ -42,17 +39,19 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
       
       {selectedPattern && showAnimation && (
         <div className="mt-8">
-          <BreathingCircle
-            isActive={isExerciseActive}
+          <BreathingAnimation 
+            technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
+            voiceUrls={null}
+            isVoiceActive={isExerciseActive}
             currentPhase={currentPhase}
-            secondsLeft={0}
-            inhaleDuration={selectedPattern.inhale * 1000}
-            holdDuration={selectedPattern.hold1 * 1000}
-            exhaleDuration={selectedPattern.exhale * 1000}
-            holdEnabled={!!holdEnabled}
-            onBreathComplete={() => {
-              // Handle breath complete if needed
-            }}
+            onPhaseChange={onPhaseChange}
+            currentCycle={currentCycle}
+            totalCycles={selectedPattern.cycles}
+            exerciseCompleted={exerciseCompleted}
+            inhaleTime={selectedPattern.inhale}
+            holdTime={selectedPattern.hold1}
+            exhaleTime={selectedPattern.exhale}
+            pauseTime={selectedPattern.hold2}
           />
         </div>
       )}
