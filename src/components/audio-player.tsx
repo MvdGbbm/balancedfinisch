@@ -21,6 +21,7 @@ export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   nextAudioUrl?: string;
   onEnded?: () => void;
   onCrossfadeStart?: () => void;
+  showMusicSelector?: boolean;
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>(
@@ -37,7 +38,8 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
     showQuote = true,
     nextAudioUrl,
     onEnded,
-    onCrossfadeStart
+    onCrossfadeStart,
+    showMusicSelector
   }, ref) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
