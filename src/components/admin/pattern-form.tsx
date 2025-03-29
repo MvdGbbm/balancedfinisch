@@ -1,15 +1,16 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Save, Trash2 } from "lucide-react";
-import { BreathingPattern } from "./types";
-import { TextInput } from "./text-input";
-import { BreathingDurationInput } from "./breathing-duration-input";
-import { HoldControl } from "./hold-control";
-import { AudioUrlInput } from "./audio-url-input";
-import { EmptyPatternDisplay } from "./empty-pattern-display";
+import { BreathingPattern } from "./breathing/types";
+import { TextInput } from "./breathing/text-input";
+import { BreathingDurationInput } from "./breathing/breathing-duration-input";
+import { HoldControl } from "./breathing/hold-control";
+import { AudioUrlInput } from "./breathing/audio-url-input";
+import { EmptyPatternDisplay } from "./breathing/empty-pattern-display";
 
 interface PatternFormProps {
   selectedPattern: BreathingPattern | null;

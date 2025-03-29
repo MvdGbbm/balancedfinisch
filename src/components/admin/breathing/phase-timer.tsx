@@ -9,6 +9,7 @@ interface PhaseTimerProps {
   currentCycle: number;
   totalCycles: number;
   secondsLeft: number;
+  isActive?: boolean;
 }
 
 export function PhaseTimer({
@@ -16,7 +17,8 @@ export function PhaseTimer({
   currentPhase,
   currentCycle,
   totalCycles,
-  secondsLeft
+  secondsLeft,
+  isActive
 }: PhaseTimerProps) {
   const getInstructions = () => {
     switch (currentPhase) {

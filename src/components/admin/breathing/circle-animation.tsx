@@ -1,16 +1,12 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 
 interface CircleAnimationProps {
   isActive: boolean;
   currentPhase: "inhale" | "hold1" | "exhale" | "hold2";
   circleScale: number;
-  secondsLeft?: number;
-  pattern?: {
-    inhale: number;
-    exhale: number;
-  } | null;
   setCircleScale?: (scale: number) => void;
+  secondsLeft?: number;
 }
 
 export function CircleAnimation({
@@ -18,12 +14,8 @@ export function CircleAnimation({
   currentPhase,
   circleScale,
   secondsLeft,
-  pattern,
   setCircleScale
 }: CircleAnimationProps) {
-  // The component doesn't actually use these props internally,
-  // but they're required by the parent component's type system
-  
   return (
     <div 
       className="bg-primary/10 border-2 border-primary/20 rounded-full p-10 mb-4 relative" 

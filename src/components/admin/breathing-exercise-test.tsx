@@ -53,7 +53,9 @@ export function BreathingExerciseTest({
           <CircleAnimation 
             circleScale={circleScale} 
             setCircleScale={setCircleScale} 
-            isActive={isActive} 
+            isActive={isActive}
+            currentPhase={currentPhase}
+            secondsLeft={secondsLeft}
           />
           
           <div className="w-full max-w-md space-y-4 mt-4">
@@ -69,7 +71,8 @@ export function BreathingExerciseTest({
             <ControlButtons 
               isActive={isActive} 
               setIsActive={setIsActive} 
-              resetExercise={resetExercise} 
+              resetExercise={resetExercise}
+              activeVoice={activeVoice}
             />
             
             <VoiceButtons 
