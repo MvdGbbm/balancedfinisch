@@ -23,7 +23,7 @@ export interface PlaylistActions {
     setCurrentTrack: (track: Soundscape | null) => void, 
     setIsPlaying: (isPlaying: boolean) => void
   ) => void;
-  handleAddToPlaylist: (track: Soundscape, playlist: Playlist) => void;
+  handleAddToPlaylist: (track: Soundscape, playlistId: string) => void;
   handleRemoveFromPlaylist: (
     trackId: string, 
     playlistId: string, 

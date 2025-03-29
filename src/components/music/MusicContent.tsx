@@ -65,7 +65,7 @@ export const MusicContent: React.FC<MusicContentProps> = ({
                 isPlaying={isPlaying}
                 isCurrentTrack={(currentTrack?.id === track.id || previewTrack?.id === track.id)}
                 onPreviewTrack={handlePreviewTrack}
-                onAddToPlaylist={(track, playlistId) => handleAddToPlaylist(track, playlistId)}
+                onAddToPlaylist={handleAddToPlaylist}
                 onShowPlaylistCreator={() => setShowPlaylistCreator(true)}
                 playlists={playlists}
               />
