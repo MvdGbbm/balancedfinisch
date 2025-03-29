@@ -42,11 +42,36 @@ export function useAudioPlayback({
   };
 
   // Set up error handler
-  const { errorMessage, hasError, resetErrorState, handleError } = useAudioErrorHandler();
+  const { loadError: hasError, isRetrying, resetErrorState, handleError, manualRetry: resetErrorState2 } = useAudioErrorHandler();
 
   // Set up audio controls 
-  const { playAudio, pauseAudio, togglePlayPause, seekTo, handleVolumeChange, setPlaybackSpeed, playDirectly } = 
-    useAudioControls({ audioRef, setIsPlaying, setHasUserInteracted, handleError });
+  const controls = useAudioControls({ 
+    audioRef,
+    setIsPlaying,
+    handleError
+  });
+
+  const togglePlayPause = () => {
+    if (isPlaying) {
+      controls.pauseAudio();
+    } else {
+      controls.playAudio();
+    }
+  };
+
+  const seekTo = (time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const setPlaybackSpeed = (rate: number) => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = rate;
+      setPlaybackRate(rate);
+    }
+  };
 
   // Set up audio events
   useAudioEvents({
@@ -66,7 +91,7 @@ export function useAudioPlayback({
     isPlayingExternal,
     resetLoadState,
     resetErrorState,
-    playDirectly,
+    playDirectly: controls.playDirectly,
     setCurrentTime
   });
 
@@ -90,7 +115,7 @@ export function useAudioPlayback({
     isPlayingExternal,
     isPlaying,
     audioUrl,
-    playDirectly,
+    playDirectly: controls.playDirectly,
     setIsPlaying
   });
 
@@ -104,19 +129,18 @@ export function useAudioPlayback({
     isBuffering,
     playbackRate,
     hasError,
-    errorMessage,
     hasUserInteracted,
     
     // Controls
-    playAudio,
-    pauseAudio,
+    playAudio: controls.playAudio,
+    pauseAudio: controls.pauseAudio,
     togglePlayPause,
     seekTo,
-    handleVolumeChange,
+    handleVolumeChange: controls.handleVolumeChange,
     setPlaybackSpeed,
     resetErrorState,
     
     // Advanced playback
-    playDirectly
+    playDirectly: controls.playDirectly
   };
 }

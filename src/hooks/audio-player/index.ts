@@ -1,7 +1,13 @@
 
-import { useAudioPlayback } from "./use-audio-playback";
-import { useAudioCrossfade } from "./use-audio-crossfade";
-import { AudioPlayerProps, AudioPlayerState, AudioPlayerControls } from "./types";
+import { useRef } from 'react';
+import { useAudioControls } from "./use-audio-controls";
+import { useAudioErrorHandler } from "./use-audio-error-handler";
+import { useAudioEvents } from "./use-audio-events";
+import { useAudioLooping } from "./use-audio-looping";
+import { useAudioLoader } from "./use-audio-loader";
+import { useAudioVolume } from "./use-audio-volume";
+import { useExternalPlayback } from "./use-external-playback";
+import { AudioPlayerProps } from "./types";
 
 export function useAudioPlayer({
   audioUrl,
@@ -11,76 +17,105 @@ export function useAudioPlayer({
   onPlayPauseChange,
   nextAudioUrl,
   onCrossfadeStart,
-  title,
   volume: initialVolume
 }: AudioPlayerProps) {
-  const {
-    audioRef,
-    isPlaying,
-    duration,
-    currentTime,
-    volume,
-    isLooping,
-    isLoaded,
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const nextAudioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(initialVolume || 0.8);
+  const [isLooping, setIsLooping] = useState(false);
+  const [isCrossfading, setIsCrossfading] = useState(false);
+  
+  // Set up error handler
+  const { 
     loadError,
     isRetrying,
+    resetErrorState,
+    handleError,
+    manualRetry
+  } = useAudioErrorHandler({ onError });
+
+  // Setup audio loader and stream detection
+  const {
+    isLoaded,
     isLiveStream,
+    playDirectly,
+    resetLoadState
+  } = useAudioLoader({
+    audioUrl,
+    isPlayingExternal,
+    onPlayPauseChange
+  });
+
+  // Set up audio controls
+  const { 
     togglePlay,
     handleRetry,
     toggleLoop,
     handleProgressChange,
     handleVolumeChange,
     skipTime
-  } = useAudioPlayback({
-    audioUrl,
-    title,
-    volume: initialVolume,
-    isPlayingExternal,
-    onPlayPauseChange,
-    onEnded,
-    onError
-  });
-
-  const {
-    nextAudioRef,
-    isCrossfading,
-    resetCrossfade
-  } = useAudioCrossfade({
-    isPlaying,
-    isLoaded,
+  } = useAudioControls({ 
+    audioRef,
+    setIsPlaying,
+    isLooping,
+    setIsLooping,
+    volume,
+    setVolume,
     duration,
     currentTime,
-    nextAudioUrl,
-    volume,
+    setCurrentTime,
+    handleError,
+    audioUrl
+  });
+
+  // Set up audio events
+  useAudioEvents({
+    audioRef,
+    setIsPlaying,
+    setCurrentTime,
+    setDuration,
+    setIsLoaded: (loaded) => resetLoadState(),
     onEnded,
-    onCrossfadeStart,
+    handleError
+  });
+
+  // Initialize audio
+  useAudioInitialization({
+    audioRef,
+    audioUrl,
+    isPlayingExternal,
+    resetLoadState,
+    resetErrorState,
+    playDirectly,
+    setCurrentTime
+  });
+
+  // Handle looping
+  useAudioLooping({
+    audioRef,
+    isLooping,
     isLiveStream
   });
 
-  // Custom progress change handler that also handles crossfade reset
-  const handleProgressChangeWithCrossfade = (newValue: number[]) => {
-    handleProgressChange(newValue);
-    
-    // Reset crossfade if user seeks back before crossfade point
-    if (isCrossfading && duration - newValue[0] > 5) {
-      resetCrossfade();
-    }
-  };
+  // Handle volume
+  useAudioVolume({
+    audioRef,
+    initialVolume,
+    setVolume
+  });
 
-  // Custom volume change handler that handles both audio elements
-  const handleVolumeChangeWithCrossfade = (newValue: number[]) => {
-    const newVolume = newValue[0];
-    
-    if (isCrossfading && nextAudioRef.current && audioRef.current) {
-      const currentRatio = audioRef.current.volume / volume;
-      const nextRatio = nextAudioRef.current.volume / volume;
-      
-      audioRef.current.volume = newVolume * currentRatio;
-      nextAudioRef.current.volume = newVolume * nextRatio;
-    }
-    
-    handleVolumeChange(newValue);
-  };
+  // Handle external playback control
+  useExternalPlayback({
+    audioRef,
+    isPlayingExternal,
+    isPlaying,
+    audioUrl,
+    playDirectly,
+    setIsPlaying
+  });
 
   return {
     audioRef,
@@ -98,10 +133,14 @@ export function useAudioPlayer({
     togglePlay,
     handleRetry,
     toggleLoop,
-    handleProgressChange: handleProgressChangeWithCrossfade,
-    handleVolumeChange: handleVolumeChangeWithCrossfade,
+    handleProgressChange,
+    handleVolumeChange,
     skipTime
   };
 }
+
+// Needed imports
+import { useState } from 'react';
+import { useAudioInitialization } from './use-audio-initialization';
 
 export * from "./types";
