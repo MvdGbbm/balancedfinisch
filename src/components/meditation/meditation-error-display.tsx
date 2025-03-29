@@ -14,7 +14,7 @@ export const MeditationErrorDisplay: React.FC<MeditationErrorDisplayProps> = ({
   onRetry
 }) => {
   return (
-    <div className="p-4 rounded-md bg-black border border-destructive/20">
+    <div className="p-4 rounded-md bg-black/5 border border-destructive/20">
       <Alert variant="destructive" className="mb-4">
         <AlertTitle>Fout bij laden van meditatie</AlertTitle>
         <AlertDescription className="mt-2">{message}</AlertDescription>
