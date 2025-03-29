@@ -26,7 +26,7 @@ interface AppContextType {
   deleteMeditation: (id: string) => void;
   
   addSoundscape: (soundscape: Omit<Soundscape, 'id'>) => void;
-  updateSoundscape: (id: string, soundscape: Partial<Soundscape>) => void;
+  updateSoundscape: (id: string, updatedSoundscape: Soundscape) => void;
   deleteSoundscape: (id: string) => void;
   setSoundscapes: (soundscapes: Soundscape[]) => void;
   
@@ -329,9 +329,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSoundscapes([...soundscapesData, newSoundscape]);
   }
   
-  function updateSoundscape(id: string, soundscape: Partial<Soundscape>) {
-    setSoundscapes(
-      soundscapesData.map((s) => (s.id === id ? { ...s, ...soundscape } : s))
+  function updateSoundscape(id: string, updatedSoundscape: Soundscape) {
+    setSoundscapes(prevSoundscapes => 
+      prevSoundscapes.map(soundscape => 
+        soundscape.id === id ? updatedSoundscape : soundscape
+      )
     );
   }
   
@@ -421,7 +423,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
   
   // Context value
-  const value: AppContextType = {
+  const contextValue: AppContextType = {
     meditations: meditationsData,
     soundscapes: soundscapesData,
     journalEntries,
@@ -460,7 +462,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     saveDailyQuoteToCalendar,
   };
   
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {

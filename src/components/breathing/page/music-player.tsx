@@ -2,7 +2,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Volume2, Music as MusicIcon, ChevronDown } from "lucide-react";
+import { Volume2, Music as MusicIcon, ChevronDown, Heart } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Soundscape } from "@/lib/types";
 import {
@@ -23,6 +23,7 @@ interface MusicPlayerProps {
   audioPlayerRef: React.RefObject<HTMLAudioElement>;
   onPlayTrack: (track: Soundscape) => void;
   onPlayPauseChange: (playing: boolean) => void;
+  onToggleFavorite?: (track: Soundscape) => void;
 }
 
 export const MusicPlayer: React.FC<MusicPlayerProps> = ({
@@ -32,7 +33,8 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   musicVolume,
   audioPlayerRef,
   onPlayTrack,
-  onPlayPauseChange
+  onPlayPauseChange,
+  onToggleFavorite
 }) => {
   return (
     <div className="mt-6">
@@ -59,20 +61,44 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
                 <DropdownMenuItem 
                   key={track.id} 
                   className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}
-                  onClick={() => onPlayTrack(track)}
                 >
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 flex-1 cursor-pointer" 
+                    onClick={() => onPlayTrack(track)}
+                  >
                     <div 
                       className="w-6 h-6 rounded-sm bg-cover bg-center" 
                       style={{ backgroundImage: `url(${track.coverImageUrl})` }}
                     />
                     <span>{track.title}</span>
+                    {track.isFavorite && (
+                      <Heart className="h-3 w-3 fill-red-500 text-red-500 ml-1" />
+                    )}
                   </div>
-                  {currentTrack?.id === track.id && isTrackPlaying && (
-                    <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                      Speelt
-                    </Badge>
-                  )}
+                  <div className="flex items-center">
+                    {currentTrack?.id === track.id && isTrackPlaying && (
+                      <Badge variant="secondary" className="mr-2 bg-primary/20 text-primary text-xs">
+                        Speelt
+                      </Badge>
+                    )}
+                    {onToggleFavorite && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleFavorite(track);
+                        }}
+                      >
+                        <Heart 
+                          className="h-4 w-4" 
+                          fill={track.isFavorite ? "currentColor" : "none"} 
+                          color={track.isFavorite ? "rgb(239 68 68)" : "currentColor"}
+                        />
+                      </Button>
+                    )}
+                  </div>
                 </DropdownMenuItem>
               ))
             )}
@@ -82,9 +108,25 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
 
       {currentTrack && isTrackPlaying && (
         <div className="mt-4 p-3 border rounded-md bg-background/50">
-          <div className="flex items-center mb-2">
-            <Volume2 className="h-4 w-4 text-primary mr-2 animate-pulse" />
-            <h4 className="font-medium text-sm">Nu afspelend: {currentTrack.title}</h4>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Volume2 className="h-4 w-4 text-primary mr-2 animate-pulse" />
+              <h4 className="font-medium text-sm">Nu afspelend: {currentTrack.title}</h4>
+            </div>
+            {onToggleFavorite && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6"
+                onClick={() => onToggleFavorite(currentTrack)}
+              >
+                <Heart 
+                  className="h-4 w-4" 
+                  fill={currentTrack.isFavorite ? "currentColor" : "none"} 
+                  color={currentTrack.isFavorite ? "rgb(239 68 68)" : "currentColor"}
+                />
+              </Button>
+            )}
           </div>
           <AudioPlayer 
             audioUrl={currentTrack.audioUrl} 

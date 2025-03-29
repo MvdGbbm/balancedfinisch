@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
@@ -28,7 +29,7 @@ export const useBreathingPageState = () => {
   const [voiceVolume, setVoiceVolume] = useState<number>(0.8);
   const [musicVolume, setMusicVolume] = useState<number>(0.5);
 
-  const { soundscapes } = useApp();
+  const { soundscapes, updateSoundscape } = useApp();
   const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
   const [isTrackPlaying, setIsTrackPlaying] = useState(false);
@@ -55,6 +56,34 @@ export const useBreathingPageState = () => {
     toast.success("Pagina opnieuw geladen", {
       description: "Alle componenten zijn ververst"
     });
+  };
+
+  // Toggle favorite status for a track
+  const toggleFavorite = (track: Soundscape) => {
+    if (updateSoundscape) {
+      const updatedTrack = {
+        ...track,
+        isFavorite: !track.isFavorite
+      };
+      
+      updateSoundscape(track.id, updatedTrack);
+      
+      // Update the current track if it's the one being modified
+      if (currentTrack && currentTrack.id === track.id) {
+        setCurrentTrack(updatedTrack);
+      }
+      
+      // Show toast notification
+      toast.success(updatedTrack.isFavorite 
+        ? `"${track.title}" toegevoegd aan favorieten` 
+        : `"${track.title}" verwijderd uit favorieten`
+      );
+      
+      // Update the tracks in the local state
+      setMusicTracks(prevTracks => 
+        prevTracks.map(t => t.id === track.id ? updatedTrack : t)
+      );
+    }
   };
 
   // Load voice URLs from localStorage
@@ -151,6 +180,7 @@ export const useBreathingPageState = () => {
     // Methods
     forcePageReload,
     clearCaches,
-    loadVoiceUrls
+    loadVoiceUrls,
+    toggleFavorite
   };
 };
