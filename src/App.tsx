@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import Meditations from './pages/Meditations';
@@ -11,11 +11,12 @@ import DailyQuote from './pages/DailyQuote';
 import NotFound from './pages/NotFound';
 import Admin from './pages/Admin';
 import { Toaster } from './components/ui/sonner';
+import { ThemeProvider } from './components/theme-provider';
 import './App.css';
 
 function App() {
   return (
-    <>
+    <ThemeProvider defaultTheme="light" storageKey="balanced-mind-theme">
       <Router>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -30,7 +31,7 @@ function App() {
         </Routes>
       </Router>
       <Toaster position="top-center" richColors />
-    </>
+    </ThemeProvider>
   );
 }
 

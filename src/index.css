@@ -80,6 +80,12 @@
   }
 }
 
+@layer utilities {
+  .glass-morphism {
+    @apply bg-background/60 backdrop-blur-lg border border-border/50;
+  }
+}
+
 /* Breathing animation styles */
 .breathe-circle {
   @apply relative rounded-full bg-cyan-400 flex items-center justify-center;

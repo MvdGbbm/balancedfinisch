@@ -18,41 +18,47 @@ export function MobileLayout({
   showNav = true,
   className
 }: MobileLayoutProps) {
-  const {
-    theme,
-    setTheme
-  } = useTheme();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const navItems = [{
-    path: "/",
-    icon: Home,
-    label: "Home"
-  }, {
-    path: "/meditations",
-    icon: Sunrise,
-    label: "Meditaties"
-  }, {
-    path: "/breathing",
-    icon: Sunrise,
-    label: "Ademhaling"
-  }, {
-    path: "/music",
-    icon: Music,
-    label: "Muziek"
-  }, {
-    path: "/journal",
-    icon: BookOpen,
-    label: "Dagboek"
-  }, {
-    path: "/soundscapes",
-    icon: Music,
-    label: "Geluiden"
-  }, {
-    path: "/daily-quote",
-    icon: Quote,
-    label: "Quote"
-  }];
+  
+  const navItems = [
+    {
+      path: "/",
+      icon: Home,
+      label: "Home"
+    }, 
+    {
+      path: "/meditations",
+      icon: Sunrise,
+      label: "Meditaties"
+    }, 
+    {
+      path: "/breathing",
+      icon: Sunrise,
+      label: "Ademhaling"
+    }, 
+    {
+      path: "/music",
+      icon: Music,
+      label: "Muziek"
+    }, 
+    {
+      path: "/journal",
+      icon: BookOpen,
+      label: "Dagboek"
+    }, 
+    {
+      path: "/soundscapes",
+      icon: Music,
+      label: "Geluiden"
+    }, 
+    {
+      path: "/daily-quote",
+      icon: Quote,
+      label: "Quote"
+    }
+  ];
 
   // Check if we're on the music page
   const isMusicPage = location.pathname === "/music";
@@ -69,7 +75,12 @@ export function MobileLayout({
             <h1 className="text-lg font-medium">Balanced Mind Meditation</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full hover:bg-primary/10" 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               <span className="sr-only">Toggle theme</span>
             </Button>
