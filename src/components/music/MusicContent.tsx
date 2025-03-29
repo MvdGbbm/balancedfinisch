@@ -99,12 +99,15 @@ export const MusicContent: React.FC<MusicContentProps> = ({
                   isCurrentPlaylist={isCurrentPlaylist}
                   isPlaying={isPlaying}
                   playlistTracks={playlistTracks}
+                  musicTracks={musicTracks}
                   onPlayPlaylist={() => handlePlayPlaylist(playlist)}
                   onStopPlaylist={handleStopPlaylist}
                   onRemoveFromPlaylist={(trackId) => handleRemoveFromPlaylist(
                     trackId, 
                     playlist.id
                   )}
+                  onAddToPlaylist={handleAddToPlaylist}
+                  getPlaylistTracks={getPlaylistTracks}
                   currentTrackId={currentTrack?.id}
                 />
               );

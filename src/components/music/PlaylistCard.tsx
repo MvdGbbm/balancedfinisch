@@ -5,15 +5,19 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Play, StopCircle, Music, Trash2 } from "lucide-react";
 import { Soundscape } from "@/lib/types";
 import { Playlist } from "@/components/playlist/types";
+import { AddTrackToPlaylistButton } from "./AddTrackToPlaylistButton";
 
 interface PlaylistCardProps {
   playlist: Playlist;
   isCurrentPlaylist: boolean;
   isPlaying: boolean;
   playlistTracks: Soundscape[];
+  musicTracks: Soundscape[];
   onPlayPlaylist: () => void;
   onStopPlaylist: () => void;
   onRemoveFromPlaylist: (trackId: string) => void;
+  onAddToPlaylist: (track: Soundscape, playlistId: string) => void;
+  getPlaylistTracks: (playlist: Playlist) => Soundscape[];
   currentTrackId?: string | null;
 }
 
@@ -22,9 +26,12 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
   isCurrentPlaylist,
   isPlaying,
   playlistTracks,
+  musicTracks,
   onPlayPlaylist,
   onStopPlaylist,
   onRemoveFromPlaylist,
+  onAddToPlaylist,
+  getPlaylistTracks,
   currentTrackId
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -115,55 +122,69 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({
           </div>
         </div>
         
-        {isExpanded && playlistTracks.length > 0 && (
-          <div className="mt-4 space-y-2 border-t pt-2">
-            {playlistTracks.map((track) => (
-              <div 
-                key={track.id} 
-                className={`flex items-center justify-between p-2 rounded-md ${
-                  currentTrackId === track.id && isCurrentPlaylist
-                    ? 'bg-primary/10 border border-primary/20' 
-                    : 'hover:bg-muted/50'
-                }`}
-              >
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0">
-                    <img 
-                      src={track.coverImageUrl} 
-                      alt={track.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "https://via.placeholder.com/32?text=Music";
-                      }}
-                    />
-                  </div>
-                  <div className="overflow-hidden">
-                    <p className="font-medium text-sm truncate">{track.title}</p>
-                    <p className="text-xs text-muted-foreground truncate">{track.description}</p>
-                  </div>
-                </div>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveFromPlaylist(track.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                </Button>
+        {isExpanded && (
+          <div className="mt-4 border-t pt-2">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-medium">Tracks</h4>
+              <div onClick={(e) => e.stopPropagation()}>
+                <AddTrackToPlaylistButton 
+                  playlist={playlist}
+                  musicTracks={musicTracks}
+                  onAddToPlaylist={onAddToPlaylist}
+                  getPlaylistTracks={getPlaylistTracks}
+                />
               </div>
-            ))}
-          </div>
-        )}
-        
-        {isExpanded && playlistTracks.length === 0 && (
-          <div className="mt-4 text-center p-4 border-t pt-4">
-            <p className="text-muted-foreground">
-              Geen tracks in deze afspeellijst
-            </p>
+            </div>
+            
+            {playlistTracks.length > 0 ? (
+              <div className="space-y-2">
+                {playlistTracks.map((track) => (
+                  <div 
+                    key={track.id} 
+                    className={`flex items-center justify-between p-2 rounded-md ${
+                      currentTrackId === track.id && isCurrentPlaylist
+                        ? 'bg-primary/10 border border-primary/20' 
+                        : 'hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0">
+                        <img 
+                          src={track.coverImageUrl} 
+                          alt={track.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "https://via.placeholder.com/32?text=Music";
+                          }}
+                        />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="font-medium text-sm truncate">{track.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{track.description}</p>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveFromPlaylist(track.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-4">
+                <p className="text-muted-foreground">
+                  Geen tracks in deze afspeellijst
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
