@@ -1,5 +1,6 @@
 
-import AppContext, { AppProvider, useApp } from './app/AppContext';
+import { AppProvider, useApp } from './app';
+import AppContext from './app/AppContext';
 
 export { AppContext, AppProvider, useApp };
 export default AppContext;

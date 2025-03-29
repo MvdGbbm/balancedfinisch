@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { generateId } from './utils';
 import { AppContextType } from './types';
@@ -94,7 +93,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       const processedMeditations = sampleMeditations.map(meditation => ({
         ...meditation,
         audioUrl: meditation.audioUrl || '',
-        favorites: meditation.favorites || 0,
         isFavorite: meditation.isFavorite || false,
         tags: meditation.tags || [],
         createdAt: meditation.createdAt || new Date().toISOString(),
