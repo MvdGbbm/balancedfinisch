@@ -80,12 +80,13 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
           </Button>
           
           <Button 
-            size="icon" 
+            size="sm" 
             variant="outline"
             onClick={() => setShowPlaylistSelector(true)}
-            className="h-8 w-8"
+            className="h-8 text-xs flex items-center"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Toevoegen aan
           </Button>
         </div>
         
