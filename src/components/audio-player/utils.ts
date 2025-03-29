@@ -1,3 +1,4 @@
+
 import { DailyQuote } from "@/lib/types";
 import { quotes, colorGradients } from "@/data/quotes";
 
@@ -87,4 +88,57 @@ export const getRandomQuote = (): DailyQuote => {
     id: quotes[randomIndex].id || `quote-${randomIndex}`,
     backgroundClass: colorGradients[randomGradientIndex]
   };
+};
+
+// Add missing utility functions
+export const formatTime = (seconds: number): string => {
+  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+export const isStreamUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  const lowercaseUrl = url.toLowerCase();
+  return lowercaseUrl.includes('stream') || 
+         lowercaseUrl.includes('radio') || 
+         lowercaseUrl.includes('live') || 
+         lowercaseUrl.includes('/live/') ||
+         url.includes('.m3u8') ||
+         url.includes('.pls');
+};
+
+export const fixSupabaseStorageUrl = (url: string): string => {
+  // If it's a Supabase URL with double slashes, fix it
+  if (url.includes('supabase.co') && url.includes('//storage/')) {
+    return url.replace('//storage/', '/storage/');
+  }
+  
+  // If it's a Supabase URL with other common issues
+  if (url.includes('supabase.co') && url.includes('/object/public//')) {
+    return url.replace('/object/public//', '/object/public/');
+  }
+  
+  return url;
+};
+
+export const getAudioMimeType = (url: string): string => {
+  if (!url) return 'audio/mpeg'; // Default
+  
+  const lowercaseUrl = url.toLowerCase();
+  
+  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
+  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
+  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
+  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
+  if (lowercaseUrl.endsWith('.m4a')) return 'audio/mp4';
+  if (lowercaseUrl.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
+  if (lowercaseUrl.endsWith('.pls')) return 'audio/x-scpls';
+  
+  // Default to MP3
+  return 'audio/mpeg';
 };
