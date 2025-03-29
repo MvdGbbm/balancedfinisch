@@ -4,6 +4,7 @@ import { Soundscape } from "@/lib/types";
 import { Playlist } from "@/components/playlist/types";
 import { MusicPlayer } from "./MusicPlayer";
 import { RadioPlayer } from "./RadioPlayer";
+import AudioElement from "@/components/breathing/audio/audio-element";
 
 interface MusicPlayerContainerProps {
   isPlaying: boolean;
@@ -79,6 +80,12 @@ export const MusicPlayerContainer: React.FC<MusicPlayerContainerProps> = ({
         src={hiddenIframeUrl || ""}
         style={{ display: 'none' }} 
         title="Radio Stream"
+      />
+      
+      {/* Audio element with ref */}
+      <AudioElement 
+        audioRef={audioPlayerRef} 
+        src={currentPlayingTrack?.audioUrl} 
       />
     </>
   );

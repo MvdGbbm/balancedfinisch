@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { AudioPreview } from "./audio-player/audio-preview";
 import { validateAudioUrl, preloadAudio } from "./audio-player/utils";
+import { toast } from "sonner";
 
 export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   audioUrl: string;
@@ -72,10 +73,13 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
         // Preload to check if audio is valid
         const canPlay = await preloadAudio(processed);
         if (!canPlay) {
+          console.error("Audio cannot be played:", processed);
           setIsLoading(false);
           setError(true);
           if (onError) onError();
+          toast.error("Kon de audio niet laden. Controleer de URL.");
         } else {
+          console.log("Audio preloaded successfully:", processed);
           setIsLoading(false);
           setError(false);
         }
@@ -195,7 +199,17 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
             </div>
           </div>
         )}
-        <audio ref={audioRef} style={{ display: 'none' }} />
+        <audio 
+          ref={audioRef} 
+          style={{ display: 'none' }} 
+          src={validatedUrl}
+          preload="auto"
+          onError={(e) => {
+            console.error("Audio element error:", e);
+            setError(true);
+            if (onError) onError();
+          }}
+        />
       </div>
     );
   }
