@@ -1,10 +1,10 @@
 
 import React, { useRef, useEffect } from 'react';
-import { BreathingPhase } from './types';
+import { BreathingPhase } from '../types';
 import { toast } from 'sonner';
 import { preloadAudio } from '@/components/audio-player/utils';
 
-interface BreathingAudioProps {
+interface UseBreathingAudioProps {
   voiceUrls: {
     start?: string;
     inhale: string;
@@ -22,12 +22,13 @@ export const useBreathingAudio = ({
   isVoiceActive,
   phase,
   isActive
-}: BreathingAudioProps) => {
+}: UseBreathingAudioProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
   const audioErrorCountRef = useRef<number>(0);
   const audioLoadingRef = useRef<boolean>(false);
 
+  // Validate voice URLs to ensure they are playable
   const validateVoiceUrls = async (urls: {
     start?: string;
     inhale: string;
@@ -75,6 +76,21 @@ export const useBreathingAudio = ({
     }
   };
 
+  // Handle play errors consistently
+  const handlePlayError = (error: any) => {
+    if (audioErrorCountRef.current < 5) {
+      audioErrorCountRef.current++;
+      if (audioErrorCountRef.current === 3) {
+        toast.error("Fout bij afspelen van audio. Controleer de URL's.");
+      }
+    }
+    if (error?.name === 'NotAllowedError') {
+      toast.error("Audio afspelen vereist interactie van de gebruiker. Klik ergens op de pagina.");
+      console.log("Audio playback requires user interaction");
+    }
+  };
+
+  // Play audio for a specific breathing phase
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) {
       console.log(`Not playing audio for ${phaseType} due to inactive state or missing refs`);
@@ -156,19 +172,7 @@ export const useBreathingAudio = ({
     }
   };
 
-  const handlePlayError = (error: any) => {
-    if (audioErrorCountRef.current < 5) {
-      audioErrorCountRef.current++;
-      if (audioErrorCountRef.current === 3) {
-        toast.error("Fout bij afspelen van audio. Controleer de URL's.");
-      }
-    }
-    if (error?.name === 'NotAllowedError') {
-      toast.error("Audio afspelen vereist interactie van de gebruiker. Klik ergens op de pagina.");
-      console.log("Audio playback requires user interaction");
-    }
-  };
-
+  // Effect to play audio when phase changes
   useEffect(() => {
     if (previousPhaseRef.current !== phase) {
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
@@ -184,6 +188,7 @@ export const useBreathingAudio = ({
     }
   }, [phase, voiceUrls, isVoiceActive, isActive]);
 
+  // Effect to initialize audio and handle voice activation
   useEffect(() => {
     // Create audio element if it doesn't exist
     if (!audioRef.current) {
@@ -206,6 +211,7 @@ export const useBreathingAudio = ({
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
 
+  // Effect to validate URLs when they change
   useEffect(() => {
     if (voiceUrls && isVoiceActive) {
       validateVoiceUrls(voiceUrls);
@@ -225,19 +231,3 @@ export const useBreathingAudio = ({
     playAudio
   };
 };
-
-const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
-  const { audioRef } = useBreathingAudio(props);
-
-  return (
-    <audio 
-      ref={audioRef} 
-      onError={() => {
-        console.error("Audio element error");
-        toast.error("Fout bij afspelen van audio.");
-      }} 
-    />
-  );
-};
-
-export default BreathingAudio;
