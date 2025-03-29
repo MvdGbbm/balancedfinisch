@@ -62,12 +62,18 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       setIsValidatingUrl(true);
       
       const fixedUrl = validateAudioUrl(audioUrl);
+      if (!fixedUrl) {
+        setIsUrlValid(false);
+        setIsValidatingUrl(false);
+        return;
+      }
+      
       const supabaseUrl = fixedUrl.includes('supabase.co') ? fixSupabaseStorageUrl(fixedUrl) : fixedUrl;
       
       setValidatedUrl(supabaseUrl);
       
       // Check if the URL is valid
-      preloadAudio(supabaseUrl).then(success => {
+      preloadAudio(supabaseUrl).then((success) => {
         setIsUrlValid(success);
         setIsValidatingUrl(false);
         
@@ -76,6 +82,9 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
         } else {
           console.warn("Audio URL validation failed:", supabaseUrl);
         }
+      }).catch(() => {
+        setIsUrlValid(false);
+        setIsValidatingUrl(false);
       });
     } else {
       setValidatedUrl("");

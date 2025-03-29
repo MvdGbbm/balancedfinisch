@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -6,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle } from "lucide-react";
 import { ErrorMessage } from "./error-message";
-import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "./utils";
+import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "@/components/audio-player/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface AudioPreviewProps {
@@ -47,6 +46,12 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     if (url) {
       const originalUrl = url;
       let fixedUrl = validateAudioUrl(url);
+      if (!fixedUrl) {
+        setIsValidUrl(false);
+        setError(true);
+        if (onError) onError();
+        return;
+      }
       
       // Handle Supabase storage URLs
       if (fixedUrl.includes('supabase.co')) {
@@ -70,7 +75,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       });
       
       // Pre-validate audio URL
-      preloadAudio(fixedUrl).then(success => {
+      preloadAudio(fixedUrl).then((success) => {
         if (!success && !error) {
           console.warn("Audio preload check failed:", fixedUrl);
           setError(true);
@@ -78,9 +83,12 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
         } else if (success) {
           console.log("Audio preload succeeded:", fixedUrl);
         }
+      }).catch(() => {
+        setError(true);
+        if (onError) onError();
       });
     }
-  }, [url, onError]);
+  }, [url, onError, error]);
 
   // Auto-play when requested and URL is valid
   useEffect(() => {
