@@ -61,7 +61,6 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
           isActive={isPlaying} 
           className="mb-1" 
           audioRef={audioRef}
-          audioContextRef={audioContextRef}
         />
         
         <AudioPlayer 

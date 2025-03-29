@@ -1,40 +1,16 @@
 
-import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import React, { forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
-import { ProgressBar } from "./audio-player/progress-bar";
-import { AudioControls } from "./audio-player/audio-controls";
-import { ErrorMessage } from "./audio-player/error-message";
-import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote, getAudioMimeType, isAACFile, validateAudioUrl } from "./audio-player/utils";
+import { ProgressBar } from "./progress-bar";
+import { AudioControls } from "./audio-controls";
+import { ErrorMessage } from "./error-message";
+import { QuoteDisplay } from "./quote-display";
+import { MusicSelector } from "./music-selector";
+import { NowPlaying } from "./now-playing";
+import { getRandomQuote, validateAudioUrl } from "./utils";
 import { Soundscape } from "@/lib/types";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select";
-import { Music, Volume2 } from "lucide-react";
-import { useApp } from "@/context/AppContext";
-
-interface AudioPlayerProps {
-  audioUrl: string;
-  showControls?: boolean;
-  showTitle?: boolean;
-  title?: string;
-  className?: string;
-  onEnded?: () => void;
-  onError?: () => void;
-  customSoundscapeSelector?: React.ReactNode;
-  showQuote?: boolean;
-  isPlayingExternal?: boolean;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
-  nextAudioUrl?: string;
-  onCrossfadeStart?: () => void;
-  volume?: number;
-  showMusicSelector?: boolean;
-}
+import { AudioPlayerProps } from "./types";
 
 export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
   audioUrl, 
@@ -53,15 +29,10 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   volume,
   showMusicSelector = false
 }, ref) => {
-  const { soundscapes } = useApp();
   const [randomQuote] = useState(getRandomQuote);
-  const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [audioKey, setAudioKey] = useState(0); 
   const [isAACFormat, setIsAACFormat] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<string>("");
-  
-  // Filter music tracks to only include those from the Music category
-  const musicTracks = soundscapes.filter(track => track.category === "Muziek");
   
   // Process and fix audio URL if needed
   const processedAudioUrl = audioUrl ? validateAudioUrl(audioUrl) : "";
@@ -73,12 +44,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
       setSelectedMusic(audioUrl);
     }
   }, [audioUrl]);
-  
-  useEffect(() => {
-    if (effectiveAudioUrl) {
-      setIsAACFormat(isAACFile(effectiveAudioUrl));
-    }
-  }, [effectiveAudioUrl]);
   
   // Initialize all hooks unconditionally
   const {
@@ -116,10 +81,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   useEffect(() => {
     console.log(`AudioPlayer attempting to load: ${effectiveAudioUrl || "no URL provided"}`);
     
-    if (isAACFile(effectiveAudioUrl)) {
-      console.log('AAC audio format detected:', effectiveAudioUrl);
-    }
-    
     // Reset player when URL changes
     setAudioKey(prev => prev + 1);
   }, [effectiveAudioUrl]);
@@ -135,11 +96,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   // Expose the audio element ref to parent components
   useImperativeHandle(ref, () => audioRef.current!, []);
   
-  // Connect the nextAudioRef to its element
-  useEffect(() => {
-    nextAudioRef.current = nextAudioElementRef.current;
-  }, [nextAudioRef]);
-  
   // Early return with placeholder if no audioUrl
   if (!effectiveAudioUrl) {
     return (
@@ -151,60 +107,31 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     );
   }
   
-  // Get the MIME type based on the file extension
-  const audioMimeType = getAudioMimeType(effectiveAudioUrl);
-  
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
       <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
-        <source src={effectiveAudioUrl} type={audioMimeType} />
+        <source src={effectiveAudioUrl} type={getAudioMimeType(effectiveAudioUrl)} />
         Your browser does not support the audio element.
       </audio>
       
       {nextAudioUrl && (
-        <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous">
+        <audio ref={nextAudioRef.current} preload="metadata" crossOrigin="anonymous">
           <source src={validateAudioUrl(nextAudioUrl)} type={getAudioMimeType(nextAudioUrl)} />
         </audio>
       )}
       
       {showMusicSelector && (
-        <div className="mb-4">
-          <h3 className="text-base font-semibold mb-2">Muziek op de achtergrond</h3>
-          <Select
-            value={selectedMusic || audioUrl}
-            onValueChange={handleMusicChange}
-          >
-            <SelectTrigger className="w-full bg-background border-muted">
-              <span className="flex items-center">
-                <Music className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Selecteer muziek">
-                  {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || "Selecteer muziek"}
-                </SelectValue>
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              {musicTracks.map(track => (
-                <SelectItem key={track.id} value={track.audioUrl}>
-                  <div className="flex items-center">
-                    {track.audioUrl === (selectedMusic || audioUrl) && (
-                      <Volume2 className="w-4 h-4 mr-2 text-primary animate-pulse" />
-                    )}
-                    <span>{track.title}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <MusicSelector 
+          selectedMusic={selectedMusic || audioUrl} 
+          onMusicChange={handleMusicChange} 
+        />
       )}
       
       {isPlaying && (
-        <div className="py-2 px-3 bg-background/30 border border-muted rounded-md flex items-center">
-          <Volume2 className="h-4 w-4 text-primary mr-2" />
-          <p className="text-sm">
-            Nu afspelend: {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || title}
-          </p>
-        </div>
+        <NowPlaying 
+          selectedMusic={selectedMusic || audioUrl} 
+          title={title} 
+        />
       )}
       
       {showTitle && title && !showMusicSelector && (
