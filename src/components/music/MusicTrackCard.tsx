@@ -39,6 +39,22 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
     >
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
+          {/* Thumbnail image */}
+          <div 
+            className={`w-12 h-12 rounded-md overflow-hidden flex-shrink-0 border ${
+              isActive ? 'border-primary' : 'border-muted'
+            }`}
+          >
+            <img 
+              src={track.coverImageUrl} 
+              alt={track.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "https://via.placeholder.com/48?text=Music";
+              }}
+            />
+          </div>
+          
           <div className={`p-2 rounded-full ${
             isActive
               ? 'bg-primary/20' 
@@ -49,6 +65,7 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
               : <MusicIcon className="h-5 w-5 text-blue-500 dark:text-blue-300" />
             }
           </div>
+          
           <div className="flex-1">
             <div className="flex items-center">
               <h3 className="font-medium">{track.title}</h3>

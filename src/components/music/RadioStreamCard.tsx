@@ -2,8 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Link2, Play, StopCircle, Volume2 } from "lucide-react";
+import { Radio, Play, StopCircle } from "lucide-react";
 import { RadioStream } from "@/hooks/use-radio-streams";
 
 interface RadioStreamCardProps {
@@ -24,61 +23,49 @@ export const RadioStreamCard: React.FC<RadioStreamCardProps> = ({
       className={`transition-all ${
         isPlaying 
           ? 'ring-2 ring-primary border-primary bg-primary/5' 
-          : 'hover:border-primary/50'
+          : 'bg-background/30 backdrop-blur-sm border-muted'
       }`}
     >
-      <CardContent className="p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            <div className={`p-2 rounded-full ${
-              isPlaying 
-                ? 'bg-primary/20' 
-                : 'bg-green-100/10 dark:bg-green-900/20'
-            }`}>
-              {isPlaying 
-                ? <Volume2 className="h-4 w-4 text-primary animate-pulse" />
-                : <Link2 className="h-4 w-4 text-green-600 dark:text-green-300" />
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center">
-                <h3 className="font-medium text-sm">{stream.title}</h3>
-                {isPlaying && (
-                  <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                    Actief
-                  </Badge>
-                )}
-              </div>
-              {stream.description && (
-                <p className="text-xs text-muted-foreground">{stream.description}</p>
-              )}
-            </div>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div 
+            className={`w-12 h-12 flex items-center justify-center rounded-md border ${
+              isPlaying ? 'border-primary bg-primary/20' : 'border-muted bg-muted/50'
+            }`}
+          >
+            <Radio className={`h-6 w-6 ${isPlaying ? 'text-primary' : 'text-muted-foreground'}`} />
           </div>
-          <div className="flex gap-2">
-            {!isPlaying ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onPlay}
-                className="px-3"
-              >
-                <Play className="h-3.5 w-3.5 mr-1.5" />
-                Afspelen
-              </Button>
-            ) : (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={onStop}
-                className="px-3"
-              >
-                <StopCircle className="h-3.5 w-3.5 mr-1.5" />
-                Stop
-              </Button>
+          
+          <div className="flex-1">
+            <h3 className="font-medium">{stream.title}</h3>
+            {stream.description && (
+              <p className="text-sm text-muted-foreground">{stream.description}</p>
             )}
           </div>
+          
+          {isPlaying ? (
+            <Button 
+              variant="destructive"
+              size="sm"
+              onClick={onStop}
+              className="flex items-center gap-1"
+            >
+              <StopCircle className="h-4 w-4" />
+              Stoppen
+            </Button>
+          ) : (
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={onPlay}
+              className="flex items-center gap-1"
+            >
+              <Play className="h-4 w-4" />
+              Afspelen
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
   );
-}
+};
