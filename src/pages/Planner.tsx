@@ -65,7 +65,7 @@ const Planner = () => {
   
   const handleEditEvent = (event: PlannerEvent) => {
     setTitle(event.title);
-    setDate(event.date);
+    setDate(event.date || "");
     setTime(event.time || "");
     setDuration(event.duration);
     setMeditationId(event.meditationId);
@@ -86,7 +86,8 @@ const Planner = () => {
     if (currentEventId) {
       updatePlannerEvent(currentEventId, {
         title,
-        date,
+        startDate: date, // Use startDate which is required
+        date, // Keep date for backwards compatibility
         time: time || undefined,
         duration: duration || undefined,
         meditationId: meditationId || undefined,
@@ -94,7 +95,8 @@ const Planner = () => {
     } else {
       addPlannerEvent({
         title,
-        date,
+        startDate: date, // Use startDate which is required
+        date, // Keep date for backwards compatibility
         time: time || undefined,
         duration: duration || undefined,
         meditationId: meditationId || undefined,
@@ -108,11 +110,11 @@ const Planner = () => {
   
   // Group events by date for display
   const groupedEvents = plannerEvents.reduce((groups, event) => {
-    const date = event.date;
-    if (!groups[date]) {
-      groups[date] = [];
+    const eventDate = event.date || event.startDate;
+    if (!groups[eventDate]) {
+      groups[eventDate] = [];
     }
-    groups[date].push(event);
+    groups[eventDate].push(event);
     return groups;
   }, {} as Record<string, PlannerEvent[]>);
   

@@ -41,7 +41,7 @@ export interface JournalEntry {
   title?: string;  // Made optional since some code doesn't provide it
   content: string;
   date: string;
-  mood?: string;
+  mood?: "happy" | "calm" | "neutral" | "sad" | "anxious";
   tags?: string[];
 }
 
@@ -49,11 +49,11 @@ export interface PlannerEvent {
   id: string;
   title: string;
   description?: string;
-  date?: string;        // Added for Planner.tsx
-  time?: string;        // Added for Planner.tsx
-  duration?: number;    // Added for Planner.tsx
-  meditationId?: string; // Added for Planner.tsx
-  startDate: string;
+  startDate: string;       // Required field
+  date?: string;           // Optional for backward compatibility
+  time?: string;
+  duration?: number;
+  meditationId?: string;
   endDate?: string;
   allDay?: boolean;
   category?: string;
@@ -64,10 +64,10 @@ export interface PlannerEvent {
 export interface BreathingPattern {
   id: string;
   name: string;
-  inhale: number;       // Changed from inhaleDuration to match usage
-  hold1: number;        // Changed from holdDuration
-  exhale: number;       // Changed from exhaleDuration
-  hold2?: number;       // Added based on usage
+  inhale: number;
+  hold1: number;
+  exhale: number;
+  hold2?: number;
   cycles: number;
   description: string;
   category?: string;
