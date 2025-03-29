@@ -2,24 +2,34 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertCircle } from "lucide-react";
 
 interface MeditationErrorDisplayProps {
   message: string;
   onRetry: () => void;
   isRetrying?: boolean;
+  additionalDetails?: string;
 }
 
 export const MeditationErrorDisplay: React.FC<MeditationErrorDisplayProps> = ({
   message,
   onRetry,
-  isRetrying = false
+  isRetrying = false,
+  additionalDetails
 }) => {
   return (
-    <div className="p-4 rounded-md bg-black border border-destructive/20">
+    <div className="p-4 rounded-md bg-black/90 border border-destructive/20">
       <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
         <AlertTitle>Fout bij laden van meditatie</AlertTitle>
-        <AlertDescription className="mt-2">{message}</AlertDescription>
+        <AlertDescription className="mt-2">
+          {message}
+          {additionalDetails && (
+            <div className="mt-2 text-xs opacity-80">
+              {additionalDetails}
+            </div>
+          )}
+        </AlertDescription>
       </Alert>
       
       <Button 
