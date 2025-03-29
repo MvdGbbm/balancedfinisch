@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { MobileLayout } from "@/components/mobile-layout";
@@ -81,13 +82,25 @@ const Music = () => {
   // Stop audio handler for general use
   const stopAllAudio = () => {
     if (isPlaying) {
-      setCurrentTrack(null);
       setIsPlaying(false);
+      setCurrentTrack(null);
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.src = '';
+      }
     }
+    
     if (isStreamPlaying) {
       handleStreamStop();
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, []);
 
   return (
     <MobileLayout>

@@ -10,8 +10,7 @@ export function useMusicPreview() {
 
   const handlePreviewToggle = (track: Soundscape) => {
     if (previewUrl === track.audioUrl && isPlaying) {
-      setIsPlaying(false);
-      setPreviewUrl(null);
+      stopPreview();
     } else {
       if (isPlaying && audioRef.current) {
         audioRef.current.pause();
@@ -19,6 +18,16 @@ export function useMusicPreview() {
       
       setPreviewUrl(track.audioUrl);
       setIsPlaying(true);
+    }
+  };
+
+  const stopPreview = () => {
+    setIsPlaying(false);
+    setPreviewUrl(null);
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
     }
   };
 
@@ -37,10 +46,21 @@ export function useMusicPreview() {
     }
   }, [isPlaying, previewUrl]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+
   return {
     previewUrl,
     isPlaying,
     audioRef,
-    handlePreviewToggle
+    handlePreviewToggle,
+    stopPreview
   };
 }

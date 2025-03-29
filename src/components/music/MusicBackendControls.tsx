@@ -1,21 +1,27 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Trash } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
 interface MusicBackendControlsProps {
   onRefresh: () => void;
   onClearCache: () => void;
   isLoading: boolean;
 }
+
 export const MusicBackendControls: React.FC<MusicBackendControlsProps> = ({
   onRefresh,
   onClearCache,
   isLoading
 }) => {
-  return <div className="flex gap-2">
+  return (
+    <div className="flex gap-2">
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          
+          <Button variant="outline" size="icon" className="flex-shrink-0 border-none bg-background/30 hover:bg-destructive/20" title="Cache leegmaken">
+            <Trash className="h-4 w-4" />
+          </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -37,5 +43,6 @@ export const MusicBackendControls: React.FC<MusicBackendControlsProps> = ({
       <Button variant="outline" size="icon" onClick={onRefresh} disabled={isLoading} className="flex-shrink-0 border-none bg-background/30 hover:bg-primary/20" title="Pagina verversen">
         <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
       </Button>
-    </div>;
+    </div>
+  );
 };

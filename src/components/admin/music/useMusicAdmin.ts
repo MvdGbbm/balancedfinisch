@@ -3,7 +3,6 @@ import { useMusicTracks } from "./hooks/use-music-tracks";
 import { useMusicDialog } from "./hooks/use-music-dialog";
 import { useMusicPreview } from "./hooks/use-music-preview";
 import { useMusicApi } from "./hooks/use-music-api";
-import { Soundscape } from "@/lib/types";
 import { toast } from "sonner";
 
 export function useMusicAdmin() {
@@ -26,7 +25,8 @@ export function useMusicAdmin() {
     previewUrl,
     isPlaying,
     audioRef,
-    handlePreviewToggle
+    handlePreviewToggle,
+    stopPreview
   } = useMusicPreview();
   
   const {
@@ -37,13 +37,22 @@ export function useMusicAdmin() {
   
   // Function to reload data
   const handleReloadData = () => {
-    // We could implement a more sophisticated reload logic here
-    // For now, just refresh the page
+    // Stop any playing audio first to prevent audio context errors
+    if (isPlaying) {
+      stopPreview();
+    }
+    
+    // Then reload the page
     window.location.reload();
   };
   
   // Function to clear cache
   const handleClearCache = () => {
+    // Stop any playing audio first
+    if (isPlaying) {
+      stopPreview();
+    }
+    
     // Clear localStorage items related to music
     localStorage.removeItem('processedSoundscapes');
     localStorage.removeItem('soundscapes');
@@ -76,6 +85,7 @@ export function useMusicAdmin() {
     handleEditMusic,
     handleDeleteMusic,
     handlePreviewToggle,
+    stopPreview,
     handleReloadData,
     handleClearCache
   };
