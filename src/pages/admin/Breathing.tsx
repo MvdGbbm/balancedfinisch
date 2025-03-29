@@ -381,26 +381,6 @@ const AdminBreathing = () => {
                               </FormControl>
                             </FormItem>} />
 
-                        <FormField control={patternForm.control} name="startUrl" render={({
-                      field
-                    }) => <FormItem>
-                              <FormLabel>Audio URL bij begin oefening</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="https://voorbeeld.com/start.mp3" />
-                              </FormControl>
-                              <div className="text-xs text-muted-foreground">Deze audio wordt afgespeeld wanneer de ademhalingsoefening begint.</div>
-                            </FormItem>} />
-
-                        <FormField control={patternForm.control} name="endUrl" render={({
-                      field
-                    }) => <FormItem>
-                              <FormLabel>Audio URL bij einde oefening</FormLabel>
-                              <FormControl>
-                                <Input {...field} placeholder="https://voorbeeld.com/einde.mp3" />
-                              </FormControl>
-                              <div className="text-xs text-muted-foreground">Deze audio wordt afgespeeld wanneer de ademhalingsoefening is voltooid.</div>
-                            </FormItem>} />
-
                         <div className="flex justify-between">
                           <Button type="submit" className="mr-2">
                             <Save className="mr-2 h-4 w-4" />
