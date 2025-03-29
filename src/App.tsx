@@ -1,72 +1,72 @@
-
-import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React, { Suspense, lazy } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
-import ErrorBoundary from "./components/ErrorBoundary";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Breathing from "./pages/Breathing";
-import Meditations from "./pages/Meditations";
-import Soundscapes from "./pages/Soundscapes";
-import Music from "./pages/Music";
-import Journal from "./pages/Journal";
-import Planner from "./pages/Planner";
-import DailyQuote from "./pages/DailyQuote";
+import { MobileLayout } from "@/components/mobile-layout";
+import { AppProvider } from "@/context/AppContext";
+import { Toast } from "@/components/ui/toast";
+import { AudioPlayerProvider } from "@/context/AudioPlayerContext";
 
-// Admin routes
-import Admin from "./pages/Admin";
-import AdminMeditations from "./pages/admin/Meditations";
-import AdminQuotes from "./pages/admin/Quotes";
-import AdminSoundscapes from "./pages/admin/Soundscapes";
-import AdminMusic from "./pages/admin/Music";
-import AdminStreams from "./pages/admin/Streams";
-import AdminBreathing from "./pages/admin/Breathing";
+const Index = lazy(() => import("./pages/Index"));
+const DailyQuote = lazy(() => import("./pages/DailyQuote"));
+const Meditations = lazy(() => import("./pages/Meditations"));
+const Music = lazy(() => import("./pages/Music"));
+const Soundscapes = lazy(() => import("./pages/Soundscapes"));
+const Breathing = lazy(() => import("./pages/Breathing"));
+const Journal = lazy(() => import("./pages/Journal"));
+const Planner = lazy(() => import("./pages/Planner"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminMeditations = lazy(() => import("./pages/Admin/Meditations"));
+const AdminQuotes = lazy(() => import("./pages/Admin/Quotes"));
+const AdminSoundscapes = lazy(() => import("./pages/Admin/Soundscapes"));
+const AdminMusic = lazy(() => import("./pages/Admin/Music"));
+const AdminStreams = lazy(() => import("./pages/Admin/Streams"));
+const AdminBreathing = lazy(() => import("./pages/Admin/Breathing"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
+// Voeg de nieuwe MusicUpload pagina toe aan de import
+import MusicUpload from "./pages/MusicUpload";
 
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <>
-      <Route path="/" element={<Index />} errorElement={<ErrorBoundary />} />
-      <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
-      <Route path="/music" element={<Music />} errorElement={<ErrorBoundary />} />
-      <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
-      <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
-      <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin" element={<Admin />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
-      <Route path="*" element={<NotFound />} />
-    </>
-  )
-);
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light" storageKey="balanced-mind-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <RouterProvider router={router} />
-      </TooltipProvider>
+function App() {
+  return (
+    <ThemeProvider defaultTheme="system" storageKey="calm-app-theme">
+      <AppProvider>
+        <AudioPlayerProvider>
+          <Router>
+            <MobileLayout>
+              <Suspense fallback={<div>Loading...</div>}>
+                {/* Main Routes */}
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/daily-quote" element={<DailyQuote />} />
+                  <Route path="/meditations" element={<Meditations />} />
+                  <Route path="/music" element={<Music />} />
+                  <Route path="/soundscapes" element={<Soundscapes />} />
+                  <Route path="/breathing" element={<Breathing />} />
+                  <Route path="/journal" element={<Journal />} />
+                  <Route path="/planner" element={<Planner />} />
+                
+                  {/* Voeg de nieuwe route toe */}
+                  <Route path="/music-upload" element={<MusicUpload />} />
+                
+                  {/* Admin routes */}
+                  <Route path="/admin" element={<Admin />} />
+                  <Route path="/admin/meditations" element={<AdminMeditations />} />
+                  <Route path="/admin/quotes" element={<AdminQuotes />} />
+                  <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
+                  <Route path="/admin/music" element={<AdminMusic />} />
+                  <Route path="/admin/streams" element={<AdminStreams />} />
+                  <Route path="/admin/breathing" element={<AdminBreathing />} />
+                
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </MobileLayout>
+          </Router>
+          <Toast />
+        </AudioPlayerProvider>
+      </AppProvider>
     </ThemeProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;
