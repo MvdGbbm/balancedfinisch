@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BreathingVoicePlayerProps {
@@ -32,7 +32,7 @@ export const BreathingVoicePlayer = ({
   onPlay,
   onPause,
   activeVoice,
-  headerText = "Kies een stem voor begeleiding",
+  headerText = "Kies een stem",
   volume = 0.8,
   onVolumeChange
 }: BreathingVoicePlayerProps) => {
@@ -53,9 +53,8 @@ export const BreathingVoicePlayer = ({
     }
   };
   
-  // Checking minimal requirements: inhale and exhale audio must be configured
-  const areVeraUrlsValid = veraUrls?.inhale && veraUrls?.exhale;
-  const areMarcoUrlsValid = marcoUrls?.inhale && marcoUrls?.exhale;
+  const areVeraUrlsValid = veraUrls.inhale && veraUrls.hold && veraUrls.exhale;
+  const areMarcoUrlsValid = marcoUrls.inhale && marcoUrls.hold && marcoUrls.exhale;
   
   return (
     <Card className="overflow-hidden border-muted bg-card/50 backdrop-blur-sm">
@@ -73,17 +72,7 @@ export const BreathingVoicePlayer = ({
             onClick={handlePlayVera}
             disabled={!areVeraUrlsValid}
           >
-            {activeVoice === "vera" && isActive ? (
-              <>
-                <Pause size={16} />
-                <span>Pauze Vera</span>
-              </>
-            ) : (
-              <>
-                <Play size={16} />
-                <span>Start met Vera</span>
-              </>
-            )}
+            {activeVoice === "vera" && isActive ? "Pauze Vera" : "Vera"}
           </Button>
           
           <Button
@@ -95,23 +84,13 @@ export const BreathingVoicePlayer = ({
             onClick={handlePlayMarco}
             disabled={!areMarcoUrlsValid}
           >
-            {activeVoice === "marco" && isActive ? (
-              <>
-                <Pause size={16} />
-                <span>Pauze Marco</span>
-              </>
-            ) : (
-              <>
-                <Play size={16} />
-                <span>Start met Marco</span>
-              </>
-            )}
+            {activeVoice === "marco" && isActive ? "Pauze Marco" : "Marco"}
           </Button>
         </div>
         
         {(!areVeraUrlsValid || !areMarcoUrlsValid) && (
           <p className="text-xs text-muted-foreground mt-2">
-            Let op: Minimaal de inadem- en uitademstem moeten geconfigureerd zijn. Ga naar de Admin om audio te configureren.
+            Let op: Niet alle stemaudio is geconfigureerd. Ga naar de Admin om audio te configureren.
           </p>
         )}
       </CardContent>

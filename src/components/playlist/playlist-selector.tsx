@@ -21,7 +21,7 @@ import { Soundscape } from "@/lib/types";
 
 interface PlaylistSelectorProps {
   playlists: Playlist[];
-  onSelectPlaylist: (playlistId: string) => void;
+  onSelectPlaylist: (playlist: Playlist) => void;
   onCreateNew: () => void;
 }
 
@@ -63,7 +63,7 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
                 playlists.map(playlist => (
                   <DropdownMenuItem 
                     key={playlist.id}
-                    onClick={() => onSelectPlaylist(playlist.id)}
+                    onClick={() => onSelectPlaylist(playlist)}
                     className="flex items-center gap-2"
                   >
                     <ListMusic className="h-4 w-4" />

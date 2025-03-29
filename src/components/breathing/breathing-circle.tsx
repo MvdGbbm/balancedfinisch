@@ -1,70 +1,84 @@
 
-import React from "react";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { BreathingPhase } from './types';
+import { getBreathingMessage } from './breathing-utils';
 
 interface BreathingCircleProps {
-  phase: string;
+  phase: BreathingPhase;
   count: number;
-  exerciseCompleted?: boolean;
-  currentCycle?: number;
-  totalCycles?: number;
-  animationDuration?: number;
-  onToggleActive?: () => void;
-  phaseLabel?: string;
+  exerciseCompleted: boolean;
+  currentCycle: number;
+  totalCycles: number;
+  animationDuration: number;
+  onToggleActive: () => void;
 }
 
 const BreathingCircle: React.FC<BreathingCircleProps> = ({
   phase,
   count,
-  exerciseCompleted = false,
-  currentCycle = 1,
-  totalCycles = 5,
-  animationDuration = 4,
-  onToggleActive,
-  phaseLabel
+  exerciseCompleted,
+  currentCycle,
+  totalCycles,
+  animationDuration,
+  onToggleActive
 }) => {
-  // Determine the circle scale based on the phase
-  const getCircleScale = () => {
+  const circleClass = () => {
+    if (exerciseCompleted) {
+      return 'scale-100'; // Reset to default scale when exercise is completed
+    }
+    
     switch (phase) {
+      case 'start':
+        return 'scale-100'; // No animation for start phase
       case 'inhale':
-        return 'scale-100';
+        return `grow-animation`;
       case 'hold':
-        return 'scale-100';
+        return 'scale-125';
       case 'exhale':
-        return 'scale-50';
+        return `shrink-animation`;
+      case 'pause':
+        return 'scale-100';
       default:
-        return 'scale-75';
+        return 'scale-100';
     }
   };
 
-  // Determine the animation duration
-  const getAnimationDuration = () => {
-    return `${animationDuration}s`;
+  const animationStyle = () => {
+    return {
+      animationDuration: `${animationDuration}s`
+    };
   };
 
-  return (
-    <div className="relative flex flex-col items-center justify-center my-8">
-      {/* Cycle indicator */}
-      <div className="text-center mb-2 text-sm text-blue-200">
-        Cyclus {currentCycle} van {totalCycles} | Nog {count} seconden
-      </div>
+  const shouldShowCounter = (phase !== 'pause' && phase !== 'start') && !exerciseCompleted;
+  const circleSize = 'w-48 h-48';
+  const innerCircleSize = 'w-40 h-40';
 
-      {/* Breathing circle */}
+  return (
+    <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center my-0 rounded-lg">
       <div 
-        className={cn(
-          "relative h-64 w-64 rounded-full bg-blue-50 border-4 border-blue-400 flex items-center justify-center transition-transform duration-1000",
-          getCircleScale(),
-          exerciseCompleted && "bg-green-50 border-green-400"
-        )}
-        style={{ 
-          transitionDuration: getAnimationDuration(),
-          boxShadow: "0 0 30px rgba(96, 165, 250, 0.5)"
-        }}
+        className={`breathe-circle ${circleSize} ${circleClass()}`} 
+        style={animationStyle()} 
         onClick={onToggleActive}
       >
-        <div className="text-blue-800 text-xl font-medium">
-          {exerciseCompleted ? "Voltooid!" : phaseLabel || phase}
+        <div className={`breathe-inner-circle ${innerCircleSize}`}>
+          <div className="flex flex-col items-center justify-center text-center">
+            {!exerciseCompleted ? (
+              <>
+                <p className="text-xl font-light mb-2">{getBreathingMessage(phase)}</p>
+                {phase === 'start' && <p className="text-3xl font-medium">{count}</p>}
+                {shouldShowCounter && <p className="text-3xl font-medium">{count}</p>}
+              </>
+            ) : (
+              <p className="text-xl font-light">Voltooid</p>
+            )}
+          </div>
         </div>
+      </div>
+      
+      <div className="mt-4 text-center">
+        <p className="text-sm text-white/70 my-0 py-[11px]">
+          {phase === 'start' ? 'Voorbereiding' : `Cyclus ${currentCycle} van ${totalCycles}`}
+        </p>
       </div>
     </div>
   );

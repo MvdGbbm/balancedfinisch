@@ -5,9 +5,8 @@ import { BreathingPhase, BreathingTechnique, BreathingAnimationProps } from './t
 import { getCountForPhase, getNextPhase } from './breathing-utils';
 import BreathingAudio from './breathing-audio';
 import BreathingCircle from './breathing-circle';
-import { phaseTranslations } from '../breathing-page/constants';
 
-export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
+const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   technique,
   voiceUrls,
   isVoiceActive,
@@ -42,7 +41,7 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     const interval = setInterval(() => {
       setCount(prevCount => {
         if (prevCount <= 1) {
-          const nextPhase = getNextPhase(phase, holdTime);
+          const nextPhase = getNextPhase(phase);
           if (!externalPhase) {
             setInternalPhase(nextPhase);
           } else if (onPhaseChange) {
@@ -78,11 +77,9 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         totalCycles={totalCycles}
         animationDuration={getCountForPhase(phase, inhaleTime, holdTime, exhaleTime, pauseTime)}
         onToggleActive={toggleActive}
-        phaseLabel={phaseTranslations[phase] || phase}
       />
     </>
   );
 };
 
-// Add a default export pointing to the named export
 export default BreathingAnimation;
