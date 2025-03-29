@@ -74,18 +74,20 @@ export const MusicContent: React.FC<MusicContentProps> = ({
     <>
       <TabsContent value="muziek" className="space-y-4">
         {musicTracks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {musicTracks.map((track) => (
-              <MusicTrackCard
-                key={track.id}
-                track={track}
-                isPlaying={isPlaying}
-                isCurrentTrack={currentTrack?.id === track.id && !previewTrack}
-                onPlay={handlePreviewTrack}
-                onStop={handleStopPlaylist}
-                onAddToPlaylist={handleAddToPlaylistClick}
-              />
-            ))}
+          <div className="rounded-md border bg-card overflow-hidden">
+            <div className="divide-y">
+              {musicTracks.map((track) => (
+                <MusicTrackCard
+                  key={track.id}
+                  track={track}
+                  isPlaying={isPlaying}
+                  isCurrentTrack={currentTrack?.id === track.id && !previewTrack}
+                  onPlay={handlePreviewTrack}
+                  onStop={handleStopPlaylist}
+                  onAddToPlaylist={handleAddToPlaylistClick}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8">
