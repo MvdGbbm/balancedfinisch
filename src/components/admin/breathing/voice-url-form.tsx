@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Save } from "lucide-react";
 import { VoiceURLs } from "./types";
 
@@ -15,14 +16,31 @@ interface VoiceUrlFormProps {
 }
 
 export function VoiceUrlForm({ title, voiceUrls, onSave }: VoiceUrlFormProps) {
-  const form = useForm<VoiceURLs>({
-    defaultValues: voiceUrls
+  const form = useForm<VoiceURLs & { disableHold: boolean }>({
+    defaultValues: {
+      ...voiceUrls,
+      disableHold: !voiceUrls.hold // If hold URL is empty, we consider it disabled
+    }
   });
 
   // Update form when voiceUrls change
   React.useEffect(() => {
-    form.reset(voiceUrls);
+    form.reset({
+      ...voiceUrls,
+      disableHold: !voiceUrls.hold // If hold URL is empty, we consider it disabled
+    });
   }, [voiceUrls, form]);
+
+  const handleSubmit = (data: VoiceURLs & { disableHold: boolean }) => {
+    const { disableHold, ...urlData } = data;
+    
+    // If hold is disabled, clear the hold URL
+    if (disableHold) {
+      urlData.hold = "";
+    }
+    
+    onSave(urlData);
+  };
 
   return (
     <Card>
@@ -31,7 +49,7 @@ export function VoiceUrlForm({ title, voiceUrls, onSave }: VoiceUrlFormProps) {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="start"
@@ -60,12 +78,32 @@ export function VoiceUrlForm({ title, voiceUrls, onSave }: VoiceUrlFormProps) {
             
             <FormField
               control={form.control}
+              name="disableHold"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-2">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel>Vasthouden Audio URL uitschakelen</FormLabel>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="hold"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Vasthouden Audio URL</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="https://voorbeeld.com/vasthouden.mp3" />
+                    <Input 
+                      {...field} 
+                      placeholder="https://voorbeeld.com/vasthouden.mp3" 
+                      disabled={form.watch("disableHold")}
+                    />
                   </FormControl>
                 </FormItem>
               )}

@@ -30,10 +30,11 @@ export function useBreathingAudio(
           break;
         case "hold1":
         case "hold2":
-          // Only set hold URL if the hold duration is 1 or more seconds
-          if ((currentPhase === "hold1" && pattern.hold1 >= 1) || 
-              (currentPhase === "hold2" && pattern.hold2 >= 1)) {
-            url = voiceUrls.vera.hold || "";
+          // Only set hold URL if the hold duration is 1 or more seconds AND hold is not disabled
+          if (((currentPhase === "hold1" && pattern.hold1 >= 1) || 
+              (currentPhase === "hold2" && pattern.hold2 >= 1)) && 
+              voiceUrls.vera.hold) {
+            url = voiceUrls.vera.hold;
           }
           break;
         case "exhale":
@@ -47,10 +48,11 @@ export function useBreathingAudio(
           break;
         case "hold1":
         case "hold2":
-          // Only set hold URL if the hold duration is 1 or more seconds
-          if ((currentPhase === "hold1" && pattern.hold1 >= 1) || 
-              (currentPhase === "hold2" && pattern.hold2 >= 1)) {
-            url = voiceUrls.marco.hold || "";
+          // Only set hold URL if the hold duration is 1 or more seconds AND hold is not disabled
+          if (((currentPhase === "hold1" && pattern.hold1 >= 1) || 
+              (currentPhase === "hold2" && pattern.hold2 >= 1)) && 
+              voiceUrls.marco.hold) {
+            url = voiceUrls.marco.hold;
           }
           break;
         case "exhale":
