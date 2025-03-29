@@ -19,17 +19,17 @@ export function BreathingPhaseDisplay({
   if (activePhase === "rest") {
     return (
       <div className="flex flex-col items-center justify-center space-y-2 px-6 py-4">
-        <span className="text-lg font-medium">Klaar</span>
+        <span className="text-lg font-medium text-white">Klaar</span>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center space-y-2">
-      <div className="text-xl font-semibold mb-1">
+      <div className="text-xl font-semibold mb-1 text-white">
         {getPhaseText()}
       </div>
-      <div className="flex items-center justify-center text-4xl font-bold">
+      <div className="flex items-center justify-center text-4xl font-bold text-white">
         {phaseTimeLeft}
         <span className="text-sm ml-1 mt-1">s</span>
       </div>

@@ -32,13 +32,13 @@ export function BreathingCircleVisual({
         }}
       >
         <div 
-          className="h-full w-full rounded-full flex items-center justify-center bg-cyan-400"
+          className="h-full w-full rounded-full flex items-center justify-center bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg"
           style={{
             transition: `background ${transitionDuration}ms ease-in-out, 
                         box-shadow ${transitionDuration}ms ease-in-out`
           }}
         >
-          <div className="text-center text-white">
+          <div className="text-center">
             {children}
           </div>
         </div>

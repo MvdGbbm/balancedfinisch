@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { toast } from "sonner";
 
 interface AudioElementProps {
   audioRef: React.RefObject<HTMLAudioElement>;
@@ -21,6 +22,7 @@ export const AudioElement: React.FC<AudioElementProps> = ({
   onError
 }) => {
   const initialized = useRef(false);
+  const attemptedPlay = useRef(false);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -39,6 +41,15 @@ export const AudioElement: React.FC<AudioElementProps> = ({
       if (onError) {
         audioRef.current.addEventListener('error', (e) => onError(e as ErrorEvent));
       }
+
+      // Add play feedback event listeners
+      audioRef.current.addEventListener('playing', () => {
+        console.log('Audio started playing:', src);
+      });
+
+      audioRef.current.addEventListener('waiting', () => {
+        console.log('Audio buffering:', src);
+      });
     }
 
     // Update properties when they change
@@ -50,14 +61,25 @@ export const AudioElement: React.FC<AudioElementProps> = ({
       console.log('Setting audio source:', src);
       audioRef.current.src = src;
       audioRef.current.load();
+      attemptedPlay.current = false;
+    }
+    
+    // Auto play if needed and we haven't tried yet
+    if (autoPlay && src && !attemptedPlay.current) {
+      attemptedPlay.current = true;
+      const playPromise = audioRef.current.play();
       
-      if (autoPlay) {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.error('Error playing audio:', error);
-          });
-        }
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error('Error playing audio:', error);
+          
+          // Show user-friendly error message for autoplay issues
+          if (error.name === 'NotAllowedError') {
+            toast.info("Autoplay is blocked. Click the play button to start audio.");
+          } else {
+            toast.error("Er is een probleem met het afspelen van audio.");
+          }
+        });
       }
     }
 
@@ -69,6 +91,8 @@ export const AudioElement: React.FC<AudioElementProps> = ({
         if (onError) {
           audioRef.current.removeEventListener('error', (e) => onError(e as ErrorEvent));
         }
+        audioRef.current.removeEventListener('playing', () => {});
+        audioRef.current.removeEventListener('waiting', () => {});
       }
     };
   }, [src, audioRef, autoPlay, loop, volume, onEnded, onError]);

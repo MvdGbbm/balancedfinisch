@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PatternSelectorProps } from './types';
+import { Info } from "lucide-react";
 
 export const PatternSelector: React.FC<PatternSelectorProps> = ({
   breathingPatterns,
@@ -17,13 +18,18 @@ export const PatternSelector: React.FC<PatternSelectorProps> = ({
 }) => {
   return (
     <div className="w-full">
+      <div className="mb-2 flex items-center">
+        <h3 className="text-md font-medium">Kies een ademhalingstechniek</h3>
+        <Info className="ml-2 h-4 w-4 text-muted-foreground cursor-help" title="Selecteer een ademhalingspatroon om te beginnen" />
+      </div>
+      
       <Select
         value={selectedPattern?.id}
         onValueChange={onSelectPattern}
         disabled={isExerciseActive}
       >
-        <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black">
-          <SelectValue placeholder="Kies" />
+        <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black focus:ring-offset-background">
+          <SelectValue placeholder="Kies een techniek" />
         </SelectTrigger>
         <SelectContent>
           {breathingPatterns.map((pattern) => (
