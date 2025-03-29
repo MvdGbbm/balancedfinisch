@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
@@ -117,7 +117,7 @@ export function MeditationPlayerContainer({
     
     try {
       // Try the original URL first
-      let urlToTry = selectedMeditation.audioUrl || "";
+      let urlToTry = selectedMeditation.audioUrl || '';
       let validatedUrl = validateAudioUrl(urlToTry);
       
       // If original URL isn't valid, try external links

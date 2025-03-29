@@ -1,136 +1,96 @@
 
-import { VoiceURLs } from './types';
-import { toast } from 'sonner';
-import { preloadAudio, validateAudioUrl } from '@/components/audio-player/utils';
+import { BreathingPattern, BreathType, VoiceURLs } from "./types";
+import { BreathingPhase } from "@/components/breathing/types";
+import { validateAudioUrl, preloadAudio, checkUrlExists } from "@/components/audio-player/utils";
 
-export const loadVoiceUrls = async (setVeraVoiceUrls: React.Dispatch<React.SetStateAction<VoiceURLs>>, 
-                                    setMarcoVoiceUrls: React.Dispatch<React.SetStateAction<VoiceURLs>>,
-                                    defaultVoiceUrls: Record<string, VoiceURLs>,
-                                    setVoiceUrlsValidated: React.Dispatch<React.SetStateAction<boolean>>) => {
-  const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
-  if (savedVeraUrls) {
-    try {
-      const parsedUrls = JSON.parse(savedVeraUrls);
-      
-      const validatedUrls = {
-        start: parsedUrls.start ? validateAudioUrl(parsedUrls.start) : "",
-        inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
-        hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
-        exhale: parsedUrls.exhale ? validateAudioUrl(parsedUrls.exhale) : ""
-      };
-      
-      setVeraVoiceUrls(validatedUrls);
-      console.log("Loaded Vera voice URLs:", validatedUrls);
-      
-      await validateAudioFiles(validatedUrls, 'vera');
-    } catch (error) {
-      console.error("Error loading Vera voice URLs:", error);
-      setVeraVoiceUrls(defaultVoiceUrls.vera);
-    }
-  }
-  
-  const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
-  if (savedMarcoUrls) {
-    try {
-      const parsedUrls = JSON.parse(savedMarcoUrls);
-      
-      const validatedUrls = {
-        start: parsedUrls.start ? validateAudioUrl(parsedUrls.start) : "",
-        inhale: parsedUrls.inhale ? validateAudioUrl(parsedUrls.inhale) : "",
-        hold: parsedUrls.hold ? validateAudioUrl(parsedUrls.hold) : "",
-        exhale: parsedUrls.exhale ? validateAudioUrl(parsedUrls.exhale) : ""
-      };
-      
-      setMarcoVoiceUrls(validatedUrls);
-      console.log("Loaded Marco voice URLs:", validatedUrls);
-      
-      await validateAudioFiles(validatedUrls, 'marco');
-    } catch (error) {
-      console.error("Error loading Marco voice URLs:", error);
-      setMarcoVoiceUrls(defaultVoiceUrls.marco);
-    }
-  }
-  
-  setVoiceUrlsValidated(true);
+export const calculateBreathDuration = (pattern: BreathingPattern): number => {
+  const { inhale, hold1, exhale, hold2, cycles } = pattern;
+  const cycleDuration = inhale + hold1 + exhale + hold2;
+  return cycleDuration * cycles;
 };
 
-export const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
-  const urlsToValidate = [urls.inhale, urls.hold, urls.exhale].filter(Boolean);
+export const getBreathPhase = (
+  elapsedTime: number,
+  pattern: BreathingPattern
+): BreathingPhase => {
+  const { inhale, hold1, exhale, hold2 } = pattern;
   
-  if (urls.start) {
-    urlsToValidate.push(urls.start);
+  // Calculate total duration of one cycle
+  const cycleDuration = inhale + hold1 + exhale + hold2;
+  
+  // Calculate time within the current cycle
+  const cycleTime = elapsedTime % cycleDuration;
+  
+  // Determine phase based on cycleTime
+  if (cycleTime < inhale) {
+    return BreathingPhase.INHALE;
+  } else if (cycleTime < inhale + hold1) {
+    return BreathingPhase.HOLD_AFTER_INHALE;
+  } else if (cycleTime < inhale + hold1 + exhale) {
+    return BreathingPhase.EXHALE;
+  } else {
+    return BreathingPhase.HOLD_AFTER_EXHALE;
   }
+};
+
+export const getCurrentCycle = (
+  elapsedTime: number,
+  pattern: BreathingPattern
+): number => {
+  const { inhale, hold1, exhale, hold2 } = pattern;
+  const cycleDuration = inhale + hold1 + exhale + hold2;
   
-  if (urlsToValidate.length === 0) {
-    console.log(`${voice} URLs are not complete, skipping validation`);
-    return false;
+  return Math.floor(elapsedTime / cycleDuration) + 1;
+};
+
+export const getVoiceUrl = (
+  phase: BreathingPhase,
+  voiceUrls: VoiceURLs
+): string => {
+  switch (phase) {
+    case BreathingPhase.INHALE:
+      return voiceUrls.inhale || "";
+    case BreathingPhase.HOLD_AFTER_INHALE:
+      return voiceUrls.holdAfterInhale || "";
+    case BreathingPhase.EXHALE:
+      return voiceUrls.exhale || "";
+    case BreathingPhase.HOLD_AFTER_EXHALE:
+      return voiceUrls.holdAfterExhale || "";
+    default:
+      return "";
   }
+};
+
+export const validateVoiceUrls = async (
+  voiceUrls: VoiceURLs
+): Promise<Record<string, boolean>> => {
+  const results: Record<string, boolean> = {};
   
-  console.log(`Validating ${voice} audio URLs...`);
-  
-  try {
-    const validationPromises = urlsToValidate.map(url => preloadAudio(url));
-    const validationResults = await Promise.all(validationPromises);
-    
-    const allValid = validationResults.every(result => result === true);
-    
-    if (allValid) {
-      console.log(`All ${voice} audio files validated successfully`);
-      return true;
+  for (const [key, url] of Object.entries(voiceUrls)) {
+    if (url) {
+      const validUrl = validateAudioUrl(url);
+      results[key] = validUrl ? await checkUrlExists(validUrl) : false;
     } else {
-      console.error(`One or more ${voice} audio files failed validation`);
-      return false;
+      results[key] = false;
     }
-  } catch (error) {
-    console.error(`Error validating ${voice} audio files:`, error);
-    return false;
   }
+  
+  return results;
 };
 
-export const handleActivateVoice = async (
-  voice: "vera" | "marco",
-  veraVoiceUrls: VoiceURLs,
-  marcoVoiceUrls: VoiceURLs,
-  selectedPattern: any,
-  startAudioRef: React.RefObject<HTMLAudioElement>,
-  setActiveVoice: React.Dispatch<React.SetStateAction<"vera" | "marco" | null>>,
-  setIsExerciseActive: React.Dispatch<React.SetStateAction<boolean>>,
-  setCurrentPhase: React.Dispatch<React.SetStateAction<any>>,
-  setShowAnimation: React.Dispatch<React.SetStateAction<boolean>>,
-  setCurrentCycle: React.Dispatch<React.SetStateAction<number>>,
-  setExerciseCompleted: React.Dispatch<React.SetStateAction<boolean>>
-) => {
-  const urls = voice === "vera" ? veraVoiceUrls : marcoVoiceUrls;
-  
-  if (!urls.inhale || !urls.exhale) {
-    toast.error(`${voice === "vera" ? "Vera" : "Marco"} audio URL's ontbreken`);
-    return;
+export const breathTypeToLabel = (type: BreathType): string => {
+  switch (type) {
+    case "relaxation":
+      return "Ontspanning";
+    case "energy":
+      return "Energie";
+    case "stress":
+      return "Stress Vermindering";
+    case "focus":
+      return "Focus";
+    case "sleep":
+      return "Slaap";
+    default:
+      return type || "Overig";
   }
-  
-  const isValid = await validateAudioFiles(urls, voice);
-  
-  if (!isValid) {
-    toast.error(`Fout bij validatie van ${voice === "vera" ? "Vera" : "Marco"} audio bestanden. Controleer of alle URL's correct zijn.`);
-    return;
-  }
-  
-  if (selectedPattern?.startUrl && startAudioRef.current) {
-    startAudioRef.current.src = selectedPattern.startUrl;
-    startAudioRef.current.load();
-    
-    try {
-      await startAudioRef.current.play();
-      console.log("Playing start audio:", selectedPattern.startUrl);
-    } catch (error) {
-      console.error("Error playing start audio:", error);
-    }
-  }
-  
-  setActiveVoice(voice);
-  setIsExerciseActive(true);
-  setCurrentPhase("start");
-  setShowAnimation(true);
-  setCurrentCycle(1);
-  setExerciseCompleted(false);
-  console.log(`Activated ${voice} voice with URLs:`, urls);
 };
