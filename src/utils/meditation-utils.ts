@@ -39,28 +39,15 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
   }
   
   try {
-    // Try to get the URL from Supabase Storage
-    const { data, error } = await supabase.storage
+    const { data } = await supabase.storage
       .from(bucket)
       .getPublicUrl(path);
     
-    if (error) {
-      console.error(`Error getting public URL for ${path}:`, error);
-      return '/placeholder.svg'; // Fallback to placeholder
-    }
-    
     if (data?.publicUrl) {
-      // Validate the URL format
-      const validUrl = validateAudioUrl(data.publicUrl);
-      if (!validUrl) {
-        console.error(`Invalid URL format for path: ${path}`);
-        return '/placeholder.svg';
-      }
-      
       // Cache URL for later use
-      urlCache.set(cacheKey, validUrl);
-      console.log(`Loaded URL from ${bucket} for path: ${path}`, validUrl);
-      return validUrl;
+      urlCache.set(cacheKey, data.publicUrl);
+      console.log(`Loaded URL from ${bucket} for path: ${path}`, data.publicUrl);
+      return data.publicUrl;
     }
     
     console.error(`No public URL returned for path: ${path} from bucket: ${bucket}`);
@@ -72,7 +59,7 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
 };
 
 /**
- * Processes meditation URLs for audio and images with validation
+ * Processes meditation URLs for audio and images
  */
 export const processMeditationUrls = async (meditations: Meditation[]): Promise<Meditation[]> => {
   try {
@@ -83,8 +70,6 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
         try {
           let audioUrl = meditation.audioUrl || '';
           let coverImageUrl = meditation.coverImageUrl || '/placeholder.svg';
-          let veraLink = meditation.veraLink || '';
-          let marcoLink = meditation.marcoLink || '';
           
           // Skip placeholder URLs
           if (audioUrl.includes('example.com')) {
@@ -99,20 +84,14 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
           
           // Validate the audio URL
           if (audioUrl) {
-            const validatedUrl = validateAudioUrl(audioUrl);
-            if (validatedUrl !== audioUrl) {
-              console.log(`Fixed audio URL for ${meditation.title}: ${audioUrl} -> ${validatedUrl}`);
-              audioUrl = validatedUrl;
+            audioUrl = validateAudioUrl(audioUrl);
+            
+            // Additional check for URL accessibility
+            const isAccessible = await checkUrlExists(audioUrl);
+            if (!isAccessible) {
+              console.warn(`Audio URL for ${meditation.title} is not accessible:`, audioUrl);
+              audioUrl = ''; // Clear invalid URL
             }
-          }
-          
-          // Process Vera and Marco links
-          if (veraLink) {
-            veraLink = validateAudioUrl(veraLink) || '';
-          }
-          
-          if (marcoLink) {
-            marcoLink = validateAudioUrl(marcoLink) || '';
           }
           
           // Process image URL
@@ -120,42 +99,66 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
             coverImageUrl = await getPublicUrl(coverImageUrl, 'meditations');
           }
           
+          // Validate image URL - provide fallback if not accessible
+          if (coverImageUrl && coverImageUrl !== '/placeholder.svg') {
+            try {
+              const testImage = new Image();
+              testImage.src = coverImageUrl;
+              
+              const imagePromise = new Promise<boolean>((resolve) => {
+                testImage.onload = () => resolve(true);
+                testImage.onerror = () => {
+                  console.error(`Failed to load image for meditation: ${meditation.title}`);
+                  resolve(false);
+                };
+              });
+              
+              const isImageValid = await Promise.race([
+                imagePromise,
+                new Promise<boolean>(resolve => setTimeout(() => resolve(false), 5000))
+              ]);
+              
+              if (!isImageValid) {
+                coverImageUrl = '/placeholder.svg';
+              }
+            } catch (error) {
+              console.error(`Error validating image URL for ${meditation.title}:`, error);
+              coverImageUrl = '/placeholder.svg';
+            }
+          }
+          
           return {
             ...meditation,
             audioUrl,
-            coverImageUrl,
-            veraLink,
-            marcoLink
+            coverImageUrl
           };
         } catch (err) {
           console.error(`Error processing meditation ${meditation.id}:`, err);
           // Return the meditation with unprocessed URLs if there's an error
-          return meditation;
+          return {
+            ...meditation,
+            audioUrl: '',
+            coverImageUrl: '/placeholder.svg'
+          };
         }
       })
     );
     
     console.log("Processed meditations:", processed);
-    
-    // Filter out meditations with completely invalid URLs
-    const validMeditations = processed.filter(med => {
-      const hasValidAudio = !!med.audioUrl || !!med.veraLink || !!med.marcoLink;
-      if (!hasValidAudio) {
-        console.warn(`Meditation ${med.title} has no valid audio URLs`);
-      }
-      return true; // Keep all meditations but log warnings
-    });
-    
-    return validMeditations;
+    return processed;
   } catch (error) {
     console.error("Error in processMeditationUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van meditaties");
-    return meditations; // Return original meditations in case of error
+    return meditations.map(med => ({
+      ...med,
+      audioUrl: '',
+      coverImageUrl: '/placeholder.svg'
+    }));
   }
 };
 
 /**
- * Processes soundscape URLs for audio and images with validation
+ * Verwerkt soundscape URL's voor audio en afbeeldingen
  */
 export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<Soundscape[]> => {
   try {
@@ -167,19 +170,54 @@ export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<
           let audioUrl = soundscape.audioUrl;
           let coverImageUrl = soundscape.coverImageUrl;
           
-          // Process audio URL
+          // Verwerk audio URL
           if (audioUrl && !audioUrl.startsWith('http')) {
             audioUrl = await getPublicUrl(audioUrl, 'soundscapes');
+          }
+          
+          // Validate audio URL
+          if (audioUrl) {
+            audioUrl = validateAudioUrl(audioUrl);
             
-            // Validate URL
-            if (audioUrl) {
-              audioUrl = validateAudioUrl(audioUrl);
+            // Check if URL is accessible
+            const isAccessible = await checkUrlExists(audioUrl);
+            if (!isAccessible) {
+              console.warn(`Audio URL for ${soundscape.title} is not accessible:`, audioUrl);
+              audioUrl = ''; // Clear invalid URL
             }
           }
           
-          // Process image URL
+          // Verwerk afbeelding URL
           if (coverImageUrl && !coverImageUrl.startsWith('http')) {
             coverImageUrl = await getPublicUrl(coverImageUrl, 'soundscapes');
+          }
+          
+          // Validate image URL
+          if (coverImageUrl && coverImageUrl !== '/placeholder.svg') {
+            try {
+              const testImage = new Image();
+              testImage.src = coverImageUrl;
+              
+              const imagePromise = new Promise<boolean>((resolve) => {
+                testImage.onload = () => resolve(true);
+                testImage.onerror = () => {
+                  console.error(`Failed to load image for soundscape: ${soundscape.title}`);
+                  resolve(false);
+                };
+              });
+              
+              const isImageValid = await Promise.race([
+                imagePromise,
+                new Promise<boolean>(resolve => setTimeout(() => resolve(false), 5000))
+              ]);
+              
+              if (!isImageValid) {
+                coverImageUrl = '/placeholder.svg';
+              }
+            } catch (error) {
+              console.error(`Error validating image URL for ${soundscape.title}:`, error);
+              coverImageUrl = '/placeholder.svg';
+            }
           }
           
           return {
@@ -189,7 +227,11 @@ export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<
           };
         } catch (err) {
           console.error(`Error processing soundscape ${soundscape.id}:`, err);
-          return soundscape; // Return original in case of error
+          return {
+            ...soundscape,
+            audioUrl: '',
+            coverImageUrl: '/placeholder.svg'
+          };
         }
       })
     );
@@ -199,12 +241,16 @@ export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<
   } catch (error) {
     console.error("Error in processSoundscapeUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van soundscapes");
-    return soundscapes; // Return original soundscapes in case of error
+    return soundscapes.map(sound => ({
+      ...sound,
+      audioUrl: '',
+      coverImageUrl: '/placeholder.svg'
+    }));
   }
 };
 
 /**
- * Filters meditations based on search term and category
+ * Filtert meditaties op basis van zoekterm en categorie
  */
 export const filterMeditations = (meditations: Meditation[], searchQuery: string, selectedCategory: string | null): Meditation[] => {
   return meditations.filter((meditation) => {
@@ -221,31 +267,4 @@ export const filterMeditations = (meditations: Meditation[], searchQuery: string
       
     return matchesSearch && matchesCategory;
   });
-};
-
-/**
- * Preloads meditation audio to check if it's available
- */
-export const preloadMeditationAudio = async (meditation: Meditation): Promise<boolean> => {
-  if (!meditation) return false;
-  
-  // Check primary audio URL
-  if (meditation.audioUrl) {
-    const isValid = await checkUrlExists(meditation.audioUrl);
-    if (isValid) return true;
-  }
-  
-  // Check Vera's link as fallback
-  if (meditation.veraLink) {
-    const isValid = await checkUrlExists(meditation.veraLink);
-    if (isValid) return true;
-  }
-  
-  // Check Marco's link as fallback
-  if (meditation.marcoLink) {
-    const isValid = await checkUrlExists(meditation.marcoLink);
-    if (isValid) return true;
-  }
-  
-  return false;
 };
