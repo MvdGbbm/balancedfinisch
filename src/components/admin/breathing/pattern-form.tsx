@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Trash2 } from "lucide-react";
 import { BreathingPattern } from "./types";
 
@@ -16,7 +16,7 @@ interface PatternFormProps {
 }
 
 export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormProps) {
-  const form = useForm<BreathingPattern>({
+  const form = useForm<BreathingPattern & { enableHold1: boolean; enableHold2: boolean }>({
     defaultValues: {
       id: "",
       name: "",
@@ -27,7 +27,9 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
       hold2: 0,
       cycles: 4,
       startUrl: "",
-      endUrl: ""
+      endUrl: "",
+      enableHold1: false,
+      enableHold2: false
     }
   });
 
@@ -35,7 +37,9 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
   React.useEffect(() => {
     if (selectedPattern) {
       form.reset({
-        ...selectedPattern
+        ...selectedPattern,
+        enableHold1: selectedPattern.hold1 > 0,
+        enableHold2: selectedPattern.hold2 > 0
       });
     } else {
       form.reset({
@@ -48,10 +52,27 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
         hold2: 0,
         cycles: 4,
         startUrl: "",
-        endUrl: ""
+        endUrl: "",
+        enableHold1: false,
+        enableHold2: false
       });
     }
   }, [selectedPattern, form]);
+
+  const handleSubmit = (data: BreathingPattern & { enableHold1: boolean; enableHold2: boolean }) => {
+    const { enableHold1, enableHold2, ...patternData } = data;
+    
+    // If hold phases are disabled, set their durations to 0
+    if (!enableHold1) {
+      patternData.hold1 = 0;
+    }
+    
+    if (!enableHold2) {
+      patternData.hold2 = 0;
+    }
+    
+    onSave(patternData);
+  };
 
   if (!selectedPattern) {
     return (
@@ -77,7 +98,7 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSave)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -123,23 +144,42 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="hold1"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vasthouden na inademen (seconden)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        type="number" 
-                        min="0" 
-                        onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="enableHold1"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel>Vasthouden na inademen inschakelen</FormLabel>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="hold1"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vasthouden na inademen (seconden)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          min="0" 
+                          disabled={!form.watch("enableHold1")}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -159,23 +199,42 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="hold2"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vasthouden na uitademen (seconden)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        type="number" 
-                        min="0" 
-                        onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="enableHold2"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel>Vasthouden na uitademen inschakelen</FormLabel>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="hold2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Vasthouden na uitademen (seconden)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          type="number" 
+                          min="0" 
+                          disabled={!form.watch("enableHold2")}
+                          onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField
