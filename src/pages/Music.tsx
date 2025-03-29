@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Volume2 } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Volume2, RefreshCw } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface RadioStream {
   id: string;
@@ -46,8 +47,9 @@ const Music = () => {
   const hiddenIframeRef = useRef<HTMLIFrameElement | null>(null);
   const [activeTab, setActiveTab] = useState<string>("music");
   const [isAudioActive, setIsAudioActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: radioStreams = [], isLoading: isLoadingStreams } = useQuery({
+  const { data: radioStreams = [], isLoading: isLoadingStreams, refetch: refetchStreams } = useQuery({
     queryKey: ['activeRadioStreams'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -107,6 +109,34 @@ const Music = () => {
   useEffect(() => {
     setIsAudioActive(isPlaying || isStreamPlaying);
   }, [isPlaying, isStreamPlaying]);
+
+  const handleReloadPage = () => {
+    setIsLoading(true);
+    
+    if (isPlaying || isStreamPlaying) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+      setIsPlaying(false);
+      setIsStreamPlaying(false);
+      setPreviewTrack(null);
+      setCurrentTrack(null);
+      setSelectedPlaylist(null);
+      setHiddenIframeUrl(null);
+    }
+    
+    refetchStreams().then(() => {
+      toast.success("Pagina is ververst", {
+        description: "Alle content is opnieuw geladen"
+      });
+      setIsLoading(false);
+    }).catch(() => {
+      toast.error("Fout bij verversen", {
+        description: "Er is een probleem opgetreden bij het verversen van de pagina"
+      });
+      setIsLoading(false);
+    });
+  };
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -347,11 +377,23 @@ const Music = () => {
   return (
     <MobileLayout>
       <div className="space-y-6 pb-32">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Ontspannende Muziek</h1>
-          <p className="text-muted-foreground">
-            Luister naar rustgevende muziek voor meditatie en ontspanning
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight">Ontspannende Muziek</h1>
+            <p className="text-muted-foreground">
+              Luister naar rustgevende muziek voor meditatie en ontspanning
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleReloadPage}
+            disabled={isLoading}
+            className="flex-shrink-0"
+            title="Pagina verversen"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
