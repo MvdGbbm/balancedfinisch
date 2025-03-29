@@ -24,4 +24,3 @@ export const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
 };
 
 export default BreathingAudio;
-export { useBreathingAudio };

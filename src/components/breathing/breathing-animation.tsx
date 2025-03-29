@@ -1,8 +1,28 @@
 
 import React from 'react';
-import { BreathingCircle } from './breathing-circle';
+import BreathingCircle from './breathing-circle';
 import { BreathingPhaseDisplay } from '../breathing-circle/breathing-phase-display';
 import { BreathingAudio } from './audio/breathing-audio';
+import { BreathingPhase } from './types';
+
+// Define the props interface
+interface BreathingAnimationProps {
+  isActive: boolean;
+  phase: BreathingPhase;
+  secondsLeft: number;
+  inhaleDuration: number;
+  holdDuration: number;
+  exhaleDuration: number;
+  voiceUrls: {
+    start?: string;
+    inhale: string;
+    hold: string;
+    exhale: string;
+    end?: string;
+  } | null;
+  isVoiceActive: boolean;
+  showPhaseText?: boolean;
+}
 
 export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   isActive,

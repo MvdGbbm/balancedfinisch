@@ -11,6 +11,10 @@ interface BreathingCircleProps {
   totalCycles: number;
   animationDuration: number;
   onToggleActive: () => void;
+  isActive?: boolean;
+  inhaleDuration?: number;
+  holdDuration?: number;
+  exhaleDuration?: number;
 }
 
 const BreathingCircle: React.FC<BreathingCircleProps> = ({
@@ -20,7 +24,11 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   currentCycle,
   totalCycles,
   animationDuration,
-  onToggleActive
+  onToggleActive,
+  isActive,
+  inhaleDuration,
+  holdDuration,
+  exhaleDuration
 }) => {
   const circleClass = () => {
     if (exerciseCompleted) {
