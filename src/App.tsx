@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { MobileLayout } from "@/components/mobile-layout";
 import { AppProvider } from "@/context/AppContext";
-import { Toast } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/toaster";
 
 const Index = lazy(() => import("./pages/Index"));
 const DailyQuote = lazy(() => import("./pages/DailyQuote"));
@@ -49,7 +49,7 @@ function App() {
               </Routes>
             </Suspense>
           </MobileLayout>
-          <Toast />
+          <Toaster />
         </Router>
       </AppProvider>
     </ThemeProvider>
