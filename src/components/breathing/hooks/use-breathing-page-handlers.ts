@@ -122,7 +122,8 @@ export const useBreathingPageHandlers = ({
     
     if (phase === "inhale" && currentPhase === "pause") {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
-        setCurrentCycle(prevCycle => prevCycle + 1);
+        // Fix: Use the numeric value directly rather than a function
+        setCurrentCycle(currentCycle + 1);
       } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
         setIsExerciseActive(false);
         setExerciseCompleted(true);

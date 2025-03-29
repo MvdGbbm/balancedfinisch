@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useApp } from "@/context/AppContext";
@@ -6,6 +5,7 @@ import { BreathingPhase } from "@/components/breathing/types";
 import { Soundscape } from "@/lib/types";
 import { BreathingPattern, VoiceURLs } from "../types/breathing-page-types";
 import { defaultBreathingPatterns, defaultVoiceUrls, validateAudioFiles } from "../utils/breathing-page-utils";
+import { validateAudioUrl } from "@/components/audio-player/utils";
 
 export const useBreathingPageState = () => {
   const [pageKey, setPageKey] = useState(Date.now());
