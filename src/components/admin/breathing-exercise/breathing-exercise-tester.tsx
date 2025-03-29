@@ -42,6 +42,9 @@ export function BreathingExerciseTester({ pattern }: BreathingExerciseTesterProp
     });
   }, [pattern]);
 
+  // Determine if hold phase should be enabled
+  const holdEnabled = pattern.hold1 > 0;
+
   return (
     <div className="mb-6">
       <BreathingPhaseDisplay 
@@ -56,6 +59,7 @@ export function BreathingExerciseTester({ pattern }: BreathingExerciseTesterProp
         circleScale={state.circleScale} 
         isActive={state.isActive}
         currentPhase={state.currentPhase}
+        holdEnabled={holdEnabled}
       />
       
       <BreathingControls 

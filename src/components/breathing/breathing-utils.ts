@@ -1,12 +1,12 @@
 
 import { BreathingPhase } from './types';
 
-export const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
+export const getNextPhase = (currentPhase: BreathingPhase, holdTime: number = 0): BreathingPhase => {
   switch (currentPhase) {
     case 'start':
       return 'inhale';
     case 'inhale':
-      return 'hold';
+      return holdTime > 0 ? 'hold' : 'exhale';
     case 'hold':
       return 'exhale';
     case 'exhale':

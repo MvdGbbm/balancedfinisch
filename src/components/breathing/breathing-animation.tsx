@@ -41,7 +41,7 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     const interval = setInterval(() => {
       setCount(prevCount => {
         if (prevCount <= 1) {
-          const nextPhase = getNextPhase(phase);
+          const nextPhase = getNextPhase(phase, holdTime);
           if (!externalPhase) {
             setInternalPhase(nextPhase);
           } else if (onPhaseChange) {

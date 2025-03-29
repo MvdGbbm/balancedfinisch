@@ -7,12 +7,14 @@ interface BreathingVisualizerProps {
   isActive: boolean;
   currentPhase: BreathingPhase;
   progress: number;
+  holdEnabled?: boolean;
 }
 
 export function BreathingVisualizer({ 
   circleScale, 
   isActive, 
-  currentPhase
+  currentPhase,
+  holdEnabled = true
 }: BreathingVisualizerProps) {
   const getInstructions = () => {
     switch (currentPhase) {
@@ -20,7 +22,8 @@ export function BreathingVisualizer({
         return "Inademen";
       case "hold1":
       case "hold2":
-        return "Vasthouden";
+        // Only show "Vasthouden" if hold is enabled
+        return holdEnabled ? "Vasthouden" : "Inademen";
       case "exhale":
         return "Uitademen";
       default:

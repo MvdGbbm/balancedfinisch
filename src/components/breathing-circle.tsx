@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ export function BreathingCircle({
   const [circleScale, setCircleScale] = useState(0.5);
 
   const activePhase = currentPhase || phase;
+  const shouldShowHoldPhase = holdDuration > 0;
 
   useEffect(() => {
     if (isActive) {
@@ -49,7 +51,7 @@ export function BreathingCircle({
     let maxSeconds = 1;
     switch (activePhase) {
       case "inhale": maxSeconds = Math.ceil(inhaleDuration / 1000); break;
-      case "hold": maxSeconds = Math.ceil(holdDuration / 1000); break;
+      case "hold": maxSeconds = shouldShowHoldPhase ? Math.ceil(holdDuration / 1000) : 0; break;
       case "exhale": maxSeconds = Math.ceil(exhaleDuration / 1000); break;
     }
 
@@ -60,7 +62,7 @@ export function BreathingCircle({
       if (activePhase === "inhale") {
         // Expand from 50% to 100% during inhale (more dramatic expansion)
         setCircleScale(0.5 + (percentComplete * 0.5));
-      } else if (activePhase === "hold") {
+      } else if (activePhase === "hold" && shouldShowHoldPhase) {
         // Stay at 100% during hold
         setCircleScale(1.0);
       } else if (activePhase === "exhale") {
@@ -74,7 +76,7 @@ export function BreathingCircle({
       if (activePhase === "inhale") {
         // Expand from 50% to 100% during inhale
         setCircleScale(0.5 + (progress / 100) * 0.5);
-      } else if (activePhase === "hold") {
+      } else if (activePhase === "hold" && shouldShowHoldPhase) {
         // Stay at 100% during hold
         setCircleScale(1.0);
       } else if (activePhase === "exhale") {
@@ -85,7 +87,7 @@ export function BreathingCircle({
         setCircleScale(0.5);
       }
     }
-  }, [activePhase, progress, isActive, secondsLeft, inhaleDuration, holdDuration, exhaleDuration]);
+  }, [activePhase, progress, isActive, secondsLeft, inhaleDuration, holdDuration, exhaleDuration, shouldShowHoldPhase]);
 
   useEffect(() => {
     if (!isActive) {
@@ -94,7 +96,9 @@ export function BreathingCircle({
     
     let startTime = Date.now();
     let currentPhaseLocal = phase;
-    let phaseDuration = currentPhaseLocal === "inhale" ? inhaleDuration : currentPhaseLocal === "hold" ? holdDuration : exhaleDuration;
+    let phaseDuration = currentPhaseLocal === "inhale" ? inhaleDuration : 
+                        currentPhaseLocal === "hold" ? (shouldShowHoldPhase ? holdDuration : 0) : 
+                        exhaleDuration;
     
     const calculateProgress = () => {
       const elapsed = Date.now() - startTime;
@@ -114,9 +118,16 @@ export function BreathingCircle({
         setProgress(0);
         
         if (currentPhaseLocal === "inhale") {
-          setPhase("hold");
-          currentPhaseLocal = "hold";
-          phaseDuration = holdDuration;
+          // Skip hold phase if holdDuration is 0
+          if (shouldShowHoldPhase) {
+            setPhase("hold");
+            currentPhaseLocal = "hold";
+            phaseDuration = holdDuration;
+          } else {
+            setPhase("exhale");
+            currentPhaseLocal = "exhale";
+            phaseDuration = exhaleDuration;
+          }
         } else if (currentPhaseLocal === "hold") {
           setPhase("exhale");
           currentPhaseLocal = "exhale";
@@ -134,7 +145,7 @@ export function BreathingCircle({
     }, 16);
 
     return () => clearInterval(interval);
-  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
+  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, shouldShowHoldPhase]);
 
   const getTransitionDuration = () => {
     switch (activePhase) {
@@ -186,7 +197,9 @@ export function BreathingCircle({
               ) : (
                 <div className="flex flex-col items-center space-y-2">
                   <div className="text-xl font-semibold mb-1">
-                    {activePhase === "inhale" ? "Adem in" : activePhase === "hold" ? "Houd vast" : "Adem uit"}
+                    {activePhase === "inhale" ? "Adem in" : 
+                     activePhase === "hold" && shouldShowHoldPhase ? "Houd vast" : 
+                     "Adem uit"}
                   </div>
                   <div className="flex items-center justify-center text-4xl font-bold">
                     {secondsLeft || phaseTimeLeft}
