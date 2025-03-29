@@ -103,7 +103,7 @@ const Music = () => {
           />
         </div>
 
-        <Tabs defaultValue="playlists" value={activeTab}>
+        <Tabs defaultValue="music" value={activeTab}>
           <MusicTabs activeTab={activeTab} onTabChange={handleTabChange} />
           
           <MusicActionHandlers

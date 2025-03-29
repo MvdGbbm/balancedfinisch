@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Soundscape } from "@/lib/types";
 import { useApp } from "@/context/AppContext";
@@ -8,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 export function useMusicPage() {
   const { soundscapes, setSoundscapes } = useApp();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("playlists");
+  const [activeTab, setActiveTab] = useState<string>("music");
   const [isLoading, setIsLoading] = useState(false);
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
