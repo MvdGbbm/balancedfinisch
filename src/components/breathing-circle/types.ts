@@ -1,13 +1,14 @@
 
+export type BreathingPhase = "inhale" | "hold" | "exhale" | "rest";
+
 export interface BreathingCircleProps {
-  duration?: number;
   inhaleDuration?: number;
   holdDuration?: number;
   exhaleDuration?: number;
   className?: string;
   onBreathComplete?: () => void;
-  isActive: boolean;
-  currentPhase?: "inhale" | "hold" | "exhale" | "rest";
+  isActive?: boolean;
+  currentPhase?: BreathingPhase;
   secondsLeft?: number;
   holdEnabled?: boolean;
 }
@@ -20,23 +21,6 @@ export interface BreathingCircleVisualProps {
 }
 
 export interface BreathingPhaseDisplayProps {
-  activePhase: "inhale" | "hold" | "exhale" | "rest";
+  activePhase: BreathingPhase;
   phaseTimeLeft: number;
-}
-
-export interface UseBreathingAnimationProps {
-  inhaleDuration: number;
-  holdDuration: number;
-  exhaleDuration: number;
-  isActive: boolean;
-  currentPhase?: "inhale" | "hold" | "exhale" | "rest";
-  secondsLeft?: number;
-  onBreathComplete?: () => void;
-}
-
-export interface BreathingAnimationState {
-  phase: "inhale" | "hold" | "exhale" | "rest";
-  progress: number;
-  phaseTimeLeft: number;
-  circleScale: number;
 }

@@ -49,3 +49,6 @@ export function BreathingCircle({
     </div>
   );
 }
+
+// Add default export
+export default BreathingCircle;

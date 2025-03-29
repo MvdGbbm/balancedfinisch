@@ -1,9 +1,11 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Volume2, Play, Pause, VolumeX } from "lucide-react";
 import { BreathingAudio } from "@/components/breathing/breathing-audio";
 import { Slider } from "@/components/ui/slider";
+import { BreathingCircle } from "@/components/breathing-circle";
 
 interface BreathingAnimationProps {
   isActive: boolean;
@@ -165,3 +167,6 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     </div>
   );
 };
+
+// Add default export in addition to named export
+export default BreathingAnimation;

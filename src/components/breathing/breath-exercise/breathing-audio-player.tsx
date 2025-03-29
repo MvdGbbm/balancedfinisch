@@ -16,3 +16,6 @@ export function BreathingAudioPlayer({
     />
   );
 }
+
+// Add default export for consistency
+export default BreathingAudioPlayer;
