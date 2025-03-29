@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
@@ -10,6 +11,8 @@ import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { Soundscape } from "@/lib/types";
+import { preloadAudio, validateAudioUrl } from "@/components/audio-player/utils";
+import { toast } from "sonner";
 
 const SoundscapeCard = ({ 
   soundscape, 
@@ -26,7 +29,7 @@ const SoundscapeCard = ({
 }) => {
   return (
     <Card className="neo-morphism overflow-hidden animate-slide-in">
-      <div className="relative h-32">
+      <div className="relative h-24">
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${soundscape.coverImageUrl})` }}
@@ -85,23 +88,44 @@ const Soundscapes = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [playingSoundscapes, setPlayingSoundscapes] = useState<Record<string, boolean>>({});
   const [volumes, setVolumes] = useState<Record<string, number>>({});
+  const [audioLoadErrors, setAudioLoadErrors] = useState<Record<string, boolean>>({});
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
   
   useEffect(() => {
     const initialVolumes: Record<string, number> = {};
+    const loadedErrors: Record<string, boolean> = {};
     
-    soundscapes.forEach((soundscape) => {
+    // Preload and test all audio files
+    soundscapes.forEach(async (soundscape) => {
       initialVolumes[soundscape.id] = 0;
       
       if (!audioRefs.current[soundscape.id]) {
-        const audio = new Audio(soundscape.audioUrl);
+        const audio = new Audio();
+        
+        // Validate and fix URL
+        const validatedUrl = validateAudioUrl(soundscape.audioUrl);
+        if (!validatedUrl) {
+          loadedErrors[soundscape.id] = true;
+          return;
+        }
+        
+        audio.src = validatedUrl;
         audio.loop = true;
         audio.volume = 0;
-        audioRefs.current[soundscape.id] = audio;
+        
+        // Check if audio can be loaded
+        const canLoad = await preloadAudio(validatedUrl);
+        if (!canLoad) {
+          loadedErrors[soundscape.id] = true;
+          console.warn(`Could not load audio for: ${soundscape.title}`);
+        } else {
+          audioRefs.current[soundscape.id] = audio;
+        }
       }
     });
     
     setVolumes(initialVolumes);
+    setAudioLoadErrors(loadedErrors);
     
     return () => {
       Object.values(audioRefs.current).forEach((audio) => {
@@ -148,6 +172,9 @@ const Soundscapes = () => {
             })
             .catch((error) => {
               console.error("Error playing audio:", error);
+              // Add to error state if play fails
+              setAudioLoadErrors(prev => ({ ...prev, [id]: true }));
+              toast.error(`Kon de audio niet afspelen: ${error.message}`);
             });
         } else if (volume === 0 && playingSoundscapes[id]) {
           audio.pause();
@@ -158,6 +185,12 @@ const Soundscapes = () => {
   }, [volumes, playingSoundscapes]);
   
   const togglePlay = (id: string) => {
+    // Skip if there's an error with this audio
+    if (audioLoadErrors[id]) {
+      toast.error("Deze audio kan niet worden afgespeeld. Probeer een andere soundscape.");
+      return;
+    }
+    
     const audio = audioRefs.current[id];
     if (!audio) return;
     
@@ -175,6 +208,8 @@ const Soundscapes = () => {
         })
         .catch((error) => {
           console.error("Error playing audio:", error);
+          setAudioLoadErrors(prev => ({ ...prev, [id]: true }));
+          toast.error("Kon de audio niet afspelen.");
         });
     }
   };

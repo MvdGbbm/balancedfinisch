@@ -18,7 +18,12 @@ import { AudioPlayer } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { TagInput } from "./TagInput";
 import { Soundscape } from "@/lib/types";
-import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "@/components/audio-player/utils";
+import { 
+  validateAudioUrl, 
+  preloadAudio, 
+  fixSupabaseStorageUrl, 
+  getAudioMimeType 
+} from "@/components/audio-player/utils";
 
 interface MusicFormDialogProps {
   isOpen: boolean;
@@ -73,7 +78,8 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       setValidatedUrl(supabaseUrl);
       
       // Check if the URL is valid
-      preloadAudio(supabaseUrl).then((success) => {
+      const checkUrlValidity = async () => {
+        const success = await preloadAudio(supabaseUrl);
         setIsUrlValid(success);
         setIsValidatingUrl(false);
         
@@ -82,10 +88,9 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
         } else {
           console.warn("Audio URL validation failed:", supabaseUrl);
         }
-      }).catch(() => {
-        setIsUrlValid(false);
-        setIsValidatingUrl(false);
-      });
+      };
+      
+      checkUrlValidity();
     } else {
       setValidatedUrl("");
       setIsUrlValid(true);
@@ -125,6 +130,12 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     
     // Validate URLs before saving
     const processedAudioUrl = validateAudioUrl(audioUrl);
+    
+    if (!processedAudioUrl) {
+      toast.error("Ongeldige audio URL");
+      return;
+    }
+    
     const finalAudioUrl = processedAudioUrl.includes('supabase.co') 
       ? fixSupabaseStorageUrl(processedAudioUrl) 
       : processedAudioUrl;

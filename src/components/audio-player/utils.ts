@@ -142,42 +142,52 @@ export const fixSupabaseStorageUrl = (url: string): string => {
 // Random quotes for audio player display
 const quotes = [
   {
+    id: "1",
     text: "Muziek geeft een ziel aan het universum, vleugels aan de geest, vlucht aan de verbeelding en leven aan alles.",
     author: "Plato"
   },
   {
+    id: "2",
     text: "Waar woorden falen, spreekt muziek.",
     author: "Hans Christian Andersen"
   },
   {
+    id: "3",
     text: "Zonder muziek zou het leven een vergissing zijn.",
     author: "Friedrich Nietzsche"
   },
   {
+    id: "4",
     text: "Muziek is de universele taal van de mensheid.",
     author: "Henry Wadsworth Longfellow"
   },
   {
+    id: "5",
     text: "Muziek geeft kleur aan de lucht overal.",
     author: "Irvin Berlin"
   },
   {
+    id: "6",
     text: "Muziek is de kortste weg naar het hart.",
     author: "Zoltán Kodály"
   },
   {
+    id: "7",
     text: "Als ik muziek kon vertellen, had ik geen muziek nodig.",
     author: "Claude Debussy"
   },
   {
+    id: "8",
     text: "Muziek is de stilte tussen de noten.",
     author: "Claude Debussy"
   },
   {
+    id: "9",
     text: "Na stilte, komt muziek het dichtst bij het uitdrukken van het onuitsprekelijke.",
     author: "Aldous Huxley"
   },
   {
+    id: "10",
     text: "Alles in het leven is muziek.",
     author: "Thomas Carlyle"
   }

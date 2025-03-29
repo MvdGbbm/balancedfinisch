@@ -27,9 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag } from "lucide-react";
-
+import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { Soundscape } from "@/lib/types";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 const AdminSoundscapes = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
@@ -45,6 +46,9 @@ const AdminSoundscapes = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [isAudioValid, setIsAudioValid] = useState(true);
+  const [isValidatingAudio, setIsValidatingAudio] = useState(false);
+  const [audioErrorMessage, setAudioErrorMessage] = useState("");
   
   // Extract unique categories from existing soundscapes
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
@@ -63,6 +67,8 @@ const AdminSoundscapes = () => {
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
+    setIsAudioValid(true);
+    setAudioErrorMessage("");
   };
   
   const handleOpenNew = () => {
@@ -80,6 +86,9 @@ const AdminSoundscapes = () => {
     setCoverImageUrl(soundscape.coverImageUrl);
     setTags([...soundscape.tags]);
     setIsDialogOpen(true);
+    
+    // Validate audio when editing
+    validateAudioOnChange(soundscape.audioUrl);
   };
   
   const handleDelete = (id: string) => {
@@ -99,9 +108,48 @@ const AdminSoundscapes = () => {
     setTags(tags.filter((t) => t !== tag));
   };
   
+  const validateAudioOnChange = async (url: string) => {
+    if (!url) {
+      setIsAudioValid(true);
+      setAudioErrorMessage("");
+      return;
+    }
+    
+    setIsValidatingAudio(true);
+    
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      setIsAudioValid(false);
+      setAudioErrorMessage("Ongeldige audio URL. Gebruik een directe link naar een .mp3, .wav, .ogg, .aac of .m4a bestand.");
+      setIsValidatingAudio(false);
+      return;
+    }
+    
+    try {
+      const canPlay = await preloadAudio(validatedUrl);
+      if (!canPlay) {
+        setIsAudioValid(false);
+        setAudioErrorMessage("Kon audio niet laden. Controleer of de URL toegankelijk is.");
+      } else {
+        setIsAudioValid(true);
+        setAudioErrorMessage("");
+      }
+    } catch (error) {
+      setIsAudioValid(false);
+      setAudioErrorMessage("Er is een fout opgetreden bij het laden van de audio.");
+    } finally {
+      setIsValidatingAudio(false);
+    }
+  };
+  
   const handleSave = () => {
     if (!title || !description || !audioUrl || !category || !coverImageUrl) {
-      alert("Vul alle verplichte velden in");
+      toast.error("Vul alle verplichte velden in");
+      return;
+    }
+    
+    if (!isAudioValid) {
+      toast.error("De audio URL is ongeldig. Corrigeer dit eerst.");
       return;
     }
     
@@ -160,11 +208,15 @@ const AdminSoundscapes = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {soundscapesList.map((soundscape) => (
                   <Card key={soundscape.id} className="overflow-hidden">
-                    <div className="aspect-video bg-cover bg-center relative">
+                    <div className="aspect-video bg-cover bg-center relative max-h-36">
                       <img 
                         src={soundscape.coverImageUrl} 
                         alt={soundscape.title}
                         className="w-full h-full object-cover" 
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://via.placeholder.com/300x150?text=Afbeelding+niet+gevonden";
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
                       <div className="absolute bottom-3 left-3 right-3">
@@ -335,26 +387,41 @@ const AdminSoundscapes = () => {
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="audioUrl">Audio URL</Label>
+                <Label htmlFor="audioUrl">Audio URL <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2">
                   <Input
                     id="audioUrl"
                     placeholder="URL naar audio bestand"
                     value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
+                    onChange={(e) => {
+                      setAudioUrl(e.target.value);
+                      validateAudioOnChange(e.target.value);
+                    }}
+                    className={!isAudioValid ? "border-red-500" : ""}
                   />
                   <Button 
                     type="button" 
                     variant="outline"
                     className="shrink-0"
+                    disabled={isValidatingAudio || !audioUrl}
                   >
-                    <FileAudio className="h-4 w-4" />
+                    {isValidatingAudio ? (
+                      <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    ) : (
+                      <FileAudio className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
+                {!isAudioValid && audioErrorMessage && (
+                  <div className="text-xs text-red-500 flex items-center mt-1">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {audioErrorMessage}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="coverImageUrl">Cover Afbeelding URL</Label>
+                <Label htmlFor="coverImageUrl">Cover Afbeelding URL <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2">
                   <Input
                     id="coverImageUrl"
@@ -373,19 +440,20 @@ const AdminSoundscapes = () => {
               </div>
               
               {coverImageUrl && (
-                <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
+                <div className="mt-4 bg-cover bg-center rounded-md overflow-hidden relative h-32">
                   <img 
                     src={coverImageUrl} 
                     alt="Preview" 
                     className="w-full h-full object-cover" 
                     onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      e.currentTarget.src = "https://via.placeholder.com/300x150?text=Ongeldige+URL";
+                      toast.error("Kon de afbeelding niet laden. Controleer de URL.");
                     }}
                   />
                 </div>
               )}
               
-              {audioUrl && (
+              {audioUrl && isAudioValid && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
                   <AudioPlayer audioUrl={audioUrl} />
@@ -398,7 +466,10 @@ const AdminSoundscapes = () => {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Annuleren
             </Button>
-            <Button onClick={handleSave}>
+            <Button 
+              onClick={handleSave}
+              disabled={!title || !description || !audioUrl || !category || !coverImageUrl || !isAudioValid}
+            >
               Opslaan
             </Button>
           </DialogFooter>

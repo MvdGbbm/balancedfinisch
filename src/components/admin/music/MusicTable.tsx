@@ -63,11 +63,12 @@ export const MusicTable: React.FC<MusicTableProps> = ({
             <TableRow key={track.id}>
               <TableCell>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 overflow-hidden rounded-md">
+                  <div className="h-10 w-10 overflow-hidden rounded-md shrink-0">
                     <img
                       src={track.coverImageUrl}
                       alt={track.title}
                       className="h-full w-full object-cover"
+                      loading="lazy"
                       onError={(e) => {
                         e.currentTarget.src = "https://via.placeholder.com/40x40?text=Error";
                       }}
