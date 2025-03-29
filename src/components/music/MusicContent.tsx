@@ -72,9 +72,9 @@ export const MusicContent: React.FC<MusicContentProps> = ({
 
   return (
     <>
-      <TabsContent value="muziek" className="space-y-1">
+      <TabsContent value="muziek" className="space-y-4">
         {musicTracks.length > 0 ? (
-          <div className="rounded-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {musicTracks.map((track) => (
               <MusicTrackCard
                 key={track.id}
