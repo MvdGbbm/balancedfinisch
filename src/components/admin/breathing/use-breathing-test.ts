@@ -1,240 +1,84 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { BreathingPattern, VoiceURLs } from "./types";
+import { BreathingPattern } from "./types";
+import { useBreathingAudio } from "./hooks/use-breathing-audio";
+import { useBreathingPhases } from "./hooks/use-breathing-phases";
+import { useVoiceSelection } from "./hooks/use-voice-selection";
 
 export function useBreathingTest(pattern: BreathingPattern | null) {
   const [isActive, setIsActive] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
-  const [currentCycle, setCurrentCycle] = useState(1);
-  const [secondsLeft, setSecondsLeft] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
-  const [audioError, setAudioError] = useState(false);
-  const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
-  const [circleScale, setCircleScale] = useState(1);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const endAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>({
-    inhale: "",
-    hold: "",
-    exhale: ""
-  });
-  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>({
-    inhale: "",
-    hold: "",
-    exhale: ""
+
+  // Use the voice selection hook
+  const {
+    activeVoice,
+    setActiveVoice,
+    veraVoiceUrls,
+    marcoVoiceUrls,
+    startWithVera: startVeraVoice,
+    startWithMarco: startMarcoVoice
+  } = useVoiceSelection();
+
+  // Use the breathing phases hook
+  const {
+    currentPhase,
+    currentCycle,
+    secondsLeft,
+    progress,
+    circleScale,
+    setCircleScale,
+    isCycleComplete,
+    setCurrentPhase,
+    setCurrentCycle,
+    setSecondsLeft,
+    setProgress
+  } = useBreathingPhases({
+    pattern,
+    isActive,
+    exerciseCompleted
   });
 
-  // Load voice URLs from localStorage
-  useEffect(() => {
-    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
-    if (savedVeraUrls) {
-      try {
-        const parsedUrls = JSON.parse(savedVeraUrls);
-        setVeraVoiceUrls(parsedUrls);
-      } catch (error) {
-        console.error("Error loading Vera voice URLs:", error);
-      }
-    }
-    
-    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
-    if (savedMarcoUrls) {
-      try {
-        const parsedUrls = JSON.parse(savedMarcoUrls);
-        setMarcoVoiceUrls(parsedUrls);
-      } catch (error) {
-        console.error("Error loading Marco voice URLs:", error);
-      }
-    }
-  }, []);
+  // Use the breathing audio hook
+  const {
+    audioRef,
+    endAudioRef,
+    currentAudioUrl,
+    audioError,
+    playEndAudio
+  } = useBreathingAudio(
+    pattern,
+    isActive,
+    currentPhase,
+    activeVoice,
+    { vera: veraVoiceUrls, marco: marcoVoiceUrls }
+  );
 
   // Reset state when pattern changes
   useEffect(() => {
     setIsActive(false);
-    setCurrentPhase("inhale");
-    setCurrentCycle(1);
-    setAudioError(false);
-    setProgress(0);
-    setActiveVoice(null);
-    setCircleScale(1);
     setExerciseCompleted(false);
-    
-    if (pattern) {
-      setSecondsLeft(pattern.inhale);
-      setCurrentAudioUrl(pattern.inhaleUrl || "");
-    }
-  }, [pattern]);
+    setActiveVoice(null);
+  }, [pattern, setActiveVoice]);
 
-  // Update audio URL based on phase and voice
+  // Check if exercise is complete after each cycle
   useEffect(() => {
-    if (!pattern) return;
-    
-    let url = "";
-    if (activeVoice === "vera") {
-      switch (currentPhase) {
-        case "inhale":
-          url = veraVoiceUrls.inhale || "";
-          break;
-        case "hold1":
-        case "hold2":
-          // Only set hold URL if the hold duration is 1 or more seconds
-          if ((currentPhase === "hold1" && pattern.hold1 >= 1) || 
-              (currentPhase === "hold2" && pattern.hold2 >= 1)) {
-            url = veraVoiceUrls.hold || "";
-          }
-          break;
-        case "exhale":
-          url = veraVoiceUrls.exhale || "";
-          break;
-      }
-    } else if (activeVoice === "marco") {
-      switch (currentPhase) {
-        case "inhale":
-          url = marcoVoiceUrls.inhale || "";
-          break;
-        case "hold1":
-        case "hold2":
-          // Only set hold URL if the hold duration is 1 or more seconds
-          if ((currentPhase === "hold1" && pattern.hold1 >= 1) || 
-              (currentPhase === "hold2" && pattern.hold2 >= 1)) {
-            url = marcoVoiceUrls.hold || "";
-          }
-          break;
-        case "exhale":
-          url = marcoVoiceUrls.exhale || "";
-          break;
-      }
-    } else {
-      switch (currentPhase) {
-        case "inhale":
-          url = pattern.inhaleUrl || "";
-          break;
-        case "hold1":
-          // Only set hold1 URL if the hold1 duration is 1 or more seconds
-          if (pattern.hold1 >= 1) {
-            url = pattern.hold1Url || "";
-          }
-          break;
-        case "exhale":
-          url = pattern.exhaleUrl || "";
-          break;
-        case "hold2":
-          // Only set hold2 URL if the hold2 duration is 1 or more seconds
-          if (pattern.hold2 >= 1) {
-            url = pattern.hold2Url || "";
-          }
-          break;
+    if (isActive && pattern && currentCycle >= pattern.cycles) {
+      const isLastPhase = 
+        (currentPhase === "exhale" && pattern.hold2 <= 0) || 
+        (currentPhase === "hold2" && secondsLeft === 1);
+      
+      if (isLastPhase) {
+        completeExercise(pattern);
       }
     }
-    
-    setCurrentAudioUrl(url);
-    setAudioError(false);
-  }, [currentPhase, activeVoice, pattern, veraVoiceUrls, marcoVoiceUrls]);
-
-  // Main breathing timer effect
-  useEffect(() => {
-    if (!pattern) return;
-    
-    let timer: number | null = null;
-    let progressTimer: number | null = null;
-    
-    if (isActive && !exerciseCompleted) {
-      timer = window.setInterval(() => {
-        if (secondsLeft > 1) {
-          setSecondsLeft(seconds => seconds - 1);
-        } else {
-          if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.currentTime = 0;
-          }
-          
-          if (currentPhase === "inhale") {
-            // Skip hold1 phase if hold1 is 0 seconds or less
-            if (pattern.hold1 <= 0) {
-              setCurrentPhase("exhale");
-              setSecondsLeft(pattern.exhale);
-              setProgress(0);
-            } else {
-              setCurrentPhase("hold1");
-              setSecondsLeft(pattern.hold1);
-              setProgress(0);
-              setCircleScale(1.5);
-            }
-          } else if (currentPhase === "hold1") {
-            setCurrentPhase("exhale");
-            setSecondsLeft(pattern.exhale);
-            setProgress(0);
-          } else if (currentPhase === "exhale") {
-            // Skip hold2 phase if hold2 is 0 seconds or less
-            if (pattern.hold2 <= 0) {
-              if (currentCycle < pattern.cycles) {
-                setCurrentCycle(cycle => cycle + 1);
-                setCurrentPhase("inhale");
-                setSecondsLeft(pattern.inhale);
-                setProgress(0);
-                setCircleScale(1);
-              } else {
-                completeExercise(pattern);
-              }
-            } else {
-              setCurrentPhase("hold2");
-              setSecondsLeft(pattern.hold2);
-              setProgress(0);
-              setCircleScale(1);
-            }
-          } else if (currentPhase === "hold2") {
-            if (currentCycle < pattern.cycles) {
-              setCurrentCycle(cycle => cycle + 1);
-              setCurrentPhase("inhale");
-              setSecondsLeft(pattern.inhale);
-              setProgress(0);
-              setCircleScale(1);
-            } else {
-              completeExercise(pattern);
-            }
-          }
-        }
-      }, 1000);
-      
-      // Progress bar animation
-      const getCurrentPhaseDuration = () => {
-        switch (currentPhase) {
-          case "inhale": return pattern.inhale;
-          case "hold1": return pattern.hold1;
-          case "exhale": return pattern.exhale;
-          case "hold2": return pattern.hold2;
-          default: return 1;
-        }
-      };
-      
-      const phaseDuration = getCurrentPhaseDuration() * 1000;
-      const startTime = Date.now();
-      
-      progressTimer = window.setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const calculatedProgress = elapsed / phaseDuration * 100;
-        setProgress(Math.min(calculatedProgress, 100));
-      }, 16);
-    }
-    
-    return () => {
-      if (timer) clearInterval(timer);
-      if (progressTimer) clearInterval(progressTimer);
-    };
-  }, [isActive, currentPhase, secondsLeft, currentCycle, pattern, exerciseCompleted]);
+  }, [isActive, currentCycle, currentPhase, secondsLeft, pattern]);
 
   // Function to handle exercise completion
   const completeExercise = (pattern: BreathingPattern) => {
     setIsActive(false);
-    setCurrentCycle(1);
-    setCurrentPhase("inhale");
-    setSecondsLeft(pattern.inhale);
-    setProgress(0);
-    setCircleScale(1);
-    setActiveVoice(null);
     setExerciseCompleted(true);
+    setActiveVoice(null);
     
     if (audioRef.current) {
       audioRef.current.pause();
@@ -242,17 +86,7 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
     }
     
     if (pattern.endUrl) {
-      try {
-        if (endAudioRef.current) {
-          endAudioRef.current.src = pattern.endUrl;
-          endAudioRef.current.load();
-          endAudioRef.current.play().catch(err => {
-            console.error("Error playing end audio:", err);
-          });
-        }
-      } catch (error) {
-        console.error("Error with end audio:", error);
-      }
+      playEndAudio(pattern.endUrl);
     }
     
     toast.success("Test voltooid!");
@@ -263,14 +97,8 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
     if (!pattern) return;
     
     setIsActive(false);
-    setCurrentPhase("inhale");
-    setCurrentCycle(1);
-    setSecondsLeft(pattern.inhale);
-    setAudioError(false);
-    setProgress(0);
-    setActiveVoice(null);
-    setCircleScale(1);
     setExerciseCompleted(false);
+    setActiveVoice(null);
     
     if (audioRef.current) {
       audioRef.current.pause();
@@ -281,60 +109,20 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
       endAudioRef.current.pause();
       endAudioRef.current.currentTime = 0;
     }
-    
-    setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
 
   // Function to start with Vera voice
   const startWithVera = () => {
-    if (isActive && activeVoice === "vera") {
-      setIsActive(false);
-      setActiveVoice(null);
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    } else {
-      setIsActive(true);
-      setActiveVoice("vera");
-      
-      setTimeout(() => {
-        if (audioRef.current && currentAudioUrl) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(error => {
-            console.error("Error playing audio with Vera:", error);
-            setAudioError(true);
-          });
-        }
-      }, 100);
-    }
+    const newState = !(isActive && activeVoice === "vera");
+    setIsActive(newState);
+    startVeraVoice(isActive);
   };
 
   // Function to start with Marco voice
   const startWithMarco = () => {
-    if (isActive && activeVoice === "marco") {
-      setIsActive(false);
-      setActiveVoice(null);
-      
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    } else {
-      setIsActive(true);
-      setActiveVoice("marco");
-      
-      setTimeout(() => {
-        if (audioRef.current && currentAudioUrl) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(error => {
-            console.error("Error playing audio with Marco:", error);
-            setAudioError(true);
-          });
-        }
-      }, 100);
-    }
+    const newState = !(isActive && activeVoice === "marco");
+    setIsActive(newState);
+    startMarcoVoice(isActive);
   };
 
   return {
