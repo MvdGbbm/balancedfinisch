@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dial
 // Hooks
 import { useMusicPage } from "@/hooks/use-music-page";
 import { useMusicPlayer } from "@/hooks/use-music-player";
-import { usePlaylists } from "@/hooks/use-playlists";
+import { usePlaylists } from "@/hooks/playlists/use-playlists";
 import { useRadioStreams } from "@/hooks/use-radio-streams";
 
 // Components
