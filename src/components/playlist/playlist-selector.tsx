@@ -9,13 +9,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuTabs,
-  DropdownMenuTabsList,
-  DropdownMenuTabsTrigger,
-  DropdownMenuTabsContent,
 } from "@/components/ui/dropdown-menu";
 import { Playlist } from "./types";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useApp } from "@/context/AppContext";
 import { Soundscape } from "@/lib/types";
 
@@ -54,7 +50,7 @@ export function PlaylistSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="w-64 bg-background/95 backdrop-blur-sm border-muted z-50"
+        className="w-56 bg-background/95 backdrop-blur-sm border-muted"
       >
         <Tabs defaultValue="playlists" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-2 w-full mb-2">
@@ -62,61 +58,63 @@ export function PlaylistSelector({
             <TabsTrigger value="music" className="text-xs">Muziek</TabsTrigger>
           </TabsList>
           
-          {activeTab === "playlists" && (
+          {activeTab === "playlists" ? (
             <>
-              <DropdownMenuLabel>Afspeellijsten</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs font-medium">Selecteer een afspeellijst</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
               {playlists.length > 0 ? (
-                playlists.map(playlist => (
-                  <DropdownMenuItem 
-                    key={playlist.id}
-                    onClick={() => onSelect(playlist.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <ListMusic className="h-4 w-4" />
-                    <span>{playlist.name}</span>
-                  </DropdownMenuItem>
-                ))
+                <div className="max-h-48 overflow-y-auto py-1">
+                  {playlists.map(playlist => (
+                    <DropdownMenuItem 
+                      key={playlist.id}
+                      onClick={() => onSelect(playlist.id)}
+                      className="flex items-center gap-2 text-sm py-1.5"
+                    >
+                      <ListMusic className="h-4 w-4 text-primary" />
+                      <span className="truncate">{playlist.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
               ) : (
-                <DropdownMenuItem disabled className="text-muted-foreground">
-                  Geen afspeellijsten
-                </DropdownMenuItem>
+                <div className="px-2 py-3 text-xs text-center text-muted-foreground">
+                  Geen afspeellijsten beschikbaar
+                </div>
               )}
               
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onCreateNew}>
-                <Plus className="h-4 w-4 mr-1" />
-                <span>Nieuwe afspeellijst...</span>
+              <DropdownMenuItem 
+                onClick={onCreateNew}
+                className="text-sm py-1.5 text-primary hover:text-primary"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                <span>Nieuwe afspeellijst maken</span>
               </DropdownMenuItem>
             </>
-          )}
-          
-          {activeTab === "music" && (
+          ) : (
             <>
-              <DropdownMenuLabel>Muziek</DropdownMenuLabel>
+              <DropdownMenuLabel className="text-xs font-medium">Beschikbare muziek</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
-              <div className="max-h-60 overflow-y-auto px-1 py-1">
-                {musicTracks.length > 0 ? (
-                  musicTracks.map(track => (
+              {musicTracks.length > 0 ? (
+                <div className="max-h-48 overflow-y-auto py-1">
+                  {musicTracks.map(track => (
                     <DropdownMenuItem 
                       key={track.id}
-                      className="flex items-center gap-2 rounded-md"
+                      className="flex items-center gap-2 text-sm py-1.5"
                     >
                       <Music className="h-4 w-4 text-primary" />
-                      <div className="flex flex-col">
-                        <span className="text-sm">{track.title}</span>
-                        <span className="text-xs text-muted-foreground">{track.description?.substring(0, 30)}{track.description?.length > 30 ? '...' : ''}</span>
+                      <div className="overflow-hidden">
+                        <p className="truncate">{track.title}</p>
                       </div>
                     </DropdownMenuItem>
-                  ))
-                ) : (
-                  <DropdownMenuItem disabled className="text-muted-foreground">
-                    Geen muziek beschikbaar
-                  </DropdownMenuItem>
-                )}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-2 py-3 text-xs text-center text-muted-foreground">
+                  Geen muziek beschikbaar
+                </div>
+              )}
             </>
           )}
         </Tabs>
