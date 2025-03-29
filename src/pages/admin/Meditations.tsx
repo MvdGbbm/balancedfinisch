@@ -1,457 +1,552 @@
 import React, { useState, useEffect } from "react";
+import { AdminLayout } from "@/components/admin-layout";
+import { useApp } from "@/context/AppContext";
+import { 
+  Card, 
+  CardContent, 
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Meditation } from "@/lib/types";
 import { AudioPlayer } from "@/components/audio-player";
-import { toast } from "sonner";
-import { Play, Pause, Edit, Trash, Plus, Search, Music, Image, Tag, Clock, Calendar } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, ListMusic, MoreVertical, ExternalLink } from "lucide-react";
 
-const Meditations = () => {
-  const [meditations, setMeditations] = useState<Meditation[]>([]);
-  const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
+import { Meditation } from "@/lib/types";
+
+const AdminMeditations = () => {
+  const { meditations, addMeditation, updateMeditation, deleteMeditation } = useApp();
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
-
-  // Form state
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [currentMeditation, setCurrentMeditation] = useState<Meditation | null>(null);
+  
   const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
-  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [duration, setDuration] = useState<number>(10);
   const [category, setCategory] = useState("");
-  const [durationSeconds, setDurationSeconds] = useState<number | undefined>(undefined);
+  const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  const [isFeatured, setIsFeatured] = useState(false);
-
-  useEffect(() => {
-    // Load meditations from local storage or API
-    const storedMeditations = localStorage.getItem("meditations");
-    if (storedMeditations) {
-      try {
-        setMeditations(JSON.parse(storedMeditations));
-      } catch (error) {
-        console.error("Error parsing meditations:", error);
-        toast.error("Error loading meditations");
-      }
-    }
-  }, []);
-
-  // Save meditations to local storage when they change
-  useEffect(() => {
-    localStorage.setItem("meditations", JSON.stringify(meditations));
-  }, [meditations]);
-
-  // Filter meditations based on search query and active tab
-  const filteredMeditations = meditations.filter((meditation) => {
-    const matchesSearch = meditation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meditation.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meditation.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    if (activeTab === "all") return matchesSearch;
-    if (activeTab === "featured") return matchesSearch && meditation.isFeatured;
-    return matchesSearch && meditation.category === activeTab;
-  });
-
-  const handleCreateMeditation = () => {
-    setSelectedMeditation(null);
-    resetForm();
-    setIsDialogOpen(true);
-  };
-
-  const handleEditMeditation = (meditation: Meditation) => {
-    setSelectedMeditation(meditation);
-    setTitle(meditation.title);
-    setSubtitle(meditation.subtitle || "");
-    setDescription(meditation.description);
-    setAudioUrl(meditation.audioUrl);
-    setCoverImageUrl(meditation.coverImageUrl);
-    setCategory(meditation.category);
-    setDurationSeconds(meditation.durationSeconds);
-    setTags(meditation.tags || []);
-    setIsFeatured(meditation.isFeatured || false);
-    setIsDialogOpen(true);
-  };
-
-  const handleDeleteMeditation = (meditation: Meditation) => {
-    setSelectedMeditation(meditation);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (selectedMeditation) {
-      setMeditations(meditations.filter(m => m.id !== selectedMeditation.id));
-      setIsDeleteDialogOpen(false);
-      setSelectedMeditation(null);
-      toast.success("Meditation deleted successfully");
-    }
-  };
-
-  const handleSaveMeditation = () => {
-    if (!title || !description || !audioUrl || !coverImageUrl || !category) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    const newMeditation: Meditation = {
-      id: selectedMeditation?.id || `meditation-${Date.now()}`,
-      title,
-      subtitle,
-      description,
-      audioUrl,
-      coverImageUrl,
-      category,
-      durationSeconds,
-      tags,
-      isFeatured,
-      createdAt: selectedMeditation?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    if (selectedMeditation) {
-      // Update existing meditation
-      setMeditations(meditations.map(m => m.id === selectedMeditation.id ? newMeditation : m));
-      toast.success("Meditation updated successfully");
-    } else {
-      // Create new meditation
-      setMeditations([...meditations, newMeditation]);
-      toast.success("Meditation created successfully");
-    }
-
-    setIsDialogOpen(false);
-    resetForm();
-  };
-
+  const [veraLink, setVeraLink] = useState("");
+  const [marcoLink, setMarcoLink] = useState("");
+  
+  const [newCategory, setNewCategory] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [updatedCategoryName, setUpdatedCategoryName] = useState("");
+  
   const resetForm = () => {
     setTitle("");
-    setSubtitle("");
     setDescription("");
     setAudioUrl("");
-    setCoverImageUrl("");
+    setDuration(10);
     setCategory("");
-    setDurationSeconds(undefined);
+    setCoverImageUrl("");
     setTags([]);
     setTagInput("");
-    setIsFeatured(false);
+    setVeraLink("");
+    setMarcoLink("");
   };
-
+  
+  const handleOpenNew = () => {
+    setCurrentMeditation(null);
+    resetForm();
+    setIsDialogOpen(true);
+  };
+  
+  const handleEdit = (meditation: Meditation) => {
+    setCurrentMeditation(meditation);
+    setTitle(meditation.title);
+    setDescription(meditation.description);
+    setAudioUrl(meditation.audioUrl || "");
+    setDuration(meditation.duration);
+    setCategory(meditation.category);
+    setCoverImageUrl(meditation.coverImageUrl);
+    setTags(meditation.category === "Geleide Meditaties" ? [] : [...meditation.tags]);
+    setVeraLink(meditation.veraLink || "");
+    setMarcoLink(meditation.marcoLink || "");
+    setIsDialogOpen(true);
+  };
+  
+  const handleDelete = (id: string) => {
+    if (window.confirm("Weet je zeker dat je deze meditatie wilt verwijderen?")) {
+      deleteMeditation(id);
+    }
+  };
+  
   const handleAddTag = () => {
+    if (category === "Geleide Meditaties") return;
+    
     if (tagInput && !tags.includes(tagInput)) {
       setTags([...tags, tagInput]);
       setTagInput("");
     }
   };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+  
+  const handleRemoveTag = (tag: string) => {
+    setTags(tags.filter((t) => t !== tag));
   };
-
-  const handleTogglePreview = (meditation: Meditation) => {
-    if (selectedMeditation?.id === meditation.id && isPreviewPlaying) {
-      setIsPreviewPlaying(false);
-      setSelectedMeditation(null);
+  
+  const handleSave = () => {
+    if (!title || !description || !category || !coverImageUrl) {
+      alert("Vul alle verplichte velden in");
+      return;
+    }
+    
+    const meditationTags = category === "Geleide Meditaties" ? [] : tags;
+    
+    if (currentMeditation) {
+      updateMeditation(currentMeditation.id, {
+        title,
+        description,
+        audioUrl,
+        duration,
+        category,
+        coverImageUrl,
+        tags: meditationTags,
+        veraLink,
+        marcoLink,
+      });
     } else {
-      setSelectedMeditation(meditation);
-      setIsPreviewPlaying(true);
+      addMeditation({
+        title,
+        description,
+        audioUrl,
+        duration,
+        category,
+        coverImageUrl,
+        tags: meditationTags,
+        veraLink,
+        marcoLink,
+      });
+    }
+    
+    setIsDialogOpen(false);
+    resetForm();
+  };
+  
+  const categories = Array.from(
+    new Set(meditations.map((meditation) => meditation.category))
+  ).sort();
+  
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) return;
+    
+    addMeditation({
+      title: `${newCategory} Meditatie`,
+      description: `Een nieuwe meditatie in de ${newCategory} categorie.`,
+      audioUrl: "audio/sample.mp3",
+      duration: 10,
+      category: newCategory,
+      coverImageUrl: "images/sample.jpg",
+      tags: newCategory === "Geleide Meditaties" ? [] : [newCategory.toLowerCase()],
+    });
+    
+    setNewCategory("");
+    setIsCategoryDialogOpen(false);
+  };
+  
+  const handleUpdateCategory = () => {
+    if (!editingCategory || !updatedCategoryName.trim()) return;
+    
+    meditations
+      .filter(m => m.category === editingCategory)
+      .forEach(m => {
+        let updatedTags = [...m.tags];
+        if (updatedCategoryName === "Geleide Meditaties") {
+          updatedTags = [];
+        } else if (editingCategory === "Geleide Meditaties") {
+          updatedTags = [updatedCategoryName.toLowerCase()];
+        } else {
+          updatedTags = [...m.tags.filter(t => t !== editingCategory.toLowerCase()), updatedCategoryName.toLowerCase()];
+        }
+        
+        updateMeditation(m.id, {
+          ...m,
+          category: updatedCategoryName,
+          tags: updatedTags
+        });
+      });
+    
+    setEditingCategory(null);
+    setUpdatedCategoryName("");
+    setIsCategoryDialogOpen(false);
+  };
+  
+  const handleDeleteCategory = (categoryName: string) => {
+    if (window.confirm(`Weet je zeker dat je de categorie "${categoryName}" wilt verwijderen? Alle meditaties in deze categorie worden ook verwijderd.`)) {
+      meditations
+        .filter(m => m.category === categoryName)
+        .forEach(m => {
+          deleteMeditation(m.id);
+        });
     }
   };
-
-  const formatDuration = (seconds?: number) => {
-    if (!seconds) return "Unknown";
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
+  
+  const groupedMeditations = meditations.reduce((acc, meditation) => {
+    const category = meditation.category;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(meditation);
+    return acc;
+  }, {} as Record<string, Meditation[]>);
+  
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Manage Meditations</h1>
-        <Button onClick={handleCreateMeditation}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Meditation
-        </Button>
-      </div>
-
-      <div className="mb-6">
-        <div className="flex gap-4 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search meditations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+    <AdminLayout>
+      <div className="space-y-4 animate-fade-in">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Meditaties Beheren</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
+              <ListMusic className="h-4 w-4 mr-2" />
+              Categorieën
+            </Button>
+            <Button onClick={handleOpenNew}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nieuwe Meditatie
+            </Button>
           </div>
         </div>
-
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="featured">Featured</TabsTrigger>
-            <TabsTrigger value="Guided">Guided</TabsTrigger>
-            <TabsTrigger value="Sleep">Sleep</TabsTrigger>
-            <TabsTrigger value="Focus">Focus</TabsTrigger>
-            <TabsTrigger value="Stress Relief">Stress Relief</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab}>
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {activeTab === "all" ? "All Meditations" : 
-                   activeTab === "featured" ? "Featured Meditations" : 
-                   `${activeTab} Meditations`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Featured</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMeditations.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          No meditations found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredMeditations.map((meditation) => (
-                        <TableRow key={meditation.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div 
-                                className="w-10 h-10 rounded-md bg-cover bg-center"
-                                style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
-                              />
-                              <div>
-                                <div className="font-medium">{meditation.title}</div>
-                                <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                                  {meditation.subtitle || meditation.description.substring(0, 50)}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{meditation.category}</Badge>
-                          </TableCell>
-                          <TableCell>{formatDuration(meditation.durationSeconds)}</TableCell>
-                          <TableCell>
-                            {meditation.isFeatured ? (
-                              <Badge variant="default" className="bg-primary">Featured</Badge>
-                            ) : (
-                              <Badge variant="outline">No</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleTogglePreview(meditation)}
-                              >
-                                {selectedMeditation?.id === meditation.id && isPreviewPlaying ? (
-                                  <Pause className="h-4 w-4" />
-                                ) : (
-                                  <Play className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleEditMeditation(meditation)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                onClick={() => handleDeleteMeditation(meditation)}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {selectedMeditation && isPreviewPlaying && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-lg">
-          <div className="container mx-auto max-w-4xl">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-3">
-                <div 
-                  className="w-10 h-10 rounded-md bg-cover bg-center"
-                  style={{ backgroundImage: `url(${selectedMeditation.coverImageUrl})` }}
-                />
-                <div>
-                  <div className="font-medium">{selectedMeditation.title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedMeditation.subtitle || selectedMeditation.category}
-                  </div>
-                </div>
+        
+        <p className="text-muted-foreground">
+          Voeg nieuwe meditaties toe of bewerk bestaande content
+        </p>
+        
+        <div className="space-y-8 pb-20">
+          {Object.entries(groupedMeditations).map(([category, meditationsList]) => (
+            <div key={category} className="space-y-3">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-medium">{category}</h2>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        setEditingCategory(category);
+                        setUpdatedCategoryName(category);
+                        setIsCategoryDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Bewerk categorie
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="text-destructive"
+                      onClick={() => handleDeleteCategory(category)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Verwijder categorie
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setIsPreviewPlaying(false)}
-              >
-                <X className="h-4 w-4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {meditationsList.map((meditation) => (
+                  <Card key={meditation.id} className="overflow-hidden">
+                    <div className="aspect-video bg-cover bg-center relative">
+                      <img 
+                        src={meditation.coverImageUrl} 
+                        alt={meditation.title}
+                        className="w-full h-full object-cover" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <h3 className="text-white font-medium">{meditation.title}</h3>
+                        <div className="flex items-center text-white/80 text-sm gap-2">
+                          <Clock className="h-3 w-3" />
+                          <span>{meditation.duration} min</span>
+                        </div>
+                      </div>
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        <Button 
+                          variant="secondary" 
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                          onClick={() => handleEdit(meditation)}
+                        >
+                          <Edit className="h-4 w-4 text-white" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="icon"
+                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                          onClick={() => handleDelete(meditation.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-white" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardFooter className="p-3 bg-background">
+                      <AudioPlayer audioUrl={meditation.audioUrl} showControls={false} />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {meditations.length === 0 && (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground mb-4">
+                Er zijn nog geen meditaties. Voeg je eerste meditatie toe!
+              </p>
+              <Button onClick={handleOpenNew}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nieuwe Meditatie
               </Button>
             </div>
-            
-            <AudioPlayer 
-              audioUrl={selectedMeditation.audioUrl} 
-            />
-          </div>
+          )}
         </div>
-      )}
-
-      {/* Create/Edit Meditation Dialog */}
+      </div>
+      
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedMeditation ? "Edit Meditation" : "Create New Meditation"}
+              {currentMeditation ? "Meditatie Bewerken" : "Nieuwe Meditatie"}
             </DialogTitle>
+            <DialogDescription>
+              Vul de details in voor de meditatie
+            </DialogDescription>
           </DialogHeader>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input 
-                  id="title" 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Meditation title"
+              <div className="space-y-2">
+                <Label htmlFor="title">Titel</Label>
+                <Input
+                  id="title"
+                  placeholder="Titel van de meditatie"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
               
-              <div>
-                <Label htmlFor="subtitle">Subtitle (optional)</Label>
-                <Input 
-                  id="subtitle" 
-                  value={subtitle} 
-                  onChange={(e) => setSubtitle(e.target.value)} 
-                  placeholder="Short subtitle"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea 
-                  id="description" 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
-                  placeholder="Detailed description"
+              <div className="space-y-2">
+                <Label htmlFor="description">Beschrijving</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Beschrijving van de meditatie"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                 />
               </div>
               
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Guided">Guided</SelectItem>
-                    <SelectItem value="Sleep">Sleep</SelectItem>
-                    <SelectItem value="Focus">Focus</SelectItem>
-                    <SelectItem value="Stress Relief">Stress Relief</SelectItem>
-                    <SelectItem value="Morning">Morning</SelectItem>
-                    <SelectItem value="Evening">Evening</SelectItem>
-                    <SelectItem value="Nature Sounds">Nature Sounds</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Categorie</Label>
+                  <Select 
+                    value={category} 
+                    onValueChange={(val) => {
+                      setCategory(val);
+                      if (val === "Geleide Meditaties") {
+                        setTags([]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Selecteer categorie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.length > 0 ? (
+                        categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="nieuwe-categorie" disabled>
+                          Geen categorieën beschikbaar
+                        </SelectItem>
+                      )}
+                      <SelectItem value="nieuwe-categorie">
+                        <Input 
+                          placeholder="Nieuwe categorie" 
+                          value={category}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            setCategory(e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duur (minuten)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min="1"
+                    placeholder="Duur in minuten"
+                    value={duration}
+                    onChange={(e) => setDuration(parseInt(e.target.value) || 0)}
+                  />
+                </div>
               </div>
               
-              <div>
-                <Label htmlFor="duration">Duration (seconds)</Label>
-                <Input 
-                  id="duration" 
-                  type="number" 
-                  value={durationSeconds || ""} 
-                  onChange={(e) => setDurationSeconds(parseInt(e.target.value) || undefined)} 
-                  placeholder="Duration in seconds"
-                />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="featured" 
-                  checked={isFeatured} 
-                  onCheckedChange={(checked) => setIsFeatured(checked as boolean)} 
-                />
-                <Label htmlFor="featured">Featured meditation</Label>
-              </div>
+              {category !== "Geleide Meditaties" && (
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="tags"
+                      placeholder="Voeg een tag toe"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      onClick={handleAddTag}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="secondary"
+                        className="flex items-center gap-1"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="audioUrl">Audio URL</Label>
                 <div className="flex gap-2">
-                  <Input 
-                    id="audioUrl" 
-                    value={audioUrl} 
-                    onChange={(e) => setAudioUrl(e.target.value)} 
-                    placeholder="URL to audio file"
+                  <Input
+                    id="audioUrl"
+                    placeholder="URL naar audio bestand"
+                    value={audioUrl}
+                    onChange={(e) => setAudioUrl(e.target.value)}
                   />
-                  <Button variant="outline" size="icon">
-                    <Music className="h-4 w-4" />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <FileAudio className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               
-              <div>
-                <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+              <div className="space-y-2">
+                <Label htmlFor="coverImageUrl">Cover Afbeelding URL</Label>
                 <div className="flex gap-2">
-                  <Input 
-                    id="coverImageUrl" 
-                    value={coverImageUrl} 
-                    onChange={(e) => setCoverImageUrl(e.target.value)} 
-                    placeholder="URL to cover image"
+                  <Input
+                    id="coverImageUrl"
+                    placeholder="URL naar afbeelding"
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
                   />
-                  <Button variant="outline" size="icon">
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
                     <Image className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="veraLink">Vera Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="veraLink"
+                    placeholder="URL voor Vera link"
+                    value={veraLink}
+                    onChange={(e) => setVeraLink(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="marcoLink">Marco Link</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="marcoLink"
+                    placeholder="URL voor Marco link"
+                    value={marcoLink}
+                    onChange={(e) => setMarcoLink(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
               {coverImageUrl && (
-                <div className="aspect-video bg-cover bg-center rounded-md overflow-hidden">
+                <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
                   <img 
                     src={coverImageUrl} 
-                    alt="Cover preview" 
+                    alt="Preview" 
                     className="w-full h-full object-cover" 
                     onError={(e) => {
                       e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
@@ -460,77 +555,131 @@ const Meditations = () => {
                 </div>
               )}
               
-              <div>
-                <Label htmlFor="tags">Tags</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    id="tags" 
-                    value={tagInput} 
-                    onChange={(e) => setTagInput(e.target.value)} 
-                    placeholder="Add a tag"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button type="button" onClick={handleAddTag} variant="outline" size="icon">
-                    <Tag className="h-4 w-4" />
-                  </Button>
+              {audioUrl && (
+                <div className="mt-4">
+                  <Label>Audio Preview</Label>
+                  <AudioPlayer audioUrl={audioUrl} />
                 </div>
-                
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                      {tag}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-4 w-4 p-0 ml-1" 
-                        onClick={() => handleRemoveTag(tag)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </Badge>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Cancel
+              Annuleren
             </Button>
-            <Button onClick={handleSaveMeditation}>
-              {selectedMeditation ? "Update Meditation" : "Create Meditation"}
+            <Button onClick={handleSave}>
+              Opslaan
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+      
+      <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle>
+              {editingCategory ? "Categorie Bewerken" : "Categorieën Beheren"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCategory 
+                ? "Wijzig de naam van de categorie" 
+                : "Voeg nieuwe categorieën toe of beheer bestaande categorieën"}
+            </DialogDescription>
           </DialogHeader>
-          <p>
-            Are you sure you want to delete "{selectedMeditation?.title}"? This action cannot be undone.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
+          
+          {editingCategory ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="updatedCategoryName">Nieuwe categorienaam</Label>
+                <Input
+                  id="updatedCategoryName"
+                  placeholder="Voer een nieuwe naam in"
+                  value={updatedCategoryName}
+                  onChange={(e) => setUpdatedCategoryName(e.target.value)}
+                />
+              </div>
+              
+              <DialogFooter className="gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setUpdatedCategoryName("");
+                  }}
+                >
+                  Annuleren
+                </Button>
+                <Button onClick={handleUpdateCategory}>
+                  Bijwerken
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newCategory">Nieuwe categorie</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="newCategory"
+                    placeholder="Voer een categorienaam in"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={handleAddCategory}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Bestaande categorieën</Label>
+                <div className="space-y-2 mt-2">
+                  {categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <div 
+                        key={cat} 
+                        className="flex items-center justify-between p-2 bg-muted rounded-md"
+                      >
+                        <span>{cat}</span>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingCategory(cat);
+                              setUpdatedCategoryName(cat);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            className="text-destructive"
+                            onClick={() => handleDeleteCategory(cat)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-muted-foreground text-center py-2">
+                      Geen categorieën gevonden
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 };
 
-export default Meditations;
+export default AdminMeditations;

@@ -2,6 +2,8 @@
 import { BreathingPhase } from '../breathing/types';
 import { Soundscape } from '@/lib/types';
 
+export type BreathType = "relaxation" | "energy" | "stress" | "focus" | "sleep";
+
 export type BreathingPattern = {
   id: string;
   name: string;
@@ -20,6 +22,8 @@ export type VoiceURLs = {
   inhale: string;
   hold: string;
   exhale: string;
+  holdAfterInhale?: string;
+  holdAfterExhale?: string;
   end?: string;
 };
 

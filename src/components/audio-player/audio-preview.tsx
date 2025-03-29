@@ -1,157 +1,371 @@
-
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
-import { validateAudioUrl } from "./utils";
+import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
+import { AlertCircle } from "lucide-react";
+import { ErrorMessage } from "./error-message";
+import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "@/components/audio-player/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface AudioPreviewProps {
-  audioUrl: string;
-  className?: string;
-  showDetails?: boolean;
+  url: string;
+  label?: string;
+  showControls?: boolean;
+  autoPlay?: boolean;
+  onEnded?: () => void;
+  onError?: () => void;
+  onLoaded?: () => void;
 }
 
 export const AudioPreview: React.FC<AudioPreviewProps> = ({
-  audioUrl,
-  className = "",
-  showDetails = false,
+  url,
+  label,
+  showControls = true,
+  autoPlay = false,
+  onEnded,
+  onError,
+  onLoaded
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  
-  // Cleanup effect
+  const [progress, setProgress] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [isValidUrl, setIsValidUrl] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [validatedUrl, setValidatedUrl] = useState("");
+  const { toast } = useToast();
+  const maxRetries = 2;
+  const [retryCount, setRetryCount] = useState(0);
+
   useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
+    if (url) {
+      const originalUrl = url;
+      let fixedUrl = validateAudioUrl(url);
+      if (!fixedUrl) {
+        setIsValidUrl(false);
+        setError(true);
+        if (onError) onError();
+        return;
       }
-    };
-  }, []);
-  
-  // Update audio source if URL changes
+      
+      if (fixedUrl.includes('supabase.co')) {
+        fixedUrl = fixSupabaseStorageUrl(fixedUrl);
+      }
+      
+      setValidatedUrl(fixedUrl);
+      setIsValidUrl(!!fixedUrl && (fixedUrl === originalUrl || fixedUrl === url));
+      
+      setError(false);
+      setLoaded(false);
+      setProgress(0);
+      setIsPlaying(false);
+      setRetryCount(0);
+      
+      console.log("Audio URL processed:", {
+        original: url,
+        validated: fixedUrl,
+        isValid: !!fixedUrl
+      });
+      
+      preloadAudio(fixedUrl).then((success) => {
+        if (!success && !error) {
+          console.warn("Audio preload check failed:", fixedUrl);
+          setError(true);
+          if (onError) onError();
+        } else if (success) {
+          console.log("Audio preload succeeded:", fixedUrl);
+        }
+      }).catch(() => {
+        setError(true);
+        if (onError) onError();
+      });
+    }
+  }, [url, onError, error]);
+
   useEffect(() => {
-    if (!audioUrl) return;
-    
+    if (audioRef.current && autoPlay && validatedUrl && !error) {
+      try {
+        audioRef.current.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.error("Error auto-playing audio:", err);
+            setError(true);
+            if (onError) onError();
+          });
+      } catch (err) {
+        console.error("Error playing audio:", err);
+        setError(true);
+        if (onError) onError();
+      }
+    }
+  }, [autoPlay, validatedUrl, error, onError]);
+
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    
-    setIsLoading(true);
-    setIsError(false);
-    setIsPlaying(false);
-    
-    const processedUrl = validateAudioUrl(audioUrl);
-    audio.src = processedUrl;
-    
-    const loadHandler = () => {
-      setIsLoading(false);
-      setDuration(audio.duration);
+
+    const updateProgress = () => {
+      const calculatedProgress = (audio.currentTime / audio.duration) * 100;
+      setProgress(isNaN(calculatedProgress) ? 0 : calculatedProgress);
     };
-    
-    const errorHandler = () => {
-      console.error("Error loading audio preview:", processedUrl);
-      setIsLoading(false);
-      setIsError(true);
+
+    const handleLoadedData = () => {
+      console.log("Audio loaded successfully:", validatedUrl);
+      setLoaded(true);
+      setError(false);
+      if (onLoaded) onLoaded();
+    };
+
+    const handleError = (e: Event) => {
+      console.error("Error loading audio:", validatedUrl, e);
+      setError(true);
       setIsPlaying(false);
-      toast.error("Kon audio niet laden");
+      
+      if (retryCount < maxRetries) {
+        setRetryCount(prev => prev + 1);
+        
+        setTimeout(() => {
+          if (audio) {
+            if (validatedUrl.includes('supabase.co')) {
+              const correctedUrl = fixSupabaseStorageUrl(validatedUrl);
+              if (correctedUrl !== validatedUrl) {
+                console.log("Trying with corrected Supabase URL:", correctedUrl);
+                audio.src = correctedUrl;
+                setValidatedUrl(correctedUrl);
+              } else {
+                audio.load();
+              }
+            } else {
+              audio.load();
+            }
+          }
+        }, 1000);
+      } else if (onError) {
+        onError();
+      }
     };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setProgress(0);
+      if (onEnded) onEnded();
+    };
+
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("loadeddata", handleLoadedData);
+    audio.addEventListener("error", handleError);
+    audio.addEventListener("ended", handleEnded);
     
-    audio.addEventListener('loadedmetadata', loadHandler);
-    audio.addEventListener('error', errorHandler);
-    audio.load();
+    audio.addEventListener("stalled", () => {
+      console.warn("Audio playback stalled:", validatedUrl);
+    });
     
+    audio.addEventListener("waiting", () => {
+      console.log("Audio waiting for data:", validatedUrl);
+    });
+    
+    audio.addEventListener("canplay", () => {
+      console.log("Audio can play:", validatedUrl);
+    });
+
     return () => {
-      audio.removeEventListener('loadedmetadata', loadHandler);
-      audio.removeEventListener('error', errorHandler);
+      audio.removeEventListener("timeupdate", updateProgress);
+      audio.removeEventListener("loadeddata", handleLoadedData);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("stalled", () => {});
+      audio.removeEventListener("waiting", () => {});
+      audio.removeEventListener("canplay", () => {});
     };
-  }, [audioUrl]);
-  
-  const togglePlayback = () => {
-    if (!audioRef.current) return;
-    
+  }, [validatedUrl, onEnded, onError, onLoaded, retryCount, maxRetries]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = muted ? 0 : volume;
+    }
+  }, [volume, muted]);
+
+  const togglePlay = () => {
+    if (!audioRef.current || !validatedUrl) return;
+
     if (isPlaying) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true);
-          })
-          .catch(error => {
-            console.error("Play error:", error);
-            setIsError(true);
-            toast.error("Kon audio niet afspelen");
-          });
-      }
+      setError(false);
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(err => {
+          console.error("Error playing audio:", err);
+          setError(true);
+          if (onError) onError();
+        });
     }
   };
-  
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+
+  const toggleMute = () => {
+    setMuted(!muted);
   };
-  
-  const reloadAudio = () => {
-    if (!audioRef.current || !audioUrl) return;
-    
-    setIsLoading(true);
-    setIsError(false);
-    setIsPlaying(false);
-    
-    audioRef.current.pause();
-    audioRef.current.src = validateAudioUrl(audioUrl);
-    audioRef.current.load();
+
+  const handleVolumeChange = (values: number[]) => {
+    setVolume(values[0]);
+    if (values[0] > 0 && muted) {
+      setMuted(false);
+    }
   };
-  
+
+  const handleRetry = () => {
+    if (!audioRef.current || !validatedUrl) return;
+    
+    setIsRetrying(true);
+    setError(false);
+    
+    let retryUrl = validatedUrl;
+    if (validatedUrl.includes('supabase.co')) {
+      retryUrl = fixSupabaseStorageUrl(validatedUrl);
+      if (retryUrl !== validatedUrl) {
+        console.log("Retrying with fixed Supabase URL:", retryUrl);
+        setValidatedUrl(retryUrl);
+      }
+    }
+    
+    const audio = audioRef.current;
+    audio.src = retryUrl;
+    audio.load();
+    
+    audio.oncanplaythrough = () => {
+      setIsRetrying(false);
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+          toast({
+            title: "Audio hersteld",
+            description: "De audio speelt nu af."
+          });
+        })
+        .catch(err => {
+          console.error("Error retrying audio play:", err);
+          setError(true);
+          setIsRetrying(false);
+          if (onError) onError();
+          toast({
+            variant: "destructive",
+            title: "Fout bij afspelen",
+            description: "Audio kon niet worden afgespeeld. Controleer de URL."
+          });
+        });
+    };
+    
+    audio.onerror = () => {
+      setError(true);
+      setIsRetrying(false);
+      if (onError) onError();
+      toast({
+        variant: "destructive",
+        title: "Fout bij laden",
+        description: "Audio kon niet worden geladen. Controleer de URL."
+      });
+    };
+  };
+
+  const getFileNameFromUrl = (url: string): string => {
+    if (!url) return "";
+    try {
+      const urlObj = new URL(url);
+      const pathSegments = urlObj.pathname.split('/');
+      return pathSegments[pathSegments.length - 1] || url;
+    } catch {
+      return url.split('/')[url.split('/').length - 1] || url;
+    }
+  };
+
+  const displayUrl = label || getFileNameFromUrl(validatedUrl || url);
+
+  if (!url) {
+    return (
+      <div className="text-sm text-muted-foreground p-2 italic">
+        Geen URL opgegeven
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="h-8 w-8 p-0"
-        disabled={!audioUrl || isLoading || isError}
-        onClick={togglePlayback}
+    <div className="p-2 rounded-md bg-muted/20 space-y-2 border border-border/50">
+      <audio 
+        ref={audioRef} 
+        preload="metadata" 
+        src={validatedUrl}
       >
-        {isLoading ? (
-          <RefreshCw className="h-4 w-4 animate-spin" />
-        ) : isPlaying ? (
-          <Pause className="h-4 w-4" />
-        ) : (
-          <Play className="h-4 w-4" />
-        )}
-      </Button>
-      
-      {showDetails && (
-        <div className="text-xs text-muted-foreground">
-          {isError ? (
-            <div className="flex items-center gap-1">
-              <span className="text-red-500">Fout</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-xs"
-                onClick={reloadAudio}
-              >
-                <RefreshCw className="h-3 w-3" />
-              </Button>
-            </div>
-          ) : isLoading ? (
-            <span>Laden...</span>
-          ) : (
-            <span>{formatTime(duration)}</span>
+        <source src={validatedUrl} type={getAudioMimeType(validatedUrl)} />
+        Your browser does not support the audio element.
+      </audio>
+
+      {error ? (
+        <ErrorMessage 
+          handleRetry={handleRetry} 
+          isRetrying={isRetrying} 
+          message={!isValidUrl ? "Ongeldige URL. Controleer het formaat." : "Kan audio niet laden. Controleer de URL."}
+        />
+      ) : (
+        <>
+          <div className="text-sm font-medium truncate" title={url}>
+            {displayUrl}
+          </div>
+
+          {loaded && showControls && (
+            <>
+              <Progress value={progress} className="h-1 w-full" />
+
+              <div className="flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={togglePlay}
+                  disabled={error}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                </Button>
+
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={toggleMute}
+                  >
+                    {muted ? (
+                      <VolumeX className="h-4 w-4" />
+                    ) : (
+                      <Volume2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Slider
+                    className="w-20"
+                    value={[volume]}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onValueChange={handleVolumeChange}
+                  />
+                </div>
+              </div>
+            </>
           )}
-        </div>
+        </>
       )}
-      
-      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
     </div>
   );
 };

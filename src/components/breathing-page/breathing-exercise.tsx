@@ -1,6 +1,6 @@
 
 import React from "react";
-import { BreathingAnimation } from "@/components/breathing/breathing-animation";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
 import { BreathingPhase } from "@/components/breathing/types";
 import { PatternSelector } from "@/components/breathing-page/pattern-selector";
 import { BreathingPattern } from "@/components/breathing-page/types";
@@ -40,18 +40,21 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
       {selectedPattern && showAnimation && (
         <div className="mt-8">
           <BreathingAnimation 
-            isActive={isExerciseActive}
+            technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
+            voiceUrls={null}
+            isVoiceActive={isExerciseActive}
+            currentPhase={currentPhase}
+            onPhaseChange={onPhaseChange}
+            currentCycle={currentCycle}
+            totalCycles={selectedPattern.cycles}
+            exerciseCompleted={exerciseCompleted}
             inhaleTime={selectedPattern.inhale}
             holdTime={selectedPattern.hold1}
             exhaleTime={selectedPattern.exhale}
-            afterExhaleHoldTime={selectedPattern.hold2}
-            breathingText={["Adem rustig"]}
-            breathingMode={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
-            guideVoiceEnabled={true}
-            onToggleGuideVoice={() => {}}
+            pauseTime={selectedPattern.hold2}
           />
         </div>
       )}
     </div>
   );
-}
+};
