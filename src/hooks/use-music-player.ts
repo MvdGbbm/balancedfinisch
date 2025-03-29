@@ -10,6 +10,7 @@ export function useMusicPlayer() {
   const [previewTrack, setPreviewTrack] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const handlePreviewTrack = (track: Soundscape) => {
     // If trying to play same track that's already playing, stop it
@@ -26,6 +27,12 @@ export function useMusicPlayer() {
       }
     }
     
+    // Clean up any existing audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
+    }
+    
     setPreviewTrack(track);
     setIsPlaying(true);
     
@@ -39,6 +46,12 @@ export function useMusicPlayer() {
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
       audioPlayerRef.current.src = '';
+    }
+    
+    // Clean up audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
     }
     
     setPreviewTrack(null);
@@ -60,6 +73,11 @@ export function useMusicPlayer() {
         audioPlayerRef.current.pause();
         audioPlayerRef.current.src = '';
       }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -71,6 +89,7 @@ export function useMusicPlayer() {
     isPlaying,
     setIsPlaying,
     audioPlayerRef,
+    audioContextRef,
     handlePreviewTrack,
     handleStopPreview,
     currentPlayingTrack

@@ -39,6 +39,7 @@ const Music = () => {
     isPlaying,
     setIsPlaying,
     audioPlayerRef,
+    audioContextRef,
     handlePreviewTrack,
     handleStopPreview,
     currentPlayingTrack
@@ -87,6 +88,12 @@ const Music = () => {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
         audioPlayerRef.current.src = '';
+      }
+      
+      // Clean up audio context
+      if (audioContextRef?.current) {
+        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
       }
     }
     
@@ -163,6 +170,7 @@ const Music = () => {
         hiddenIframeUrl={hiddenIframeUrl}
         hiddenIframeRef={hiddenIframeRef}
         audioPlayerRef={audioPlayerRef}
+        audioContextRef={audioContextRef}
         handleStopPreview={handleStopPreview}
         handleTrackEnded={handleTrackEnded}
         handleCrossfadeStart={handleCrossfadeStart}

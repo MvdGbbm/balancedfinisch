@@ -13,6 +13,7 @@ interface MusicPlayerProps {
   nextTrackUrl?: string;
   isPlaying: boolean;
   audioRef: React.RefObject<HTMLAudioElement>;
+  audioContextRef?: React.RefObject<AudioContext>;
   onStop: () => void;
   onTrackEnded: () => void;
   onCrossfadeStart: () => void;
@@ -25,6 +26,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   nextTrackUrl,
   isPlaying,
   audioRef,
+  audioContextRef,
   onStop,
   onTrackEnded,
   onCrossfadeStart,
@@ -58,7 +60,8 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
         <ToneEqualizer 
           isActive={isPlaying} 
           className="mb-1" 
-          audioRef={audioRef} 
+          audioRef={audioRef}
+          audioContextRef={audioContextRef}
         />
         
         <AudioPlayer 

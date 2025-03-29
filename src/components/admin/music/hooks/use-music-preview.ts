@@ -7,6 +7,7 @@ export function useMusicPreview() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const handlePreviewToggle = (track: Soundscape) => {
     if (previewUrl === track.audioUrl && isPlaying) {
@@ -14,6 +15,12 @@ export function useMusicPreview() {
     } else {
       if (isPlaying && audioRef.current) {
         audioRef.current.pause();
+      }
+      
+      // Clean up any existing audio context
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
       }
       
       setPreviewUrl(track.audioUrl);
@@ -28,6 +35,12 @@ export function useMusicPreview() {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
+    }
+    
+    // Clean up audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(console.error);
+      audioContextRef.current = null;
     }
   };
 
@@ -53,6 +66,11 @@ export function useMusicPreview() {
         audioRef.current.pause();
         audioRef.current.src = '';
       }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
+      }
     };
   }, []);
 
@@ -60,6 +78,7 @@ export function useMusicPreview() {
     previewUrl,
     isPlaying,
     audioRef,
+    audioContextRef,
     handlePreviewToggle,
     stopPreview
   };
