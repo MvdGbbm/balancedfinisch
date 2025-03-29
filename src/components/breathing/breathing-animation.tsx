@@ -1,85 +1,64 @@
 
-import React, { useState, useEffect } from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { BreathingPhase, BreathingTechnique, BreathingAnimationProps } from './types';
-import { getCountForPhase, getNextPhase } from './breathing-utils';
-import BreathingAudio from './breathing-audio';
-import BreathingCircle from './breathing-circle';
+import React from 'react';
+import { BreathingCircle } from './breathing-circle';
+import { BreathingPhase } from './types';
+import { BreathingPhaseDisplay } from './breathing-phase-display';
+import { BreathingAudio } from './audio/breathing-audio';
 
-const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
-  technique,
+interface BreathingAnimationProps {
+  isActive: boolean;
+  phase: BreathingPhase;
+  secondsLeft: number;
+  inhaleDuration: number;
+  holdDuration: number;
+  exhaleDuration: number;
+  voiceUrls: {
+    start?: string;
+    inhale: string;
+    hold: string;
+    exhale: string;
+    end?: string;
+  } | null;
+  isVoiceActive: boolean;
+  showPhaseText?: boolean;
+}
+
+export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
+  isActive,
+  phase,
+  secondsLeft,
+  inhaleDuration,
+  holdDuration,
+  exhaleDuration,
   voiceUrls,
   isVoiceActive,
-  currentPhase: externalPhase,
-  onPhaseChange,
-  currentCycle = 1,
-  totalCycles = 5,
-  exerciseCompleted = false,
-  inhaleTime,
-  holdTime,
-  exhaleTime,
-  pauseTime
+  showPhaseText = true
 }) => {
-  const [internalPhase, setInternalPhase] = useState<BreathingPhase>('start');
-  const [count, setCount] = useState(getCountForPhase('start', inhaleTime, holdTime, exhaleTime, pauseTime));
-  const [isActive, setIsActive] = useState(true);
-  const isMobile = useIsMobile();
-  
-  const phase = externalPhase || internalPhase;
-
-  useEffect(() => {
-    if (!externalPhase) {
-      setInternalPhase('start');
-    }
-    setCount(getCountForPhase(externalPhase || 'start', inhaleTime, holdTime, exhaleTime, pauseTime));
-    setIsActive(true);
-  }, [technique, externalPhase, inhaleTime, holdTime, exhaleTime, pauseTime]);
-
-  useEffect(() => {
-    if (!isActive || exerciseCompleted) return;
-    
-    const interval = setInterval(() => {
-      setCount(prevCount => {
-        if (prevCount <= 1) {
-          const nextPhase = getNextPhase(phase, holdTime);
-          if (!externalPhase) {
-            setInternalPhase(nextPhase);
-          } else if (onPhaseChange) {
-            onPhaseChange(nextPhase);
-          }
-          return getCountForPhase(nextPhase, inhaleTime, holdTime, exhaleTime, pauseTime);
-        }
-        return prevCount - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [phase, isActive, externalPhase, onPhaseChange, exerciseCompleted, inhaleTime, holdTime, exhaleTime, pauseTime]);
-
-  const toggleActive = () => {
-    setIsActive(!isActive);
-  };
-
   return (
-    <>
+    <div className="relative flex flex-col items-center justify-center">
+      <BreathingCircle
+        isActive={isActive}
+        phase={phase}
+        inhaleDuration={inhaleDuration}
+        holdDuration={holdDuration} 
+        exhaleDuration={exhaleDuration}
+      />
+      
+      {showPhaseText && (
+        <div className="absolute">
+          <BreathingPhaseDisplay 
+            phase={phase} 
+            secondsLeft={secondsLeft} 
+          />
+        </div>
+      )}
+      
       <BreathingAudio 
         voiceUrls={voiceUrls}
         isVoiceActive={isVoiceActive}
         phase={phase}
         isActive={isActive}
       />
-      
-      <BreathingCircle
-        phase={phase}
-        count={count}
-        exerciseCompleted={exerciseCompleted}
-        currentCycle={currentCycle}
-        totalCycles={totalCycles}
-        animationDuration={getCountForPhase(phase, inhaleTime, holdTime, exhaleTime, pauseTime)}
-        onToggleActive={toggleActive}
-      />
-    </>
+    </div>
   );
 };
-
-export default BreathingAnimation;
