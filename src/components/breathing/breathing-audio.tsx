@@ -1,7 +1,8 @@
+
 import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';
-import { preloadAudio } from '@/components/audio-player/utils';
+import { preloadAudio as preloadAudioUtil } from '@/components/audio-player/utils';
 
 interface BreathingAudioProps {
   voiceUrls: {
@@ -55,7 +56,7 @@ export const useBreathingAudio = ({
         urlsToValidate.push(urls.end);
       }
       
-      const validationPromises = urlsToValidate.map(url => preloadAudio(url));
+      const validationPromises = urlsToValidate.map(url => preloadAudioUtil(url));
       const validationResults = await Promise.all(validationPromises);
       
       const allValid = validationResults.every(result => result === true);
@@ -75,7 +76,11 @@ export const useBreathingAudio = ({
   };
 
   const playAudio = async (phaseType: BreathingPhase) => {
-    if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
+    if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) {
+      console.log(`Not playing audio for ${phaseType} due to inactive state or missing refs`);
+      return;
+    }
+    
     let audioUrl = '';
     
     switch (phaseType) {
@@ -105,31 +110,39 @@ export const useBreathingAudio = ({
       return;
     }
     
+    console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
     audioLoadingRef.current = true;
+    
     try {
-      console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
-      const isValid = await preloadAudio(audioUrl);
+      const isValid = await preloadAudioUtil(audioUrl);
       if (!isValid) {
         throw new Error(`Failed to preload ${phaseType} audio`);
       }
+      
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         audioRef.current.volume = 1.0;
+        
+        // Clear any previous event listeners to prevent memory leaks
+        const oldAudio = audioRef.current;
+        const clonedAudio = oldAudio.cloneNode() as HTMLAudioElement;
+        oldAudio.parentNode?.replaceChild(clonedAudio, oldAudio);
+        audioRef.current = clonedAudio;
+        
         try {
-          await audioRef.current.play();
-          console.log(`Playing ${phaseType} audio successfully`);
-          audioErrorCountRef.current = 0;
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              console.log(`Playing ${phaseType} audio successfully`);
+              audioErrorCountRef.current = 0;
+            }).catch(playError => {
+              console.error(`Error playing ${phaseType} audio:`, playError);
+              handlePlayError(playError);
+            });
+          }
         } catch (playError) {
-          console.error(`Error playing ${phaseType} audio:`, playError);
-          if (audioErrorCountRef.current < 5) {
-            audioErrorCountRef.current++;
-            if (audioErrorCountRef.current === 3) {
-              toast.error("Fout bij afspelen van audio. Controleer de URL's.");
-            }
-          }
-          if (playError.name === 'NotAllowedError') {
-            console.log("Audio playback requires user interaction");
-          }
+          console.error(`Error in play attempt for ${phaseType} audio:`, playError);
+          handlePlayError(playError);
         }
       }
     } catch (error) {
@@ -143,12 +156,25 @@ export const useBreathingAudio = ({
     }
   };
 
+  const handlePlayError = (error: any) => {
+    if (audioErrorCountRef.current < 5) {
+      audioErrorCountRef.current++;
+      if (audioErrorCountRef.current === 3) {
+        toast.error("Fout bij afspelen van audio. Controleer de URL's.");
+      }
+    }
+    if (error?.name === 'NotAllowedError') {
+      toast.error("Audio afspelen vereist interactie van de gebruiker. Klik ergens op de pagina.");
+      console.log("Audio playback requires user interaction");
+    }
+  };
+
   useEffect(() => {
     if (previousPhaseRef.current !== phase) {
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
       if (phase !== 'pause' && isVoiceActive && voiceUrls) {
         // If it's the hold phase and there's no URL for it, just skip
-        if (phase === 'hold' && !voiceUrls.hold) {
+        if (phase === 'hold' && (!voiceUrls.hold || voiceUrls.hold.trim() === '')) {
           console.log('Skipping hold audio because no URL is provided');
         } else {
           playAudio(phase);
@@ -159,12 +185,17 @@ export const useBreathingAudio = ({
   }, [phase, voiceUrls, isVoiceActive, isActive]);
 
   useEffect(() => {
+    // Create audio element if it doesn't exist
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+    }
+    
     if (!isVoiceActive && audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
       // Don't try to play audio for hold phase if no URL exists
-      if (phase === 'hold' && !voiceUrls.hold) {
+      if (phase === 'hold' && (!voiceUrls.hold || voiceUrls.hold.trim() === '')) {
         console.log('Skipping initial hold audio because no URL is provided');
       } else {
         playAudio(phase);
@@ -176,6 +207,14 @@ export const useBreathingAudio = ({
     if (voiceUrls && isVoiceActive) {
       validateVoiceUrls(voiceUrls);
     }
+    
+    // Clean up function
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
   }, [voiceUrls, isVoiceActive]);
 
   return {
@@ -188,9 +227,13 @@ const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
   const { audioRef } = useBreathingAudio(props);
 
   return (
-    <audio ref={audioRef} onError={() => {
-      console.error("Audio element error");
-    }} />
+    <audio 
+      ref={audioRef} 
+      onError={() => {
+        console.error("Audio element error");
+        toast.error("Fout bij afspelen van audio.");
+      }} 
+    />
   );
 };
 

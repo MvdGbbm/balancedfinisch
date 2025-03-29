@@ -53,18 +53,35 @@ export const checkUrlExists = async (url: string): Promise<boolean> => {
 
 export const preloadAudio = async (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
+    if (!url) {
+      console.warn("Cannot preload audio: No URL provided");
+      resolve(false);
+      return;
+    }
+
+    console.log("Preloading audio:", url);
     const audio = new Audio();
-    audio.src = url;
     audio.preload = 'auto';
     
-    audio.addEventListener('canplaythrough', () => {
-      resolve(true);
-    });
-    
-    audio.addEventListener('error', () => {
-      console.error("Failed to preload audio:", url);
+    const timeoutId = setTimeout(() => {
+      console.warn("Audio preload timed out:", url);
       resolve(false);
-    });
+    }, 10000); // 10 second timeout
+    
+    audio.addEventListener('canplaythrough', () => {
+      clearTimeout(timeoutId);
+      console.log("Audio successfully preloaded:", url);
+      resolve(true);
+    }, { once: true });
+    
+    audio.addEventListener('error', (e) => {
+      clearTimeout(timeoutId);
+      console.error("Failed to preload audio:", url, e);
+      resolve(false);
+    }, { once: true });
+    
+    // Set the source after adding event listeners
+    audio.src = url;
   });
 };
 
