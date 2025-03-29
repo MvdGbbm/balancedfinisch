@@ -1,15 +1,17 @@
+
 export interface Meditation {
   id: string;
   title: string;
   description: string;
-  audioUrl?: string;
+  audioUrl: string;
   duration: number;
   category: string;
   coverImageUrl: string;
   tags: string[];
-  createdAt?: string;
+  createdAt: string;
   veraLink?: string;
   marcoLink?: string;
+  isFavorite?: boolean;
 }
 
 export interface Soundscape {
@@ -20,32 +22,43 @@ export interface Soundscape {
   category: string;
   coverImageUrl: string;
   tags: string[];
+  duration?: number;
   isFavorite?: boolean;
-}
-
-export interface JournalEntry {
-  id: string;
-  date: string;
-  content: string;
-  mood: "happy" | "calm" | "neutral" | "sad" | "anxious";
-  tags: string[];
 }
 
 export interface DailyQuote {
   id: string;
   text: string;
   author: string;
+  date?: string;
+  tags?: string[];
+  category?: string;
   backgroundClass?: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  title?: string;  // Made optional since some code doesn't provide it
+  content: string;
+  date: string;
+  mood?: "happy" | "calm" | "neutral" | "sad" | "anxious";
+  tags?: string[];
 }
 
 export interface PlannerEvent {
   id: string;
   title: string;
-  date: string;
+  description?: string;
+  startDate: string;       // Required field
+  date?: string;           // Optional for backward compatibility
   time?: string;
   duration?: number;
-  completed: boolean;
   meditationId?: string;
+  endDate?: string;
+  allDay?: boolean;
+  category?: string;
+  completed?: boolean;
+  color?: string;
 }
 
 export interface BreathingPattern {
@@ -54,28 +67,19 @@ export interface BreathingPattern {
   inhale: number;
   hold1: number;
   exhale: number;
-  hold2: number;
+  hold2?: number;
   cycles: number;
-  description?: string;
-  // Audio URLs for specific phases
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-  // Audio URLs for specific voices
-  veraInhaleUrl?: string;
-  veraHoldUrl?: string;
-  veraExhaleUrl?: string;
-  marcoInhaleUrl?: string;
-  marcoHoldUrl?: string;
-  marcoExhaleUrl?: string;
-  // URL to play at the end of the exercise
-  endUrl?: string;
+  description: string;
+  category?: string;
 }
 
-export interface BreathingVoice {
-  name: "vera" | "marco" | "none";
-  inhaleUrl: string;
-  holdUrl: string;
-  exhaleUrl: string;
+// Voice URLs interface used in breathing components
+export interface VoiceUrls {
+  start?: string;
+  inhale: string;
+  hold: string;
+  exhale: string;
 }
+
+// Added for consistent reference in breathing components
+export type ActiveVoice = "vera" | "marco" | "none";

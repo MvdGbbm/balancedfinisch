@@ -6,6 +6,8 @@ import { validateAudioUrl, checkUrlExists } from "@/components/audio-player/util
 
 // Cache to avoid redundant processing
 const urlCache = new Map<string, string>();
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
+const cacheTimestamps = new Map<string, number>();
 
 /**
  * Gets a public URL for a file in Supabase storage or uses fallback
@@ -34,20 +36,43 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
   
   // Check cache first
   const cacheKey = `${bucket}:${path}`;
-  if (urlCache.has(cacheKey)) {
-    return urlCache.get(cacheKey) as string;
+  const now = Date.now();
+  
+  // Check if cache is valid and not expired
+  if (urlCache.has(cacheKey) && cacheTimestamps.has(cacheKey)) {
+    const timestamp = cacheTimestamps.get(cacheKey) || 0;
+    if (now - timestamp < CACHE_EXPIRY) {
+      return urlCache.get(cacheKey) as string;
+    } else {
+      // Cache expired, clear it
+      urlCache.delete(cacheKey);
+      cacheTimestamps.delete(cacheKey);
+    }
   }
   
   try {
-    const { data } = await supabase.storage
+    // Get public URL from Supabase storage with forced refresh
+    const { data } = supabase.storage
       .from(bucket)
-      .getPublicUrl(path);
+      .getPublicUrl(path, {
+        download: false,
+        transform: {
+          quality: 80
+        }
+      });
     
     if (data?.publicUrl) {
+      // Add cache-busting parameter to prevent browser caching
+      const publicUrl = data.publicUrl.includes('?') 
+        ? `${data.publicUrl}&_t=${now}` 
+        : `${data.publicUrl}?_t=${now}`;
+      
       // Cache URL for later use
-      urlCache.set(cacheKey, data.publicUrl);
-      console.log(`Loaded URL from ${bucket} for path: ${path}`, data.publicUrl);
-      return data.publicUrl;
+      urlCache.set(cacheKey, publicUrl);
+      cacheTimestamps.set(cacheKey, now);
+      
+      console.log(`Loaded URL from ${bucket} for path: ${path}`, publicUrl);
+      return publicUrl;
     }
     
     console.error(`No public URL returned for path: ${path} from bucket: ${bucket}`);
