@@ -44,6 +44,17 @@ export default function MusicUpload() {
   
   const playlists = usePlaylists(soundscapes);
   
+  // Helper function to stop audio since musicPlayer doesn't have stopAudio directly
+  const stopAudio = () => {
+    if (musicPlayer.isPlaying) {
+      musicPlayer.setIsPlaying(false);
+      musicPlayer.setCurrentTrack(null);
+      if (musicPlayer.audioPlayerRef?.current) {
+        musicPlayer.audioPlayerRef.current.pause();
+      }
+    }
+  };
+  
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="flex flex-col gap-6">
@@ -56,13 +67,13 @@ export default function MusicUpload() {
               refetchStreams,
               musicPlayer.isPlaying,
               isStreamPlaying,
-              musicPlayer.stopAudio,
+              stopAudio,
               handleStreamStop
             )}
             onClearCache={() => clearAppCache(
               musicPlayer.isPlaying,
               isStreamPlaying,
-              musicPlayer.stopAudio,
+              stopAudio,
               handleStreamStop,
               refetchStreams
             )}
@@ -138,7 +149,7 @@ export default function MusicUpload() {
         <CreatePlaylistDialog 
           open={playlists.showPlaylistCreator} 
           onOpenChange={playlists.setShowPlaylistCreator}
-          onCreatePlaylist={playlists.handleCreatePlaylist}
+          onSubmit={playlists.handleCreatePlaylist}
         />
       </div>
     </div>
