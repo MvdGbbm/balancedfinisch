@@ -138,7 +138,7 @@ const Music = () => {
     
     refetchStreams().then(() => {
       useToastHook({
-        variant: "destructive",
+        variant: "default",
         title: "Pagina is ververst",
         description: "Alle content is opnieuw geladen"
       });
@@ -178,7 +178,7 @@ const Music = () => {
     
     refetchStreams().then(() => {
       useToastHook({
-        variant: "destructive",
+        variant: "default",
         title: "Cachegeheugen gewist",
         description: "Alle opgeslagen gegevens zijn verwijderd. De app zal opnieuw worden geladen."
       });
