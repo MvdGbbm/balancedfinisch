@@ -4,7 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { Soundscape } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AudioPlayer } from "@/components/audio-player";
+import { AudioPlayer, AudioPlayerHandle } from "@/components/audio-player";
 import { Heart, Music, Edit, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -114,71 +114,12 @@ export const PersonalMeditationMusic = () => {
         )}
       </div>
       
-      {/* All Personal Meditation Music */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Alle Persoonlijke Meditatie Muziek</h3>
-        
-        <div className="grid grid-cols-1 gap-3 pb-20">
-          {personalMeditationMusic.map((soundscape) => (
-            <Card 
-              key={soundscape.id} 
-              className={cn(
-                "overflow-hidden border-muted bg-background/30 backdrop-blur-sm",
-                selectedSoundscape?.id === soundscape.id && "border-primary"
-              )}
-            >
-              <div className="flex items-center p-3">
-                <div 
-                  className="w-12 h-12 rounded-md bg-cover bg-center mr-3" 
-                  style={{ backgroundImage: `url(${soundscape.coverImageUrl})` }}
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium truncate">{soundscape.title}</h4>
-                  <p className="text-sm text-muted-foreground truncate">{soundscape.description}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8",
-                      soundscape.isFavorite && "text-red-500 hover:text-red-600"
-                    )}
-                    onClick={() => toggleFavorite(soundscape)}
-                  >
-                    <Heart className="h-5 w-5" fill={soundscape.isFavorite ? "currentColor" : "none"} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handlePlaySoundscape(soundscape)}
-                  >
-                    <Play className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-      
       {/* Player */}
-      {selectedSoundscape && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t">
-          <div className="flex items-center gap-3 mb-2">
-            <div 
-              className="w-10 h-10 rounded-md bg-cover bg-center" 
-              style={{ backgroundImage: `url(${selectedSoundscape.coverImageUrl})` }}
-            />
-            <div className="flex-1">
-              <h4 className="font-medium text-sm truncate">{selectedSoundscape.title}</h4>
-              <p className="text-xs text-muted-foreground truncate">Persoonlijke Meditatie</p>
-            </div>
-          </div>
+      {selectedSoundscape && isPlaying && (
+        <div className="mt-4 border rounded-md p-4 bg-background/50">
+          <h3 className="text-sm font-medium mb-2">Nu afspelend: {selectedSoundscape.title}</h3>
           <AudioPlayer 
             audioUrl={selectedSoundscape.audioUrl} 
-            className="w-full"
             isPlayingExternal={isPlaying}
             onPlayPauseChange={setIsPlaying}
           />
@@ -186,4 +127,4 @@ export const PersonalMeditationMusic = () => {
       )}
     </div>
   );
-};
+}

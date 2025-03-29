@@ -1,34 +1,17 @@
-import { useState, useEffect, useRef } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { validateAudioUrl, isStreamUrl } from "@/components/audio-player/utils";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Soundscape } from "@/lib/types";
+import { isStreamUrl } from "@/components/audio-player/utils";
 
 interface UseAudioPlayerProps {
-  audioUrl: string;
-  onEnded?: () => void;
-  onError?: () => void;
-  isPlayingExternal?: boolean;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
-  nextAudioUrl?: string;
-  onCrossfadeStart?: () => void;
-  title?: string;
-  volume?: number;
+  onTrackEnded?: () => void;
+  onTrackError?: () => void;
 }
 
-export const useAudioPlayer = ({
-  audioUrl,
-  onEnded,
-  onError,
-  isPlayingExternal,
-  onPlayPauseChange,
-  nextAudioUrl,
-  onCrossfadeStart,
-  title,
-  volume: initialVolume
-}: UseAudioPlayerProps) => {
+export function useAudioPlayer({ onTrackEnded, onTrackError }: UseAudioPlayerProps = {}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(initialVolume ?? 0.8);
+  const [volume, setVolume] = useState(0.8);
   const [isLooping, setIsLooping] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -72,7 +55,7 @@ export const useAudioPlayer = ({
     if (!url) {
       console.error("Invalid audio URL");
       setLoadError(true);
-      if (onError) onError();
+      if (onTrackError) onTrackError();
       return;
     }
     
@@ -129,7 +112,7 @@ export const useAudioPlayer = ({
         .catch(error => {
           console.error("Error playing direct URL:", error);
           setLoadError(true);
-          if (onError) onError();
+          if (onTrackError) onTrackError();
         });
       audioElement.removeEventListener('canplay', onCanPlay);
     };
@@ -139,7 +122,7 @@ export const useAudioPlayer = ({
     const handleDirectError = (e: Event) => {
       console.error("Direct play error:", e);
       setLoadError(true);
-      if (onError) onError();
+      if (onTrackError) onTrackError();
       audioElement.removeEventListener('error', handleDirectError);
     };
     
@@ -315,7 +298,7 @@ export const useAudioPlayer = ({
               title: "Fout bij laden",
               description: "Kon de audio niet laden. Controleer of de URL correct is."
             });
-            if (onError) onError();
+            if (onTrackError) onTrackError();
           }
         }, 1000);
       } else {
@@ -327,7 +310,7 @@ export const useAudioPlayer = ({
           title: "Fout bij laden",
           description: "Kon de audio niet laden na meerdere pogingen. Controleer of het bestand bestaat."
         });
-        if (onError) onError();
+        if (onTrackError) onTrackError();
       }
     };
     
@@ -359,7 +342,7 @@ export const useAudioPlayer = ({
         crossfadeTimeoutRef.current = null;
       }
     };
-  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onTrackError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream]);
 
   useEffect(() => {
     if (initialVolume !== undefined && audioRef.current) {
@@ -583,4 +566,4 @@ export const useAudioPlayer = ({
     handleVolumeChange,
     skipTime
   };
-};
+}

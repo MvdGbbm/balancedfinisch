@@ -96,3 +96,33 @@ export const formatTime = (seconds: number): string => {
 export const getAudioMimeType = (url: string): string => {
   return getMimeType(url);
 };
+
+// Add missing utility functions
+export const isStreamUrl = (url: string): boolean => {
+  // Check if URL likely points to a stream rather than a static audio file
+  const streamIndicators = ['.m3u8', '.pls', '.ram', '.stream', 'stream'];
+  
+  return streamIndicators.some(indicator => 
+    url.toLowerCase().includes(indicator) || 
+    url.toLowerCase().includes('streaming') ||
+    url.toLowerCase().includes('radio')
+  );
+};
+
+export const checkUrlExists = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error("Error checking URL existence:", error);
+    return false;
+  }
+};
+
+export const getRandomQuote = (quotes: string[]): string => {
+  if (!quotes || quotes.length === 0) {
+    return "Find peace in the present moment.";
+  }
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  return quotes[randomIndex];
+};

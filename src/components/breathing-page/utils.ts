@@ -1,85 +1,55 @@
 
-import { BreathingPattern } from "../breathing-page/types";
-import { validateAudioUrl } from "@/components/audio-player/utils";
+// Utility functions for breathing exercises
 
-// This function filters out patterns that have invalid voice guidance URLs
-export function filterValidBreathingPatterns(patterns: BreathingPattern[]): BreathingPattern[] {
-  if (!patterns || !Array.isArray(patterns)) {
-    console.warn("Invalid breathing patterns array:", patterns);
-    return [];
+// Load voice URLs from configuration or API
+export const loadVoiceUrls = () => {
+  // Return an array of available voice URLs
+  return [
+    { id: 'voice-1', name: 'Female Voice', url: '/audio/breathing/voice-female.mp3' },
+    { id: 'voice-2', name: 'Male Voice', url: '/audio/breathing/voice-male.mp3' },
+    { id: 'voice-3', name: 'Calm Voice', url: '/audio/breathing/voice-calm.mp3' }
+  ];
+};
+
+// Handle voice activation
+export const handleActivateVoice = (
+  voiceId: string,
+  setActiveVoice: (id: string) => void,
+  setVoiceUrl: (url: string) => void
+) => {
+  const voices = loadVoiceUrls();
+  const selectedVoice = voices.find(voice => voice.id === voiceId);
+  
+  if (selectedVoice) {
+    setActiveVoice(voiceId);
+    setVoiceUrl(selectedVoice.url);
+    return true;
   }
   
-  return patterns.filter(pattern => {
-    return pattern && typeof pattern === 'object' &&
-           pattern.id && pattern.name;
-  });
-}
+  return false;
+};
 
-// Used to format breathing pattern time values
-export function formatBreathingTime(seconds: number): string {
-  if (isNaN(seconds) || seconds < 0) return "0:00";
-  
+// Convert seconds to mm:ss format
+export const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
-  
   return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
+};
 
-// Used to calculate the total duration of a breathing pattern
-export function calculatePatternDuration(pattern: BreathingPattern | null): number {
-  if (!pattern) return 0;
+// Calculate breathing pattern timing
+export const calculateBreathingTiming = (
+  inhaleTime: number,
+  holdTime: number,
+  exhaleTime: number,
+  afterExhaleHoldTime: number
+) => {
+  const totalCycleTime = inhaleTime + holdTime + exhaleTime + afterExhaleHoldTime;
   
-  const { inhale, hold1, exhale, hold2, cycles } = pattern;
-  
-  // Calculate the duration of a single cycle in seconds
-  const cycleDuration = inhale + (hold1 || 0) + exhale + (hold2 || 0);
-  
-  // Total duration is cycles * single cycle duration
-  return cycleDuration * (cycles || 10);
-}
-
-// Validates breathing sound URLs
-export function validateBreathingAudioUrl(url: string | undefined | null): string {
-  if (!url) return "";
-  return validateAudioUrl(url);
-}
-
-// Preload audio files to check if they're valid and to improve playback experience
-export async function preloadBreathingAudio(voiceUrl: string | undefined): Promise<boolean> {
-  if (!voiceUrl) return false;
-  
-  try {
-    const audio = new Audio();
-    
-    return new Promise((resolve) => {
-      audio.oncanplaythrough = () => {
-        resolve(true);
-        audio.oncanplaythrough = null;
-        audio.onerror = null;
-      };
-      
-      audio.onerror = () => {
-        console.error("Error preloading breathing audio:", voiceUrl);
-        resolve(false);
-        audio.oncanplaythrough = null;
-        audio.onerror = null;
-      };
-      
-      // Start loading the audio
-      audio.src = validateAudioUrl(voiceUrl);
-      audio.load();
-      
-      // Set a timeout in case the audio takes too long to load
-      setTimeout(() => {
-        if (audio.oncanplaythrough) {
-          audio.oncanplaythrough = null;
-          audio.onerror = null;
-          resolve(false);
-        }
-      }, 5000);
-    });
-  } catch (error) {
-    console.error("Error in preload breathing audio:", error);
-    return false;
-  }
-}
+  return {
+    inhalePercentage: (inhaleTime / totalCycleTime) * 100,
+    holdPercentage: (holdTime / totalCycleTime) * 100,
+    exhalePercentage: (exhaleTime / totalCycleTime) * 100,
+    afterExhaleHoldPercentage: (afterExhaleHoldTime / totalCycleTime) * 100,
+    totalCycleTime
+  };
+};
