@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ListMusic, Music } from "lucide-react";
+import { ListMusic, Music, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
