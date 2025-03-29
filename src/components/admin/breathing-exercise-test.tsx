@@ -11,8 +11,8 @@ export function BreathingExerciseTest({
 }: BreathingExerciseTestProps) {
   if (!pattern) {
     return <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Selecteer een ademhalingstechniek om te testen
+        <CardContent>
+          <p className="text-muted-foreground">Selecteer eerst een ademhalingstechniek om te testen.</p>
         </CardContent>
       </Card>;
   }

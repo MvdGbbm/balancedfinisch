@@ -14,8 +14,7 @@ export function BreathingCircle({
   isActive = false,
   currentPhase = "rest",
   secondsLeft = 0,
-  holdEnabled = true,
-  pattern = null
+  holdEnabled = true
 }: BreathingCircleProps) {
   const { 
     phase, 
@@ -38,13 +37,12 @@ export function BreathingCircle({
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
         <BreathingCircleVisual 
           circleScale={circleScale}
-          transitionDuration={0}
+          transitionDuration={getTransitionDuration()}
           className={className}
         >
           <BreathingPhaseDisplay 
             activePhase={phase} 
             phaseTimeLeft={secondsLeft || phaseTimeLeft} 
-            pattern={pattern}
           />
         </BreathingCircleVisual>
       </div>

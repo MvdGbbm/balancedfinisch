@@ -37,7 +37,7 @@ const getNextPhase = (
 };
 
 /**
- * Returns static circle scale values based on the phase
+ * Updates the circle scale based on the current phase
  */
 const calculateCircleScale = (
   activePhase: string,
@@ -54,6 +54,7 @@ const calculateCircleScale = (
     case "exhale":
       return 0.5;
     default:
+      // Rest at 50%
       return 0.5;
   }
 };
@@ -88,30 +89,34 @@ export function useBreathingAnimation({
         phase: "inhale",
         progress: 0,
         phaseTimeLeft: Math.ceil(inhaleDuration / 1000),
-        circleScale: 1.0
+        circleScale: 0.5 // Start at 50%
       }));
     } else {
       setState(prev => ({
         ...prev,
         phase: "rest",
         progress: 0,
-        circleScale: 0.5
+        circleScale: 0.5 // Rest at 50%
       }));
     }
   }, [isActive, inhaleDuration]);
 
-  // Set fixed circle scale based on current phase
-  useEffect(() => {
-    if (!isActive) return;
-
-    const activePhase = currentPhase || phase;
+  // Updates circle scale in the state based on phase
+  const updateCircleScale = (activePhase: string) => {
     const newScale = calculateCircleScale(activePhase, shouldShowHoldPhase);
-    
     setState(prev => ({
       ...prev,
       circleScale: newScale
     }));
-  }, [currentPhase, phase, isActive, shouldShowHoldPhase]);
+  };
+
+  // Handle circle scaling based on phase
+  useEffect(() => {
+    if (!isActive) return;
+
+    const activePhase = currentPhase || phase;
+    updateCircleScale(activePhase);
+  }, [currentPhase, phase, isActive, inhaleDuration, holdDuration, exhaleDuration, shouldShowHoldPhase]);
 
   // Breathing phase timer effect
   useEffect(() => {
@@ -137,7 +142,7 @@ export function useBreathingAnimation({
       setState(prev => ({
         ...prev,
         phaseTimeLeft: Math.ceil(remaining / 1000),
-        progress: 100
+        progress: 100 // Set to 100% instantly
       }));
       
       return elapsed >= phaseDuration;
@@ -145,16 +150,11 @@ export function useBreathingAnimation({
 
     // Transition to the next phase of breathing
     const transitionToNextPhase = () => {
+      setState(prev => ({ ...prev, progress: 0 }));
+      
       // Determine next phase
       const nextPhase = getNextPhase(currentPhaseLocal, shouldShowHoldPhase);
-      
-      setState(prev => ({ 
-        ...prev, 
-        phase: nextPhase,
-        progress: 0,
-        circleScale: calculateCircleScale(nextPhase, shouldShowHoldPhase)
-      }));
-      
+      setState(prev => ({ ...prev, phase: nextPhase }));
       currentPhaseLocal = nextPhase;
       
       // Update phase duration
@@ -177,6 +177,9 @@ export function useBreathingAnimation({
         ...prev, 
         phaseTimeLeft: Math.ceil(phaseDuration / 1000) 
       }));
+
+      // Update circle scale immediately for the new phase
+      updateCircleScale(nextPhase);
     };
 
     calculateProgress();
@@ -187,14 +190,14 @@ export function useBreathingAnimation({
       if (phaseComplete) {
         transitionToNextPhase();
       }
-    }, 1000);
+    }, 1000); // Update once per second instead of 60fps
 
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, shouldShowHoldPhase]);
 
-  // Helper to get transition duration for animation (now returns 0 to disable animations)
+  // Helper to get transition duration for animation
   const getTransitionDuration = () => {
-    return 0;
+    return 500; // Fixed 500ms transition
   };
 
   return {

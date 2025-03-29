@@ -21,17 +21,17 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   onToggleActive,
   phaseLabel
 }) => {
-  // Static styling based on phase without animations
-  const getCircleClass = () => {
+  // Determine the circle scale based on the phase
+  const getCircleScale = () => {
     switch (phase) {
       case 'inhale':
-        return 'bg-blue-50 border-blue-400';
+        return 'scale-100';
       case 'hold':
-        return 'bg-purple-50 border-purple-400';
+        return 'scale-100';
       case 'exhale':
-        return 'bg-teal-50 border-teal-400';
+        return 'scale-75';
       default:
-        return 'bg-blue-50 border-blue-400';
+        return 'scale-75';
     }
   };
 
@@ -42,13 +42,17 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
         Cyclus {currentCycle} van {totalCycles} | Nog {count} seconden
       </div>
 
-      {/* Breathing circle without animations */}
+      {/* Breathing circle */}
       <div 
         className={cn(
-          "relative h-64 w-64 rounded-full border-4 flex items-center justify-center",
-          getCircleClass(),
+          "relative h-64 w-64 rounded-full bg-blue-50 border-4 border-blue-400 flex items-center justify-center transition-transform",
+          getCircleScale(),
           exerciseCompleted && "bg-green-50 border-green-400"
         )}
+        style={{ 
+          transition: "transform 0.5s ease-in-out",
+          boxShadow: "0 0 30px rgba(96, 165, 250, 0.5)"
+        }}
         onClick={onToggleActive}
       >
         <div className="text-blue-800 text-xl font-medium">

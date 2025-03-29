@@ -23,9 +23,6 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 8,
     hold2: 0,
     cycles: 5,
-    inhaleText: "Adem in via de neus",
-    hold1Text: "Houd je adem vast",
-    exhaleText: "Adem uit via de mond",
     inhaleUrl: "",
     exhaleUrl: ""
   }, 
@@ -38,10 +35,6 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 4,
     hold2: 4,
     cycles: 4,
-    inhaleText: "Inademen",
-    hold1Text: "Vasthouden",
-    exhaleText: "Uitademen",
-    hold2Text: "Pauze",
     inhaleUrl: "",
     exhaleUrl: ""
   }, 
@@ -54,9 +47,6 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 6,
     hold2: 0,
     cycles: 6,
-    inhaleText: "Adem rustig in",
-    hold1Text: "Even vasthouden",
-    exhaleText: "Adem langzaam uit",
     inhaleUrl: "",
     exhaleUrl: ""
   }
@@ -96,10 +86,6 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
-      inhaleText: "",
-      hold1Text: "",
-      exhaleText: "",
-      hold2Text: "",
       startUrl: "",
       endUrl: ""
     }
