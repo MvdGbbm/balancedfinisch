@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Volume2 } from "lucide-react";
@@ -38,8 +38,14 @@ export const BreathingVoicePlayer = ({
   onVolumeChange
 }: BreathingVoicePlayerProps) => {
   
+  // Debug voice state
+  useEffect(() => {
+    console.log("Voice player state:", { isActive, activeVoice, veraUrls, marcoUrls });
+  }, [isActive, activeVoice, veraUrls, marcoUrls]);
+  
   const handlePlayVera = () => {
     if (isActive && activeVoice === "vera") {
+      console.log("Pausing Vera voice");
       onPause();
     } else {
       // Check if Vera has required audio URLs
@@ -49,14 +55,14 @@ export const BreathingVoicePlayer = ({
       }
       
       // Log URLs for debugging
-      console.log("Vera voice URLs:", veraUrls);
-      console.log("Starting voice guidance with Vera");
+      console.log("Starting voice guidance with Vera:", veraUrls);
       onPlay("vera");
     }
   };
   
   const handlePlayMarco = () => {
     if (isActive && activeVoice === "marco") {
+      console.log("Pausing Marco voice");
       onPause();
     } else {
       // Check if Marco has required audio URLs
@@ -66,8 +72,7 @@ export const BreathingVoicePlayer = ({
       }
       
       // Log URLs for debugging
-      console.log("Marco voice URLs:", marcoUrls);
-      console.log("Starting voice guidance with Marco");
+      console.log("Starting voice guidance with Marco:", marcoUrls);
       onPlay("marco");
     }
   };

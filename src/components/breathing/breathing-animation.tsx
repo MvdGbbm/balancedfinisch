@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import BreathingCircle from '../breathing-circle/breathing-circle';
 import { BreathingAudio } from './audio/breathing-audio';
 import { BreathingPhase } from './types';
@@ -34,12 +34,22 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   isVoiceActive,
   showPhaseText = true
 }) => {
+  // Debug current state
+  useEffect(() => {
+    if (isActive) {
+      console.log(`Animation active: Phase ${phase}, Seconds left: ${secondsLeft}`);
+      console.log(`Durations - Inhale: ${inhaleDuration}ms, Hold: ${holdDuration}ms, Exhale: ${exhaleDuration}ms`);
+    }
+  }, [isActive, phase, secondsLeft, inhaleDuration, holdDuration, exhaleDuration]);
+
   // Map breathing phase to circle phase
   const mapPhaseToCirclePhase = (breathingPhase: BreathingPhase): "inhale" | "hold" | "exhale" | "rest" => {
     switch (breathingPhase) {
       case 'inhale': return 'inhale';
       case 'hold': return 'hold';
       case 'exhale': return 'exhale';
+      case 'hold1': return 'hold';
+      case 'hold2': return 'hold';
       case 'start': 
       case 'pause':
       default: return 'rest';
@@ -58,16 +68,20 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         exhaleDuration={exhaleDuration}
         secondsLeft={secondsLeft}
         holdEnabled={holdDuration > 0}
-        onBreathComplete={() => {}}
+        onBreathComplete={() => {
+          console.log("Breath completed");
+        }}
         className="text-primary"
       />
       
-      <BreathingAudio 
-        voiceUrls={voiceUrls}
-        isVoiceActive={isVoiceActive}
-        phase={phase}
-        isActive={isActive}
-      />
+      {isVoiceActive && voiceUrls && (
+        <BreathingAudio 
+          voiceUrls={voiceUrls}
+          isVoiceActive={isVoiceActive}
+          phase={phase}
+          isActive={isActive}
+        />
+      )}
     </div>
   );
 };

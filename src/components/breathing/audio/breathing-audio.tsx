@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BreathingPhase } from '../types';
 import { useBreathingAudio } from './use-breathing-audio';
 import { AudioElement } from './audio-element';
@@ -19,6 +19,13 @@ interface BreathingAudioProps {
 
 export const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
   const { audioRef } = useBreathingAudio(props);
+
+  // Debug voice functionality
+  useEffect(() => {
+    if (props.isVoiceActive && props.voiceUrls) {
+      console.log("Voice active with URLs:", props.voiceUrls);
+    }
+  }, [props.isVoiceActive, props.voiceUrls]);
 
   return <AudioElement audioRef={audioRef} />;
 };

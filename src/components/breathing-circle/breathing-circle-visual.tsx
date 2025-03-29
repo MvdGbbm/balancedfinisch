@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { BreathingCircleVisualProps } from "./types";
 
@@ -9,6 +9,14 @@ export const BreathingCircleVisual = memo(({
   className,
   children
 }: BreathingCircleVisualProps) => {
+  // Debug animation properties
+  useEffect(() => {
+    console.log("Circle animation properties:", { 
+      circleScale, 
+      transitionDuration 
+    });
+  }, [circleScale, transitionDuration]);
+
   // Use CSS custom properties for better performance
   const styleProperties = {
     "--circle-scale": circleScale,
@@ -22,7 +30,8 @@ export const BreathingCircleVisual = memo(({
         className="absolute inset-0 rounded-full bg-cyan-400 opacity-20 blur-xl transform-gpu"
         style={{
           transform: `scale(${circleScale * 1.2})`,
-          transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+          animation: circleScale > 0.5 ? 'pulse 2s infinite' : 'none'
         }}
       />
       

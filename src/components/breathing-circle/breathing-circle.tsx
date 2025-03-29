@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import { BreathingCircleProps } from "./types";
 import { BreathingCircleVisual } from "./breathing-circle-visual";
 import { BreathingPhaseDisplay } from "./breathing-phase-display";
@@ -17,6 +17,15 @@ export const BreathingCircle = memo(({
   secondsLeft = 0,
   holdEnabled = true
 }: BreathingCircleProps) => {
+  // Log component rendering and props
+  useEffect(() => {
+    if (isActive) {
+      console.log("BreathingCircle active with:", {
+        inhaleDuration, holdDuration, exhaleDuration, currentPhase, secondsLeft
+      });
+    }
+  }, [isActive, inhaleDuration, holdDuration, exhaleDuration, currentPhase, secondsLeft]);
+
   const { 
     phase, 
     phaseTimeLeft, 

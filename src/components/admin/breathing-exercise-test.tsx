@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BreathingPattern } from "@/lib/types";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { BreathingControls } from "./breathing-exercise/breathing-controls";
 import { BreathingAudioManager } from "./breathing-exercise/breathing-audio-manager";
 import { BreathingExerciseState } from "./breathing-exercise/types";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { Home, Bug } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface BreathingExerciseTestProps {
@@ -20,7 +20,7 @@ export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"exercise" | "voice">("exercise");
+  const [activeTab, setActiveTab] = useState<"exercise" | "voice" | "debug">("exercise");
   const { veraVoiceUrls, marcoVoiceUrls } = useVoiceUrlLoader();
   
   // Exercise state
@@ -36,6 +36,19 @@ export function BreathingExerciseTest({
     audioError: false,
     currentAudioUrl: ""
   });
+
+  // Debug info
+  useEffect(() => {
+    if (state.isActive) {
+      console.log("Test exercise state:", state);
+    }
+  }, [state]);
+
+  // Debug voice URLs
+  useEffect(() => {
+    console.log("Vera voice URLs:", veraVoiceUrls);
+    console.log("Marco voice URLs:", marcoVoiceUrls);
+  }, [veraVoiceUrls, marcoVoiceUrls]);
 
   if (!pattern) {
     return <Card>
@@ -81,25 +94,40 @@ export function BreathingExerciseTest({
     navigate("/breathing");
   };
 
+  const toggleDebug = () => {
+    console.log("Vera voice URLs:", veraVoiceUrls);
+    console.log("Marco voice URLs:", marcoVoiceUrls);
+    console.log("Current pattern:", pattern);
+    console.log("Current state:", state);
+    toast.info("Debug info logged to console");
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>Test Ademhalingsoefening</CardTitle>
-        <Button variant="outline" size="sm" onClick={goToFrontend}>
-          <Home className="h-4 w-4 mr-2" />
-          Frontend
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={toggleDebug}>
+            <Bug className="h-4 w-4 mr-2" />
+            Debug
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToFrontend}>
+            <Home className="h-4 w-4 mr-2" />
+            Frontend
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs 
           defaultValue="exercise" 
           value={activeTab} 
-          onValueChange={(value) => setActiveTab(value as "exercise" | "voice")}
+          onValueChange={(value) => setActiveTab(value as "exercise" | "voice" | "debug")}
           className="w-full"
         >
-          <TabsList className="grid grid-cols-2 mb-4">
+          <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="exercise">Ademhalingstechnieken</TabsTrigger>
             <TabsTrigger value="voice">Stem Configuratie</TabsTrigger>
+            <TabsTrigger value="debug">Debug</TabsTrigger>
           </TabsList>
           
           <TabsContent value="exercise" className="space-y-4">
@@ -153,25 +181,59 @@ export function BreathingExerciseTest({
                     <div className="space-y-2">
                       <h3 className="text-sm font-medium">Vera Stem</h3>
                       <ul className="space-y-1 text-sm">
-                        <li>Inademen: {veraVoiceUrls.inhale ? "✅" : "❌"}</li>
-                        <li>Vasthouden: {veraVoiceUrls.hold ? "✅" : "❌"}</li>
-                        <li>Uitademen: {veraVoiceUrls.exhale ? "✅" : "❌"}</li>
+                        <li>Inademen: {veraVoiceUrls.inhale ? `✅ (${veraVoiceUrls.inhale.substring(0, 30)}...)` : "❌"}</li>
+                        <li>Vasthouden: {veraVoiceUrls.hold ? `✅ (${veraVoiceUrls.hold.substring(0, 30)}...)` : "❌"}</li>
+                        <li>Uitademen: {veraVoiceUrls.exhale ? `✅ (${veraVoiceUrls.exhale.substring(0, 30)}...)` : "❌"}</li>
                       </ul>
                     </div>
                     
                     <div className="space-y-2">
                       <h3 className="text-sm font-medium">Marco Stem</h3>
                       <ul className="space-y-1 text-sm">
-                        <li>Inademen: {marcoVoiceUrls.inhale ? "✅" : "❌"}</li>
-                        <li>Vasthouden: {marcoVoiceUrls.hold ? "✅" : "❌"}</li>
-                        <li>Uitademen: {marcoVoiceUrls.exhale ? "✅" : "❌"}</li>
+                        <li>Inademen: {marcoVoiceUrls.inhale ? `✅ (${marcoVoiceUrls.inhale.substring(0, 30)}...)` : "❌"}</li>
+                        <li>Vasthouden: {marcoVoiceUrls.hold ? `✅ (${marcoVoiceUrls.hold.substring(0, 30)}...)` : "❌"}</li>
+                        <li>Uitademen: {marcoVoiceUrls.exhale ? `✅ (${marcoVoiceUrls.exhale.substring(0, 30)}...)` : "❌"}</li>
                       </ul>
                     </div>
                   </div>
                   
                   <p className="mt-4 text-sm text-muted-foreground">
-                    De stemconfiguratie kan worden ingesteld op het tabblad "Stem Configuratie" hierboven.
+                    De stemconfiguratie kan worden ingesteld op het tabblad "Stem Configuratie" in het admin menu.
                   </p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="debug">
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Debug Informatie</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Audio Status</h3>
+                    <pre className="bg-muted p-2 rounded text-xs overflow-auto max-h-40">
+                      {JSON.stringify({
+                        activeVoice: state.activeVoice,
+                        currentAudioUrl: state.currentAudioUrl,
+                        audioError: state.audioError,
+                        isActive: state.isActive
+                      }, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Pattern</h3>
+                    <pre className="bg-muted p-2 rounded text-xs overflow-auto max-h-40">
+                      {JSON.stringify(pattern, null, 2)}
+                    </pre>
+                  </div>
+                  
+                  <Button onClick={toggleDebug} className="w-full">
+                    Log Debug Info to Console
+                  </Button>
                 </CardContent>
               </Card>
             </div>
