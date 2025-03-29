@@ -61,6 +61,17 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     setIsActive(!isActive);
   };
 
+  // Check if we should skip showing "hold" phase in UI
+  const shouldSkipHoldPhase = holdTime === 0;
+  
+  // Get phase label, conditionally skipping "hold" when holdTime is 0
+  const getPhaseLabel = () => {
+    if (shouldSkipHoldPhase && phase === 'hold') {
+      return phaseTranslations['inhale'] || 'inhale';
+    }
+    return phaseTranslations[phase] || phase;
+  };
+
   return (
     <>
       <BreathingAudio 
@@ -68,6 +79,7 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         isVoiceActive={isVoiceActive}
         phase={phase}
         isActive={isActive}
+        skipHoldAudio={shouldSkipHoldPhase}
       />
       
       <BreathingCircle
@@ -76,9 +88,8 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         exerciseCompleted={exerciseCompleted}
         currentCycle={currentCycle}
         totalCycles={totalCycles}
-        animationDuration={getCountForPhase(phase, inhaleTime, holdTime, exhaleTime, pauseTime)}
         onToggleActive={toggleActive}
-        phaseLabel={phaseTranslations[phase] || phase}
+        phaseLabel={getPhaseLabel()}
       />
     </>
   );
