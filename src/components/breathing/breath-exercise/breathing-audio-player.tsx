@@ -2,7 +2,6 @@
 import React, { useEffect } from "react";
 import { BreathingAudioPlayerProps } from "./types";
 import { toast } from "sonner";
-import { preloadAudio } from "@/components/audio-player/utils";
 
 export function BreathingAudioPlayer({ 
   audioRef,
@@ -13,20 +12,8 @@ export function BreathingAudioPlayer({
   useEffect(() => {
     if (currentAudioUrl) {
       console.log("Audio URL set:", currentAudioUrl);
-      
-      // Preload audio when URL changes
-      if (currentAudioUrl) {
-        preloadAudio(currentAudioUrl).then(success => {
-          if (!success) {
-            console.error("Failed to preload audio:", currentAudioUrl);
-            if (onAudioError) onAudioError();
-          } else {
-            console.log("Successfully preloaded audio:", currentAudioUrl);
-          }
-        });
-      }
     }
-  }, [currentAudioUrl, onAudioError]);
+  }, [currentAudioUrl]);
 
   // Handle audio errors more explicitly
   const handleAudioError = (e: React.SyntheticEvent<HTMLAudioElement>) => {

@@ -2,7 +2,7 @@
 import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';
-import { preloadAudio } from '@/components/audio-player/utils';
+import { preloadAudio as preloadAudioUtil } from '@/components/audio-player/utils';
 
 interface BreathingAudioProps {
   voiceUrls: {
@@ -56,7 +56,7 @@ export const useBreathingAudio = ({
         urlsToValidate.push(urls.end);
       }
       
-      const validationPromises = urlsToValidate.map(url => preloadAudio(url));
+      const validationPromises = urlsToValidate.map(url => preloadAudioUtil(url));
       const validationResults = await Promise.all(validationPromises);
       
       const allValid = validationResults.every(result => result === true);
@@ -114,7 +114,7 @@ export const useBreathingAudio = ({
     audioLoadingRef.current = true;
     
     try {
-      const isValid = await preloadAudio(audioUrl);
+      const isValid = await preloadAudioUtil(audioUrl);
       if (!isValid) {
         throw new Error(`Failed to preload ${phaseType} audio`);
       }
@@ -188,9 +188,6 @@ export const useBreathingAudio = ({
     // Create audio element if it doesn't exist
     if (!audioRef.current) {
       audioRef.current = new Audio();
-      audioRef.current.addEventListener('error', (e) => {
-        console.error("Audio element error:", e);
-      });
     }
     
     if (!isVoiceActive && audioRef.current) {
