@@ -1,8 +1,8 @@
 
 import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from '../types';
-import { toast } from 'sonner';
-import { preloadAudio } from '@/components/audio-player/utils';
+import { useAudioValidation, VoiceUrls } from './use-audio-validation';
+import { useAudioPlayback } from './use-audio-playback';
 
 interface UseBreathingAudioProps {
   voiceUrls: {
@@ -23,154 +23,9 @@ export const useBreathingAudio = ({
   phase,
   isActive
 }: UseBreathingAudioProps) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
-  const audioErrorCountRef = useRef<number>(0);
-  const audioLoadingRef = useRef<boolean>(false);
-
-  // Validate voice URLs to ensure they are playable
-  const validateVoiceUrls = async (urls: {
-    start?: string;
-    inhale: string;
-    hold: string;
-    exhale: string;
-    end?: string;
-  }) => {
-    if (!urls.inhale || !urls.exhale) {
-      console.log("Voice URLs are incomplete, skipping validation");
-      return false;
-    }
-    try {
-      // Only validate URLs that are actually provided and will be used
-      const urlsToValidate = [urls.inhale, urls.exhale].filter(Boolean);
-      
-      // Only add the hold URL to validation if it exists and is not empty
-      if (urls.hold && urls.hold.trim() !== '') {
-        urlsToValidate.push(urls.hold);
-      }
-      
-      if (urls.start) {
-        urlsToValidate.push(urls.start);
-      }
-      
-      if (urls.end) {
-        urlsToValidate.push(urls.end);
-      }
-      
-      const validationPromises = urlsToValidate.map(url => preloadAudio(url));
-      const validationResults = await Promise.all(validationPromises);
-      
-      const allValid = validationResults.every(result => result === true);
-      
-      if (!allValid) {
-        console.error("One or more voice audio URLs failed validation");
-        audioErrorCountRef.current = 5;
-        toast.error("Fout bij het laden van audio. Controleer of alle URL's correct zijn.");
-        return false;
-      }
-      console.log("All voice URLs validated successfully");
-      return true;
-    } catch (error) {
-      console.error("Error validating voice URLs:", error);
-      return false;
-    }
-  };
-
-  // Handle play errors consistently
-  const handlePlayError = (error: any) => {
-    if (audioErrorCountRef.current < 5) {
-      audioErrorCountRef.current++;
-      if (audioErrorCountRef.current === 3) {
-        toast.error("Fout bij afspelen van audio. Controleer de URL's.");
-      }
-    }
-    if (error?.name === 'NotAllowedError') {
-      toast.error("Audio afspelen vereist interactie van de gebruiker. Klik ergens op de pagina.");
-      console.log("Audio playback requires user interaction");
-    }
-  };
-
-  // Play audio for a specific breathing phase
-  const playAudio = async (phaseType: BreathingPhase) => {
-    if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) {
-      console.log(`Not playing audio for ${phaseType} due to inactive state or missing refs`);
-      return;
-    }
-    
-    let audioUrl = '';
-    
-    switch (phaseType) {
-      case 'start':
-        audioUrl = voiceUrls.start || '';
-        break;
-      case 'inhale':
-        audioUrl = voiceUrls.inhale;
-        break;
-      case 'hold':
-        // Skip if no hold URL is provided or if it's empty
-        audioUrl = voiceUrls.hold && voiceUrls.hold.trim() !== '' ? voiceUrls.hold : '';
-        break;
-      case 'exhale':
-        audioUrl = voiceUrls.exhale;
-        break;
-      case 'end':
-        audioUrl = voiceUrls.end || '';
-        break;
-      default:
-        audioUrl = '';
-    }
-    
-    // If no URL for this phase (particularly for hold), just skip playing audio
-    if (!audioUrl) {
-      console.log(`No audio URL for ${phaseType} phase, skipping audio playback`);
-      return;
-    }
-    
-    console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
-    audioLoadingRef.current = true;
-    
-    try {
-      const isValid = await preloadAudio(audioUrl);
-      if (!isValid) {
-        throw new Error(`Failed to preload ${phaseType} audio`);
-      }
-      
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.volume = 1.0;
-        
-        // Clear any previous event listeners to prevent memory leaks
-        const oldAudio = audioRef.current;
-        const clonedAudio = oldAudio.cloneNode() as HTMLAudioElement;
-        oldAudio.parentNode?.replaceChild(clonedAudio, oldAudio);
-        audioRef.current = clonedAudio;
-        
-        try {
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.then(() => {
-              console.log(`Playing ${phaseType} audio successfully`);
-              audioErrorCountRef.current = 0;
-            }).catch(playError => {
-              console.error(`Error playing ${phaseType} audio:`, playError);
-              handlePlayError(playError);
-            });
-          }
-        } catch (playError) {
-          console.error(`Error in play attempt for ${phaseType} audio:`, playError);
-          handlePlayError(playError);
-        }
-      }
-    } catch (error) {
-      console.error(`Error with ${phaseType} audio:`, error);
-      audioErrorCountRef.current++;
-      if (audioErrorCountRef.current === 3) {
-        toast.error("Fout bij het afspelen van audio. Controleer of alle URL's correct zijn.");
-      }
-    } finally {
-      audioLoadingRef.current = false;
-    }
-  };
+  const { validateVoiceUrls } = useAudioValidation();
+  const { audioRef, playAudio } = useAudioPlayback({ voiceUrls, isVoiceActive });
 
   // Effect to play audio when phase changes
   useEffect(() => {
@@ -186,7 +41,7 @@ export const useBreathingAudio = ({
       }
       previousPhaseRef.current = phase;
     }
-  }, [phase, voiceUrls, isVoiceActive, isActive]);
+  }, [phase, voiceUrls, isVoiceActive, isActive, playAudio]);
 
   // Effect to initialize audio and handle voice activation
   useEffect(() => {
@@ -209,7 +64,7 @@ export const useBreathingAudio = ({
         playAudio(phase);
       }
     }
-  }, [isVoiceActive, voiceUrls, isActive, phase]);
+  }, [isVoiceActive, voiceUrls, isActive, phase, playAudio]);
 
   // Effect to validate URLs when they change
   useEffect(() => {
@@ -224,7 +79,7 @@ export const useBreathingAudio = ({
         audioRef.current.src = '';
       }
     };
-  }, [voiceUrls, isVoiceActive]);
+  }, [voiceUrls, isVoiceActive, validateVoiceUrls]);
 
   return {
     audioRef,

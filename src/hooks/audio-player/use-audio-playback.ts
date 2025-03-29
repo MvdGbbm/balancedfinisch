@@ -1,7 +1,7 @@
 
-import { useState, useRef } from "react";
+import { useEffect, useState } from "react";
+import { useAudioValidation } from "./use-audio-validation";
 import { useAudioErrorHandler } from "./use-audio-error-handler";
-import { useAudioLoader } from "./use-audio-loader";
 import { useAudioEvents } from "./use-audio-events";
 import { useAudioControls } from "./use-audio-controls";
 import { useAudioInitialization } from "./use-audio-initialization";
@@ -10,92 +10,56 @@ import { useAudioVolume } from "./use-audio-volume";
 import { useExternalPlayback } from "./use-external-playback";
 
 interface UseAudioPlaybackProps {
+  audioRef: React.RefObject<HTMLAudioElement>;
   audioUrl: string;
-  title?: string;
-  volume?: number;
   isPlayingExternal?: boolean;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
-  onEnded?: () => void;
-  onError?: () => void;
+  isLooping?: boolean;
+  initialVolume?: number;
+  isLiveStream?: boolean;
 }
 
 export function useAudioPlayback({
+  audioRef,
   audioUrl,
-  title,
-  volume: initialVolume,
-  isPlayingExternal,
-  onPlayPauseChange,
-  onEnded,
-  onError
+  isPlayingExternal = false,
+  isLooping = false,
+  initialVolume = 0.8,
+  isLiveStream = false
 }: UseAudioPlaybackProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(initialVolume ?? 0.8);
-  const [isLooping, setIsLooping] = useState(false);
-  
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // Using refactored hooks
-  const {
-    loadError,
-    isRetrying,
-    resetErrorState,
-    handleError,
-    manualRetry
-  } = useAudioErrorHandler({ onError });
-  
-  const {
-    isLoaded,
-    isLiveStream,
-    playDirectly,
-    resetLoadState
-  } = useAudioLoader({
-    audioUrl,
-    isPlayingExternal,
-    onPlayPauseChange
-  });
-  
-  const { togglePlay } = useAudioEvents({
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(initialVolume);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+
+  // Reset loading state
+  const resetLoadState = () => {
+    setIsLoaded(false);
+    setIsBuffering(false);
+  };
+
+  // Set up error handler
+  const { errorMessage, hasError, resetErrorState, handleError } = useAudioErrorHandler();
+
+  // Set up audio controls 
+  const { playAudio, pauseAudio, togglePlayPause, seekTo, handleVolumeChange, setPlaybackSpeed, playDirectly } = 
+    useAudioControls({ audioRef, setIsPlaying, setHasUserInteracted, handleError });
+
+  // Set up audio events
+  useAudioEvents({
     audioRef,
-    isLoaded,
-    isPlaying,
-    isLiveStream,
-    volume,
-    isLooping,
     setIsPlaying,
     setCurrentTime,
     setDuration,
     setIsLoaded,
-    setIsLiveStream: () => {}, // This is handled in useAudioLoader
-    handleError,
-    onEnded,
-    onPlayPauseChange,
-    audioUrl,
-    title
+    setIsBuffering,
+    handleError
   });
-  
-  const {
-    handleRetry,
-    toggleLoop,
-    handleProgressChange,
-    handleVolumeChange,
-    skipTime
-  } = useAudioControls({
-    audioRef,
-    isLiveStream,
-    duration,
-    volume,
-    setVolume,
-    setCurrentTime,
-    isLooping,
-    setIsLooping,
-    playDirectly,
-    audioUrl,
-    manualRetry
-  });
-  
-  // Handle audio initialization
+
+  // Initialize audio
   useAudioInitialization({
     audioRef,
     audioUrl,
@@ -105,21 +69,21 @@ export function useAudioPlayback({
     playDirectly,
     setCurrentTime
   });
-  
+
   // Handle looping
   useAudioLooping({
     audioRef,
     isLooping,
     isLiveStream
   });
-  
-  // Handle volume initialization
+
+  // Handle volume
   useAudioVolume({
     audioRef,
     initialVolume,
     setVolume
   });
-  
+
   // Handle external playback control
   useExternalPlayback({
     audioRef,
@@ -131,22 +95,28 @@ export function useAudioPlayback({
   });
 
   return {
-    audioRef,
+    // State
     isPlaying,
-    duration,
     currentTime,
+    duration,
     volume,
-    isLooping,
     isLoaded,
-    loadError,
-    isRetrying,
-    isLiveStream,
-    togglePlay,
-    handleRetry,
-    toggleLoop,
-    handleProgressChange,
+    isBuffering,
+    playbackRate,
+    hasError,
+    errorMessage,
+    hasUserInteracted,
+    
+    // Controls
+    playAudio,
+    pauseAudio,
+    togglePlayPause,
+    seekTo,
     handleVolumeChange,
-    skipTime,
+    setPlaybackSpeed,
+    resetErrorState,
+    
+    // Advanced playback
     playDirectly
   };
 }
