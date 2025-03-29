@@ -8,13 +8,15 @@ interface PhaseTimerProps {
   currentPhase: "inhale" | "hold1" | "exhale" | "hold2";
   currentCycle: number;
   totalCycles: number;
+  secondsLeft: number;
 }
 
 export function PhaseTimer({
   progress,
   currentPhase,
   currentCycle,
-  totalCycles
+  totalCycles,
+  secondsLeft
 }: PhaseTimerProps) {
   const getInstructions = () => {
     switch (currentPhase) {

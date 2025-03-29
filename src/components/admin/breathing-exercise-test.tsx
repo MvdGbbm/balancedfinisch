@@ -56,6 +56,9 @@ export function BreathingExerciseTest({
               circleScale={circleScale} 
               isActive={isActive}
               currentPhase={currentPhase}
+              secondsLeft={secondsLeft}
+              pattern={pattern}
+              setCircleScale={setCircleScale}
             />
             
             <PhaseTimer 
@@ -72,6 +75,7 @@ export function BreathingExerciseTest({
               audioRef={audioRef}
               endAudioRef={endAudioRef}
               currentAudioUrl={currentAudioUrl}
+              isActive={isActive}
             />
             
             <VoiceButtons 
@@ -85,6 +89,7 @@ export function BreathingExerciseTest({
               isActive={isActive}
               setIsActive={setIsActive}
               resetExercise={resetExercise}
+              activeVoice={activeVoice}
             />
             
             <div className="p-4 bg-muted rounded-md mt-4">
