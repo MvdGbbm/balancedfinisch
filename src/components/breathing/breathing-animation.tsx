@@ -1,89 +1,85 @@
 
-import React, { useEffect } from 'react';
-import BreathingCircle from '../breathing-circle/breathing-circle';
-import { BreathingAudio } from './audio/breathing-audio';
-import { BreathingPhase } from './types';
+import React, { useState, useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { BreathingPhase, BreathingTechnique, BreathingAnimationProps } from './types';
+import { getCountForPhase, getNextPhase } from './breathing-utils';
+import BreathingAudio from './breathing-audio';
+import BreathingCircle from './breathing-circle';
 
-// Define the props interface
-interface BreathingAnimationProps {
-  isActive: boolean;
-  phase: BreathingPhase;
-  secondsLeft: number;
-  inhaleDuration: number;
-  holdDuration: number;
-  exhaleDuration: number;
-  voiceUrls: {
-    start?: string;
-    inhale: string;
-    hold: string;
-    exhale: string;
-    end?: string;
-  } | null;
-  isVoiceActive: boolean;
-  showPhaseText?: boolean;
-}
-
-export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
-  isActive,
-  phase,
-  secondsLeft,
-  inhaleDuration,
-  holdDuration,
-  exhaleDuration,
+const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
+  technique,
   voiceUrls,
   isVoiceActive,
-  showPhaseText = true
+  currentPhase: externalPhase,
+  onPhaseChange,
+  currentCycle = 1,
+  totalCycles = 5,
+  exerciseCompleted = false,
+  inhaleTime,
+  holdTime,
+  exhaleTime,
+  pauseTime
 }) => {
-  // Debug current state
-  useEffect(() => {
-    if (isActive) {
-      console.log(`Animation active: Phase ${phase}, Seconds left: ${secondsLeft}`);
-      console.log(`Durations - Inhale: ${inhaleDuration}ms, Hold: ${holdDuration}ms, Exhale: ${exhaleDuration}ms`);
-    }
-  }, [isActive, phase, secondsLeft, inhaleDuration, holdDuration, exhaleDuration]);
+  const [internalPhase, setInternalPhase] = useState<BreathingPhase>('start');
+  const [count, setCount] = useState(getCountForPhase('start', inhaleTime, holdTime, exhaleTime, pauseTime));
+  const [isActive, setIsActive] = useState(true);
+  const isMobile = useIsMobile();
+  
+  const phase = externalPhase || internalPhase;
 
-  // Map breathing phase to circle phase
-  const mapPhaseToCirclePhase = (breathingPhase: BreathingPhase): "inhale" | "hold" | "exhale" | "rest" => {
-    switch (breathingPhase) {
-      case 'inhale': return 'inhale';
-      case 'hold': return 'hold';
-      case 'exhale': return 'exhale';
-      case 'start': 
-      case 'pause':
-      case 'end':
-      default: return 'rest';
+  useEffect(() => {
+    if (!externalPhase) {
+      setInternalPhase('start');
     }
+    setCount(getCountForPhase(externalPhase || 'start', inhaleTime, holdTime, exhaleTime, pauseTime));
+    setIsActive(true);
+  }, [technique, externalPhase, inhaleTime, holdTime, exhaleTime, pauseTime]);
+
+  useEffect(() => {
+    if (!isActive || exerciseCompleted) return;
+    
+    const interval = setInterval(() => {
+      setCount(prevCount => {
+        if (prevCount <= 1) {
+          const nextPhase = getNextPhase(phase);
+          if (!externalPhase) {
+            setInternalPhase(nextPhase);
+          } else if (onPhaseChange) {
+            onPhaseChange(nextPhase);
+          }
+          return getCountForPhase(nextPhase, inhaleTime, holdTime, exhaleTime, pauseTime);
+        }
+        return prevCount - 1;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [phase, isActive, externalPhase, onPhaseChange, exerciseCompleted, inhaleTime, holdTime, exhaleTime, pauseTime]);
+
+  const toggleActive = () => {
+    setIsActive(!isActive);
   };
 
-  const circlePhase = mapPhaseToCirclePhase(phase);
-  
   return (
-    <div className="relative flex flex-col items-center justify-center">
-      <BreathingCircle
+    <>
+      <BreathingAudio 
+        voiceUrls={voiceUrls}
+        isVoiceActive={isVoiceActive}
+        phase={phase}
         isActive={isActive}
-        currentPhase={circlePhase}
-        inhaleDuration={inhaleDuration}
-        holdDuration={holdDuration} 
-        exhaleDuration={exhaleDuration}
-        secondsLeft={secondsLeft}
-        holdEnabled={holdDuration > 0}
-        onBreathComplete={() => {
-          console.log("Breath completed");
-        }}
-        className="text-primary"
       />
       
-      {isVoiceActive && voiceUrls && (
-        <BreathingAudio 
-          voiceUrls={voiceUrls}
-          isVoiceActive={isVoiceActive}
-          phase={phase}
-          isActive={isActive}
-        />
-      )}
-    </div>
+      <BreathingCircle
+        phase={phase}
+        count={count}
+        exerciseCompleted={exerciseCompleted}
+        currentCycle={currentCycle}
+        totalCycles={totalCycles}
+        animationDuration={getCountForPhase(phase, inhaleTime, holdTime, exhaleTime, pauseTime)}
+        onToggleActive={toggleActive}
+      />
+    </>
   );
 };
 
-// Adding default export to fix any potential issues with imports
 export default BreathingAnimation;

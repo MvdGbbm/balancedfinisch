@@ -1,35 +1,23 @@
 
-// Define breathing phases
-export type BreathingPhase = 
-  | "start"     // Before the exercise starts
-  | "inhale"    // Breathing in
-  | "hold"      // Holding breath after inhaling
-  | "exhale"    // Breathing out
-  | "pause"     // Pause after exhaling
-  | "end";      // Exercise complete
+export type BreathingTechnique = '4-7-8' | 'box-breathing' | 'diaphragmatic';
+export type BreathingPhase = 'start' | 'inhale' | 'hold' | 'exhale' | 'pause';
 
-// Define exercise settings
-export interface BreathingExerciseSettings {
-  cycles: number;
+export interface BreathingAnimationProps {
+  technique: BreathingTechnique;
+  voiceUrls: {
+    start?: string;
+    inhale: string;
+    hold: string;
+    exhale: string;
+  } | null;
+  isVoiceActive: boolean;
+  currentPhase?: BreathingPhase;
+  onPhaseChange?: (phase: BreathingPhase) => void;
+  currentCycle?: number;
+  totalCycles?: number;
+  exerciseCompleted?: boolean;
   inhaleTime: number;
   holdTime: number;
   exhaleTime: number;
   pauseTime: number;
-}
-
-// Define status
-export interface BreathingStatus {
-  currentPhase: BreathingPhase;
-  currentCycle: number;
-  secondsLeft: number;
-  isActive: boolean;
-  isComplete: boolean;
-}
-
-// Define audio options
-export interface BreathingAudioOptions {
-  voiceEnabled: boolean;
-  musicEnabled: boolean;
-  voiceVolume: number;
-  musicVolume: number;
 }

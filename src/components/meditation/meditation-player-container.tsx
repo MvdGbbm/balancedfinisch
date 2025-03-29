@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
@@ -42,6 +43,7 @@ export function MeditationPlayerContainer({
         const validatedUrl = validateAudioUrl(url);
         
         if (validatedUrl) {
+          // Check if URL is accessible
           const isAccessible = await checkUrlExists(validatedUrl);
           
           if (!isAccessible) {
@@ -110,13 +112,15 @@ export function MeditationPlayerContainer({
     });
   };
   
-  const handleRetry = async () => {
+  const handleRetryAudio = async () => {
     setIsRetrying(true);
     
     try {
-      let urlToTry = selectedMeditation.audioUrl || '';
+      // Try the original URL first
+      let urlToTry = selectedMeditation.audioUrl || "";
       let validatedUrl = validateAudioUrl(urlToTry);
       
+      // If original URL isn't valid, try external links
       if (!validatedUrl) {
         if (selectedMeditation.veraLink) {
           urlToTry = selectedMeditation.veraLink;
@@ -214,7 +218,7 @@ export function MeditationPlayerContainer({
               ? "Probeer de externe links hieronder." 
               : "Probeer een andere meditatie te selecteren."
           }
-          onRetry={handleRetry}
+          onRetry={handleRetryAudio}
           isRetrying={isRetrying}
         />
         

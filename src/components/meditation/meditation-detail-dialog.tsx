@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Meditation } from "@/lib/types";
 import { Soundscape } from "@/lib/types";
@@ -15,9 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
-import { validateAudioUrl, getRandomQuote } from "@/components/audio-player/utils";
+import { validateAudioUrl } from "@/components/audio-player/utils";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,

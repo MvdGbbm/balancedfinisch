@@ -66,21 +66,12 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Make sure meditations is an array before setting displayMeditations
-    if (Array.isArray(meditations)) {
-      setDisplayMeditations(meditations.slice(0, 3));
-    } else {
-      console.error("meditations is not an array:", meditations);
-      setDisplayMeditations([]);
-    }
+    setDisplayMeditations(meditations.slice(0, 3));
     setLoading(false);
   }, [meditations]);
   
   const getRecentMeditations = () => {
-    // Ensure we return an array, even if displayMeditations is undefined
-    return Array.isArray(displayMeditations) && displayMeditations.length > 0 
-      ? displayMeditations 
-      : [];
+    return displayMeditations.length > 0 ? displayMeditations : [];
   };
   
   return (

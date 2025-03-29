@@ -1,10 +1,9 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 interface BreathingVoicePlayerProps {
   veraUrls: {
@@ -33,53 +32,29 @@ export const BreathingVoicePlayer = ({
   onPlay,
   onPause,
   activeVoice,
-  headerText = "Kies een stem voor begeleiding",
+  headerText = "Kies een stem",
   volume = 0.8,
   onVolumeChange
 }: BreathingVoicePlayerProps) => {
   
-  // Debug voice state
-  useEffect(() => {
-    console.log("Voice player state:", { isActive, activeVoice, veraUrls, marcoUrls });
-  }, [isActive, activeVoice, veraUrls, marcoUrls]);
-  
   const handlePlayVera = () => {
     if (isActive && activeVoice === "vera") {
-      console.log("Pausing Vera voice");
       onPause();
     } else {
-      // Check if Vera has required audio URLs
-      if (!veraUrls.inhale || !veraUrls.exhale) {
-        toast.error("De stem 'Vera' heeft niet alle benodigde audio bestanden.");
-        return;
-      }
-      
-      // Log URLs for debugging
-      console.log("Starting voice guidance with Vera:", veraUrls);
       onPlay("vera");
     }
   };
   
   const handlePlayMarco = () => {
     if (isActive && activeVoice === "marco") {
-      console.log("Pausing Marco voice");
       onPause();
     } else {
-      // Check if Marco has required audio URLs
-      if (!marcoUrls.inhale || !marcoUrls.exhale) {
-        toast.error("De stem 'Marco' heeft niet alle benodigde audio bestanden.");
-        return;
-      }
-      
-      // Log URLs for debugging
-      console.log("Starting voice guidance with Marco:", marcoUrls);
       onPlay("marco");
     }
   };
   
-  // Checking minimal requirements: inhale and exhale audio must be configured
-  const areVeraUrlsValid = veraUrls.inhale && veraUrls.exhale;
-  const areMarcoUrlsValid = marcoUrls.inhale && marcoUrls.exhale;
+  const areVeraUrlsValid = veraUrls.inhale && veraUrls.hold && veraUrls.exhale;
+  const areMarcoUrlsValid = marcoUrls.inhale && marcoUrls.hold && marcoUrls.exhale;
   
   return (
     <Card className="overflow-hidden border-muted bg-card/50 backdrop-blur-sm">
@@ -115,7 +90,7 @@ export const BreathingVoicePlayer = ({
         
         {(!areVeraUrlsValid || !areMarcoUrlsValid) && (
           <p className="text-xs text-muted-foreground mt-2">
-            Let op: Minimaal de inadem- en uitademstem moeten geconfigureerd zijn. Ga naar de Admin om audio te configureren.
+            Let op: Niet alle stemaudio is geconfigureerd. Ga naar de Admin om audio te configureren.
           </p>
         )}
       </CardContent>

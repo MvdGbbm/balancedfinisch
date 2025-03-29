@@ -1,350 +1,586 @@
-
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { useState, useRef, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { validateAudioUrl, isStreamUrl } from "@/components/audio-player/utils";
 
 interface UseAudioPlayerProps {
   audioUrl: string;
+  onEnded?: () => void;
+  onError?: () => void;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
-  onError?: () => void;
-  volume?: number;
   nextAudioUrl?: string;
-  onEnded?: () => void;
   onCrossfadeStart?: () => void;
   title?: string;
+  volume?: number;
 }
 
-export function useAudioPlayer({
+export const useAudioPlayer = ({
   audioUrl,
+  onEnded,
+  onError,
   isPlayingExternal,
   onPlayPauseChange,
-  onError,
-  volume: externalVolume,
   nextAudioUrl,
-  onEnded,
   onCrossfadeStart,
-  title
-}: UseAudioPlayerProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  title,
+  volume: initialVolume
+}: UseAudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(externalVolume !== undefined ? externalVolume : 0.7);
+  const [volume, setVolume] = useState(initialVolume ?? 0.8);
+  const [isLooping, setIsLooping] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const isUserInteracting = useRef(false);
-  const crossfadeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [isCrossfading, setIsCrossfading] = useState(false);
+  const [isLiveStream, setIsLiveStream] = useState(false);
+  const { toast } = useToast();
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const nextAudioRef = useRef<HTMLAudioElement | null>(null);
+  const crossfadeTimeoutRef = useRef<number | null>(null);
+  const retryCountRef = useRef(0);
+
+  const CROSSFADE_DURATION = 5;
+  const MAX_RETRY_COUNT = 3;
   
-  console.log(`useAudioPlayer initialized with URL: ${audioUrl}`);
+  const SUPPORTED_FORMATS = [
+    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 
+    'audio/aac', 'audio/mp4', 'audio/m4a', 'audio/x-m4a'
+  ];
+  
+  const checkAACSupport = () => {
+    const audio = document.createElement('audio');
+    return audio.canPlayType('audio/aac') !== '' || 
+           audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
+  };
+  
+  const aacSupported = useRef(checkAACSupport());
 
-  // Handle when isPlayingExternal prop changes
-  useEffect(() => {
-    console.log(`External playing state changed to: ${isPlayingExternal}`);
-    
-    if (isPlayingExternal !== undefined) {
-      if (isPlayingExternal && audioRef.current) {
-        // Attempt to play
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.error('Error auto-playing audio:', error);
-            if (error.name === 'NotAllowedError') {
-              toast.info("Autoplay is geblokkeerd door je browser. Klik op afspelen om te starten.");
-            }
-            // Update internal state
-            setIsPlaying(false);
-            if (onPlayPauseChange) onPlayPauseChange(false);
-          });
-        }
-      } else if (!isPlayingExternal && audioRef.current) {
-        audioRef.current.pause();
-      }
-      
-      // Update internal state to match external state
-      setIsPlaying(!!isPlayingExternal);
-    }
-  }, [isPlayingExternal, onPlayPauseChange]);
+  const checkIfLiveStream = (url: string) => {
+    return isStreamUrl(url);
+  };
 
-  // Handle audio element initialization and cleanup
-  useEffect(() => {
-    if (!audioRef.current && typeof window !== 'undefined') {
-      audioRef.current = new Audio();
+  const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
+    if (!audioElement) {
+      console.error("Audio element not available");
+      return;
     }
     
-    // Create and configure next audio element for crossfading
-    if (!nextAudioRef.current && typeof window !== 'undefined' && nextAudioUrl) {
-      nextAudioRef.current = new Audio();
+    url = validateAudioUrl(url);
+    if (!url) {
+      console.error("Invalid audio URL");
+      setLoadError(true);
+      if (onError) onError();
+      return;
     }
     
-    return () => {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
+    console.log("Playing directly:", url);
+    
+    const isAAC = url.toLowerCase().endsWith('.aac') || 
+                  url.toLowerCase().endsWith('.m4a');
+    
+    if (isAAC && !aacSupported.current) {
+      console.warn("This browser might not support AAC format natively. Attempting to play anyway.");
+    }
+    
+    const potentialLiveStream = checkIfLiveStream(url);
+    if (potentialLiveStream) {
+      setIsLiveStream(true);
+      setDuration(0);
+    } else {
+      setIsLiveStream(false);
+    }
+    
+    setLoadError(false);
+    
+    audioElement.src = url;
+    
+    if (isAAC) {
+      try {
+        const source = document.createElement('source');
+        source.src = url;
+        source.type = url.toLowerCase().endsWith('.aac') ? 'audio/aac' : 'audio/mp4';
+        
+        audioElement.innerHTML = '';
+        audioElement.appendChild(source);
+        console.log("Added source element with type:", source.type);
+      } catch (e) {
+        console.warn("Couldn't add source element, falling back to basic src attribute", e);
+        audioElement.src = url;
       }
+    }
+    
+    audioElement.load();
+    
+    const onCanPlay = () => {
+      console.log("Audio can play now:", url);
       
-      if (crossfadeTimeoutRef.current) {
-        clearTimeout(crossfadeTimeoutRef.current);
-      }
+      audioElement.play()
+        .then(() => {
+          console.log("Audio playing successfully:", url);
+          setIsPlaying(true);
+          if (onPlayPauseChange) onPlayPauseChange(true);
+          setIsLoaded(true);
+          setLoadError(false);
+          retryCountRef.current = 0;
+        })
+        .catch(error => {
+          console.error("Error playing direct URL:", error);
+          setLoadError(true);
+          if (onError) onError();
+        });
+      audioElement.removeEventListener('canplay', onCanPlay);
     };
-  }, [nextAudioUrl]);
+    
+    audioElement.addEventListener('canplay', onCanPlay);
+    
+    const handleDirectError = (e: Event) => {
+      console.error("Direct play error:", e);
+      setLoadError(true);
+      if (onError) onError();
+      audioElement.removeEventListener('error', handleDirectError);
+    };
+    
+    audioElement.addEventListener('error', handleDirectError);
+  };
 
-  // Set up audio element event listeners
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (isPlayingExternal !== undefined && audioRef.current) {
+      console.log("External play control:", isPlayingExternal, "Current state:", isPlaying);
+      if (isPlayingExternal && !isPlaying) {
+        playDirectly(audioUrl, audioRef.current);
+      } else if (!isPlayingExternal && isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  }, [isPlayingExternal, audioUrl]);
+
+  useEffect(() => {
+    if (!nextAudioUrl || !isPlaying || isCrossfading || isLiveStream) return;
     
     const audio = audioRef.current;
+    const nextAudio = nextAudioRef.current;
     
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-      setLoadError(false);
-      console.log(`Audio metadata loaded. Duration: ${audio.duration}s`);
-    };
+    if (!audio || !nextAudio || !isLoaded || duration === 0) return;
     
-    const handleTimeUpdate = () => {
-      if (!isUserInteracting.current) {
-        setCurrentTime(audio.currentTime);
+    if (duration - currentTime <= CROSSFADE_DURATION && duration > CROSSFADE_DURATION) {
+      if (crossfadeTimeoutRef.current) return;
+      
+      setIsCrossfading(true);
+      console.info("Starting crossfade");
+      
+      nextAudio.volume = 0;
+      nextAudio.src = nextAudioUrl;
+      nextAudio.load();
+      
+      nextAudio.play()
+        .then(() => {
+          if (onCrossfadeStart) onCrossfadeStart();
+          
+          const timeLeft = duration - currentTime;
+          
+          const fadeOutInterval = setInterval(() => {
+            if (!audio) {
+              clearInterval(fadeOutInterval);
+              return;
+            }
+            
+            const newVol = Math.max(0, audio.volume - (volume / (timeLeft * 10)));
+            audio.volume = newVol;
+            
+            if (newVol <= 0.05) {
+              clearInterval(fadeOutInterval);
+            }
+          }, 100);
+          
+          const fadeInInterval = setInterval(() => {
+            if (!nextAudio) {
+              clearInterval(fadeInInterval);
+              return;
+            }
+            
+            const newVol = Math.min(volume, nextAudio.volume + (volume / (timeLeft * 10)));
+            nextAudio.volume = newVol;
+            
+            if (newVol >= volume - 0.05) {
+              clearInterval(fadeInInterval);
+            }
+          }, 100);
+          
+          crossfadeTimeoutRef.current = window.setTimeout(() => {
+            if (onEnded) onEnded();
+            crossfadeTimeoutRef.current = null;
+            setIsCrossfading(false);
+            setCurrentTime(0);
+          }, timeLeft * 1000);
+        })
+        .catch(error => {
+          console.error("Error starting crossfade:", error);
+          setIsCrossfading(false);
+        });
+    }
+  }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isLiveStream]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    console.log("Setting up audio element for:", audioUrl);
+    
+    const setAudioData = () => {
+      console.log("Audio data loaded for:", audioUrl, "Duration:", audio.duration);
+      
+      if (audio.duration !== Infinity && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+        setIsLiveStream(false);
+      } else {
+        setIsLiveStream(true);
+        setDuration(0);
       }
       
-      // Setup crossfade if needed
-      if (nextAudioUrl && onCrossfadeStart && !crossfadeTimeoutRef.current) {
-        const timeLeft = audio.duration - audio.currentTime;
-        
-        if (timeLeft <= 10 && timeLeft > 9) {
-          console.log('Setting up crossfade for end of track');
-          crossfadeTimeoutRef.current = setTimeout(() => {
-            if (nextAudioRef.current && nextAudioUrl) {
-              console.log('Starting crossfade to next track');
-              nextAudioRef.current.src = nextAudioUrl;
-              nextAudioRef.current.volume = 0;
-              
-              const playPromise = nextAudioRef.current.play();
-              if (playPromise !== undefined) {
-                playPromise.then(() => {
-                  console.log('Next track playing, crossfading');
-                  if (onCrossfadeStart) onCrossfadeStart();
-                  
-                  // Fade out current track and fade in next track
-                  let vol = 1;
-                  const fadeInterval = setInterval(() => {
-                    vol -= 0.1;
-                    if (vol < 0) vol = 0;
-                    
-                    if (audioRef.current) audioRef.current.volume = vol * volume;
-                    if (nextAudioRef.current) nextAudioRef.current.volume = (1 - vol) * volume;
-                    
-                    if (vol <= 0) {
-                      clearInterval(fadeInterval);
-                    }
-                  }, 100);
-                }).catch(error => {
-                  console.error('Error starting crossfade:', error);
-                });
-              }
-            }
-          }, 8000);
-        }
+      setIsLoaded(true);
+      setLoadError(false);
+      
+      if (isPlayingExternal) {
+        console.log("Auto-playing after load:", audioUrl);
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+            if (onPlayPauseChange) onPlayPauseChange(true);
+            retryCountRef.current = 0;
+          })
+          .catch(error => {
+            console.error("Error auto-playing audio:", error);
+          });
       }
+      
+      toast({
+        title: "Audio geladen",
+        description: isLiveStream ? "Live stream is klaar om af te spelen." : "De audio is klaar om af te spelen."
+      });
+    };
+    
+    const setAudioTime = () => {
+      setCurrentTime(audio.currentTime);
     };
     
     const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
+      console.log("Audio ended:", audioUrl);
       
-      if (onPlayPauseChange) {
-        onPlayPauseChange(false);
-      }
-      
-      if (onEnded) {
-        onEnded();
-      }
-      
-      console.log('Audio playback ended');
-    };
-    
-    const handlePlay = () => {
-      setIsPlaying(true);
-      console.log('Audio is playing');
-      
-      if (!updateIntervalRef.current) {
-        updateIntervalRef.current = setInterval(() => {
-          if (audio && !isUserInteracting.current) {
-            setCurrentTime(audio.currentTime);
-          }
-        }, 500);
+      if (!isCrossfading) {
+        if (!isLooping) {
+          setIsPlaying(false);
+          if (onPlayPauseChange) onPlayPauseChange(false);
+          if (onEnded) onEnded();
+        } else {
+          audio.currentTime = 0;
+          audio.play().catch(error => {
+            console.error("Error restarting audio:", error);
+          });
+        }
       }
     };
-    
-    const handlePause = () => {
-      setIsPlaying(false);
-      console.log('Audio is paused');
-      
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-        updateIntervalRef.current = null;
-      }
-    };
-    
-    const handleError = (e: Event) => {
-      const error = (e.target as HTMLAudioElement).error;
-      console.error('Audio error:', error?.message || 'Unknown error');
-      setLoadError(true);
-      setIsPlaying(false);
-      
-      if (onPlayPauseChange) {
-        onPlayPauseChange(false);
-      }
-      
-      if (onError) {
-        onError();
-      }
-      
-      if (error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-        toast.error(`Audio format niet ondersteund: ${title || audioUrl}`);
-      } else if (error?.code === MediaError.MEDIA_ERR_NETWORK) {
-        toast.error(`Netwerkfout bij laden audio: ${title || audioUrl}`);
-      } else {
-        toast.error(`Fout bij afspelen audio: ${title || audioUrl}`);
-      }
-    };
-    
-    // Set volume
-    audio.volume = volume;
 
-    // Add event listeners
-    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('timeupdate', handleTimeUpdate);
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('error', handleError);
-    
-    if (audioUrl) {
-      // Only set src if it's different to avoid unnecessary reloads
-      if (audio.src !== audioUrl) {
-        console.log(`Setting audio source to: ${audioUrl}`);
-        audio.src = audioUrl;
-        audio.load();
-      }
-    }
-    
-    // Cleanup
-    return () => {
-      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-      audio.removeEventListener('error', handleError);
+    const handleError = (e: Event) => {
+      console.error("Error loading audio:", e, "URL:", audioUrl);
+      setLoadError(true);
+      setIsLoaded(false);
       
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-        updateIntervalRef.current = null;
+      if (retryCountRef.current < MAX_RETRY_COUNT) {
+        retryCountRef.current++;
+        setIsRetrying(true);
+        
+        console.log(`Retrying (${retryCountRef.current}/${MAX_RETRY_COUNT})...`);
+        
+        setTimeout(() => {
+          try {
+            const adjustedUrl = validateAudioUrl(audioUrl);
+            console.log("Retrying with adjusted URL:", adjustedUrl);
+            
+            if (adjustedUrl) {
+              playDirectly(adjustedUrl, audio);
+            } else {
+              throw new Error("Invalid URL after adjustment");
+            }
+            setIsRetrying(false);
+          } catch (error) {
+            console.error("Error retrying direct playback:", error);
+            setIsRetrying(false);
+            
+            toast({
+              variant: "destructive",
+              title: "Fout bij laden",
+              description: "Kon de audio niet laden. Controleer of de URL correct is."
+            });
+            if (onError) onError();
+          }
+        }, 1000);
+      } else {
+        console.error("Maximum retry count reached");
+        setIsRetrying(false);
+        
+        toast({
+          variant: "destructive",
+          title: "Fout bij laden",
+          description: "Kon de audio niet laden na meerdere pogingen. Controleer of het bestand bestaat."
+        });
+        if (onError) onError();
       }
+    };
+    
+    audio.addEventListener("loadeddata", setAudioData);
+    audio.addEventListener("loadedmetadata", setAudioData);
+    audio.addEventListener("timeupdate", setAudioTime);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
+    
+    audio.volume = volume;
+    audio.loop = isLooping;
+    
+    audio.addEventListener("progress", () => {
+      if (audio.duration === Infinity || isNaN(audio.duration)) {
+        setIsLiveStream(true);
+      }
+    });
+    
+    return () => {
+      audio.removeEventListener("loadeddata", setAudioData);
+      audio.removeEventListener("loadedmetadata", setAudioData);
+      audio.removeEventListener("timeupdate", setAudioTime);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
+      audio.removeEventListener("progress", () => {});
       
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
         crossfadeTimeoutRef.current = null;
       }
     };
-  }, [audioUrl, nextAudioUrl, onCrossfadeStart, onEnded, onError, onPlayPauseChange, title, volume]);
+  }, [onEnded, volume, isLooping, toast, audioUrl, isRetrying, onError, isPlayingExternal, onPlayPauseChange, isCrossfading, isLiveStream]);
 
-  // Sync volume with external volume prop
   useEffect(() => {
-    if (externalVolume !== undefined && externalVolume !== volume) {
-      setVolume(externalVolume);
-      if (audioRef.current) {
-        audioRef.current.volume = externalVolume;
+    if (initialVolume !== undefined && audioRef.current) {
+      audioRef.current.volume = initialVolume;
+      setVolume(initialVolume);
+    }
+  }, [initialVolume]);
+
+  useEffect(() => {
+    console.log("Audio URL changed to:", audioUrl);
+    
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    audio.pause();
+    
+    setCurrentTime(0);
+    setIsLoaded(false);
+    setLoadError(false);
+    setIsRetrying(false);
+    setIsCrossfading(false);
+    setIsLiveStream(checkIfLiveStream(audioUrl));
+    retryCountRef.current = 0;
+    
+    if (crossfadeTimeoutRef.current) {
+      clearTimeout(crossfadeTimeoutRef.current);
+      crossfadeTimeoutRef.current = null;
+    }
+    
+    if (!audioUrl) {
+      console.log("Empty audio URL, not attempting to play");
+      return;
+    }
+    
+    if (isPlayingExternal) {
+      console.log("External play requested for new URL:", audioUrl);
+      setTimeout(() => {
+        playDirectly(audioUrl, audio);
+      }, 100);
+    } else {
+      console.log("Loading new URL without autoplay:", audioUrl);
+      const validatedUrl = validateAudioUrl(audioUrl);
+      if (validatedUrl) {
+        audio.src = validatedUrl;
+        audio.load();
       }
     }
-  }, [externalVolume, volume]);
+  }, [audioUrl, isPlayingExternal]);
 
-  // Handle play/pause toggle
-  const togglePlay = useCallback(() => {
-    if (!audioRef.current) return;
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || isLiveStream) return;
+    
+    audio.loop = isLooping;
+    
+    if (isLooping) {
+      const handleSeamlessLoop = () => {
+        if (audio.duration > 0 && audio.currentTime >= audio.duration - 0.2) {
+          const currentVolume = audio.volume;
+          const currentPlaybackRate = audio.playbackRate;
+          
+          audio.currentTime = 0;
+          audio.playbackRate = currentPlaybackRate;
+          audio.volume = currentVolume;
+        }
+      };
+      
+      const intervalId = setInterval(handleSeamlessLoop, 10);
+      
+      return () => {
+        clearInterval(intervalId);
+      };
+    }
+  }, [isLooping, isLiveStream]);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    console.log("Toggle play, current state:", isPlaying);
     
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
+      setIsPlaying(false);
+      if (onPlayPauseChange) onPlayPauseChange(false);
+      
+      if (isCrossfading && nextAudioRef.current) {
+        nextAudioRef.current.pause();
+      }
+      
+      toast({
+        title: "Gepauzeerd",
+        description: "De audio is gepauzeerd."
+      });
     } else {
-      // Attempt to play
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('Error on manual play:', error);
-          if (error.name === 'NotAllowedError') {
-            toast.info("Autoplay is geblokkeerd. Herlaad de pagina en probeer opnieuw.");
-          } else {
-            toast.error("Kon audio niet afspelen. Probeer het opnieuw.");
-          }
-          setIsPlaying(false);
-          if (onPlayPauseChange) onPlayPauseChange(false);
-        });
+      if (!isLoaded) {
+        console.log("Not loaded yet, using direct play");
+        playDirectly(audioUrl, audio);
+      } else {
+        console.log("Already loaded, using regular play");
+        audio.play()
+          .then(() => {
+            setIsPlaying(true);
+            if (onPlayPauseChange) onPlayPauseChange(true);
+            
+            if (isCrossfading && nextAudioRef.current) {
+              nextAudioRef.current.play().catch(error => {
+                console.error("Error resuming next audio:", error);
+              });
+            }
+            
+            toast({
+              title: "Speelt nu",
+              description: title ? `"${title}" speelt nu` : "De audio speelt nu"
+            });
+          })
+          .catch(error => {
+            console.error("Error playing audio:", error);
+            toast({
+              variant: "destructive",
+              title: "Fout bij afspelen",
+              description: "Kon de audio niet afspelen. Probeer het later opnieuw."
+            });
+          });
       }
     }
-    
-    const newIsPlaying = !isPlaying;
-    setIsPlaying(newIsPlaying);
-    
-    if (onPlayPauseChange) {
-      onPlayPauseChange(newIsPlaying);
-    }
-  }, [isPlaying, onPlayPauseChange]);
+  };
 
-  // Handle volume change
-  const handleVolumeChange = useCallback((values: number[]) => {
-    const newVolume = values[0];
-    setVolume(newVolume);
+  const handleRetry = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
     
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
+    console.log("Manual retry requested for:", audioUrl);
     
-    if (nextAudioRef.current) {
-      nextAudioRef.current.volume = newVolume;
-    }
-  }, []);
-
-  // Retry loading after an error
-  const handleRetry = useCallback(() => {
-    if (!audioRef.current || !audioUrl) return;
-    
-    console.log('Retrying audio load:', audioUrl);
     setLoadError(false);
+    setIsRetrying(true);
+    retryCountRef.current = 0;
     
-    audioRef.current.src = audioUrl;
-    audioRef.current.load();
-    
-    const playPromise = audioRef.current.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        setIsPlaying(true);
-        if (onPlayPauseChange) onPlayPauseChange(true);
-      }).catch(error => {
-        console.error('Error retrying audio play:', error);
-        setIsPlaying(false);
-        if (onPlayPauseChange) onPlayPauseChange(false);
+    setTimeout(() => {
+      playDirectly(audioUrl, audio);
+      
+      toast({
+        title: "Opnieuw laden",
+        description: "Probeert audio opnieuw te laden."
       });
-    }
-  }, [audioUrl, onPlayPauseChange]);
+    }, 100);
+  };
 
-  // Get duration in formatted string
-  const formatTime = useCallback((time: number) => {
-    if (!time) return '0:00';
+  const toggleLoop = () => {
+    setIsLooping(!isLooping);
+    toast({
+      title: !isLooping ? "Herhalen aan" : "Herhalen uit",
+      description: !isLooping ? "De audio zal blijven herhalen" : "De audio zal stoppen na afloop"
+    });
+  };
+
+  const handleProgressChange = (newValue: number[]) => {
+    const audio = audioRef.current;
+    if (!audio || isLiveStream) return;
     
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }, []);
+    const newTime = newValue[0];
+    audio.currentTime = newTime;
+    setCurrentTime(newTime);
+    
+    if (isCrossfading && duration - newTime > CROSSFADE_DURATION) {
+      setIsCrossfading(false);
+      if (crossfadeTimeoutRef.current) {
+        clearTimeout(crossfadeTimeoutRef.current);
+        crossfadeTimeoutRef.current = null;
+      }
+      if (nextAudioRef.current) {
+        nextAudioRef.current.pause();
+      }
+      audio.volume = volume;
+    }
+  };
+
+  const handleVolumeChange = (newValue: number[]) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    const newVolume = newValue[0];
+    
+    if (isCrossfading && nextAudioRef.current) {
+      const currentRatio = audio.volume / volume;
+      const nextRatio = nextAudioRef.current.volume / volume;
+      
+      audio.volume = newVolume * currentRatio;
+      nextAudioRef.current.volume = newVolume * nextRatio;
+    } else {
+      audio.volume = newVolume;
+    }
+    
+    setVolume(newVolume);
+  };
+
+  const skipTime = (amount: number) => {
+    const audio = audioRef.current;
+    if (!audio || isLiveStream) return;
+    
+    audio.currentTime = Math.min(Math.max(audio.currentTime + amount, 0), duration);
+  };
 
   return {
     audioRef,
+    nextAudioRef,
     isPlaying,
     duration,
     currentTime,
     volume,
-    formatTime,
-    togglePlay,
-    handleVolumeChange,
+    isLooping,
+    isLoaded,
     loadError,
-    handleRetry
+    isRetrying,
+    isCrossfading,
+    isLiveStream,
+    togglePlay,
+    handleRetry,
+    toggleLoop,
+    handleProgressChange,
+    handleVolumeChange,
+    skipTime
   };
-}
+};

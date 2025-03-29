@@ -1,218 +1,260 @@
 
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, Volume1, VolumeX } from "lucide-react";
+import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
-import { AudioPreview } from "./audio-player/audio-preview";
-import { validateAudioUrl, preloadAudio } from "./audio-player/utils";
-import { toast } from "sonner";
+import { ProgressBar } from "./audio-player/progress-bar";
+import { AudioControls } from "./audio-player/audio-controls";
+import { ErrorMessage } from "./audio-player/error-message";
+import { QuoteDisplay } from "./audio-player/quote-display";
+import { getRandomQuote, getAudioMimeType, isAACFile, validateAudioUrl } from "./audio-player/utils";
+import { Soundscape } from "@/lib/types";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "@/components/ui/select";
+import { Music, Volume2 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 
-export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AudioPlayerProps {
   audioUrl: string;
   showControls?: boolean;
+  showTitle?: boolean;
+  title?: string;
+  className?: string;
+  onEnded?: () => void;
+  onError?: () => void;
+  customSoundscapeSelector?: React.ReactNode;
+  showQuote?: boolean;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
-  onError?: () => void;
-  volume?: number;
-  title?: string;
-  showTitle?: boolean;
-  showQuote?: boolean;
   nextAudioUrl?: string;
-  onEnded?: () => void;
   onCrossfadeStart?: () => void;
+  volume?: number;
   showMusicSelector?: boolean;
 }
 
-export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>(
-  ({ 
-    audioUrl, 
-    showControls = true, 
-    className, 
+export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
+  audioUrl, 
+  showControls = true, 
+  showTitle = false,
+  title,
+  className, 
+  onEnded,
+  onError,
+  customSoundscapeSelector,
+  showQuote = false,
+  isPlayingExternal,
+  onPlayPauseChange,
+  nextAudioUrl,
+  onCrossfadeStart,
+  volume,
+  showMusicSelector = false
+}, ref) => {
+  const { soundscapes } = useApp();
+  const [randomQuote] = useState(getRandomQuote);
+  const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
+  const [audioKey, setAudioKey] = useState(0); 
+  const [isAACFormat, setIsAACFormat] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<string>("");
+  
+  // Filter music tracks
+  const musicTracks = soundscapes.filter(track => track.category === "Muziek");
+  
+  // Process and fix audio URL if needed
+  const processedAudioUrl = audioUrl ? validateAudioUrl(audioUrl) : "";
+  const processedSelectedMusic = selectedMusic ? validateAudioUrl(selectedMusic) : "";
+  const effectiveAudioUrl = processedSelectedMusic || processedAudioUrl || "";
+  
+  useEffect(() => {
+    if (!selectedMusic && audioUrl) {
+      setSelectedMusic(audioUrl);
+    }
+  }, [audioUrl]);
+  
+  useEffect(() => {
+    if (effectiveAudioUrl) {
+      setIsAACFormat(isAACFile(effectiveAudioUrl));
+    }
+  }, [effectiveAudioUrl]);
+  
+  // Initialize all hooks unconditionally
+  const {
+    audioRef,
+    nextAudioRef,
+    isPlaying,
+    duration,
+    currentTime,
+    volume: audioVolume,
+    isLooping,
+    isLoaded,
+    loadError,
+    isRetrying,
+    isCrossfading,
+    isLiveStream,
+    togglePlay,
+    handleRetry,
+    toggleLoop,
+    handleProgressChange,
+    handleVolumeChange,
+    skipTime
+  } = useAudioPlayer({
+    audioUrl: effectiveAudioUrl,
+    onEnded,
+    onError,
     isPlayingExternal,
     onPlayPauseChange,
-    onError,
-    volume: externalVolume,
-    title,
-    showTitle = false,
-    showQuote = true,
-    nextAudioUrl,
-    onEnded,
+    nextAudioUrl: nextAudioUrl ? validateAudioUrl(nextAudioUrl) : undefined,
     onCrossfadeStart,
-    showMusicSelector
-  }, ref) => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(false);
-    const [validatedUrl, setValidatedUrl] = useState("");
+    title,
+    volume
+  });
+  
+  // Log the audio URL for debugging
+  useEffect(() => {
+    console.log(`AudioPlayer attempting to load: ${effectiveAudioUrl || "no URL provided"}`);
     
-    // Process and validate the URL
-    useEffect(() => {
-      const processUrl = async () => {
-        setIsLoading(true);
-        setError(false);
-        
-        if (!audioUrl) {
-          setIsLoading(false);
-          setError(true);
-          return;
-        }
-        
-        // Validate and normalize the URL
-        const processed = validateAudioUrl(audioUrl);
-        if (!processed) {
-          setIsLoading(false);
-          setError(true);
-          if (onError) onError();
-          return;
-        }
-        
-        setValidatedUrl(processed);
-        console.log("AudioPlayer attempting to load:", processed);
-        
-        // Preload to check if audio is valid
-        const canPlay = await preloadAudio(processed);
-        if (!canPlay) {
-          console.error("Audio cannot be played:", processed);
-          setIsLoading(false);
-          setError(true);
-          if (onError) onError();
-          toast.error("Kon de audio niet laden. Controleer de URL.");
-        } else {
-          console.log("Audio preloaded successfully:", processed);
-          setIsLoading(false);
-          setError(false);
-        }
-      };
-      
-      processUrl();
-    }, [audioUrl, onError]);
-    
-    const {
-      audioRef,
-      isPlaying,
-      duration,
-      currentTime,
-      volume,
-      togglePlay,
-      handleVolumeChange,
-      loadError,
-      handleRetry
-    } = useAudioPlayer({
-      audioUrl: validatedUrl,
-      isPlayingExternal,
-      onPlayPauseChange,
-      onError,
-      volume: externalVolume,
-      nextAudioUrl,
-      onEnded,
-      onCrossfadeStart,
-      title
-    });
-    
-    // Expose the audio element ref
-    useImperativeHandle(ref, () => audioRef.current);
-    
-    // If we've identified an error, show better error UI
-    const finalError = error || loadError;
-    
-    // Don't show anything if URL is empty
-    if (!audioUrl) {
-      return null;
+    if (isAACFile(effectiveAudioUrl)) {
+      console.log('AAC audio format detected:', effectiveAudioUrl);
     }
     
-    // If not showing controls, just render the hidden audio element
-    if (!showControls) {
-      return (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={togglePlay} 
-          className={cn("h-8 w-8 p-0 rounded-full", className)}
-          disabled={finalError}
-        >
-          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          <audio ref={audioRef} style={{ display: 'none' }} />
-        </Button>
-      );
+    // Reset player when URL changes
+    setAudioKey(prev => prev + 1);
+  }, [effectiveAudioUrl]);
+  
+  // Handle music selection change
+  const handleMusicChange = (value: string) => {
+    setSelectedMusic(value);
+    if (onPlayPauseChange) {
+      onPlayPauseChange(true);
     }
-    
+  };
+  
+  // Expose the audio element ref to parent components
+  useImperativeHandle(ref, () => audioRef.current!, []);
+  
+  // Connect the nextAudioRef to its element
+  useEffect(() => {
+    nextAudioRef.current = nextAudioElementRef.current;
+  }, [nextAudioRef]);
+  
+  // Early return with placeholder if no audioUrl
+  if (!effectiveAudioUrl) {
     return (
-      <div className={cn("space-y-2", className)}>
-        {showTitle && title && (
-          <div className="text-sm font-medium mb-1">{title}</div>
-        )}
-        
-        {finalError ? (
-          <AudioPreview 
-            url={audioUrl} 
-            onError={onError}
-            label={audioUrl.split('/').pop() || audioUrl}
-          />
-        ) : (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={togglePlay}
-              disabled={isLoading}
-              className="h-8 w-8 p-0"
-            >
-              {isLoading ? (
-                <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              ) : isPlaying ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-            </Button>
-            <Slider
-              value={[currentTime]}
-              max={duration || 100}
-              step={0.01}
-              className="flex-1"
-              disabled={duration === 0 || isLoading}
-            />
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleVolumeChange([volume > 0 ? 0 : 0.7])}
-                className="h-8 w-8 p-0"
-              >
-                {volume === 0 ? (
-                  <VolumeX className="h-4 w-4" />
-                ) : volume < 0.5 ? (
-                  <Volume1 className="h-4 w-4" />
-                ) : (
-                  <Volume2 className="h-4 w-4" />
-                )}
-              </Button>
-              <div className="w-16 hidden sm:block">
-                <Slider
-                  value={[volume]}
-                  max={1}
-                  step={0.01}
-                  onValueChange={handleVolumeChange}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-        <audio 
-          ref={audioRef} 
-          style={{ display: 'none' }} 
-          src={validatedUrl}
-          preload="auto"
-          onError={(e) => {
-            console.error("Audio element error:", e);
-            setError(true);
-            if (onError) onError();
-          }}
-        />
+      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+        <div className="text-center py-3 text-muted-foreground">
+          <p>Geen audio URL opgegeven</p>
+        </div>
       </div>
     );
   }
-);
+  
+  // Get the MIME type based on the file extension
+  const audioMimeType = getAudioMimeType(effectiveAudioUrl);
+  
+  return (
+    <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
+        <source src={effectiveAudioUrl} type={audioMimeType} />
+        Your browser does not support the audio element.
+      </audio>
+      
+      {nextAudioUrl && (
+        <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous">
+          <source src={validateAudioUrl(nextAudioUrl)} type={getAudioMimeType(nextAudioUrl)} />
+        </audio>
+      )}
+      
+      {showMusicSelector && (
+        <div className="mb-4">
+          <h3 className="text-base font-semibold mb-2">Muziek op de achtergrond</h3>
+          <Select
+            value={selectedMusic || audioUrl}
+            onValueChange={handleMusicChange}
+          >
+            <SelectTrigger className="w-full bg-background border-muted">
+              <span className="flex items-center">
+                <Music className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Selecteer muziek">
+                  {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || "Selecteer muziek"}
+                </SelectValue>
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {musicTracks.map(track => (
+                <SelectItem key={track.id} value={track.audioUrl}>
+                  <div className="flex items-center">
+                    {track.audioUrl === (selectedMusic || audioUrl) && (
+                      <Volume2 className="w-4 h-4 mr-2 text-primary animate-pulse" />
+                    )}
+                    <span>{track.title}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      
+      {isPlaying && (
+        <div className="py-2 px-3 bg-background/30 border border-muted rounded-md flex items-center">
+          <Volume2 className="h-4 w-4 text-primary mr-2" />
+          <p className="text-sm">
+            Nu afspelend: {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || title}
+          </p>
+        </div>
+      )}
+      
+      {showTitle && title && !showMusicSelector && (
+        <h3 className="text-lg font-medium">{title}</h3>
+      )}
+      
+      {isAACFormat && (
+        <div className="text-xs text-blue-500 font-medium">
+          AAC audio format
+        </div>
+      )}
+      
+      {loadError && (
+        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
+      )}
+      
+      {showQuote && (
+        <QuoteDisplay quote={randomQuote} />
+      )}
+      
+      {customSoundscapeSelector && !showQuote && (
+        <div className="mb-2">{customSoundscapeSelector}</div>
+      )}
+      
+      <ProgressBar
+        currentTime={currentTime}
+        duration={duration}
+        isLoaded={isLoaded}
+        isCrossfading={isCrossfading}
+        isLiveStream={isLiveStream}
+        handleProgressChange={handleProgressChange}
+      />
+      
+      {showControls && (
+        <AudioControls
+          isPlaying={isPlaying}
+          togglePlay={togglePlay}
+          skipTime={skipTime}
+          isLoaded={isLoaded}
+          isLooping={isLooping}
+          toggleLoop={toggleLoop}
+          isCrossfading={isCrossfading}
+          isLiveStream={isLiveStream}
+          volume={audioVolume}
+          handleVolumeChange={handleVolumeChange}
+          loadError={loadError}
+        />
+      )}
+    </div>
+  );
+});
 
 AudioPlayer.displayName = "AudioPlayer";

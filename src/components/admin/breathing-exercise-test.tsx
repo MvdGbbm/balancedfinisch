@@ -1,245 +1,394 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BreathingPattern } from "@/lib/types";
-import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVoiceUrlLoader } from "./breathing-exercise/audio/voice-url-loader";
-import { BreathingControls } from "./breathing-exercise/breathing-controls";
-import { BreathingAudioManager } from "./breathing-exercise/breathing-audio-manager";
-import { BreathingExerciseState } from "./breathing-exercise/types";
 import { Button } from "@/components/ui/button";
-import { Home, Bug } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
+import { Play, Pause, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+type BreathingPattern = {
+  id: string;
+  name: string;
+  inhale: number;
+  hold1: number;
+  exhale: number;
+  hold2: number;
+  cycles: number;
+  description?: string;
+  inhaleUrl?: string;
+  exhaleUrl?: string;
+  hold1Url?: string;
+  hold2Url?: string;
+  endUrl?: string;
+};
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
-
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"exercise" | "voice" | "debug">("exercise");
-  const { veraVoiceUrls, marcoVoiceUrls } = useVoiceUrlLoader();
-  
-  // Exercise state
-  const [state, setState] = useState<BreathingExerciseState>({
-    isActive: false,
-    currentPhase: "inhale",
-    currentCycle: 1,
-    secondsLeft: pattern?.inhale || 0,
-    progress: 0,
-    circleScale: 1,
-    activeVoice: null,
-    exerciseCompleted: false,
-    audioError: false,
-    currentAudioUrl: ""
+  const [isActive, setIsActive] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
+  const [currentCycle, setCurrentCycle] = useState(1);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
+  const [audioError, setAudioError] = useState(false);
+  const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+  const [circleScale, setCircleScale] = useState(1);
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<{
+    inhale: string;
+    hold: string;
+    exhale: string;
+  }>({
+    inhale: "",
+    hold: "",
+    exhale: ""
   });
-
-  // Debug info
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<{
+    inhale: string;
+    hold: string;
+    exhale: string;
+  }>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
+  const [exerciseCompleted, setExerciseCompleted] = useState(false);
+  const endAudioRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
-    if (state.isActive) {
-      console.log("Test exercise state:", state);
+    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+    if (savedVeraUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedVeraUrls);
+        setVeraVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Vera voice URLs:", error);
+      }
     }
-  }, [state]);
-
-  // Debug voice URLs
+    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+    if (savedMarcoUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedMarcoUrls);
+        setMarcoVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Marco voice URLs:", error);
+      }
+    }
+  }, []);
   useEffect(() => {
-    console.log("Vera voice URLs:", veraVoiceUrls);
-    console.log("Marco voice URLs:", marcoVoiceUrls);
-  }, [veraVoiceUrls, marcoVoiceUrls]);
-
+    setIsActive(false);
+    setCurrentPhase("inhale");
+    setCurrentCycle(1);
+    setAudioError(false);
+    setProgress(0);
+    setActiveVoice(null);
+    setCircleScale(1);
+    setExerciseCompleted(false);
+    if (pattern) {
+      setSecondsLeft(pattern.inhale);
+      setCurrentAudioUrl(pattern.inhaleUrl || "");
+    }
+  }, [pattern]);
+  useEffect(() => {
+    if (!pattern) return;
+    let url = "";
+    if (activeVoice === "vera") {
+      switch (currentPhase) {
+        case "inhale":
+          url = veraVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = veraVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = veraVoiceUrls.exhale || "";
+          break;
+      }
+    } else if (activeVoice === "marco") {
+      switch (currentPhase) {
+        case "inhale":
+          url = marcoVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = marcoVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = marcoVoiceUrls.exhale || "";
+          break;
+      }
+    } else {
+      switch (currentPhase) {
+        case "inhale":
+          url = pattern.inhaleUrl || "";
+          break;
+        case "hold1":
+          url = pattern.hold1Url || "";
+          break;
+        case "exhale":
+          url = pattern.exhaleUrl || "";
+          break;
+        case "hold2":
+          url = pattern.hold2Url || "";
+          break;
+      }
+    }
+    setCurrentAudioUrl(url);
+    setAudioError(false);
+  }, [currentPhase, activeVoice, pattern, veraVoiceUrls, marcoVoiceUrls]);
+  useEffect(() => {
+    if (!pattern || !audioRef.current) return;
+    if (currentAudioUrl && isActive) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      audioRef.current.src = currentAudioUrl;
+      audioRef.current.load();
+      const playAudio = () => {
+        if (audioRef.current && isActive) {
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio:", error);
+            setAudioError(true);
+            toast.error("Kan audio niet afspelen. Controleer de URL.");
+          });
+        }
+      };
+      setTimeout(playAudio, 100);
+    }
+  }, [currentAudioUrl, isActive, pattern]);
+  useEffect(() => {
+    if (!isActive && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [isActive]);
+  useEffect(() => {
+    if (!isActive || !pattern) return;
+    if (currentPhase === "inhale") {
+      const inhaleProgress = (pattern.inhale - secondsLeft) / pattern.inhale;
+      setCircleScale(1 + inhaleProgress * 0.5);
+    } else if (currentPhase === "exhale") {
+      const exhaleProgress = (pattern.exhale - secondsLeft) / pattern.exhale;
+      setCircleScale(1.5 - exhaleProgress * 0.5);
+    }
+  }, [currentPhase, secondsLeft, isActive, pattern]);
+  useEffect(() => {
+    if (!pattern) return;
+    let timer: number | null = null;
+    let progressTimer: number | null = null;
+    if (isActive && !exerciseCompleted) {
+      timer = window.setInterval(() => {
+        if (secondsLeft > 1) {
+          setSecondsLeft(seconds => seconds - 1);
+        } else {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          if (currentPhase === "inhale") {
+            setCurrentPhase("hold1");
+            setSecondsLeft(pattern.hold1 || 1);
+            setProgress(0);
+            setCircleScale(1.5);
+          } else if (currentPhase === "hold1") {
+            setCurrentPhase("exhale");
+            setSecondsLeft(pattern.exhale);
+            setProgress(0);
+          } else if (currentPhase === "exhale") {
+            if (pattern.hold2) {
+              setCurrentPhase("hold2");
+              setSecondsLeft(pattern.hold2);
+              setProgress(0);
+              setCircleScale(1);
+            } else {
+              if (currentCycle < pattern.cycles) {
+                setCurrentCycle(cycle => cycle + 1);
+                setCurrentPhase("inhale");
+                setSecondsLeft(pattern.inhale);
+                setProgress(0);
+                setCircleScale(1);
+              } else {
+                setIsActive(false);
+                setCurrentCycle(1);
+                setCurrentPhase("inhale");
+                setSecondsLeft(pattern.inhale);
+                setProgress(0);
+                setCircleScale(1);
+                setActiveVoice(null);
+                setExerciseCompleted(true);
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                }
+                if (pattern.endUrl) {
+                  try {
+                    if (endAudioRef.current) {
+                      endAudioRef.current.src = pattern.endUrl;
+                      endAudioRef.current.load();
+                      endAudioRef.current.play().catch(err => {
+                        console.error("Error playing end audio:", err);
+                      });
+                    }
+                  } catch (error) {
+                    console.error("Error with end audio:", error);
+                  }
+                }
+                toast.success("Test voltooid!");
+              }
+            }
+          } else if (currentPhase === "hold2") {
+            if (currentCycle < pattern.cycles) {
+              setCurrentCycle(cycle => cycle + 1);
+              setCurrentPhase("inhale");
+              setSecondsLeft(pattern.inhale);
+              setProgress(0);
+              setCircleScale(1);
+            } else {
+              setIsActive(false);
+              setCurrentCycle(1);
+              setCurrentPhase("inhale");
+              setSecondsLeft(pattern.inhale);
+              setProgress(0);
+              setCircleScale(1);
+              setActiveVoice(null);
+              setExerciseCompleted(true);
+              if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+              }
+              if (pattern.endUrl) {
+                try {
+                  if (endAudioRef.current) {
+                    endAudioRef.current.src = pattern.endUrl;
+                    endAudioRef.current.load();
+                    endAudioRef.current.play().catch(err => {
+                      console.error("Error playing end audio:", err);
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error with end audio:", error);
+                }
+              }
+              toast.success("Test voltooid!");
+            }
+          }
+        }
+      }, 1000);
+      const getCurrentPhaseDuration = () => {
+        switch (currentPhase) {
+          case "inhale":
+            return pattern.inhale;
+          case "hold1":
+            return pattern.hold1;
+          case "exhale":
+            return pattern.exhale;
+          case "hold2":
+            return pattern.hold2;
+          default:
+            return 1;
+        }
+      };
+      const phaseDuration = getCurrentPhaseDuration() * 1000;
+      const startTime = Date.now();
+      progressTimer = window.setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const calculatedProgress = elapsed / phaseDuration * 100;
+        setProgress(Math.min(calculatedProgress, 100));
+      }, 16);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+      if (progressTimer) clearInterval(progressTimer);
+    };
+  }, [isActive, currentPhase, secondsLeft, currentCycle, pattern, exerciseCompleted]);
+  const getInstructions = () => {
+    switch (currentPhase) {
+      case "inhale":
+        return "Inademen";
+      case "hold1":
+        return "Vasthouden";
+      case "exhale":
+        return "Uitademen";
+      case "hold2":
+        return "Vasthouden";
+      default:
+        return "";
+    }
+  };
+  const resetExercise = () => {
+    if (!pattern) return;
+    setIsActive(false);
+    setCurrentPhase("inhale");
+    setCurrentCycle(1);
+    setSecondsLeft(pattern.inhale);
+    setAudioError(false);
+    setProgress(0);
+    setActiveVoice(null);
+    setCircleScale(1);
+    setExerciseCompleted(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    if (endAudioRef.current) {
+      endAudioRef.current.pause();
+      endAudioRef.current.currentTime = 0;
+    }
+    setCurrentAudioUrl(pattern.inhaleUrl || "");
+  };
+  const startWithVera = () => {
+    if (isActive && activeVoice === "vera") {
+      setIsActive(false);
+      setActiveVoice(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    } else {
+      setIsActive(true);
+      setActiveVoice("vera");
+      setTimeout(() => {
+        if (audioRef.current && currentAudioUrl) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio with Vera:", error);
+            setAudioError(true);
+          });
+        }
+      }, 100);
+    }
+  };
+  const startWithMarco = () => {
+    if (isActive && activeVoice === "marco") {
+      setIsActive(false);
+      setActiveVoice(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    } else {
+      setIsActive(true);
+      setActiveVoice("marco");
+      setTimeout(() => {
+        if (audioRef.current && currentAudioUrl) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio with Marco:", error);
+            setAudioError(true);
+          });
+        }
+      }, 100);
+    }
+  };
   if (!pattern) {
     return <Card>
-        <CardContent className="p-4 text-center text-muted-foreground">
-          Selecteer een ademhalingspatroon om te testen.
-        </CardContent>
+        
       </Card>;
   }
-
-  // Verify pattern has all required fields
-  const validatePattern = (p: BreathingPattern): boolean => {
-    if (!p.inhale || !p.exhale || !p.cycles) {
-      toast.error("Ademhalingspatroon is onvolledig. Controleer de configuratie.");
-      return false;
-    }
-    return true;
-  };
-  
-  if (!validatePattern(pattern)) {
-    return <Card>
-        <CardContent className="p-4 text-center text-muted-foreground">
-          Ongeldig ademhalingspatroon. Controleer de waarden.
-        </CardContent>
-      </Card>;
-  }
-
-  const handleReset = () => {
-    setState({
-      isActive: false,
-      currentPhase: "inhale",
-      currentCycle: 1,
-      secondsLeft: pattern.inhale,
-      progress: 0,
-      circleScale: 1,
-      activeVoice: null,
-      exerciseCompleted: false,
-      audioError: false,
-      currentAudioUrl: ""
-    });
-  };
-
-  const goToFrontend = () => {
-    navigate("/breathing");
-  };
-
-  const toggleDebug = () => {
-    console.log("Vera voice URLs:", veraVoiceUrls);
-    console.log("Marco voice URLs:", marcoVoiceUrls);
-    console.log("Current pattern:", pattern);
-    console.log("Current state:", state);
-    toast.info("Debug info logged to console");
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>Test Ademhalingsoefening</CardTitle>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={toggleDebug}>
-            <Bug className="h-4 w-4 mr-2" />
-            Debug
-          </Button>
-          <Button variant="outline" size="sm" onClick={goToFrontend}>
-            <Home className="h-4 w-4 mr-2" />
-            Frontend
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs 
-          defaultValue="exercise" 
-          value={activeTab} 
-          onValueChange={(value) => setActiveTab(value as "exercise" | "voice" | "debug")}
-          className="w-full"
-        >
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="exercise">Ademhalingstechnieken</TabsTrigger>
-            <TabsTrigger value="voice">Stem Configuratie</TabsTrigger>
-            <TabsTrigger value="debug">Debug</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="exercise" className="space-y-4">
-            <div className="space-y-4">
-              <BreathingControls 
-                pattern={pattern}
-                isActive={state.isActive}
-                activeVoice={state.activeVoice}
-                onReset={handleReset}
-                setState={setState}
-                state={state}
-              />
-
-              {state.isActive && (
-                <BreathingAudioManager 
-                  pattern={pattern}
-                  state={state}
-                  setState={setState}
-                />
-              )}
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="text-sm font-medium mb-2">Huidige fase</h3>
-                  <div className="text-xl font-bold">
-                    {state.currentPhase === "inhale" && "Inademen"}
-                    {state.currentPhase === "hold1" && "Vasthouden"}
-                    {state.currentPhase === "exhale" && "Uitademen"}
-                    {state.currentPhase === "hold2" && "Vasthouden"}
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="text-sm font-medium mb-2">Cyclus</h3>
-                  <div className="text-xl font-bold">
-                    {state.currentCycle} / {pattern.cycles}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="voice">
-            <div className="grid grid-cols-1 gap-4">
-              <Card className="bg-card/50 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle>Voice Configuratie Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Vera Stem</h3>
-                      <ul className="space-y-1 text-sm">
-                        <li>Inademen: {veraVoiceUrls.inhale ? `✅ (${veraVoiceUrls.inhale.substring(0, 30)}...)` : "❌"}</li>
-                        <li>Vasthouden: {veraVoiceUrls.hold ? `✅ (${veraVoiceUrls.hold.substring(0, 30)}...)` : "❌"}</li>
-                        <li>Uitademen: {veraVoiceUrls.exhale ? `✅ (${veraVoiceUrls.exhale.substring(0, 30)}...)` : "❌"}</li>
-                      </ul>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Marco Stem</h3>
-                      <ul className="space-y-1 text-sm">
-                        <li>Inademen: {marcoVoiceUrls.inhale ? `✅ (${marcoVoiceUrls.inhale.substring(0, 30)}...)` : "❌"}</li>
-                        <li>Vasthouden: {marcoVoiceUrls.hold ? `✅ (${marcoVoiceUrls.hold.substring(0, 30)}...)` : "❌"}</li>
-                        <li>Uitademen: {marcoVoiceUrls.exhale ? `✅ (${marcoVoiceUrls.exhale.substring(0, 30)}...)` : "❌"}</li>
-                      </ul>
-                    </div>
-                  </div>
-                  
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    De stemconfiguratie kan worden ingesteld op het tabblad "Stem Configuratie" in het admin menu.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="debug">
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Debug Informatie</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Audio Status</h3>
-                    <pre className="bg-muted p-2 rounded text-xs overflow-auto max-h-40">
-                      {JSON.stringify({
-                        activeVoice: state.activeVoice,
-                        currentAudioUrl: state.currentAudioUrl,
-                        audioError: state.audioError,
-                        isActive: state.isActive
-                      }, null, 2)}
-                    </pre>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Pattern</h3>
-                    <pre className="bg-muted p-2 rounded text-xs overflow-auto max-h-40">
-                      {JSON.stringify(pattern, null, 2)}
-                    </pre>
-                  </div>
-                  
-                  <Button onClick={toggleDebug} className="w-full">
-                    Log Debug Info to Console
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
-  );
+  return <Card>
+      
+      
+    </Card>;
 }

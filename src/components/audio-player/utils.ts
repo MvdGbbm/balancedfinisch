@@ -1,153 +1,255 @@
+import { quotes, colorGradients } from "@/data/quotes";
+
+export const formatTime = (time: number) => {
+  if (isNaN(time)) return "0:00";
+  
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+};
+
+export const getRandomQuote = () => {
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
+  return {
+    ...quotes[randomIndex],
+    backgroundClass: colorGradients[randomGradientIndex]
+  };
+};
 
 /**
- * Audio utility functions
+ * Validates and fixes audio URLs to ensure proper format
  */
-
-export interface DailyQuote {
-  text: string;
-  author?: string;
-}
-
-export const validateAudioUrl = (url: string): string | null => {
-  if (!url) return null;
+export const validateAudioUrl = (url: string): string => {
+  if (!url) return "";
   
   try {
-    // Trim whitespace and normalize URL
-    let processedUrl = url.trim();
+    url = url.trim();
     
-    // If URL doesn't start with http/https, add https://
-    if (!/^https?:\/\//i.test(processedUrl)) {
-      processedUrl = `https://${processedUrl}`;
+    // Check if the URL has multiple protocol prefixes (e.g., https://https://)
+    const protocolRegex = /^(https?:\/\/)+/i;
+    const protocolMatch = url.match(protocolRegex);
+    
+    if (protocolMatch && protocolMatch[0] !== 'http://' && protocolMatch[0] !== 'https://') {
+      // Fix double/triple protocols by keeping only one https:// prefix
+      url = url.replace(protocolRegex, 'https://');
     }
     
-    // Try to construct a valid URL object
-    const validUrl = new URL(processedUrl).toString();
-    return validUrl;
-  } catch (e) {
-    console.error('Invalid audio URL:', url, e);
-    return null;
-  }
-};
+    // Add protocol if missing
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
+    // Handle example.com URLs - these are placeholders that need to be ignored
+    if (url.includes('example.com')) {
+      console.warn('Placeholder URL detected:', url);
+      return "";
+    }
+    
+    // Remove trailing slashes before file extension
+    url = url.replace(/\/+(\w+\.\w+)$/, '/$1');
+    
+    // Fix common typos in domain names
+    url = url.replace(/([^:])\/\/+/g, '$1/');
 
-// Check if an audio URL is accessible/exists
-export const checkUrlExists = async (url: string): Promise<boolean> => {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    // Handle Supabase storage URLs
+    if (url.includes('supabase.co/storage/v1/object/public')) {
+      // Ensure the URL doesn't have double paths for storage
+      url = url.replace(/(storage\/v1\/object\/public\/[^\/]+)\/+storage\/v1\/object\/public/, '$1');
+    }
     
-    const response = await fetch(url, {
-      method: 'HEAD',
-      signal: controller.signal,
-      mode: 'no-cors' // Try no-cors mode to avoid CORS issues
-    });
+    // Create URL object to validate (will throw if invalid)
+    new URL(url);
     
-    clearTimeout(timeoutId);
-    return true; // If no error is thrown, assume URL is accessible
+    return url;
   } catch (error) {
-    console.warn('Error checking URL:', url, error);
-    return true; // Default to true even on error to be permissive
+    console.error("Invalid URL format:", url, error);
+    // Return empty string for invalid URLs
+    return "";
   }
 };
 
-// Preload audio to check if it can be played
+export const isStreamUrl = (url: string): boolean => {
+  return url.includes('stream') || 
+         url.includes('radio') || 
+         url.includes('live') || 
+         url.endsWith('.m3u8') || 
+         url.includes('icecast') || 
+         url.includes('shoutcast');
+};
+
+// Check if file is likely an AAC audio file
+export const isAACFile = (url: string): boolean => {
+  const lowercaseUrl = url.toLowerCase();
+  return lowercaseUrl.endsWith('.aac') || 
+         lowercaseUrl.endsWith('.m4a') || 
+         lowercaseUrl.includes('audio/aac') || 
+         lowercaseUrl.includes('audio/mp4a');
+};
+
+// Check if browser supports AAC playback
+export const checkAACSupport = (): boolean => {
+  const audio = document.createElement('audio');
+  return audio.canPlayType('audio/aac') !== '' || 
+         audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
+};
+
+// Get appropriate MIME type based on file extension
+export const getAudioMimeType = (url: string): string => {
+  const lowercaseUrl = url.toLowerCase();
+  
+  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
+  if (lowercaseUrl.endsWith('.m4a') || lowercaseUrl.endsWith('.mp4a')) return 'audio/mp4';
+  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
+  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
+  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
+  if (lowercaseUrl.endsWith('.flac')) return 'audio/flac';
+  
+  // For Supabase storage URLs, try to determine type from the path
+  if (lowercaseUrl.includes('supabase.co/storage')) {
+    if (lowercaseUrl.includes('.mp3')) return 'audio/mpeg';
+    if (lowercaseUrl.includes('.aac')) return 'audio/aac';
+    if (lowercaseUrl.includes('.m4a')) return 'audio/mp4';
+    if (lowercaseUrl.includes('.wav')) return 'audio/wav';
+    if (lowercaseUrl.includes('.ogg')) return 'audio/ogg';
+    if (lowercaseUrl.includes('.flac')) return 'audio/flac';
+  }
+  
+  // Default to general audio type
+  return 'audio/mpeg';
+};
+
+// Preload and test an audio URL
 export const preloadAudio = async (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
-    try {
-      const audio = new Audio();
-      
-      const onCanPlay = () => {
-        console.log('Audio can play:', url);
-        cleanup();
-        resolve(true);
-      };
-      
-      const onError = (e: ErrorEvent) => {
-        console.error('Audio preload error:', e);
-        cleanup();
-        resolve(false);
-      };
-      
-      const onTimeout = () => {
-        console.warn('Audio preload timeout:', url);
-        cleanup();
-        resolve(true); // Be permissive on timeout
-      };
-      
-      const cleanup = () => {
-        audio.removeEventListener('canplaythrough', onCanPlay);
-        audio.removeEventListener('error', onError as EventListener);
-        clearTimeout(timeoutId);
-        audio.src = '';
-      };
-      
-      audio.addEventListener('canplaythrough', onCanPlay);
-      audio.addEventListener('error', onError as EventListener);
-      
-      // Set a timeout in case the audio takes too long to load
-      const timeoutId = setTimeout(onTimeout, 3000);
-      
-      audio.src = url;
+    if (!url) {
+      console.warn("Empty URL passed to preloadAudio");
+      resolve(false);
+      return;
+    }
+    
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      console.warn("Invalid URL passed to preloadAudio:", url);
+      resolve(false);
+      return;
+    }
+    
+    // Skip example.com URLs (placeholders)
+    if (validatedUrl.includes('example.com')) {
+      console.warn("Placeholder URL detected in preloadAudio:", validatedUrl);
+      resolve(false);
+      return;
+    }
+    
+    console.log("Attempting to preload audio:", validatedUrl);
+    
+    const audio = new Audio();
+    
+    // Set a timeout for loading
+    const timeout = setTimeout(() => {
+      console.warn("Audio preload timed out:", validatedUrl);
+      audio.removeAttribute('src');
       audio.load();
-    } catch (error) {
-      console.error('Error in preloadAudio:', error);
+      resolve(false);
+    }, 8000); // 8 seconds timeout for slower connections
+    
+    // Event listeners for success/failure
+    audio.oncanplaythrough = () => {
+      clearTimeout(timeout);
+      console.log("Audio preload successful:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(true);
+    };
+    
+    audio.onerror = (error) => {
+      clearTimeout(timeout);
+      console.error("Error preloading audio:", error, validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    };
+    
+    // Add additional catches for network errors
+    audio.addEventListener('stalled', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load stalled:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
+    
+    audio.addEventListener('abort', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load aborted:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
+    
+    // Try loading the audio
+    try {
+      audio.src = validatedUrl;
+      audio.load();
+    } catch (e) {
+      clearTimeout(timeout);
+      console.error("Exception loading audio:", e);
       resolve(false);
     }
   });
 };
 
-export const getRandomQuote = (): DailyQuote => {
-  const quotes = [
-    {
-      text: "Muziek geeft een ziel aan het universum, vleugels aan de geest, vlucht aan de verbeelding en leven aan alles.",
-      author: "Plato"
-    },
-    {
-      text: "Muziek is de taal van de emotie.",
-      author: "Immanuel Kant"
-    },
-    {
-      text: "Zonder muziek zou het leven een vergissing zijn.",
-      author: "Friedrich Nietzsche"
-    },
-    {
-      text: "Muziek brengt ons naar onszelf, naar dat deel waar innerlijke harmonie heerst.",
-      author: "Jane Austen"
+// Check if a URL exists (can be loaded)
+export const checkUrlExists = async (url: string): Promise<boolean> => {
+  try {
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) return false;
+    
+    // For audio files, use preloadAudio
+    if (/\.(mp3|ogg|wav|aac|m4a|flac)$/i.test(validatedUrl) || 
+        validatedUrl.includes('supabase.co/storage')) {
+      return await preloadAudio(validatedUrl);
     }
-  ];
-  
-  return quotes[Math.floor(Math.random() * quotes.length)];
+    
+    // For other URLs, try a HEAD request with CORS proxy if needed
+    try {
+      const response = await fetch(validatedUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors' // This prevents CORS errors but also means we can't check the status
+      });
+      
+      // Since we used no-cors, we can't check the status
+      // We'll assume it succeeded if we got here without an error
+      return true;
+    } catch (e) {
+      console.error("Fetch check failed, trying preloadAudio as fallback:", e);
+      return await preloadAudio(validatedUrl);
+    }
+  } catch (error) {
+    console.error("Error checking if URL exists:", url, error);
+    return false;
+  }
 };
 
-// Format time in seconds to MM:SS format
-export const formatTime = (seconds: number): string => {
-  if (isNaN(seconds)) return '00:00';
-  
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  
-  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
-
-// Helper for Supabase storage URLs
+// Fix Supabase storage URLs to ensure they have the correct format
 export const fixSupabaseStorageUrl = (url: string): string => {
-  // Remove any query parameters
-  return url.split('?')[0];
-};
-
-// Detect audio MIME type from URL
-export const getAudioMimeType = (url: string): string => {
-  const extension = url.split('.').pop()?.toLowerCase();
+  if (!url || !url.includes('supabase.co')) return url;
   
-  switch (extension) {
-    case 'mp3':
-      return 'audio/mpeg';
-    case 'wav':
-      return 'audio/wav';
-    case 'ogg':
-      return 'audio/ogg';
-    case 'm4a':
-      return 'audio/mp4';
-    default:
-      return 'audio/mpeg'; // Default fallback
+  try {
+    const urlObj = new URL(url);
+    
+    // If the URL already contains storage path, return it
+    if (urlObj.pathname.includes('/storage/v1/object/public/')) {
+      return url;
+    }
+    
+    // Otherwise, add the storage path
+    const fixedUrl = `${urlObj.origin}/storage/v1/object/public/music${urlObj.pathname}`;
+    console.log("Fixed Supabase URL:", fixedUrl);
+    return fixedUrl;
+  } catch (e) {
+    console.error("Error fixing Supabase URL:", e);
+    return url;
   }
 };
