@@ -1,6 +1,9 @@
-
-import { Quote } from "@/lib/types";
 import { quotes } from "@/data/quotes";
+
+export interface Quote {
+  text: string;
+  author: string;
+}
 
 export const validateAudioUrl = (url: string): string | null => {
   if (!url) return null;
@@ -80,6 +83,8 @@ export const getMimeType = (url: string): string => {
   }
 };
 
+export const getAudioMimeType = getMimeType;
+
 export const checkUrlExists = async (url: string): Promise<boolean> => {
   try {
     const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
@@ -93,4 +98,114 @@ export const checkUrlExists = async (url: string): Promise<boolean> => {
 export const getRandomQuote = (): Quote => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   return quotes[randomIndex];
+};
+
+export const formatTime = (seconds: number): string => {
+  if (isNaN(seconds) || !isFinite(seconds)) return "00:00";
+  
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+export const preloadAudio = async (url: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (!url) {
+      console.warn("Empty URL passed to preloadAudio");
+      resolve(false);
+      return;
+    }
+    
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      console.warn("Invalid URL passed to preloadAudio:", url);
+      resolve(false);
+      return;
+    }
+    
+    // Skip example.com URLs (placeholders)
+    if (validatedUrl.includes('example.com')) {
+      console.warn("Placeholder URL detected in preloadAudio:", validatedUrl);
+      resolve(false);
+      return;
+    }
+    
+    console.log("Attempting to preload audio:", validatedUrl);
+    
+    const audio = new Audio();
+    
+    // Set a timeout for loading
+    const timeout = setTimeout(() => {
+      console.warn("Audio preload timed out:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    }, 8000); // 8 seconds timeout for slower connections
+    
+    // Event listeners for success/failure
+    audio.oncanplaythrough = () => {
+      clearTimeout(timeout);
+      console.log("Audio preload successful:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(true);
+    };
+    
+    audio.onerror = () => {
+      clearTimeout(timeout);
+      console.error("Error preloading audio:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    };
+    
+    // Add additional catches for network errors
+    audio.addEventListener('stalled', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load stalled:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
+    
+    audio.addEventListener('abort', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load aborted:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
+    
+    // Try loading the audio
+    try {
+      audio.src = validatedUrl;
+      audio.load();
+    } catch (e) {
+      clearTimeout(timeout);
+      console.error("Exception loading audio:", e);
+      resolve(false);
+    }
+  });
+};
+
+export const fixSupabaseStorageUrl = (url: string): string => {
+  if (!url || !url.includes('supabase.co')) return url;
+  
+  try {
+    const urlObj = new URL(url);
+    
+    // If the URL already contains storage path, return it
+    if (urlObj.pathname.includes('/storage/v1/object/public/')) {
+      return url;
+    }
+    
+    // Otherwise, add the storage path
+    const fixedUrl = `${urlObj.origin}/storage/v1/object/public/music${urlObj.pathname}`;
+    console.log("Fixed Supabase URL:", fixedUrl);
+    return fixedUrl;
+  } catch (e) {
+    console.error("Error fixing Supabase URL:", e);
+    return url;
+  }
 };

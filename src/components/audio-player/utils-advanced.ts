@@ -1,6 +1,7 @@
+
 // Advanced utility functions for the audio player
 
-import { validateAudioUrl, getAudioMimeType } from "./utils";
+import { validateAudioUrl, getMimeType as getAudioMimeType } from "./utils";
 
 // Check if browser supports AAC playback
 export const checkAACSupport = (): boolean => {
