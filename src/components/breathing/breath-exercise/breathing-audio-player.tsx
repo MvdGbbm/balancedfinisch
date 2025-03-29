@@ -35,12 +35,18 @@ export function BreathingAudioPlayer({
     toast.error("Kon audio niet afspelen. Controleer de audio URL.");
   };
 
+  // Handle audio loading
+  const handleCanPlayThrough = () => {
+    console.log("Audio can play through:", currentAudioUrl);
+  };
+
   return (
     <audio 
       ref={audioRef} 
       src={currentAudioUrl} 
       preload="auto" 
       onError={handleAudioError}
+      onCanPlayThrough={handleCanPlayThrough}
       style={{ display: 'none' }}
     />
   );
