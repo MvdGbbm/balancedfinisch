@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonalMeditationMusic } from "@/components/meditation/personal-meditation-music";
 import { validateAudioUrl } from "@/components/audio-player/utils";
 import { MeditationErrorDisplay } from "@/components/meditation/meditation-error-display";
+import { Loader2 } from "lucide-react";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
@@ -25,12 +26,14 @@ const Meditations = () => {
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
   const [selectedGuidedMeditation, setSelectedGuidedMeditation] = useState<Meditation | null>(null);
   const [activeTab, setActiveTab] = useState("meditations");
+  const processingAttempts = useRef(0);
   
   // First time load
   useEffect(() => {
     const fetchAndProcessMeditations = async () => {
       setLoading(true);
       try {
+        console.log("Processing meditations, attempt:", processingAttempts.current + 1);
         const processed = await processMeditationUrls(meditations);
         
         // Filter out meditations with invalid URLs
@@ -47,10 +50,21 @@ const Meditations = () => {
         
         setProcessedMeditations(validMeditations);
         setLoadError(false);
+        processingAttempts.current = 0;
       } catch (error) {
         console.error("Error processing meditations:", error);
-        setLoadError(true);
-        toast.error("Er is een fout opgetreden bij het laden van meditaties");
+        processingAttempts.current += 1;
+        
+        if (processingAttempts.current <= 3) {
+          console.log(`Retrying processing (${processingAttempts.current}/3)...`);
+          // Auto-retry once with a delay
+          setTimeout(() => {
+            fetchAndProcessMeditations();
+          }, 2000);
+        } else {
+          setLoadError(true);
+          toast.error("Er is een fout opgetreden bij het laden van meditaties");
+        }
       } finally {
         setLoading(false);
       }
@@ -113,6 +127,8 @@ const Meditations = () => {
   
   const handleRetry = async () => {
     setIsRetrying(true);
+    processingAttempts.current = 0;
+    
     try {
       const processed = await processMeditationUrls(meditations);
       setProcessedMeditations(processed);
@@ -139,7 +155,9 @@ const Meditations = () => {
       <MobileLayout>
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin mb-4 mx-auto text-primary" />
             <p className="text-muted-foreground mb-2">Meditaties laden...</p>
+            <p className="text-xs text-muted-foreground/70">Een moment geduld alstublieft</p>
           </div>
         </div>
       </MobileLayout>
@@ -155,6 +173,7 @@ const Meditations = () => {
             message="Er is een probleem opgetreden bij het laden van de meditaties. Controleer je internetverbinding en probeer het opnieuw."
             onRetry={handleRetry}
             isRetrying={isRetrying}
+            details="De server reageert niet of er is een probleem met het ophalen van de meditaties."
           />
         </div>
       </MobileLayout>
@@ -186,25 +205,27 @@ const Meditations = () => {
             />
             
             <div className="space-y-3 pb-20">
-              {filteredMeditations.map((meditation) => (
-                <MeditationCard 
-                  key={meditation.id}
-                  meditation={meditation}
-                  isSelected={currentMeditation?.id === meditation.id}
-                  onClick={(med) => {
-                    console.log("Selected meditation card:", med.title);
-                    setCurrentMeditation(med);
-                    setSelectedGuidedMeditation(null);
-                    
-                    if (!validateAudioUrl(med.audioUrl || '')) {
-                      toast.warning(`Deze meditatie heeft geen geldige audio URL.`);
-                      return;
-                    }
-                  }}
-                />
-              ))}
-              
-              {filteredMeditations.length === 0 && (
+              {filteredMeditations.length > 0 ? (
+                filteredMeditations.map((meditation) => (
+                  <MeditationCard 
+                    key={meditation.id}
+                    meditation={meditation}
+                    isSelected={currentMeditation?.id === meditation.id}
+                    onClick={(med) => {
+                      console.log("Selected meditation card:", med.title);
+                      setCurrentMeditation(med);
+                      setSelectedGuidedMeditation(null);
+                      
+                      if (!validateAudioUrl(med.audioUrl || '') && 
+                          !validateAudioUrl(med.veraLink || '') && 
+                          !validateAudioUrl(med.marcoLink || '')) {
+                        toast.warning(`Deze meditatie heeft geen geldige audio URL.`);
+                        return;
+                      }
+                    }}
+                  />
+                ))
+              ) : (
                 <div className="text-center py-10 text-muted-foreground">
                   <p>Geen meditaties gevonden die aan je filters voldoen.</p>
                   <button 
@@ -220,17 +241,23 @@ const Meditations = () => {
           
           <TabsContent value="geleide-meditaties" className="mt-4">
             <div className="space-y-3 pb-20">
-              {guidedMeditations.map((meditation) => (
-                <MeditationCard 
-                  key={meditation.id}
-                  meditation={meditation}
-                  isSelected={currentMeditation?.id === meditation.id}
-                  onClick={(med) => {
-                    setCurrentMeditation(med);
-                    setSelectedGuidedMeditation(null);
-                  }}
-                />
-              ))}
+              {guidedMeditations.length > 0 ? (
+                guidedMeditations.map((meditation) => (
+                  <MeditationCard 
+                    key={meditation.id}
+                    meditation={meditation}
+                    isSelected={currentMeditation?.id === meditation.id}
+                    onClick={(med) => {
+                      setCurrentMeditation(med);
+                      setSelectedGuidedMeditation(null);
+                    }}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                  <p>Geen geleide meditaties beschikbaar.</p>
+                </div>
+              )}
             </div>
           </TabsContent>
           

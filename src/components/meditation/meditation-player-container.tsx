@@ -1,12 +1,15 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
 import { getRandomQuote } from "@/components/audio-player/utils";
+import MeditationErrorDisplay from "./meditation-error-display";
+import { preloadMeditationAudio } from "@/utils/meditation-utils";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -23,6 +26,8 @@ export function MeditationPlayerContainer({
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [randomQuote] = useState(getRandomQuote());
+  const [loading, setLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -30,17 +35,44 @@ export function MeditationPlayerContainer({
       setAudioError(false);
       setImageError(false);
       setIsPlaying(false);
-      setCurrentAudioUrl(selectedMeditation.audioUrl || "");
-      setPlayerKey(prevKey => prevKey + 1);
+      setLoading(true);
       
-      console.log("Selected meditation:", selectedMeditation);
-      console.log("Audio URL:", selectedMeditation.audioUrl);
-      console.log("Marco link:", selectedMeditation.marcoLink);
-      console.log("Vera link:", selectedMeditation.veraLink);
+      const loadMeditation = async () => {
+        try {
+          console.log("Loading meditation:", selectedMeditation.title);
+          
+          // Pre-check if any audio source is available
+          const hasValidAudio = await preloadMeditationAudio(selectedMeditation);
+          
+          if (!hasValidAudio) {
+            console.error("No valid audio sources found for meditation:", selectedMeditation.title);
+            setAudioError(true);
+            setLoading(false);
+            return;
+          }
+          
+          // Set the primary audio URL
+          setCurrentAudioUrl(selectedMeditation.audioUrl || "");
+          setPlayerKey(prevKey => prevKey + 1);
+          
+          console.log("Selected meditation:", selectedMeditation);
+          console.log("Audio URL:", selectedMeditation.audioUrl);
+          console.log("Marco link:", selectedMeditation.marcoLink);
+          console.log("Vera link:", selectedMeditation.veraLink);
+          
+          // Wait a bit before starting playback to ensure loading
+          setTimeout(() => {
+            setLoading(false);
+            setIsPlaying(true);
+          }, 800);
+        } catch (error) {
+          console.error("Error loading meditation:", error);
+          setAudioError(true);
+          setLoading(false);
+        }
+      };
       
-      setTimeout(() => {
-        setIsPlaying(true);
-      }, 500);
+      loadMeditation();
     }
   }, [selectedMeditation]);
   
@@ -108,6 +140,7 @@ export function MeditationPlayerContainer({
       setCurrentAudioUrl(validatedUrl);
       setPlayerKey(prevKey => prevKey + 1);
       setIsPlaying(true);
+      setAudioError(false);
       
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
     } catch (e) {
@@ -115,30 +148,58 @@ export function MeditationPlayerContainer({
       toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
     }
   };
+  
+  const handleRetry = async () => {
+    setRetrying(true);
+    setAudioError(false);
+    
+    try {
+      // Try to use a different source if primary failed
+      if (currentAudioUrl === selectedMeditation.audioUrl && selectedMeditation.veraLink) {
+        handlePlayExternalLink('vera');
+      } else if (currentAudioUrl === selectedMeditation.veraLink && selectedMeditation.marcoLink) {
+        handlePlayExternalLink('marco');
+      } else if (selectedMeditation.audioUrl) {
+        // Reset to primary URL and try again
+        setCurrentAudioUrl(selectedMeditation.audioUrl);
+        setPlayerKey(prevKey => prevKey + 1);
+        setIsPlaying(true);
+      }
+      
+      setTimeout(() => {
+        setRetrying(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error retrying meditation playback:", error);
+      setAudioError(true);
+      setRetrying(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mt-4 p-4 rounded-md bg-black/50 border border-border/50 flex items-center justify-center">
+        <div className="text-center py-6">
+          <Loader2 className="h-8 w-8 animate-spin mb-3 mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground">Meditatie laden...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
-            {selectedMeditation.audioUrl && (
-              <div className="mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setAudioError(false);
-                    handleStartPlaying();
-                  }}
-                >
-                  Probeer opnieuw
-                </Button>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
+        <MeditationErrorDisplay
+          message="Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren."
+          onRetry={handleRetry}
+          isRetrying={retrying}
+          details={
+            selectedMeditation.audioUrl ? 
+            `Audio URL: ${selectedMeditation.audioUrl.substring(0, 50)}...` : 
+            "Geen audio URL gevonden"
+          }
+        />
       </div>
     );
   }
