@@ -40,20 +40,16 @@ export function useBreathingCycle(selectedPattern: BreathingPattern | null) {
       } else {
         // Move to next phase
         if (currentPhase === "inhale") {
-          // Skip hold1 phase if hold1 is 0 seconds or less
-          if (selectedPattern.hold1 <= 0) {
-            setCurrentPhase("exhale");
-            setSecondsLeft(selectedPattern.exhale);
-          } else {
-            setCurrentPhase("hold1");
-            setSecondsLeft(selectedPattern.hold1);
-          }
+          setCurrentPhase("hold1");
+          setSecondsLeft(selectedPattern.hold1 || 1);
         } else if (currentPhase === "hold1") {
           setCurrentPhase("exhale");
           setSecondsLeft(selectedPattern.exhale);
         } else if (currentPhase === "exhale") {
-          // Skip hold2 phase if hold2 is 0 seconds or less
-          if (selectedPattern.hold2 <= 0) {
+          if (selectedPattern.hold2) {
+            setCurrentPhase("hold2");
+            setSecondsLeft(selectedPattern.hold2);
+          } else {
             if (currentCycle < selectedPattern.cycles) {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");
@@ -65,9 +61,6 @@ export function useBreathingCycle(selectedPattern: BreathingPattern | null) {
               setSecondsLeft(selectedPattern.inhale);
               toast.success("Ademhalingsoefening voltooid!");
             }
-          } else {
-            setCurrentPhase("hold2");
-            setSecondsLeft(selectedPattern.hold2);
           }
         } else if (currentPhase === "hold2") {
           if (currentCycle < selectedPattern.cycles) {

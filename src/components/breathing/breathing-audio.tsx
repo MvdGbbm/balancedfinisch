@@ -38,11 +38,7 @@ export const useBreathingAudio = ({
       return false;
     }
     try {
-      const urlsToValidate = [urls.inhale, urls.exhale];
-      // Only validate hold if it's provided
-      if (urls.hold) {
-        urlsToValidate.push(urls.hold);
-      }
+      const urlsToValidate = [urls.inhale, urls.hold, urls.exhale];
       if (urls.start) {
         urlsToValidate.push(urls.start);
       }
@@ -77,8 +73,7 @@ export const useBreathingAudio = ({
         audioUrl = voiceUrls.inhale;
         break;
       case 'hold':
-        // Only play hold audio if URL is provided
-        audioUrl = voiceUrls.hold || '';
+        audioUrl = voiceUrls.hold;
         break;
       case 'exhale':
         audioUrl = voiceUrls.exhale;
