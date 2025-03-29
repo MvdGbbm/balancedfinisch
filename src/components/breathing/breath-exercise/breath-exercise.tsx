@@ -32,6 +32,9 @@ export function BreathExercise({
     );
   }
 
+  // Determine if hold phase should be enabled based on the pattern
+  const holdEnabled = selectedPattern.hold1 > 0;
+
   return (
     <div className="space-y-4 animate-fade-in">
       <BreathingAudioPlayer 
@@ -56,6 +59,7 @@ export function BreathExercise({
             inhaleDuration={selectedPattern.inhale * 1000}
             holdDuration={selectedPattern.hold1 * 1000}
             exhaleDuration={selectedPattern.exhale * 1000}
+            holdEnabled={holdEnabled}
           />
           
           <BreathingCycleTracker 

@@ -59,7 +59,7 @@ export function useBreathingAnimation({
       }
 
       // Scale circle differently based on secondsLeft or progress
-      if (secondsLeft && maxSeconds > 0) {
+      if (secondsLeft !== undefined && maxSeconds > 0) {
         const percentComplete = (maxSeconds - secondsLeft) / maxSeconds;
         updateCircleScale(activePhase, percentComplete);
       } else {

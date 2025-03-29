@@ -12,6 +12,7 @@ interface BreathingCircleProps {
   isActive: boolean;
   currentPhase?: "inhale" | "hold" | "exhale" | "rest";
   secondsLeft?: number;
+  holdEnabled?: boolean;
 }
 
 export function BreathingCircle({
@@ -22,7 +23,8 @@ export function BreathingCircle({
   onBreathComplete,
   isActive = false,
   currentPhase = "rest",
-  secondsLeft = 0
+  secondsLeft = 0,
+  holdEnabled = true
 }: BreathingCircleProps) {
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
   const [progress, setProgress] = useState(0);
@@ -30,7 +32,7 @@ export function BreathingCircle({
   const [circleScale, setCircleScale] = useState(0.5);
 
   const activePhase = currentPhase || phase;
-  const shouldShowHoldPhase = holdDuration > 0;
+  const shouldShowHoldPhase = holdEnabled && holdDuration > 0;
 
   useEffect(() => {
     if (isActive) {
@@ -118,7 +120,7 @@ export function BreathingCircle({
         setProgress(0);
         
         if (currentPhaseLocal === "inhale") {
-          // Skip hold phase if holdDuration is 0
+          // Skip hold phase if not enabled
           if (shouldShowHoldPhase) {
             setPhase("hold");
             currentPhaseLocal = "hold";
