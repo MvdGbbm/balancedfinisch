@@ -21,11 +21,19 @@ import { Soundscape } from "@/lib/types";
 
 interface PlaylistSelectorProps {
   playlists: Playlist[];
-  onSelectPlaylist: (playlistId: string) => void;
+  onSelect: (playlistId: string) => void;
   onCreateNew: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: PlaylistSelectorProps) {
+export function PlaylistSelector({ 
+  playlists, 
+  onSelect, 
+  onCreateNew, 
+  open, 
+  onOpenChange 
+}: PlaylistSelectorProps) {
   const [activeTab, setActiveTab] = useState<string>("playlists");
   const { soundscapes } = useApp();
   
@@ -33,7 +41,7 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
   const musicTracks = soundscapes.filter(track => track.category === "Muziek");
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
@@ -63,7 +71,7 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
                 playlists.map(playlist => (
                   <DropdownMenuItem 
                     key={playlist.id}
-                    onClick={() => onSelectPlaylist(playlist.id)}
+                    onClick={() => onSelect(playlist.id)}
                     className="flex items-center gap-2"
                   >
                     <ListMusic className="h-4 w-4" />
