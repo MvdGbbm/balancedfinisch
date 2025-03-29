@@ -2,10 +2,9 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Plus } from "lucide-react";
+import { Play, Pause, Plus, Volume2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Soundscape } from "@/lib/types";
-import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 
 interface MusicTrackCardProps {
   track: Soundscape;
@@ -24,8 +23,6 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
   onStop,
   onAddToPlaylist
 }) => {
-  const [showPlaylistSelector, setShowPlaylistSelector] = React.useState(false);
-  
   const handlePlayClick = () => {
     if (isCurrentTrack && isPlaying) {
       onStop();
@@ -35,74 +32,61 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
   };
 
   return (
-    <Card className="overflow-hidden hover:bg-accent/50 transition-colors">
-      <CardContent className="p-3 flex items-center gap-3">
-        <div className="relative h-12 w-12 flex-shrink-0 rounded overflow-hidden">
-          <img 
-            src={track.coverImageUrl} 
-            alt={track.title}
-            className="object-cover w-full h-full"
-            onError={(e) => {
-              e.currentTarget.src = "https://via.placeholder.com/48?text=No+Image";
-            }}
-          />
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-sm line-clamp-1">{track.title}</h3>
-          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-            {track.description}
-          </p>
-          <div className="flex flex-wrap gap-1 mt-1">
-            {track.tags.slice(0, 2).map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs py-0 px-1.5">
-                {tag}
-              </Badge>
-            ))}
-            {track.tags.length > 2 && (
-              <span className="text-xs text-muted-foreground">+{track.tags.length - 2}</span>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex gap-1 flex-shrink-0">
-          <Button 
-            size="icon" 
-            variant={isCurrentTrack && isPlaying ? "default" : "outline"}
-            onClick={handlePlayClick}
-            className="h-8 w-8"
-          >
-            {isCurrentTrack && isPlaying ? (
-              <Pause className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-          </Button>
-          
-          <Button 
-            size="icon" 
-            variant="outline"
-            onClick={() => setShowPlaylistSelector(true)}
-            className="h-8 w-8"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-        
-        <PlaylistSelector
-          open={showPlaylistSelector}
-          onOpenChange={setShowPlaylistSelector}
-          playlists={[]} /* This will be passed from parent */
-          onSelect={(playlistId) => {
-            onAddToPlaylist(track);
-            setShowPlaylistSelector(false);
-          }}
-          onCreateNew={() => {
-            setShowPlaylistSelector(false);
-            /* This will be handled by parent */
+    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 transition-colors">
+      <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
+        <img 
+          src={track.coverImageUrl} 
+          alt={track.title}
+          className="object-cover w-full h-full"
+          onError={(e) => {
+            e.currentTarget.src = "https://via.placeholder.com/100x100?text=No+Image";
           }}
         />
-      </CardContent>
-    </Card>
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <h3 className="font-medium text-sm line-clamp-1">{track.title}</h3>
+        <p className="text-xs text-muted-foreground line-clamp-1">
+          {track.description}
+        </p>
+        <div className="flex flex-wrap gap-1 mt-1">
+          {track.tags.slice(0, 2).map((tag, index) => (
+            <Badge key={index} variant="outline" className="text-xs px-1 py-0 h-4">
+              {tag}
+            </Badge>
+          ))}
+          {track.tags.length > 2 && (
+            <span className="text-xs text-muted-foreground">+{track.tags.length - 2}</span>
+          )}
+        </div>
+      </div>
+      
+      {isCurrentTrack && isPlaying && (
+        <Volume2 className="h-4 w-4 text-primary animate-pulse flex-shrink-0" />
+      )}
+      
+      <div className="flex gap-1 flex-shrink-0">
+        <Button 
+          size="icon" 
+          variant={isCurrentTrack && isPlaying ? "default" : "ghost"}
+          onClick={handlePlayClick}
+          className="h-8 w-8"
+        >
+          {isCurrentTrack && isPlaying ? (
+            <Pause className="h-4 w-4" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+        </Button>
+        <Button 
+          size="icon" 
+          variant="ghost"
+          onClick={() => onAddToPlaylist(track)}
+          className="h-8 w-8"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 };

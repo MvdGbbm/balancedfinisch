@@ -10,7 +10,6 @@ import { RadioStreamCard } from "./RadioStreamCard";
 import { RadioStream } from "@/hooks/use-radio-streams";
 import { MusicTrackCard } from "./MusicTrackCard";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
-import { Separator } from "@/components/ui/separator";
 
 interface MusicContentProps {
   activeTab: string;
@@ -73,20 +72,22 @@ export const MusicContent: React.FC<MusicContentProps> = ({
 
   return (
     <>
-      <TabsContent value="muziek" className="space-y-2">
+      <TabsContent value="muziek" className="space-y-4">
         {musicTracks.length > 0 ? (
-          <div className="flex flex-col divide-y divide-border">
-            {musicTracks.map((track) => (
-              <MusicTrackCard
-                key={track.id}
-                track={track}
-                isPlaying={isPlaying}
-                isCurrentTrack={currentTrack?.id === track.id && !previewTrack}
-                onPlay={handlePreviewTrack}
-                onStop={handleStopPlaylist}
-                onAddToPlaylist={handleAddToPlaylistClick}
-              />
-            ))}
+          <div className="rounded-md border bg-card overflow-hidden">
+            <div className="divide-y">
+              {musicTracks.map((track) => (
+                <MusicTrackCard
+                  key={track.id}
+                  track={track}
+                  isPlaying={isPlaying}
+                  isCurrentTrack={currentTrack?.id === track.id && !previewTrack}
+                  onPlay={handlePreviewTrack}
+                  onStop={handleStopPlaylist}
+                  onAddToPlaylist={handleAddToPlaylistClick}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-8">
