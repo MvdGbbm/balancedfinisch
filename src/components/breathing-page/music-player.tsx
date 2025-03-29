@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChevronDown, Music as MusicIcon, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MusicPlayerProps } from './types';
+import { toast } from "sonner";
 
 export const BreathingMusicPlayer: React.FC<MusicPlayerProps> = ({
   musicTracks,
@@ -24,6 +24,33 @@ export const BreathingMusicPlayer: React.FC<MusicPlayerProps> = ({
   audioPlayerRef,
   onTrackPlayPauseChange
 }) => {
+  useEffect(() => {
+    if (currentTrack && isTrackPlaying) {
+      console.log('BreathingMusicPlayer - Playing track:', currentTrack.title);
+      console.log('BreathingMusicPlayer - Audio URL:', currentTrack.audioUrl);
+    }
+  }, [currentTrack, isTrackPlaying]);
+
+  const handleSelectTrack = (track: any) => {
+    console.log('Track selected in breathing exercise:', track);
+    
+    if (currentTrack?.id === track.id) {
+      onTrackPlayPauseChange(!isTrackPlaying);
+      
+      toast.success(
+        isTrackPlaying 
+          ? `Muziek gepauzeerd: ${track.title}`
+          : `Muziek afspelen: ${track.title}`
+      );
+      
+      return;
+    }
+    
+    onPlayTrack(track);
+    
+    toast.success(`Nieuwe muziek geselecteerd: ${track.title}`);
+  };
+
   return (
     <>
       <div className="mt-6">
@@ -50,7 +77,7 @@ export const BreathingMusicPlayer: React.FC<MusicPlayerProps> = ({
                   <DropdownMenuItem 
                     key={track.id} 
                     className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}
-                    onClick={() => onPlayTrack(track)}
+                    onClick={() => handleSelectTrack(track)}
                   >
                     <div className="flex items-center gap-2">
                       <div 
@@ -72,11 +99,13 @@ export const BreathingMusicPlayer: React.FC<MusicPlayerProps> = ({
         </DropdownMenu>
       </div>
       
-      {currentTrack && isTrackPlaying && (
+      {currentTrack && (
         <div className="mt-4 p-3 border rounded-md bg-background/50">
           <div className="flex items-center mb-2">
-            <Volume2 className="h-4 w-4 text-primary mr-2 animate-pulse" />
-            <h4 className="font-medium text-sm">Nu afspelend: {currentTrack.title}</h4>
+            <Volume2 className={`h-4 w-4 text-primary mr-2 ${isTrackPlaying ? 'animate-pulse' : ''}`} />
+            <h4 className="font-medium text-sm">
+              {isTrackPlaying ? `Nu afspelend: ${currentTrack.title}` : `Gepauzeerd: ${currentTrack.title}`}
+            </h4>
           </div>
           <AudioPlayer 
             audioUrl={currentTrack.audioUrl} 

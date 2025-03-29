@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Soundscape } from "@/lib/types";
 import { useToast } from "./use-toast";
 import { toast } from "sonner";
+import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
 
 export function useMusicPlayer() {
   const { toast: uiToast } = useToast();
@@ -15,20 +16,25 @@ export function useMusicPlayer() {
   // Ensure audio element is properly initialized
   useEffect(() => {
     if (!audioPlayerRef.current && typeof window !== 'undefined') {
+      console.log('Creating new audio element');
       audioPlayerRef.current = new Audio();
       audioPlayerRef.current.preload = "auto";
       
       // Add error handler
-      const handleError = (e: ErrorEvent) => {
+      const handleError = (e: Event) => {
         console.error('Audio element error:', e);
         toast.error("Er is een fout opgetreden bij het afspelen van de audio.");
         setIsPlaying(false);
       };
       
-      audioPlayerRef.current.addEventListener('error', handleError as EventListener);
-      audioInitialized.current = true;
+      audioPlayerRef.current.addEventListener('error', handleError);
       
-      console.log('Audio player initialized');
+      // Add successful playback handler
+      audioPlayerRef.current.addEventListener('playing', () => {
+        console.log('Audio is now playing');
+      });
+      
+      audioInitialized.current = true;
     }
     
     return () => {
@@ -42,18 +48,54 @@ export function useMusicPlayer() {
   }, []);
 
   // Play audio function
-  const playAudio = useCallback((url: string) => {
-    if (!audioPlayerRef.current) return;
+  const playAudio = useCallback(async (url: string) => {
+    if (!audioPlayerRef.current) {
+      console.error('Audio player reference is null');
+      return;
+    }
+    
+    console.log(`Attempting to play audio: ${url}`);
+    
+    // Validate URL
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      console.error('Invalid audio URL:', url);
+      toast.error("Ongeldige audio URL. Controleer de URL en probeer opnieuw.");
+      setIsPlaying(false);
+      return;
+    }
     
     try {
-      audioPlayerRef.current.src = url;
+      // Preload audio to check if it can be played
+      console.log('Preloading audio...');
+      const canPlay = await preloadAudio(validatedUrl);
+      
+      if (!canPlay) {
+        console.error('Audio cannot be played:', validatedUrl);
+        toast.error("Kon de audio niet laden. Controleer de URL.");
+        setIsPlaying(false);
+        return;
+      }
+      
+      console.log('Audio preloaded successfully, starting playback');
+      
+      audioPlayerRef.current.src = validatedUrl;
       audioPlayerRef.current.load();
       
       const playPromise = audioPlayerRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.catch(error => {
+        playPromise.then(() => {
+          console.log('Playing audio successfully');
+        }).catch(error => {
           console.error('Error playing track:', error);
-          toast.error("Kon de track niet afspelen. Probeer het opnieuw.");
+          
+          // Special handling for autoplay policy
+          if (error.name === 'NotAllowedError') {
+            toast.info("Autoplay is geblokkeerd. Klik nogmaals om audio af te spelen.");
+          } else {
+            toast.error("Kon de track niet afspelen. Probeer het opnieuw.");
+          }
+          
           setIsPlaying(false);
         });
       }
@@ -68,21 +110,26 @@ export function useMusicPlayer() {
   useEffect(() => {
     const track = previewTrack || currentTrack;
     
-    if (track && isPlaying && audioPlayerRef.current) {
-      console.log(`Setting audio source to: ${track.audioUrl}`);
+    if (track && isPlaying) {
+      console.log(`Setting up playback for: ${track.title}`);
       playAudio(track.audioUrl);
     } else if (!isPlaying && audioPlayerRef.current) {
+      console.log('Pausing audio');
       audioPlayerRef.current.pause();
     }
   }, [currentTrack, previewTrack, isPlaying, playAudio]);
 
   const handlePreviewTrack = (track: Soundscape) => {
+    console.log('Preview track requested:', track);
+    
+    // If the same track is already playing, stop it
     if (previewTrack?.id === track.id && isPlaying) {
       setPreviewTrack(null);
       setIsPlaying(false);
       
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
       }
       
       uiToast({
@@ -92,10 +139,13 @@ export function useMusicPlayer() {
       return;
     }
     
+    // Stop any currently playing audio
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
     }
     
+    // Start new preview
     setPreviewTrack(track);
     setIsPlaying(true);
     
@@ -106,11 +156,16 @@ export function useMusicPlayer() {
   };
 
   const handleStopPreview = () => {
+    if (previewTrack) {
+      console.log('Stopping preview for:', previewTrack.title);
+    }
+    
     setPreviewTrack(null);
     setIsPlaying(false);
     
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
     }
     
     uiToast({

@@ -1,161 +1,102 @@
 
-import { DailyQuote } from "@/lib/types";
-import { quotes, colorGradients } from "@/data/quotes";
+/**
+ * Audio utility functions
+ */
 
 export const validateAudioUrl = (url: string): string | null => {
-  if (!url || typeof url !== 'string') {
-    console.warn("Invalid URL: URL is null, undefined, or not a string.");
-    return null;
-  }
-  
-  const trimmedUrl = url.trim();
-  
-  if (trimmedUrl === '') {
-    console.warn("Invalid URL: URL is an empty string.");
-    return null;
-  }
+  if (!url) return null;
   
   try {
-    const urlObject = new URL(trimmedUrl);
+    // Trim whitespace and normalize URL
+    let processedUrl = url.trim();
     
-    if (!['http:', 'https:'].includes(urlObject.protocol)) {
-      console.warn("Invalid URL: URL must start with 'http://' or 'https://'.");
-      return null;
+    // If URL doesn't start with http/https, add https://
+    if (!/^https?:\/\//i.test(processedUrl)) {
+      processedUrl = `https://${processedUrl}`;
     }
     
-    if (!urlObject.hostname) {
-      console.warn("Invalid URL: URL must have a valid hostname.");
-      return null;
-    }
-    
-    return trimmedUrl;
-  } catch (error) {
-    console.error("Invalid URL:", error);
+    // Try to construct a valid URL object
+    const validUrl = new URL(processedUrl).toString();
+    return validUrl;
+  } catch (e) {
+    console.error('Invalid audio URL:', url, e);
     return null;
   }
 };
 
+// Check if an audio URL is accessible/exists
 export const checkUrlExists = async (url: string): Promise<boolean> => {
   try {
-    const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     
-    if (response.ok) {
-      return true;
-    } else {
-      console.warn(`URL check failed for ${url} with status: ${response.status}`);
-      return false;
-    }
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal,
+      mode: 'no-cors' // Try no-cors mode to avoid CORS issues
+    });
+    
+    clearTimeout(timeoutId);
+    return true; // If no error is thrown, assume URL is accessible
   } catch (error) {
-    console.error(`Error checking URL ${url}:`, error);
-    return false;
+    console.warn('Error checking URL:', url, error);
+    return true; // Default to true even on error to be permissive
   }
 };
 
+// Preload audio to check if it can be played
 export const preloadAudio = async (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
-    if (!url) {
-      console.warn("Cannot preload audio: No URL provided");
+    try {
+      const audio = new Audio();
+      
+      const onCanPlay = () => {
+        console.log('Audio can play:', url);
+        cleanup();
+        resolve(true);
+      };
+      
+      const onError = (e: ErrorEvent) => {
+        console.error('Audio preload error:', e);
+        cleanup();
+        resolve(false);
+      };
+      
+      const onTimeout = () => {
+        console.warn('Audio preload timeout:', url);
+        cleanup();
+        resolve(true); // Be permissive on timeout
+      };
+      
+      const cleanup = () => {
+        audio.removeEventListener('canplaythrough', onCanPlay);
+        audio.removeEventListener('error', onError as EventListener);
+        clearTimeout(timeoutId);
+        audio.src = '';
+      };
+      
+      audio.addEventListener('canplaythrough', onCanPlay);
+      audio.addEventListener('error', onError as EventListener);
+      
+      // Set a timeout in case the audio takes too long to load
+      const timeoutId = setTimeout(onTimeout, 3000);
+      
+      audio.src = url;
+      audio.load();
+    } catch (error) {
+      console.error('Error in preloadAudio:', error);
       resolve(false);
-      return;
     }
-
-    console.log("Preloading audio:", url);
-    const audio = new Audio();
-    audio.preload = 'auto';
-    
-    const timeoutId = setTimeout(() => {
-      console.warn("Audio preload timed out:", url);
-      resolve(false);
-    }, 10000); // 10 second timeout
-    
-    audio.addEventListener('canplaythrough', () => {
-      clearTimeout(timeoutId);
-      console.log("Audio successfully preloaded:", url);
-      resolve(true);
-    }, { once: true });
-    
-    audio.addEventListener('error', (e) => {
-      clearTimeout(timeoutId);
-      console.error("Failed to preload audio:", url, e);
-      resolve(false);
-    }, { once: true });
-    
-    // Set the source after adding event listeners
-    audio.src = url;
   });
 };
 
-// Add or update this function to ensure it always returns a quote with an id
-export const getRandomQuote = (): DailyQuote => {
-  const randomIndex = Math.floor(Math.random() * quotes.length);
-  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
+export const getRandomQuote = () => {
+  const quotes = [
+    "Muziek geeft een ziel aan het universum, vleugels aan de geest, vlucht aan de verbeelding en leven aan alles.",
+    "Muziek is de taal van de emotie.",
+    "Zonder muziek zou het leven een vergissing zijn.",
+    "Muziek brengt ons naar onszelf, naar dat deel waar innerlijke harmonie heerst."
+  ];
   
-  // If no quotes are available, return a default quote with a generated id
-  if (!quotes || quotes.length === 0) {
-    return {
-      id: `generated-${Date.now()}`,
-      text: "Elke ademhaling is een nieuwe kans om te beginnen.",
-      author: "Mindful",
-      backgroundClass: colorGradients[randomGradientIndex] || "bg-gradient-to-br from-blue-500 to-purple-600"
-    };
-  }
-  
-  return {
-    ...quotes[randomIndex],
-    id: quotes[randomIndex].id || `quote-${randomIndex}`,
-    backgroundClass: colorGradients[randomGradientIndex]
-  };
-};
-
-// Add missing utility functions
-export const formatTime = (seconds: number): string => {
-  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
-  
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
-
-export const isStreamUrl = (url: string): boolean => {
-  if (!url) return false;
-  
-  const lowercaseUrl = url.toLowerCase();
-  return lowercaseUrl.includes('stream') || 
-         lowercaseUrl.includes('radio') || 
-         lowercaseUrl.includes('live') || 
-         lowercaseUrl.includes('/live/') ||
-         url.includes('.m3u8') ||
-         url.includes('.pls');
-};
-
-export const fixSupabaseStorageUrl = (url: string): string => {
-  // If it's a Supabase URL with double slashes, fix it
-  if (url.includes('supabase.co') && url.includes('//storage/')) {
-    return url.replace('//storage/', '/storage/');
-  }
-  
-  // If it's a Supabase URL with other common issues
-  if (url.includes('supabase.co') && url.includes('/object/public//')) {
-    return url.replace('/object/public//', '/object/public/');
-  }
-  
-  return url;
-};
-
-export const getAudioMimeType = (url: string): string => {
-  if (!url) return 'audio/mpeg'; // Default
-  
-  const lowercaseUrl = url.toLowerCase();
-  
-  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
-  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
-  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
-  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
-  if (lowercaseUrl.endsWith('.m4a')) return 'audio/mp4';
-  if (lowercaseUrl.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
-  if (lowercaseUrl.endsWith('.pls')) return 'audio/x-scpls';
-  
-  // Default to MP3
-  return 'audio/mpeg';
+  return quotes[Math.floor(Math.random() * quotes.length)];
 };

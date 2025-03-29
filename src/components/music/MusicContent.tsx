@@ -1,14 +1,12 @@
 
 import React from "react";
+import { MusicTabContent } from "./MusicTabContent";
+import { PlaylistTabContent } from "./PlaylistTabContent";
+import { RadioTabContent } from "./RadioTabContent";
+import { LoadingContent } from "./LoadingContent";
 import { TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { Soundscape } from "@/lib/types";
 import { Playlist } from "@/components/playlist/types";
-import { MusicTrackCard } from "./MusicTrackCard";
-import { PlaylistCard } from "./PlaylistCard";
-import { RadioStreamCard } from "./RadioStreamCard";
-import { RadioStream } from "@/hooks/use-radio-streams";
 
 interface MusicContentProps {
   activeTab: string;
@@ -18,7 +16,7 @@ interface MusicContentProps {
   isPlaying: boolean;
   currentTrack: Soundscape | null;
   previewTrack: Soundscape | null;
-  radioStreams: RadioStream[];
+  radioStreams: any[];
   isLoadingStreams: boolean;
   hiddenIframeUrl: string | null;
   setShowPlaylistCreator: (show: boolean) => void;
@@ -27,7 +25,7 @@ interface MusicContentProps {
   handlePlayPlaylist: (playlist: Playlist) => void;
   handleStopPlaylist: () => void;
   handleRemoveFromPlaylist: (trackId: string, playlistId: string) => void;
-  handleStreamPlay: (stream: RadioStream) => void;
+  handleStreamPlay: (stream: any) => void;
   handleStreamStop: () => void;
   getPlaylistTracks: (playlist: Playlist) => Soundscape[];
 }
@@ -53,102 +51,53 @@ export const MusicContent: React.FC<MusicContentProps> = ({
   handleStreamStop,
   getPlaylistTracks
 }) => {
+  if (activeTab === "music" && musicTracks.length === 0) {
+    return <LoadingContent message="Muziek laden..." />;
+  }
+
+  if (activeTab === "playlists" && playlists.length === 0) {
+    return <LoadingContent message="Geen afspeellijsten gevonden" />;
+  }
+
+  if (activeTab === "streaming" && isLoadingStreams) {
+    return <LoadingContent message="Radio streams laden..." />;
+  }
+
   return (
     <>
-      <TabsContent value="music" className="space-y-4">
-        {musicTracks.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {musicTracks.map((track) => (
-              <MusicTrackCard
-                key={track.id}
-                track={track}
-                isPlaying={isPlaying}
-                isCurrentTrack={(currentTrack?.id === track.id || previewTrack?.id === track.id)}
-                onPreviewTrack={handlePreviewTrack}
-                onAddToPlaylist={handleAddToPlaylist}
-                onShowPlaylistCreator={() => setShowPlaylistCreator(true)}
-                playlists={playlists}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen muziek tracks gevonden</p>
-          </div>
-        )}
+      <TabsContent value="music" className="mt-6 space-y-4 animate-fade-in">
+        <MusicTabContent 
+          tracks={musicTracks}
+          playlists={playlists}
+          onPreviewTrack={handlePreviewTrack}
+          onAddToPlaylist={handleAddToPlaylist}
+          isPlaying={isPlaying}
+          currentTrack={currentTrack}
+          previewTrack={previewTrack}
+        />
       </TabsContent>
       
-      <TabsContent value="playlists" className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => setShowPlaylistCreator(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe afspeellijst
-          </Button>
-        </div>
-        
-        {playlists.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {playlists.map((playlist) => {
-              const playlistTracks = getPlaylistTracks(playlist);
-              const isCurrentPlaylist = selectedPlaylist?.id === playlist.id && isPlaying;
-              
-              return (
-                <PlaylistCard
-                  key={playlist.id}
-                  playlist={playlist}
-                  isCurrentPlaylist={isCurrentPlaylist}
-                  isPlaying={isPlaying}
-                  playlistTracks={playlistTracks}
-                  musicTracks={musicTracks}
-                  onPlayPlaylist={() => handlePlayPlaylist(playlist)}
-                  onStopPlaylist={handleStopPlaylist}
-                  onRemoveFromPlaylist={(trackId) => handleRemoveFromPlaylist(
-                    trackId, 
-                    playlist.id
-                  )}
-                  onAddToPlaylist={handleAddToPlaylist}
-                  getPlaylistTracks={getPlaylistTracks}
-                  currentTrackId={currentTrack?.id}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen afspeellijsten gevonden</p>
-            <Button 
-              variant="outline" 
-              className="mt-2"
-              onClick={() => setShowPlaylistCreator(true)}
-            >
-              Maak je eerste afspeellijst
-            </Button>
-          </div>
-        )}
+      <TabsContent value="playlists" className="mt-6 space-y-4 animate-fade-in">
+        <PlaylistTabContent 
+          playlists={playlists}
+          selectedPlaylist={selectedPlaylist}
+          isPlaying={isPlaying}
+          currentTrack={currentTrack}
+          onCreatePlaylist={() => setShowPlaylistCreator(true)}
+          onPlayPlaylist={handlePlayPlaylist}
+          onStopPlaylist={handleStopPlaylist}
+          onRemoveTrack={handleRemoveFromPlaylist}
+          getPlaylistTracks={getPlaylistTracks}
+        />
       </TabsContent>
       
-      <TabsContent value="radio" className="space-y-4">
-        {isLoadingStreams ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-          </div>
-        ) : radioStreams.length > 0 ? (
-          <div className="grid grid-cols-1 gap-2">
-            {radioStreams.map((stream) => (
-              <RadioStreamCard
-                key={stream.id}
-                stream={stream}
-                isPlaying={hiddenIframeUrl === stream.url}
-                onPlay={() => handleStreamPlay(stream)}
-                onStop={handleStreamStop}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen radiolinks gevonden</p>
-          </div>
-        )}
+      <TabsContent value="streaming" className="mt-6 space-y-4 animate-fade-in">
+        <RadioTabContent 
+          streams={radioStreams}
+          isStreamPlaying={!!hiddenIframeUrl}
+          onStreamPlay={handleStreamPlay}
+          onStreamStop={handleStreamStop}
+        />
       </TabsContent>
     </>
   );
