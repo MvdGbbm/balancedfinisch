@@ -1,14 +1,11 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingExerciseTester } from "./breathing-exercise/breathing-exercise-tester";
 import { BreathingPattern } from "@/lib/types";
 import { toast } from "sonner";
-
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
-
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -28,7 +25,6 @@ export function BreathingExerciseTest({
     }
     return true;
   };
-  
   if (!validatePattern(pattern)) {
     return <Card>
         <CardContent className="p-4 text-center text-muted-foreground">
@@ -36,10 +32,7 @@ export function BreathingExerciseTest({
         </CardContent>
       </Card>;
   }
-  
   return <Card>
-      <CardContent className="p-4">
-        <BreathingExerciseTester pattern={pattern} />
-      </CardContent>
+      
     </Card>;
 }
