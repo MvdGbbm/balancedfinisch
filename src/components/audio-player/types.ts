@@ -1,24 +1,6 @@
 
 import { ReactNode } from "react";
 
-export interface AudioPlayerProps {
-  audioUrl: string;
-  showControls?: boolean;
-  showTitle?: boolean;
-  title?: string;
-  className?: string;
-  onEnded?: () => void;
-  onError?: () => void;
-  customSoundscapeSelector?: ReactNode;
-  showQuote?: boolean;
-  isPlayingExternal?: boolean;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
-  nextAudioUrl?: string;
-  onCrossfadeStart?: () => void;
-  volume?: number;
-  showMusicSelector?: boolean;
-}
-
 export interface AudioPlayerState {
   isPlaying: boolean;
   duration: number;
@@ -41,41 +23,21 @@ export interface AudioPlayerControls {
   skipTime: (amount: number) => void;
 }
 
-export interface MusicSelectorProps {
-  selectedMusic: string;
-  onMusicChange: (value: string) => void;
-}
-
-export interface NowPlayingProps {
-  selectedMusic: string;
+export interface AudioPlayerProps {
+  audioUrl: string;
+  showControls?: boolean;
+  showTitle?: boolean;
   title?: string;
-}
-
-export interface ProgressBarProps {
-  currentTime: number;
-  duration: number;
-  isLoaded: boolean;
-  isCrossfading: boolean;
-  isLiveStream: boolean;
-  handleProgressChange: (newValue: number[]) => void;
-}
-
-export interface AudioControlsProps {
-  isPlaying: boolean;
-  togglePlay: () => void;
-  skipTime: (amount: number) => void;
-  isLoaded: boolean;
-  isLooping: boolean;
-  toggleLoop: () => void;
-  isCrossfading: boolean;
-  isLiveStream: boolean;
-  volume: number;
-  handleVolumeChange: (newValue: number[]) => void;
-  loadError: boolean;
-}
-
-export interface ErrorMessageProps {
-  handleRetry: () => void;
-  isRetrying: boolean;
-  message?: string;
+  className?: string;
+  onEnded?: () => void;
+  onError?: () => void;
+  customSoundscapeSelector?: ReactNode;
+  showQuote?: boolean;
+  isPlayingExternal?: boolean;
+  onPlayPauseChange?: (isPlaying: boolean) => void;
+  nextAudioUrl?: string;
+  onCrossfadeStart?: () => void;
+  volume?: number;
+  ref?: React.Ref<HTMLAudioElement>;
+  showMusicSelector?: boolean;
 }

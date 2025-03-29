@@ -7,7 +7,6 @@ import { MusicSearch } from "@/components/admin/music/MusicSearch";
 import { EmptyMusicState } from "@/components/admin/music/EmptyMusicState";
 import { LoadingState } from "@/components/admin/music/LoadingState";
 import { MusicTable } from "@/components/admin/music/MusicTable";
-import { MusicBackendControls } from "@/components/music/MusicBackendControls";
 import { useMusicAdmin } from "@/components/admin/music/useMusicAdmin";
 
 const AdminMusic = () => {
@@ -27,24 +26,14 @@ const AdminMusic = () => {
     handleSaveMusic,
     handleEditMusic,
     handleDeleteMusic,
-    handlePreviewToggle,
-    handleReloadData,
-    handleClearCache
+    handlePreviewToggle
   } = useMusicAdmin();
 
   return (
     <AdminLayout>
       <div className="space-y-4">
-        {/* Header section with backend controls */}
-        <div className="flex items-center justify-between">
-          <MusicHeader onCreateNew={() => setIsCreateDialogOpen(true)} />
-          
-          <MusicBackendControls 
-            onRefresh={handleReloadData}
-            onClearCache={handleClearCache}
-            isLoading={isLoading}
-          />
-        </div>
+        {/* Header section */}
+        <MusicHeader onCreateNew={() => setIsCreateDialogOpen(true)} />
 
         {/* Search section */}
         <MusicSearch 

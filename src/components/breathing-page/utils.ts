@@ -1,3 +1,4 @@
+
 import { VoiceURLs } from './types';
 import { toast } from 'sonner';
 import { preloadAudio, validateAudioUrl } from '@/components/audio-player/utils';
@@ -132,25 +133,4 @@ export const handleActivateVoice = async (
   setCurrentCycle(1);
   setExerciseCompleted(false);
   console.log(`Activated ${voice} voice with URLs:`, urls);
-};
-
-export const loadBreathingAudio = async (url: string): Promise<boolean> => {
-  if (!url) return false;
-  
-  const validatedUrl = validateAudioUrl(url);
-  if (!validatedUrl) return false;
-  
-  return await preloadAudio(validatedUrl);
-};
-
-export const formatBreathTime = (seconds: number): string => {
-  return seconds.toFixed(1);
-};
-
-export const calculateProgress = (
-  currentPhase: string,
-  elapsedTime: number,
-  totalPhaseTime: number
-): number => {
-  return (elapsedTime / totalPhaseTime) * 100;
 };
