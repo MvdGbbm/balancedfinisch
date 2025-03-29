@@ -26,7 +26,7 @@ interface AppContextType {
   deleteMeditation: (id: string) => void;
   
   addSoundscape: (soundscape: Omit<Soundscape, 'id'>) => void;
-  updateSoundscape: (id: string, updatedSoundscape: Soundscape) => void;
+  updateSoundscape: (id: string, updatedSoundscape: Partial<Soundscape>) => void;
   deleteSoundscape: (id: string) => void;
   setSoundscapes: (soundscapes: Soundscape[]) => void;
   
@@ -329,10 +329,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSoundscapes([...soundscapesData, newSoundscape]);
   }
   
-  function updateSoundscape(id: string, updatedSoundscape: Soundscape) {
+  function updateSoundscape(id: string, updatedSoundscape: Partial<Soundscape>) {
     setSoundscapes(prevSoundscapes => 
       prevSoundscapes.map(soundscape => 
-        soundscape.id === id ? updatedSoundscape : soundscape
+        soundscape.id === id ? { ...soundscape, ...updatedSoundscape } : soundscape
       )
     );
   }
