@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BreathingCircle } from './breathing-circle';
+import BreathingCircle from './breathing-circle';
 import { BreathingPhase } from './types';
 import { BreathingPhaseDisplay } from '../breathing-circle/breathing-phase-display';
 import { AudioElement } from './audio/audio-element';
@@ -55,7 +55,7 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       {showPhaseText && (
         <div className="absolute">
           <BreathingPhaseDisplay 
-            breathingPhase={phase} 
+            phase={phase} 
             secondsLeft={secondsLeft} 
           />
         </div>
