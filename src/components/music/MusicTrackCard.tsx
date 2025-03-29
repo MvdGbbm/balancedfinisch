@@ -90,7 +90,7 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
           
           <PlaylistSelector 
             playlists={playlists}
-            onSelectPlaylist={(playlist) => onAddToPlaylist(track, playlist.id)}
+            onSelectPlaylist={(playlistId) => onAddToPlaylist(track, playlistId)}
             onCreateNew={onShowPlaylistCreator}
           />
         </div>

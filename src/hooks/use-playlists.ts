@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Playlist } from "@/components/playlist/types";
 import { Soundscape } from "@/lib/types";
@@ -85,7 +84,17 @@ export function usePlaylists(soundscapes: Soundscape[]) {
     });
   };
 
-  const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
+  const handleAddToPlaylist = (track: Soundscape, playlistId: string) => {
+    const playlist = playlists.find(p => p.id === playlistId);
+    if (!playlist) {
+      toast({
+        title: "Afspeellijst niet gevonden",
+        description: "De geselecteerde afspeellijst bestaat niet.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (playlist.tracks.some(t => t.trackId === track.id)) {
       toast({
         title: "Track bestaat al in afspeellijst",
