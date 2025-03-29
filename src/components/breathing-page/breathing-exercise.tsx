@@ -31,10 +31,9 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
   return (
     <div className="space-y-6">
       <PatternSelector 
-        breathingPatterns={breathingPatterns}
+        patterns={breathingPatterns}
         selectedPattern={selectedPattern}
-        isExerciseActive={isExerciseActive}
-        onSelectPattern={onSelectPattern}
+        onSelect={onSelectPattern}
       />
       
       {selectedPattern && showAnimation && (

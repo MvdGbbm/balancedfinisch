@@ -12,7 +12,7 @@ interface PatternSelectorProps {
 }
 
 export const PatternSelector: React.FC<PatternSelectorProps> = ({
-  patterns,
+  patterns = [],
   selectedPattern,
   onSelect
 }) => {
@@ -23,7 +23,7 @@ export const PatternSelector: React.FC<PatternSelectorProps> = ({
       </CardHeader>
       <CardContent className="p-0">
         <div className="space-y-0.5">
-          {patterns.map((pattern) => (
+          {patterns && patterns.map((pattern) => (
             <Button
               key={pattern.id}
               variant="ghost"
