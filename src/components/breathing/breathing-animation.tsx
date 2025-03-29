@@ -48,10 +48,9 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       case 'inhale': return 'inhale';
       case 'hold': return 'hold';
       case 'exhale': return 'exhale';
-      case 'hold1': return 'hold';
-      case 'hold2': return 'hold';
       case 'start': 
       case 'pause':
+      case 'end':
       default: return 'rest';
     }
   };

@@ -28,6 +28,15 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
   onSelectPattern,
   onPhaseChange
 }) => {
+  // Map the breathing phase from the current phase type to the animation component's expected type
+  const mapToAnimationPhase = (phase: string): BreathingPhase => {
+    if (phase === "inhale") return "inhale";
+    if (phase === "hold1") return "hold";
+    if (phase === "exhale") return "exhale";
+    if (phase === "hold2") return "pause";
+    return "start";
+  };
+
   return (
     <div className="space-y-6">
       <PatternSelector 
@@ -40,15 +49,16 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
         <div className="mt-8">
           <BreathingAnimation 
             isActive={isExerciseActive}
-            phase={currentPhase}
+            phase={mapToAnimationPhase(currentPhase)}
             secondsLeft={selectedPattern ? 
               (currentPhase === "inhale" ? selectedPattern.inhale : 
-              currentPhase === "hold" ? selectedPattern.hold1 : 
-              currentPhase === "exhale" ? selectedPattern.exhale : 0) : 0
+              currentPhase === "hold1" ? selectedPattern.hold1 : 
+              currentPhase === "exhale" ? selectedPattern.exhale : 
+              currentPhase === "hold2" ? selectedPattern.hold2 : 0) : 0
             }
-            inhaleDuration={selectedPattern.inhale}
-            holdDuration={selectedPattern.hold1}
-            exhaleDuration={selectedPattern.exhale}
+            inhaleDuration={selectedPattern.inhale * 1000}
+            holdDuration={selectedPattern.hold1 * 1000}
+            exhaleDuration={selectedPattern.exhale * 1000}
             voiceUrls={null}
             isVoiceActive={isExerciseActive}
             showPhaseText={true}
