@@ -1,166 +1,145 @@
+// Advanced utility functions for the audio player
 
-import { Soundscape } from "@/lib/types";
-import { getMimeType } from "./utils";
+import { validateAudioUrl, getAudioMimeType } from "./utils";
 
-// Advanced functions for audio processing
-
-/**
- * Create an in-memory AudioContext for visualization and processing
- */
-export function createAudioContext(): AudioContext | null {
-  try {
-    return new (window.AudioContext || (window as any).webkitAudioContext)();
-  } catch (error) {
-    console.error("AudioContext not supported", error);
-    return null;
-  }
-}
-
-/**
- * Connect a media element to an AudioContext for visualization
- */
-export function connectAudioElementToContext(
-  audioElement: HTMLAudioElement,
-  audioContext: AudioContext
-): {
-  sourceNode: MediaElementAudioSourceNode;
-  analyzerNode: AnalyserNode;
-} {
-  // Create an audio source from the audio element
-  const sourceNode = audioContext.createMediaElementSource(audioElement);
-  
-  // Create an analyzer for visualization
-  const analyzerNode = audioContext.createAnalyser();
-  analyzerNode.fftSize = 256;
-  
-  // Connect the source to the analyzer
-  sourceNode.connect(analyzerNode);
-  
-  // Connect the analyzer to the destination (speakers)
-  analyzerNode.connect(audioContext.destination);
-  
-  return { sourceNode, analyzerNode };
-}
-
-/**
- * Disconnect and clean up audio nodes
- */
-export function disconnectAudioNodes(
-  sourceNode: MediaElementAudioSourceNode | null,
-  analyzerNode: AnalyserNode | null
-): void {
-  if (sourceNode) {
-    try {
-      sourceNode.disconnect();
-    } catch (error) {
-      console.error("Error disconnecting source node:", error);
-    }
-  }
-  
-  if (analyzerNode) {
-    try {
-      analyzerNode.disconnect();
-    } catch (error) {
-      console.error("Error disconnecting analyzer node:", error);
-    }
-  }
-}
-
-/**
- * Get sound frequencies for visualization
- */
-export function getFrequencyData(analyzerNode: AnalyserNode): Uint8Array {
-  const bufferLength = analyzerNode.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLength);
-  analyzerNode.getByteFrequencyData(dataArray);
-  return dataArray;
-}
-
-/**
- * Applies crossfade effect between two audio elements
- */
-export function crossfadeAudio(
-  currentAudio: HTMLAudioElement,
-  nextAudio: HTMLAudioElement,
-  fadeDuration: number = 2000
-): Promise<void> {
-  return new Promise((resolve) => {
-    if (!currentAudio || !nextAudio) {
-      resolve();
-      return;
-    }
-    
-    // Start the next audio at volume 0
-    nextAudio.volume = 0;
-    const playPromise = nextAudio.play();
-    
-    if (playPromise === undefined) {
-      resolve();
-      return;
-    }
-    
-    playPromise
-      .then(() => {
-        const fadeInterval = 50; // ms
-        const fadeSteps = fadeDuration / fadeInterval;
-        const volumeStep = 1 / fadeSteps;
-        
-        let currentStep = 0;
-        
-        const fade = () => {
-          currentStep++;
-          
-          // Fade out current audio
-          currentAudio.volume = Math.max(0, 1 - (currentStep * volumeStep));
-          
-          // Fade in next audio
-          nextAudio.volume = Math.min(1, currentStep * volumeStep);
-          
-          if (currentStep >= fadeSteps) {
-            currentAudio.pause();
-            currentAudio.currentTime = 0;
-            clearInterval(intervalId);
-            resolve();
-          }
-        };
-        
-        const intervalId = setInterval(fade, fadeInterval);
-      })
-      .catch((error) => {
-        console.error("Error starting crossfade:", error);
-        resolve();
-      });
-  });
-}
-
-/**
- * Check if file is audio and get its type
- */
-export function isAudioFile(file: File): boolean {
-  const audioTypes = [
-    'audio/mpeg',
-    'audio/mp3',
-    'audio/wav',
-    'audio/ogg',
-    'audio/aac',
-    'audio/mp4',
-    'audio/flac'
-  ];
-  
-  return audioTypes.includes(file.type);
-}
-
-/**
- * Gets the optimal audio format based on browser support
- */
-export function getOptimalAudioFormat(): string {
+// Check if browser supports AAC playback
+export const checkAACSupport = (): boolean => {
   const audio = document.createElement('audio');
-  
-  if (audio.canPlayType('audio/ogg; codecs="vorbis"').replace(/no/, '')) {
-    return 'ogg';
-  } else if (audio.canPlayType('audio/mp4; codecs="mp4a.40.5"').replace(/no/, '')) {
-    return 'aac';
-  } else {
-    return 'mp3'; // Default fallback
+  return audio.canPlayType('audio/aac') !== '' || 
+         audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
+};
+
+// Preload and test an audio URL
+export const preloadAudio = async (url: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (!url) {
+      console.warn("Empty URL passed to preloadAudio");
+      resolve(false);
+      return;
+    }
+    
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      console.warn("Invalid URL passed to preloadAudio:", url);
+      resolve(false);
+      return;
+    }
+    
+    // Skip example.com URLs (placeholders)
+    if (validatedUrl.includes('example.com')) {
+      console.warn("Placeholder URL detected in preloadAudio:", validatedUrl);
+      resolve(false);
+      return;
+    }
+    
+    console.log("Attempting to preload audio:", validatedUrl);
+    
+    const audio = new Audio();
+    
+    // Set a timeout for loading
+    const timeout = setTimeout(() => {
+      console.warn("Audio preload timed out:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    }, 8000); // 8 seconds timeout for slower connections
+    
+    // Event listeners for success/failure
+    audio.oncanplaythrough = () => {
+      clearTimeout(timeout);
+      console.log("Audio preload successful:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(true);
+    };
+    
+    audio.onerror = (error) => {
+      clearTimeout(timeout);
+      console.error("Error preloading audio:", error, validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    };
+    
+    // Add additional catches for network errors
+    audio.addEventListener('stalled', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load stalled:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
+    
+    audio.addEventListener('abort', () => {
+      clearTimeout(timeout);
+      console.warn("Audio load aborted:", validatedUrl);
+      audio.removeAttribute('src');
+      audio.load();
+      resolve(false);
+    });
+    
+    // Try loading the audio
+    try {
+      audio.src = validatedUrl;
+      audio.load();
+    } catch (e) {
+      clearTimeout(timeout);
+      console.error("Exception loading audio:", e);
+      resolve(false);
+    }
+  });
+};
+
+// Check if a URL exists (can be loaded)
+export const checkUrlExists = async (url: string): Promise<boolean> => {
+  try {
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) return false;
+    
+    // For audio files, use preloadAudio
+    if (/\.(mp3|ogg|wav|aac|m4a|flac)$/i.test(validatedUrl) || 
+        validatedUrl.includes('supabase.co/storage')) {
+      return await preloadAudio(validatedUrl);
+    }
+    
+    // For other URLs, try a HEAD request with CORS proxy if needed
+    try {
+      const response = await fetch(validatedUrl, { 
+        method: 'HEAD',
+        mode: 'no-cors' // This prevents CORS errors but also means we can't check the status
+      });
+      
+      // Since we used no-cors, we can't check the status
+      // We'll assume it succeeded if we got here without an error
+      return true;
+    } catch (e) {
+      console.error("Fetch check failed, trying preloadAudio as fallback:", e);
+      return await preloadAudio(validatedUrl);
+    }
+  } catch (error) {
+    console.error("Error checking if URL exists:", url, error);
+    return false;
   }
-}
+};
+
+// Fix Supabase storage URLs to ensure they have the correct format
+export const fixSupabaseStorageUrl = (url: string): string => {
+  if (!url || !url.includes('supabase.co')) return url;
+  
+  try {
+    const urlObj = new URL(url);
+    
+    // If the URL already contains storage path, return it
+    if (urlObj.pathname.includes('/storage/v1/object/public/')) {
+      return url;
+    }
+    
+    // Otherwise, add the storage path
+    const fixedUrl = `${urlObj.origin}/storage/v1/object/public/music${urlObj.pathname}`;
+    console.log("Fixed Supabase URL:", fixedUrl);
+    return fixedUrl;
+  } catch (e) {
+    console.error("Error fixing Supabase URL:", e);
+    return url;
+  }
+};

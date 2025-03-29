@@ -1,13 +1,11 @@
+
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { 
-  formatTime, 
-  calculateBreathingTiming 
-} from "@/components/breathing-page/utils";
-import { 
-  loadVoiceUrls,
-  handleActivateVoice 
-} from "@/components/breathing-page/utils";
+import { BreathingPhase } from "@/components/breathing/types";
+import { BreathingPattern, VoiceURLs } from "@/components/breathing-page/types";
+import { Soundscape } from "@/lib/types";
+import { loadVoiceUrls, handleActivateVoice } from "@/components/breathing-page/utils";
+import { defaultBreathingPatterns, defaultVoiceUrls } from "@/components/breathing-page/constants";
 
 export function useBreathingExercise() {
   // Pattern state

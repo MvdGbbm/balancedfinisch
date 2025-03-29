@@ -6,7 +6,6 @@ export interface AudioPlayerProps {
   showControls?: boolean;
   showTitle?: boolean;
   title?: string;
-  subtitle?: string;
   className?: string;
   onEnded?: () => void;
   onError?: () => void;
@@ -18,7 +17,6 @@ export interface AudioPlayerProps {
   onCrossfadeStart?: () => void;
   volume?: number;
   showMusicSelector?: boolean;
-  coverImage?: string;
 }
 
 export interface AudioPlayerState {
@@ -44,19 +42,13 @@ export interface AudioPlayerControls {
 }
 
 export interface MusicSelectorProps {
-  selectedMusic?: string;
-  onMusicChange?: (value: string) => void;
-  soundscapes?: any[];
-  selectedSoundscape?: any;
-  onSelectSoundscape?: (soundscape: any) => void;
+  selectedMusic: string;
+  onMusicChange: (value: string) => void;
 }
 
 export interface NowPlayingProps {
-  selectedMusic?: string;
+  selectedMusic: string;
   title?: string;
-  subtitle?: string;
-  coverImage?: string;
-  isPlaying?: boolean;
 }
 
 export interface ProgressBarProps {
@@ -80,10 +72,6 @@ export interface AudioControlsProps {
   volume: number;
   handleVolumeChange: (newValue: number[]) => void;
   loadError: boolean;
-  isMuted?: boolean;
-  onMuteToggle?: () => void;
-  onPlayPause?: () => void;
-  onVolumeChange?: (value: number) => void;
 }
 
 export interface ErrorMessageProps {

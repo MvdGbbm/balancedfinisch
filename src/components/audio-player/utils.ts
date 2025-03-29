@@ -1,19 +1,61 @@
 
-import { Soundscape } from "@/lib/types";
+import { Quote } from "@/lib/types";
+import { quotes } from "@/data/quotes";
 
-// Utility functions for audio handling
-export const validateAudioUrl = (url: string): string => {
-  if (!url) return "";
+export const validateAudioUrl = (url: string): string | null => {
+  if (!url) return null;
   
-  // Fix URLs that don't have a protocol
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url.replace(/^\/\//, '');
+  url = url.trim();
+  
+  // Remove any trailing query parameters or hash fragments for extension checking
+  const baseUrl = url.split(/[?#]/)[0];
+  
+  const validExtensions = ['.mp3', '.wav', '.ogg', '.aac', '.m4a', '.flac', '.mp4', '.webm'];
+  const hasValidExtension = validExtensions.some(ext => baseUrl.toLowerCase().endsWith(ext));
+  
+  // Also consider URLs that might be direct streams without extensions
+  const isLikelyStreamUrl = isStreamUrl(url);
+  
+  if (!hasValidExtension && !isLikelyStreamUrl) {
+    // If URL doesn't end with a valid extension and doesn't look like a stream URL, 
+    // it's likely invalid
+    console.warn("URL doesn't have a valid audio extension:", url);
+    return null;
   }
   
-  return url;
+  // Ensure URL has a proper protocol
+  if (!/^https?:\/\//i.test(url)) {
+    url = 'https://' + url;
+  }
+  
+  try {
+    const validatedUrl = new URL(url).toString();
+    return validatedUrl;
+  } catch (e) {
+    console.error("Invalid URL:", url, e);
+    return null;
+  }
+};
+
+export const isStreamUrl = (url: string): boolean => {
+  // Common patterns for streaming URLs
+  const streamPatterns = [
+    /\bstream\b/i,
+    /\blive\b/i,
+    /\.m3u8/i,
+    /\bshoutcast\b/i,
+    /\bicecast\b/i,
+    /\bradio\b/i,
+    /\baudio\b/i,
+    /\bbroadcast\b/i
+  ];
+  
+  return streamPatterns.some(pattern => pattern.test(url));
 };
 
 export const getMimeType = (url: string): string => {
+  if (!url) return "audio/mpeg"; // Default
+  
   const extension = url.split('.').pop()?.toLowerCase();
   
   switch (extension) {
@@ -27,102 +69,28 @@ export const getMimeType = (url: string): string => {
       return 'audio/aac';
     case 'm4a':
       return 'audio/mp4';
+    case 'flac':
+      return 'audio/flac';
+    case 'mp4':
+      return 'audio/mp4';
+    case 'webm':
+      return 'audio/webm';
     default:
       return 'audio/mpeg'; // Default to MP3
   }
 };
 
-export const fixSupabaseStorageUrl = (url: string): string => {
-  // Check if it's a Supabase storage URL
-  if (url.includes('supabase.co/storage/v1/object/public/')) {
-    // Supabase storage URLs need special handling because they might be signed
-    return url;
-  }
-  return url;
-};
-
-export const preloadAudio = async (url: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    try {
-      const audio = new Audio();
-      
-      // Set up listeners to resolve the promise
-      audio.oncanplaythrough = () => {
-        resolve(true);
-        audio.oncanplaythrough = null;
-        audio.onerror = null;
-        audio.src = '';
-      };
-      
-      audio.onerror = () => {
-        console.error("Error preloading audio:", url);
-        resolve(false);
-        audio.oncanplaythrough = null;
-        audio.onerror = null;
-        audio.src = '';
-      };
-      
-      // Set a timeout in case the audio takes too long to load
-      const timeout = setTimeout(() => {
-        audio.oncanplaythrough = null;
-        audio.onerror = null;
-        audio.src = '';
-        resolve(false);
-      }, 5000);
-      
-      // Start loading the audio
-      audio.src = url;
-      audio.load();
-      
-      return () => {
-        clearTimeout(timeout);
-      };
-    } catch (error) {
-      console.error("Error in preloadAudio:", error);
-      resolve(false);
-    }
-  });
-};
-
-export const formatTime = (seconds: number): string => {
-  if (isNaN(seconds)) return "0:00";
-  
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
-
-export const getAudioMimeType = (url: string): string => {
-  return getMimeType(url);
-};
-
-// Add missing utility functions
-export const isStreamUrl = (url: string): boolean => {
-  // Check if URL likely points to a stream rather than a static audio file
-  const streamIndicators = ['.m3u8', '.pls', '.ram', '.stream', 'stream'];
-  
-  return streamIndicators.some(indicator => 
-    url.toLowerCase().includes(indicator) || 
-    url.toLowerCase().includes('streaming') ||
-    url.toLowerCase().includes('radio')
-  );
-};
-
 export const checkUrlExists = async (url: string): Promise<boolean> => {
   try {
-    const response = await fetch(url, { method: 'HEAD' });
-    return response.ok;
+    const response = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+    return true; // With no-cors we can't really check the status
   } catch (error) {
     console.error("Error checking URL existence:", error);
     return false;
   }
 };
 
-export const getRandomQuote = (quotes: string[]): string => {
-  if (!quotes || quotes.length === 0) {
-    return "Find peace in the present moment.";
-  }
+export const getRandomQuote = (): Quote => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   return quotes[randomIndex];
 };

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -192,9 +193,7 @@ const AdminSoundscapes = () => {
                       </div>
                     </div>
                     <CardFooter className="p-3 bg-background">
-                      <AudioPlayer 
-                        audioUrl={soundscape.audioUrl} 
-                      />
+                      <AudioPlayer audioUrl={soundscape.audioUrl} showControls={false} />
                     </CardFooter>
                   </Card>
                 ))}
@@ -389,9 +388,7 @@ const AdminSoundscapes = () => {
               {audioUrl && (
                 <div className="mt-4">
                   <Label>Audio Preview</Label>
-                  <AudioPlayer 
-                    audioUrl={audioUrl} 
-                  />
+                  <AudioPlayer audioUrl={audioUrl} />
                 </div>
               )}
             </div>

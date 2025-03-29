@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { AudioPlayer, AudioPlayerHandle } from "@/components/audio-player";
+import { AudioPlayer } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Soundscape } from "@/lib/types";
 
@@ -73,7 +73,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
           onCrossfadeStart={onCrossfadeStart}
           isPlayingExternal={isPlaying}
           onPlayPauseChange={onPlayPauseChange}
-          ref={audioRef as React.Ref<AudioPlayerHandle>}
+          ref={audioRef}
         />
       </div>
     </div>
