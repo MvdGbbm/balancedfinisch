@@ -58,6 +58,11 @@ export interface BreathingPattern {
   hold2: number;
   cycles: number;
   description?: string;
+  // Custom text for each phase
+  inhaleText?: string;
+  hold1Text?: string;
+  exhaleText?: string;
+  hold2Text?: string;
   // URL to play at the start of the exercise
   startUrl?: string;
   // Audio URLs for specific phases

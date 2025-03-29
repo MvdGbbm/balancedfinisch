@@ -2,6 +2,8 @@
 import React from "react";
 import { Progress } from "@/components/ui/progress";
 import { BreathingPhase } from "./types";
+import { BreathingPattern } from "@/lib/types";
+
 interface BreathingPhaseDisplayProps {
   currentPhase: BreathingPhase;
   currentCycle: number;
@@ -9,25 +11,35 @@ interface BreathingPhaseDisplayProps {
   secondsLeft: number;
   progress?: number;
   holdEnabled?: boolean;
+  pattern?: BreathingPattern | null;
 }
+
 export function BreathingPhaseDisplay({
   currentPhase,
   currentCycle,
   totalCycles,
   secondsLeft,
   progress = 0,
-  holdEnabled = true
+  holdEnabled = true,
+  pattern
 }: BreathingPhaseDisplayProps) {
   const getInstructions = () => {
+    if (!holdEnabled && (currentPhase === "hold1" || currentPhase === "hold2")) {
+      // Skip hold phase text if holdEnabled is false
+      return currentPhase === "hold1" ? 
+        (pattern?.inhaleText || "Inademen") : 
+        (pattern?.exhaleText || "Uitademen");
+    }
+    
     switch (currentPhase) {
       case "inhale":
-        return "Inademen";
+        return pattern?.inhaleText || "Inademen";
       case "hold1":
-      case "hold2":
-        // Only show "Vasthouden" if hold is enabled
-        return holdEnabled ? "Vasthouden" : "Inademen";
+        return pattern?.hold1Text || "Vasthouden";
       case "exhale":
-        return "Uitademen";
+        return pattern?.exhaleText || "Uitademen";
+      case "hold2":
+        return pattern?.hold2Text || "Vasthouden";
       default:
         return "";
     }

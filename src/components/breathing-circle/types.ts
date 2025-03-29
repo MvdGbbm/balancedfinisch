@@ -10,6 +10,7 @@ export interface BreathingCircleProps {
   currentPhase?: "inhale" | "hold" | "exhale" | "rest";
   secondsLeft?: number;
   holdEnabled?: boolean;
+  pattern?: any; // Allow pattern to be passed for custom text
 }
 
 export interface BreathingCircleVisualProps {
@@ -22,6 +23,7 @@ export interface BreathingCircleVisualProps {
 export interface BreathingPhaseDisplayProps {
   activePhase: "inhale" | "hold" | "exhale" | "rest";
   phaseTimeLeft: number;
+  pattern?: any; // Allow pattern to be passed for custom text
 }
 
 export interface UseBreathingAnimationProps {

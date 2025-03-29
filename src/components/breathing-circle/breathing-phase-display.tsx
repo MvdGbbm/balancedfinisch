@@ -1,18 +1,25 @@
 
 import React from "react";
 import { BreathingPhaseDisplayProps } from "./types";
+import { BreathingPattern } from "@/lib/types";
 
 export function BreathingPhaseDisplay({ 
   activePhase, 
-  phaseTimeLeft 
+  phaseTimeLeft,
+  pattern
 }: BreathingPhaseDisplayProps) {
   const getPhaseText = () => {
     switch (activePhase) {
-      case "inhale": return "Adem in";
-      case "hold": return "Houd vast";
-      case "exhale": return "Adem uit";
-      case "rest": return "Klaar";
-      default: return "";
+      case "inhale": 
+        return pattern?.inhaleText || "Adem in";
+      case "hold": 
+        return pattern?.hold1Text || "Houd vast";
+      case "exhale": 
+        return pattern?.exhaleText || "Adem uit";
+      case "rest": 
+        return "Klaar";
+      default: 
+        return "";
     }
   };
 

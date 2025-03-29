@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingExerciseTester } from "./breathing-exercise/breathing-exercise-tester";
@@ -10,7 +11,9 @@ export function BreathingExerciseTest({
 }: BreathingExerciseTestProps) {
   if (!pattern) {
     return <Card>
-        
+        <CardContent className="p-6 text-center text-muted-foreground">
+          Selecteer een ademhalingstechniek om te testen
+        </CardContent>
       </Card>;
   }
   return <Card>
