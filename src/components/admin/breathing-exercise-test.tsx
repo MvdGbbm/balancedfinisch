@@ -85,6 +85,7 @@ export function BreathingExerciseTest({
               isActive={isActive}
               setIsActive={setIsActive}
               resetExercise={resetExercise}
+              activeVoice={activeVoice}
             />
           </div>
           
@@ -92,6 +93,7 @@ export function BreathingExerciseTest({
             audioRef={audioRef}
             endAudioRef={endAudioRef}
             currentAudioUrl={currentAudioUrl}
+            isActive={isActive}
           />
         </div>
       </CardContent>

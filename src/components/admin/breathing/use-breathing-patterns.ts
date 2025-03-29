@@ -81,7 +81,7 @@ export function useBreathingPatterns() {
 
   const createNewPattern = () => {
     const newId = `temp_${Date.now()}`;
-    const newPattern = {
+    const newPattern: BreathingPattern = {
       id: newId,
       name: "Nieuwe Techniek",
       description: "Beschrijving van de techniek",
@@ -93,7 +93,7 @@ export function useBreathingPatterns() {
       startUrl: "",
       endUrl: "",
       animationEnabled: true,
-      animationStyle: "grow",
+      animationStyle: "grow", // Using a specific valid value from the union type
       animationColor: "#00b8d9"
     };
     setSelectedPattern(newPattern);
