@@ -1,7 +1,6 @@
 
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { BreathingCircle } from "@/components/breathing-circle";
 import { toast } from "sonner";
 import { BreathExerciseProps } from "./types/exercise-types";
 import { useBreathingCycle } from "./hooks/use-breathing-cycle";
@@ -10,7 +9,9 @@ import { useVoiceUrls } from "./hooks/use-voice-urls";
 import { PatternSelector } from "./exercise/pattern-selector";
 import { VoiceControls } from "./exercise/voice-controls";
 import { ResetButton } from "./exercise/reset-button";
-import { ActiveVoice } from "./types/exercise-types";
+import { BreathingCircleContainer } from "./exercise/breathing-circle-container";
+import { AudioHandler } from "./exercise/audio-handler";
+import { ActiveVoice } from "@/lib/types";
 
 export function BreathExercise({ 
   breathingPatterns, 
@@ -45,7 +46,7 @@ export function BreathExercise({
   const [audioError, setAudioError] = React.useState(false);
 
   // Handle visibility changes
-  useEffect(() => {
+  React.useEffect(() => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     
     return () => {
@@ -64,20 +65,20 @@ export function BreathExercise({
   };
 
   // Update audio URL when phase changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (!selectedPattern) return;
     updateAudioForPhase();
   }, [currentPhase, selectedPattern, activeVoice]);
 
   // Play audio when active
-  useEffect(() => {
+  React.useEffect(() => {
     if (currentAudioUrl && isActive) {
       playAudio(isActive, currentAudioUrl);
     }
   }, [currentAudioUrl, isActive]);
 
   // Stop audio when exercise is paused
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isActive && audioRef.current) {
       resetAudio();
     }
@@ -96,17 +97,6 @@ export function BreathExercise({
     );
     
     return url;
-  };
-
-  // Maps breathing phases to circle component phases
-  const mapPhaseToCirclePhase = (phase: "inhale" | "hold1" | "exhale" | "hold2"): "inhale" | "hold" | "exhale" | "rest" => {
-    switch (phase) {
-      case "inhale": return "inhale";
-      case "hold1": return "hold";
-      case "exhale": return "exhale";
-      case "hold2": return "hold";
-      default: return "rest";
-    }
   };
 
   // Reset the exercise completely
@@ -129,14 +119,14 @@ export function BreathExercise({
     });
   };
 
-  // Handle starting with Vera voice
-  const startWithVera = () => {
-    if (isActive && activeVoice === "vera") {
+  // Handle starting with voice guides
+  const startWithVoice = (voice: ActiveVoice) => {
+    if (isActive && activeVoice === voice) {
       setIsActive(false);
       setActiveVoice("none");
       resetAudio();
     } else {
-      setActiveVoice("vera");
+      setActiveVoice(voice);
       setIsActive(true);
       
       setTimeout(() => {
@@ -148,24 +138,9 @@ export function BreathExercise({
     }
   };
 
-  // Handle starting with Marco voice
-  const startWithMarco = () => {
-    if (isActive && activeVoice === "marco") {
-      setIsActive(false);
-      setActiveVoice("none");
-      resetAudio();
-    } else {
-      setActiveVoice("marco");
-      setIsActive(true);
-      
-      setTimeout(() => {
-        const url = updateAudioForPhase();
-        if (url) {
-          playAudio(true, url);
-        }
-      }, 100);
-    }
-  };
+  // Specific handlers for each voice
+  const startWithVera = () => startWithVoice("vera");
+  const startWithMarco = () => startWithVoice("marco");
 
   if (!selectedPattern || breathingPatterns.length === 0) {
     return (
@@ -177,11 +152,11 @@ export function BreathExercise({
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <audio 
-        ref={audioRef} 
-        src={currentAudioUrl} 
-        preload="auto" 
-        onError={() => setAudioError(true)} 
+      <AudioHandler 
+        audioRef={audioRef}
+        currentAudioUrl={currentAudioUrl}
+        isActive={isActive}
+        onError={() => setAudioError(true)}
       />
       
       <Card className="overflow-hidden bg-navy-900 border-none shadow-xl">
@@ -193,20 +168,14 @@ export function BreathExercise({
             disabled={isActive}
           />
           
-          <BreathingCircle
+          <BreathingCircleContainer
             isActive={isActive}
-            currentPhase={mapPhaseToCirclePhase(currentPhase)}
+            currentPhase={currentPhase}
             secondsLeft={secondsLeft}
-            inhaleDuration={selectedPattern.inhale * 1000}
-            holdDuration={selectedPattern.hold1 * 1000}
-            exhaleDuration={selectedPattern.exhale * 1000}
+            selectedPattern={selectedPattern}
+            currentCycle={currentCycle}
+            totalCycles={selectedPattern.cycles}
           />
-          
-          <div className="text-center space-y-1 text-white mt-4">
-            <p className="text-sm text-white/70">
-              Cyclus {currentCycle} van {selectedPattern.cycles}
-            </p>
-          </div>
           
           <VoiceControls
             activeVoice={activeVoice}
