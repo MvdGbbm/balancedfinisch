@@ -1,9 +1,9 @@
 
 import React from 'react';
-import BreathingCircle from './breathing-circle';
+import { BreathingCircle } from './breathing-circle';
 import { BreathingPhase } from './types';
 import { BreathingPhaseDisplay } from '../breathing-circle/breathing-phase-display';
-import AudioElement from './audio/audio-element';
+import { AudioElement } from './audio/audio-element';
 import { useBreathingAudio } from './audio/use-breathing-audio';
 
 interface BreathingAnimationProps {
@@ -45,8 +45,8 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   return (
     <div className="relative flex flex-col items-center justify-center">
       <BreathingCircle
-        isActive={isActive}
         phase={phase}
+        isActive={isActive}
         inhaleDuration={inhaleDuration}
         holdDuration={holdDuration} 
         exhaleDuration={exhaleDuration}
@@ -55,7 +55,7 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
       {showPhaseText && (
         <div className="absolute">
           <BreathingPhaseDisplay 
-            phase={phase} 
+            breathingPhase={phase} 
             secondsLeft={secondsLeft} 
           />
         </div>
