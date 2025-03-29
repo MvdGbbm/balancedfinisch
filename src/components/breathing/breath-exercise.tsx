@@ -49,10 +49,76 @@ export function BreathExercise({
     exhale: ""
   });
 
+  // Force reload if needed
+  const forceReload = () => {
+    // Clear local storage cache for voice URLs to ensure fresh state
+    const timestamp = Date.now();
+    
+    if (veraVoiceUrls.inhale) {
+      const updatedVeraUrls = { 
+        ...veraVoiceUrls, 
+        inhale: veraVoiceUrls.inhale.includes('?') 
+          ? `${veraVoiceUrls.inhale.split('?')[0]}?_t=${timestamp}`
+          : `${veraVoiceUrls.inhale}?_t=${timestamp}`
+      };
+      setVeraVoiceUrls(updatedVeraUrls);
+    }
+    
+    if (marcoVoiceUrls.inhale) {
+      const updatedMarcoUrls = { 
+        ...marcoVoiceUrls, 
+        inhale: marcoVoiceUrls.inhale.includes('?') 
+          ? `${marcoVoiceUrls.inhale.split('?')[0]}?_t=${timestamp}`
+          : `${marcoVoiceUrls.inhale}?_t=${timestamp}`
+      };
+      setMarcoVoiceUrls(updatedMarcoUrls);
+    }
+    
+    // Reset audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.load();
+    }
+    
+    // Reset state
+    setIsActive(false);
+    setCurrentPhase("inhale");
+    setCurrentCycle(1);
+    if (selectedPattern) {
+      setSecondsLeft(selectedPattern.inhale);
+    }
+    
+    // Update audio URL
+    updateCurrentAudioUrl();
+    
+    toast.success("Ademhalingsoefening opnieuw geladen", {
+      description: "Audio en instellingen zijn ververst."
+    });
+  };
+
   // Load voice URLs from localStorage
   useEffect(() => {
     loadVoiceUrls();
+    
+    // Add event listener for visibility change
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
+  
+  // Handle page visibility change to reset/refresh when tab becomes visible again
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      // If the page becomes visible again and was active, force reload
+      if (isActive) {
+        setIsActive(false);
+        updateCurrentAudioUrl();
+      }
+    }
+  };
   
   const loadVoiceUrls = () => {
     // Load Vera voice URLs
@@ -280,19 +346,7 @@ export function BreathExercise({
   const resetExercise = () => {
     if (!selectedPattern) return;
     
-    setIsActive(false);
-    setCurrentPhase("inhale");
-    setCurrentCycle(1);
-    setSecondsLeft(selectedPattern.inhale);
-    setAudioError(false);
-    setActiveVoice("none");
-    
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    }
-    
-    updateCurrentAudioUrl();
+    forceReload();
   };
 
   const startWithVera = () => {

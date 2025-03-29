@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -27,15 +28,18 @@ export function BreathingCircle({
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
   const [circleScale, setCircleScale] = useState(0.5);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const activePhase = currentPhase || phase;
 
+  // Initialize and reset on active state change
   useEffect(() => {
     if (isActive) {
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
       setCircleScale(0.5); // Start at 50%
+      setIsInitialized(true);
     } else {
       setPhase("rest");
       setProgress(0);
@@ -43,6 +47,20 @@ export function BreathingCircle({
     }
   }, [isActive, inhaleDuration]);
 
+  // Force re-initialization when durations change
+  useEffect(() => {
+    if (isInitialized && isActive) {
+      setPhaseTimeLeft(Math.ceil(
+        activePhase === "inhale" 
+          ? inhaleDuration / 1000 
+          : activePhase === "hold" 
+            ? holdDuration / 1000 
+            : exhaleDuration / 1000
+      ));
+    }
+  }, [inhaleDuration, holdDuration, exhaleDuration]);
+
+  // Handle animation scaling based on phase
   useEffect(() => {
     if (!isActive) return;
 
@@ -200,4 +218,18 @@ export function BreathingCircle({
       </div>
     </div>
   );
+
+  // Helper function to get appropriate transition duration
+  function getTransitionDuration() {
+    switch (activePhase) {
+      case "inhale":
+        return inhaleDuration;
+      case "hold":
+        return holdDuration;
+      case "exhale":
+        return exhaleDuration;
+      default:
+        return 1000;
+    }
+  }
 }

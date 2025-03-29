@@ -16,7 +16,7 @@ import { BreathingVolumeControls } from "@/components/breathing/breathing-volume
 import { useApp } from "@/context/AppContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, StopCircle, Volume2, Music as MusicIcon, ChevronDown } from "lucide-react";
+import { Play, Pause, StopCircle, Volume2, Music as MusicIcon, ChevronDown, RefreshCw } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Badge } from "@/components/ui/badge";
 import { Soundscape } from "@/lib/types";
@@ -102,6 +102,7 @@ const defaultVoiceUrls: Record<string, VoiceURLs> = {
 };
 
 const Breathing = () => {
+  const [pageKey, setPageKey] = useState(Date.now());
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [isExerciseActive, setIsExerciseActive] = useState(false);
@@ -127,7 +128,30 @@ const Breathing = () => {
   const [isTrackPlaying, setIsTrackPlaying] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   
+  const forcePageReload = () => {
+    setPageKey(Date.now());
+    clearCaches();
+    toast.success("Pagina opnieuw geladen", {
+      description: "Alle componenten zijn ververst"
+    });
+  };
+
+  const clearCaches = () => {
+    localStorage.removeItem('breathing_cache_timestamp');
+    
+    setIsExerciseActive(false);
+    setActiveVoice(null);
+    setCurrentPhase("start");
+    setShowAnimation(true);
+    setCurrentCycle(1);
+    setExerciseCompleted(false);
+    
+    loadVoiceUrls();
+  };
+
   useEffect(() => {
+    localStorage.setItem('breathing_cache_timestamp', Date.now().toString());
+    
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
       try {
@@ -146,14 +170,27 @@ const Breathing = () => {
     }
     
     loadVoiceUrls();
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
-  useEffect(() => {
-    const filteredTracks = soundscapes.filter(
-      soundscape => soundscape.category === "Muziek"
-    );
-    setMusicTracks(filteredTracks);
-  }, [soundscapes]);
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      const lastTimestamp = parseInt(localStorage.getItem('breathing_cache_timestamp') || '0');
+      const now = Date.now();
+      const fiveMinutesMs = 5 * 60 * 1000;
+      
+      if (now - lastTimestamp > fiveMinutesMs) {
+        forcePageReload();
+      } else {
+        localStorage.setItem('breathing_cache_timestamp', now.toString());
+      }
+    }
+  };
 
   const loadVoiceUrls = async () => {
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
@@ -355,8 +392,19 @@ const Breathing = () => {
 
   return (
     <MobileLayout>
-      <div className="container py-6 animate-fade-in">
-        <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
+      <div key={pageKey} className="container py-6 animate-fade-in">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Ademhalingsoefeningen</h1>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={forcePageReload}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Ververs
+          </Button>
+        </div>
         
         <div className="space-y-6">
           <div className="w-full">
