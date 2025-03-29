@@ -22,9 +22,12 @@ export const BreathingMusicSection: React.FC<BreathingMusicSectionProps> = ({
   audioPlayerRef,
   onTrackPlayPauseChange
 }) => {
+  // Filter music tracks to only include those from the Music category
+  const musicOnlyTracks = musicTracks.filter(track => track.category === "Muziek");
+  
   return (
     <BreathingMusicPlayer
-      musicTracks={musicTracks}
+      musicTracks={musicOnlyTracks}
       currentTrack={currentTrack}
       isTrackPlaying={isTrackPlaying}
       musicVolume={musicVolume}
