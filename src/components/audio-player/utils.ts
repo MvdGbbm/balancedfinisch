@@ -3,6 +3,11 @@
  * Audio utility functions
  */
 
+export interface DailyQuote {
+  text: string;
+  author?: string;
+}
+
 export const validateAudioUrl = (url: string): string | null => {
   if (!url) return null;
   
@@ -90,12 +95,24 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
   });
 };
 
-export const getRandomQuote = () => {
+export const getRandomQuote = (): DailyQuote => {
   const quotes = [
-    "Muziek geeft een ziel aan het universum, vleugels aan de geest, vlucht aan de verbeelding en leven aan alles.",
-    "Muziek is de taal van de emotie.",
-    "Zonder muziek zou het leven een vergissing zijn.",
-    "Muziek brengt ons naar onszelf, naar dat deel waar innerlijke harmonie heerst."
+    {
+      text: "Muziek geeft een ziel aan het universum, vleugels aan de geest, vlucht aan de verbeelding en leven aan alles.",
+      author: "Plato"
+    },
+    {
+      text: "Muziek is de taal van de emotie.",
+      author: "Immanuel Kant"
+    },
+    {
+      text: "Zonder muziek zou het leven een vergissing zijn.",
+      author: "Friedrich Nietzsche"
+    },
+    {
+      text: "Muziek brengt ons naar onszelf, naar dat deel waar innerlijke harmonie heerst.",
+      author: "Jane Austen"
+    }
   ];
   
   return quotes[Math.floor(Math.random() * quotes.length)];

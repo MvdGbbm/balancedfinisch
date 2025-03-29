@@ -3,7 +3,7 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Music as MusicIcon, Play, StopCircle, Volume2 } from "lucide-react";
+import { Music as MusicIcon, Play, StopCircle, Volume2, Trash2 } from "lucide-react";
 import { Soundscape } from "@/lib/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { Playlist } from "@/components/playlist/types";
@@ -12,10 +12,11 @@ interface MusicTrackCardProps {
   track: Soundscape;
   isPlaying: boolean;
   isCurrentTrack: boolean;
-  onPreviewTrack: (track: Soundscape) => void;
-  onAddToPlaylist: (track: Soundscape, playlistId: string) => void;
+  onPreviewTrack: (track?: Soundscape) => void;
+  onAddToPlaylist: (playlistId: string) => void;
   onShowPlaylistCreator: () => void;
   playlists: Playlist[];
+  onRemoveFromPlaylist?: () => void;
 }
 
 export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
@@ -25,7 +26,8 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
   onPreviewTrack,
   onAddToPlaylist,
   onShowPlaylistCreator,
-  playlists
+  playlists,
+  onRemoveFromPlaylist
 }) => {
   const isActive = isCurrentTrack && isPlaying;
   
@@ -103,13 +105,27 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
                 </>
               )}
             </Button>
+
+            {onRemoveFromPlaylist && (
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={onRemoveFromPlaylist}
+                className="flex items-center gap-1"
+              >
+                <Trash2 className="h-4 w-4" />
+                Verwijderen
+              </Button>
+            )}
           </div>
           
-          <PlaylistSelector 
-            playlists={playlists}
-            onSelectPlaylist={(playlistId) => onAddToPlaylist(track, playlistId)}
-            onCreateNew={onShowPlaylistCreator}
-          />
+          {playlists && playlists.length > 0 && !onRemoveFromPlaylist && (
+            <PlaylistSelector 
+              playlists={playlists}
+              onSelectPlaylist={(playlistId) => onAddToPlaylist(playlistId)}
+              onCreateNew={onShowPlaylistCreator}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

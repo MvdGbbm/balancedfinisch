@@ -91,10 +91,13 @@ export const PlaylistTabContent: React.FC<PlaylistTabContentProps> = ({
                   key={track.id}
                   track={track}
                   isPlaying={isPlaying && currentTrack?.id === track.id}
-                  isInPlaylist={true}
-                  onPlayPause={() => {
+                  isCurrentTrack={currentTrack?.id === track.id}
+                  onPreviewTrack={() => {
                     // Handled directly by the playlist player
                   }}
+                  onShowPlaylistCreator={() => {}}
+                  playlists={[]}
+                  onAddToPlaylist={() => {}}
                   onRemoveFromPlaylist={() => onRemoveTrack(track.id, viewingPlaylist.id)}
                 />
               ))}
@@ -125,16 +128,22 @@ export const PlaylistTabContent: React.FC<PlaylistTabContentProps> = ({
             <PlaylistCard
               key={playlist.id}
               playlist={playlist}
-              isActive={selectedPlaylist?.id === playlist.id && isPlaying}
-              onView={() => setViewingPlaylist(playlist)}
-              onPlay={() => {
+              isCurrentPlaylist={selectedPlaylist?.id === playlist.id && isPlaying}
+              isPlaying={isPlaying}
+              playlistTracks={getPlaylistTracks(playlist)}
+              musicTracks={[]}
+              onPlayPlaylist={() => {
                 if (selectedPlaylist?.id === playlist.id && isPlaying) {
                   onStopPlaylist();
                 } else {
                   onPlayPlaylist(playlist);
                 }
               }}
-              trackCount={playlist.tracks.length}
+              onStopPlaylist={onStopPlaylist}
+              onRemoveFromPlaylist={() => {}}
+              onAddToPlaylist={() => {}}
+              getPlaylistTracks={getPlaylistTracks}
+              currentTrackId={currentTrack?.id}
             />
           ))}
         </div>

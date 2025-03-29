@@ -1,5 +1,5 @@
 
-import { BreathingPattern, BreathType, VoiceURLs } from "./types";
+import { BreathingPattern, VoiceURLs, BreathType } from "./types";
 import { BreathingPhase } from "@/components/breathing/types";
 import { validateAudioUrl, preloadAudio as audioPlayerPreloadAudio, checkUrlExists } from "@/components/audio-player/utils";
 

@@ -12,7 +12,7 @@ interface BreathingExerciseProps {
   showAnimation: boolean;
   currentCycle: number;
   exerciseCompleted: boolean;
-  currentPhase: BreathingPhase;
+  currentPhase: BreathingPhase | "hold1" | "hold2"; // Allow for both types of phase naming
   onSelectPattern: (patternId: string) => void;
   onPhaseChange: (phase: BreathingPhase) => void;
 }
@@ -32,8 +32,8 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
   const mapToAnimationPhase = (phase: string): BreathingPhase => {
     if (phase === "inhale") return "inhale";
     if (phase === "hold1") return "hold";
-    if (phase === "exhale") return "exhale";
     if (phase === "hold2") return "pause";
+    if (phase === "exhale") return "exhale";
     return "start";
   };
 
@@ -49,7 +49,7 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
         <div className="mt-8">
           <BreathingAnimation 
             isActive={isExerciseActive}
-            phase={mapToAnimationPhase(currentPhase)}
+            phase={mapToAnimationPhase(currentPhase as string)}
             secondsLeft={selectedPattern ? 
               (currentPhase === "inhale" ? selectedPattern.inhale : 
               currentPhase === "hold1" ? selectedPattern.hold1 : 

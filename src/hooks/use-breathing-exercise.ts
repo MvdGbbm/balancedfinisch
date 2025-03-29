@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { BreathingPhase } from "@/components/breathing/types";

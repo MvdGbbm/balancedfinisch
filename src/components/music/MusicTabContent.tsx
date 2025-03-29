@@ -42,8 +42,10 @@ export const MusicTabContent: React.FC<MusicTabContentProps> = ({
                   (currentTrack?.id === track.id) || 
                   (previewTrack?.id === track.id)
                 )}
-                onPlayPause={() => onPreviewTrack(track)}
+                isCurrentTrack={(currentTrack?.id === track.id) || (previewTrack?.id === track.id)}
+                onPreviewTrack={() => onPreviewTrack(track)}
                 onAddToPlaylist={(playlistId) => onAddToPlaylist(track, playlistId)}
+                onShowPlaylistCreator={() => {/* Add implementation if needed */}}
                 playlists={playlists}
               />
             ))}

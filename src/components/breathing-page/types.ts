@@ -9,7 +9,10 @@ export interface BreathingPattern {
   hold1: number;
   exhale: number;
   hold2: number;
-  defaultCycles: number;
+  cycles: number;
+  defaultCycles?: number; // Make this optional since it seems to be used inconsistently
+  startUrl?: string;
+  endUrl?: string;
 }
 
 export interface MusicPlayerProps {
@@ -29,3 +32,5 @@ export interface VoiceURLs {
   exhale: string;
   end?: string;
 }
+
+export type BreathType = "relaxation" | "energy" | "stress" | "focus" | "sleep" | string;
