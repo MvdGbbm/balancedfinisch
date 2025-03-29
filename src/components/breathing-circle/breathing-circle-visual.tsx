@@ -16,7 +16,7 @@ export function BreathingCircleVisual({
         className="absolute inset-0 rounded-full bg-cyan-400 opacity-20 blur-xl"
         style={{
           transform: `scale(${circleScale * 1.2})`,
-          transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          transition: `transform 0.5s ease-in-out`
         }}
       />
       
@@ -28,14 +28,14 @@ export function BreathingCircleVisual({
         )}
         style={{
           transform: `scale(${circleScale})`,
-          transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          transition: `transform 0.5s ease-in-out`
         }}
       >
         <div 
           className="h-full w-full rounded-full flex items-center justify-center bg-cyan-400"
           style={{
-            transition: `background ${transitionDuration}ms ease-in-out, 
-                        box-shadow ${transitionDuration}ms ease-in-out`
+            transition: `background 0.5s ease-in-out, 
+                        box-shadow 0.5s ease-in-out`
           }}
         >
           <div className="text-center text-white">
