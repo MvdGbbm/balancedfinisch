@@ -154,6 +154,7 @@ export function BreathingCircle({
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
 
+  // Helper function to get appropriate transition duration
   const getTransitionDuration = () => {
     switch (activePhase) {
       case "inhale":
@@ -218,18 +219,4 @@ export function BreathingCircle({
       </div>
     </div>
   );
-
-  // Helper function to get appropriate transition duration
-  function getTransitionDuration() {
-    switch (activePhase) {
-      case "inhale":
-        return inhaleDuration;
-      case "hold":
-        return holdDuration;
-      case "exhale":
-        return exhaleDuration;
-      default:
-        return 1000;
-    }
-  }
 }
