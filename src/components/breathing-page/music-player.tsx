@@ -3,7 +3,7 @@ import React from 'react';
 import { ChevronDown, Music as MusicIcon, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AudioPlayer } from "@/components/audio-player";
+import { AudioPlayer, AudioPlayerHandle } from "@/components/audio-player";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,7 +84,7 @@ export const BreathingMusicPlayer: React.FC<MusicPlayerProps> = ({
             isPlayingExternal={isTrackPlaying}
             onPlayPauseChange={onTrackPlayPauseChange}
             volume={musicVolume}
-            ref={audioPlayerRef}
+            ref={audioPlayerRef as React.Ref<AudioPlayerHandle>}
           />
         </div>
       )}

@@ -339,19 +339,8 @@ export const getQuoteForDate = (date: string): DailyQuote => {
 export const getRandomQuote = (): DailyQuote => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
   const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
-  
-  if (!quotes || quotes.length === 0) {
-    return {
-      id: `generated-${Date.now()}`,
-      text: "Elke ademhaling is een nieuwe kans om te beginnen.",
-      author: "Mindful",
-      backgroundClass: colorGradients[randomGradientIndex] || "bg-gradient-to-br from-blue-500 to-purple-600"
-    };
-  }
-  
   return {
     ...quotes[randomIndex],
-    id: quotes[randomIndex].id || `quote-${randomIndex}`,
     backgroundClass: colorGradients[randomGradientIndex]
   };
 };

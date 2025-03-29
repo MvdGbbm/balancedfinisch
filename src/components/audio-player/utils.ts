@@ -1,115 +1,91 @@
 
-import { DailyQuote } from "@/lib/types";
-import { quotes, colorGradients } from "@/data/quotes";
+import { Soundscape } from "@/lib/types";
 
-export const validateAudioUrl = (url: string): string | null => {
-  if (!url || typeof url !== 'string') {
-    console.warn("Invalid URL: URL is null, undefined, or not a string.");
-    return null;
+// Utility functions for audio handling
+export const validateAudioUrl = (url: string): string => {
+  if (!url) return "";
+  
+  // Fix URLs that don't have a protocol
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = 'https://' + url.replace(/^\/\//, '');
   }
   
-  const trimmedUrl = url.trim();
+  return url;
+};
+
+export const getMimeType = (url: string): string => {
+  const extension = url.split('.').pop()?.toLowerCase();
   
-  if (trimmedUrl === '') {
-    console.warn("Invalid URL: URL is an empty string.");
-    return null;
-  }
-  
-  try {
-    const urlObject = new URL(trimmedUrl);
-    
-    if (!['http:', 'https:'].includes(urlObject.protocol)) {
-      console.warn("Invalid URL: URL must start with 'http://' or 'https://'.");
-      return null;
-    }
-    
-    if (!urlObject.hostname) {
-      console.warn("Invalid URL: URL must have a valid hostname.");
-      return null;
-    }
-    
-    return trimmedUrl;
-  } catch (error) {
-    console.error("Invalid URL:", error);
-    return null;
+  switch (extension) {
+    case 'mp3':
+      return 'audio/mpeg';
+    case 'wav':
+      return 'audio/wav';
+    case 'ogg':
+      return 'audio/ogg';
+    case 'aac':
+      return 'audio/aac';
+    case 'm4a':
+      return 'audio/mp4';
+    default:
+      return 'audio/mpeg'; // Default to MP3
   }
 };
 
-export const checkUrlExists = async (url: string): Promise<boolean> => {
-  try {
-    const response = await fetch(url, { method: 'HEAD', mode: 'cors' });
-    
-    if (response.ok) {
-      return true;
-    } else {
-      console.warn(`URL check failed for ${url} with status: ${response.status}`);
-      return false;
-    }
-  } catch (error) {
-    console.error(`Error checking URL ${url}:`, error);
-    return false;
+export const fixSupabaseStorageUrl = (url: string): string => {
+  // Check if it's a Supabase storage URL
+  if (url.includes('supabase.co/storage/v1/object/public/')) {
+    // Supabase storage URLs need special handling because they might be signed
+    return url;
   }
+  return url;
 };
 
 export const preloadAudio = async (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
-    if (!url) {
-      console.warn("Cannot preload audio: No URL provided");
+    try {
+      const audio = new Audio();
+      
+      // Set up listeners to resolve the promise
+      audio.oncanplaythrough = () => {
+        resolve(true);
+        audio.oncanplaythrough = null;
+        audio.onerror = null;
+        audio.src = '';
+      };
+      
+      audio.onerror = () => {
+        console.error("Error preloading audio:", url);
+        resolve(false);
+        audio.oncanplaythrough = null;
+        audio.onerror = null;
+        audio.src = '';
+      };
+      
+      // Set a timeout in case the audio takes too long to load
+      const timeout = setTimeout(() => {
+        audio.oncanplaythrough = null;
+        audio.onerror = null;
+        audio.src = '';
+        resolve(false);
+      }, 5000);
+      
+      // Start loading the audio
+      audio.src = url;
+      audio.load();
+      
+      return () => {
+        clearTimeout(timeout);
+      };
+    } catch (error) {
+      console.error("Error in preloadAudio:", error);
       resolve(false);
-      return;
     }
-
-    console.log("Preloading audio:", url);
-    const audio = new Audio();
-    audio.preload = 'auto';
-    
-    const timeoutId = setTimeout(() => {
-      console.warn("Audio preload timed out:", url);
-      resolve(false);
-    }, 10000); // 10 second timeout
-    
-    audio.addEventListener('canplaythrough', () => {
-      clearTimeout(timeoutId);
-      console.log("Audio successfully preloaded:", url);
-      resolve(true);
-    }, { once: true });
-    
-    audio.addEventListener('error', (e) => {
-      clearTimeout(timeoutId);
-      console.error("Failed to preload audio:", url, e);
-      resolve(false);
-    }, { once: true });
-    
-    // Set the source after adding event listeners
-    audio.src = url;
   });
 };
 
-// Add or update this function to ensure it always returns a quote with an id
-export const getRandomQuote = (): DailyQuote => {
-  const randomIndex = Math.floor(Math.random() * quotes.length);
-  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
-  
-  // If no quotes are available, return a default quote with a generated id
-  if (!quotes || quotes.length === 0) {
-    return {
-      id: `generated-${Date.now()}`,
-      text: "Elke ademhaling is een nieuwe kans om te beginnen.",
-      author: "Mindful",
-      backgroundClass: colorGradients[randomGradientIndex] || "bg-gradient-to-br from-blue-500 to-purple-600"
-    };
-  }
-  
-  return {
-    ...quotes[randomIndex],
-    id: quotes[randomIndex].id || `quote-${randomIndex}`,
-    backgroundClass: colorGradients[randomGradientIndex]
-  };
-};
-
-// Add missing utility functions
 export const formatTime = (seconds: number): string => {
-  if (isNaN(seconds) || !isFinite(seconds)) return "0:00";
+  if (isNaN(seconds)) return "0:00";
   
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
@@ -117,45 +93,36 @@ export const formatTime = (seconds: number): string => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-export const isStreamUrl = (url: string): boolean => {
-  if (!url) return false;
-  
-  const lowercaseUrl = url.toLowerCase();
-  return lowercaseUrl.includes('stream') || 
-         lowercaseUrl.includes('radio') || 
-         lowercaseUrl.includes('live') || 
-         lowercaseUrl.includes('/live/') ||
-         url.includes('.m3u8') ||
-         url.includes('.pls');
-};
-
-export const fixSupabaseStorageUrl = (url: string): string => {
-  // If it's a Supabase URL with double slashes, fix it
-  if (url.includes('supabase.co') && url.includes('//storage/')) {
-    return url.replace('//storage/', '/storage/');
-  }
-  
-  // If it's a Supabase URL with other common issues
-  if (url.includes('supabase.co') && url.includes('/object/public//')) {
-    return url.replace('/object/public//', '/object/public/');
-  }
-  
-  return url;
-};
-
 export const getAudioMimeType = (url: string): string => {
-  if (!url) return 'audio/mpeg'; // Default
+  return getMimeType(url);
+};
+
+// Add missing utility functions
+export const isStreamUrl = (url: string): boolean => {
+  // Check if URL likely points to a stream rather than a static audio file
+  const streamIndicators = ['.m3u8', '.pls', '.ram', '.stream', 'stream'];
   
-  const lowercaseUrl = url.toLowerCase();
-  
-  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
-  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
-  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
-  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
-  if (lowercaseUrl.endsWith('.m4a')) return 'audio/mp4';
-  if (lowercaseUrl.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
-  if (lowercaseUrl.endsWith('.pls')) return 'audio/x-scpls';
-  
-  // Default to MP3
-  return 'audio/mpeg';
+  return streamIndicators.some(indicator => 
+    url.toLowerCase().includes(indicator) || 
+    url.toLowerCase().includes('streaming') ||
+    url.toLowerCase().includes('radio')
+  );
+};
+
+export const checkUrlExists = async (url: string): Promise<boolean> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error("Error checking URL existence:", error);
+    return false;
+  }
+};
+
+export const getRandomQuote = (quotes: string[]): string => {
+  if (!quotes || quotes.length === 0) {
+    return "Find peace in the present moment.";
+  }
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  return quotes[randomIndex];
 };

@@ -1,220 +1,166 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Meditation } from "@/lib/types";
-import { Soundscape } from "@/lib/types";
-import { cn } from "@/lib/utils";
-import { AudioPlayer } from "@/components/audio-player";
-import { MixerPanel } from "@/components/mixer-panel";
-import { Button } from "@/components/ui/button";
-import { Music, ExternalLink, Quote, Sliders } from "lucide-react";
+
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { toast } from "sonner";
-import { validateAudioUrl, getRandomQuote } from "@/components/audio-player/utils";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Heart, Clock, Volume2, Calendar } from "lucide-react";
+import { Meditation } from "@/lib/types";
+import { formatTime } from "@/lib/utils";
+import { getRandomQuote } from "@/components/audio-player/utils";
+import { AudioPlayer, AudioPlayerHandle } from "@/components/audio-player";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
-  soundscapes: Soundscape[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  currentSoundscapeId: string | null;
-  onSoundscapeChange: (soundscapeId: string) => void;
-  guidedMeditations: Meditation[];
-  onGuidedMeditationSelect: (meditation: Meditation) => void;
+  onFavoriteToggle?: (meditation: Meditation) => void;
 }
 
-export const MeditationDetailDialog = ({
+export const MeditationDetailDialog: React.FC<MeditationDetailDialogProps> = ({
   meditation,
-  soundscapes,
   isOpen,
   onOpenChange,
-  currentSoundscapeId,
-  onSoundscapeChange,
-  guidedMeditations,
-  onGuidedMeditationSelect
-}: MeditationDetailDialogProps) => {
-  const { toast: useToastFn } = useToast();
-  const [audioUrl, setAudioUrl] = useState<string>("");
-  const [audioKey, setAudioKey] = useState<number>(0); 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  onFavoriteToggle
+}) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [randomQuote] = useState(getRandomQuote());
+  const [currentQuote, setCurrentQuote] = useState<string>('');
+  const audioRef = useRef<HTMLAudioElement>(null);
   
-  const filteredGuidedMeditations = guidedMeditations.filter(
-    med => meditation && med.id !== meditation.id
-  );
-  
+  // Get a new random quote when the dialog opens or meditation changes
   useEffect(() => {
     if (isOpen && meditation) {
-      const url = meditation.audioUrl || "";
-      setAudioUrl(url);
-      console.log("Active audio URL in dialog:", url);
-      
-      setAudioKey(prevKey => prevKey + 1);
-      
-      setIsPlaying(false);
+      setCurrentQuote(getRandomQuote(meditation.quotes || []));
     }
+    
+    // Clean up when dialog closes
+    return () => {
+      setIsPlaying(false);
+    };
   }, [isOpen, meditation]);
   
-  const handlePlayExternalLink = (linkType: 'vera' | 'marco') => {
-    if (!meditation) return;
-    
-    let url = '';
-    
-    if (linkType === 'vera') {
-      url = meditation.veraLink || '';
-    } else {
-      url = meditation.marcoLink || '';
-    }
-    
-    if (!url) {
-      toast.error(`Geen ${linkType === 'vera' ? 'Vera' : 'Marco'} link beschikbaar voor deze meditatie`);
-      return;
-    }
-    
-    try {
-      url = url.trim();
-      
-      if (!/^https?:\/\//i.test(url)) {
-        url = 'https://' + url;
-      }
-      
-      const validatedUrl = new URL(url).toString();
-      
-      console.log(`Playing ${linkType} link:`, validatedUrl);
-      
-      setAudioUrl(validatedUrl);
-      
-      setAudioKey(prevKey => prevKey + 1);
-      
-      setIsPlaying(true);
-      
-      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
-    } catch (e) {
-      console.error(`Invalid URL for ${linkType}:`, url, e);
-      toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
-    }
+  // Toggle play/pause
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+  
+  // Format the date
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('nl-NL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  };
+  
+  // Handle play button click
+  const handlePlayClick = () => {
+    setIsPlaying(true);
   };
   
   if (!meditation) return null;
   
-  const isValidAudioUrl = (url: string | undefined): boolean => {
-    return !!url && url.trim() !== '';
-  };
-  
-  const hasValidAudio = isValidAudioUrl(audioUrl);
-  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto bg-black text-white border-gray-800">
-        <DialogHeader>
-          <DialogTitle className="text-white">{meditation.title}</DialogTitle>
-          <DialogDescription className="text-blue-300">
-            {meditation.description}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl p-0 overflow-hidden bg-background">
+        <div className="relative h-40 bg-gradient-to-b from-primary/20 to-background/50">
+          {meditation.coverImageUrl && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-50" 
+              style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
+            />
+          )}
+          
+          <div className="absolute bottom-4 left-6 right-6">
+            <DialogTitle className="text-2xl font-bold text-foreground mb-1">
+              {meditation.title}
+            </DialogTitle>
+            <DialogDescription className="text-foreground/80">
+              {meditation.subtitle}
+            </DialogDescription>
+          </div>
+        </div>
         
-        <div className="space-y-4">
-          <div 
-            className="w-full h-80 bg-cover bg-center rounded-md"
-            style={{ backgroundImage: `url(${meditation.coverImageUrl})`, objectFit: "cover" }}
-          />
-          
-          <div className="mb-2">
-            <QuoteDisplay quote={randomQuote} transparentBackground={true} />
+        <div className="p-6">
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {meditation.durationSeconds 
+                ? formatTime(meditation.durationSeconds) 
+                : "Onbekende duur"}
+            </Badge>
+            
+            <Badge variant="outline" className="bg-primary/10">
+              {meditation.category}
+            </Badge>
+            
+            <Badge variant="outline" className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {formatDate(meditation.createdAt)}
+            </Badge>
+            
+            {meditation.tags?.map(tag => (
+              <Badge key={tag} variant="secondary" className="bg-muted">
+                {tag}
+              </Badge>
+            ))}
           </div>
           
-          <div className="flex gap-2 mt-2">
-            <Button
-              variant="outline"
-              className={`flex-1 ${meditation.veraLink ? (audioUrl === meditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-blue-600 hover:text-white') : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('vera')}
-              disabled={!meditation.veraLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Start Vera
-            </Button>
-            
-            <Button
-              variant="outline"
-              className={`flex-1 ${meditation.marcoLink ? (audioUrl === meditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'hover:bg-purple-600 hover:text-white') : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('marco')}
-              disabled={!meditation.marcoLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Start Marco
-            </Button>
-          </div>
+          <p className="text-muted-foreground mb-6">
+            {meditation.description}
+          </p>
           
-          <div className="grid grid-cols-1 gap-3">
-            {hasValidAudio ? (
-              <>
-                <AudioPlayer 
-                  key={audioKey} 
-                  audioUrl={audioUrl}
-                  className="w-full bg-transparent border-none"
-                  showTitle={false}
-                  showQuote={false}
-                  ref={audioRef}
-                  isPlayingExternal={isPlaying}
-                  onPlayPauseChange={setIsPlaying}
-                />
-                
-                {isPlaying && (
-                  <div className="flex justify-end mt-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center gap-1.5 bg-blue-950/30 border-blue-800/50 hover:bg-blue-900/40"
-                        >
-                          <Sliders className="h-4 w-4" />
-                          Helende Frequenties
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent 
-                        align="end" 
-                        className="w-72 p-0 bg-background/95 backdrop-blur-sm border-blue-900/30"
-                      >
-                        <ToneEqualizer
-                          isActive={isPlaying}
-                          audioRef={audioRef}
-                        />
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-center py-4 text-gray-400 border border-gray-800 rounded-lg">
-                <p>Geen audio beschikbaar voor deze meditatie</p>
-              </div>
-            )}
+          {meditation.quotes && meditation.quotes.length > 0 && currentQuote && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/50 italic text-center">
+              "{currentQuote}"
+            </div>
+          )}
+          
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold mb-2 flex items-center">
+              <Volume2 className="mr-2 h-5 w-5 text-primary" />
+              Audio
+            </h3>
             
-            <MixerPanel 
-              soundscapes={soundscapes} 
-              maxDisplayed={4}
-              resetVolumesOnChange={true}
-              externalSoundscapeId={currentSoundscapeId}
-              onSoundscapeChange={onSoundscapeChange}
+            <AudioPlayer 
+              audioUrl={meditation.audioUrl} 
+              showControls
+              title={meditation.title}
+              isPlayingExternal={isPlaying}
+              onPlayPauseChange={setIsPlaying}
+              showQuote
+              ref={audioRef as React.Ref<AudioPlayerHandle>}
             />
           </div>
         </div>
+        
+        <DialogFooter className="p-6 pt-0 flex justify-between">
+          {onFavoriteToggle && (
+            <Button 
+              variant="outline"
+              className={cn(
+                "gap-2",
+                meditation.isFavorite && "text-red-500 border-red-200 hover:text-red-600"
+              )}
+              onClick={() => onFavoriteToggle(meditation)}
+            >
+              <Heart className="h-4 w-4" fill={meditation.isFavorite ? "currentColor" : "none"} />
+              {meditation.isFavorite ? "Verwijder uit favorieten" : "Voeg toe aan favorieten"}
+            </Button>
+          )}
+          
+          <Button onClick={() => onOpenChange(false)}>
+            Sluiten
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

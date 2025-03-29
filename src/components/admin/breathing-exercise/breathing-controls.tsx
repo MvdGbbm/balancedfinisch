@@ -43,51 +43,41 @@ export function BreathingControls({
     exhale: ""
   });
 
-  // Enhanced loading of voice URLs with logging
   useEffect(() => {
-    try {
-      const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
-      if (savedVeraUrls) {
+    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+    if (savedVeraUrls) {
+      try {
         const parsedUrls = JSON.parse(savedVeraUrls);
-        console.log("Loaded Vera voice URLs:", parsedUrls);
         setVeraVoiceUrls(parsedUrls);
-      } else {
-        console.log("No Vera voice URLs found in localStorage");
+      } catch (error) {
+        console.error("Error loading Vera voice URLs:", error);
       }
-      
-      const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
-      if (savedMarcoUrls) {
+    }
+    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+    if (savedMarcoUrls) {
+      try {
         const parsedUrls = JSON.parse(savedMarcoUrls);
-        console.log("Loaded Marco voice URLs:", parsedUrls);
         setMarcoVoiceUrls(parsedUrls);
-      } else {
-        console.log("No Marco voice URLs found in localStorage");
+      } catch (error) {
+        console.error("Error loading Marco voice URLs:", error);
       }
-    } catch (error) {
-      console.error("Error loading voice URLs from localStorage:", error);
-      toast.error("Fout bij het laden van stem configuratie");
     }
   }, []);
 
   const startWithVera = () => {
     if (isActive && activeVoice === "vera") {
       setState(prevState => ({...prevState, isActive: false, activeVoice: null}));
-      console.log("Stopping Vera voice guidance");
     } else {
       if (!veraVoiceUrls.inhale || !veraVoiceUrls.exhale) {
-        console.error("Missing required Vera voice URLs", veraVoiceUrls);
         toast.error("De Vera stem heeft minimaal inademings- en uitademings-URL's nodig");
         return;
       }
       
-      console.log("Starting exercise with Vera voice:", veraVoiceUrls);
       setState(prevState => ({
         ...prevState, 
         isActive: true, 
         activeVoice: "vera", 
-        exerciseCompleted: false,
-        // Initialize with first audio URL
-        currentAudioUrl: veraVoiceUrls.inhale
+        exerciseCompleted: false
       }));
     }
   };
@@ -95,22 +85,17 @@ export function BreathingControls({
   const startWithMarco = () => {
     if (isActive && activeVoice === "marco") {
       setState(prevState => ({...prevState, isActive: false, activeVoice: null}));
-      console.log("Stopping Marco voice guidance");
     } else {
       if (!marcoVoiceUrls.inhale || !marcoVoiceUrls.exhale) {
-        console.error("Missing required Marco voice URLs", marcoVoiceUrls);
         toast.error("De Marco stem heeft minimaal inademings- en uitademings-URL's nodig");
         return;
       }
       
-      console.log("Starting exercise with Marco voice:", marcoVoiceUrls);
       setState(prevState => ({
         ...prevState, 
         isActive: true, 
         activeVoice: "marco", 
-        exerciseCompleted: false,
-        // Initialize with first audio URL
-        currentAudioUrl: marcoVoiceUrls.inhale
+        exerciseCompleted: false
       }));
     }
   };

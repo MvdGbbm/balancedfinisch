@@ -41,8 +41,8 @@ export function BreathingCircle({
           className={className}
         >
           <BreathingPhaseDisplay 
-            phase={phase} 
-            timeLeft={secondsLeft || phaseTimeLeft} 
+            activePhase={phase} 
+            phaseTimeLeft={secondsLeft || phaseTimeLeft} 
           />
         </BreathingCircleVisual>
       </div>

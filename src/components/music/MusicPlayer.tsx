@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { AudioPlayer } from "@/components/audio-player";
+import { AudioPlayer, AudioPlayerHandle } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Soundscape } from "@/lib/types";
 
@@ -13,6 +13,7 @@ interface MusicPlayerProps {
   nextTrackUrl?: string;
   isPlaying: boolean;
   audioRef: React.RefObject<HTMLAudioElement>;
+  audioContextRef?: React.RefObject<AudioContext>;
   onStop: () => void;
   onTrackEnded: () => void;
   onCrossfadeStart: () => void;
@@ -25,6 +26,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   nextTrackUrl,
   isPlaying,
   audioRef,
+  audioContextRef,
   onStop,
   onTrackEnded,
   onCrossfadeStart,
@@ -58,7 +60,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
         <ToneEqualizer 
           isActive={isPlaying} 
           className="mb-1" 
-          audioRef={audioRef} 
+          audioRef={audioRef}
         />
         
         <AudioPlayer 
@@ -71,7 +73,7 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
           onCrossfadeStart={onCrossfadeStart}
           isPlayingExternal={isPlaying}
           onPlayPauseChange={onPlayPauseChange}
-          ref={audioRef}
+          ref={audioRef as React.Ref<AudioPlayerHandle>}
         />
       </div>
     </div>

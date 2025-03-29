@@ -1,7 +1,7 @@
 
 import React, { useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { useBreathingExercise } from "@/hooks/breathing-exercise";
+import { useBreathingExercise } from "@/hooks/use-breathing-exercise";
 import { useBreathingMusic } from "@/hooks/use-breathing-music";
 import { BreathingPageContent } from "@/components/breathing-page/breathing-page-content";
 

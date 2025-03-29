@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Dialog,
@@ -18,12 +17,7 @@ import { AudioPlayer } from "@/components/audio-player";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { TagInput } from "./TagInput";
 import { Soundscape } from "@/lib/types";
-import { 
-  validateAudioUrl, 
-  preloadAudio, 
-  fixSupabaseStorageUrl, 
-  getAudioMimeType 
-} from "@/components/audio-player/utils";
+import { validateAudioUrl, preloadAudio, getAudioMimeType } from "@/components/audio-player/utils";
 
 interface MusicFormDialogProps {
   isOpen: boolean;
@@ -61,25 +55,16 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     }
   }, [currentMusic, isOpen]);
   
-  // Validate and update URL when it changes
   useEffect(() => {
     if (audioUrl) {
       setIsValidatingUrl(true);
       
       const fixedUrl = validateAudioUrl(audioUrl);
-      if (!fixedUrl) {
-        setIsUrlValid(false);
-        setIsValidatingUrl(false);
-        return;
-      }
-      
       const supabaseUrl = fixedUrl.includes('supabase.co') ? fixSupabaseStorageUrl(fixedUrl) : fixedUrl;
       
       setValidatedUrl(supabaseUrl);
       
-      // Check if the URL is valid
-      const checkUrlValidity = async () => {
-        const success = await preloadAudio(supabaseUrl);
+      preloadAudio(supabaseUrl).then(success => {
         setIsUrlValid(success);
         setIsValidatingUrl(false);
         
@@ -88,9 +73,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
         } else {
           console.warn("Audio URL validation failed:", supabaseUrl);
         }
-      };
-      
-      checkUrlValidity();
+      });
     } else {
       setValidatedUrl("");
       setIsUrlValid(true);
@@ -128,21 +111,13 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       return;
     }
     
-    // Validate URLs before saving
     const processedAudioUrl = validateAudioUrl(audioUrl);
-    
-    if (!processedAudioUrl) {
-      toast.error("Ongeldige audio URL");
-      return;
-    }
-    
     const finalAudioUrl = processedAudioUrl.includes('supabase.co') 
       ? fixSupabaseStorageUrl(processedAudioUrl) 
       : processedAudioUrl;
       
     let processedCoverImageUrl = coverImageUrl;
     
-    // Basic validation for image URL
     if (!coverImageUrl.startsWith('http://') && !coverImageUrl.startsWith('https://')) {
       processedCoverImageUrl = 'https://' + coverImageUrl.replace(/^\/\//, '');
     }

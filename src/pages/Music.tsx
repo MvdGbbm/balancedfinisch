@@ -39,6 +39,7 @@ const Music = () => {
     isPlaying,
     setIsPlaying,
     audioPlayerRef,
+    audioContextRef,
     handlePreviewTrack,
     handleStopPreview,
     currentPlayingTrack
@@ -82,13 +83,31 @@ const Music = () => {
   // Stop audio handler for general use
   const stopAllAudio = () => {
     if (isPlaying) {
-      setCurrentTrack(null);
       setIsPlaying(false);
+      setCurrentTrack(null);
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.src = '';
+      }
+      
+      // Clean up audio context
+      if (audioContextRef?.current) {
+        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current = null;
+      }
     }
+    
     if (isStreamPlaying) {
       handleStreamStop();
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, []);
 
   return (
     <MobileLayout>
@@ -103,7 +122,7 @@ const Music = () => {
           />
         </div>
 
-        <Tabs defaultValue="music" value={activeTab}>
+        <Tabs defaultValue={activeTab} value={activeTab}>
           <MusicTabs activeTab={activeTab} onTabChange={handleTabChange} />
           
           <MusicActionHandlers
@@ -151,6 +170,7 @@ const Music = () => {
         hiddenIframeUrl={hiddenIframeUrl}
         hiddenIframeRef={hiddenIframeRef}
         audioPlayerRef={audioPlayerRef}
+        audioContextRef={audioContextRef}
         handleStopPreview={handleStopPreview}
         handleTrackEnded={handleTrackEnded}
         handleCrossfadeStart={handleCrossfadeStart}

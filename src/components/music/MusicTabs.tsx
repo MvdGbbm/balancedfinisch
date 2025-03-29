@@ -13,25 +13,13 @@ export const MusicTabs: React.FC<MusicTabsProps> = ({
 }) => {
   return (
     <TabsList className="grid grid-cols-3 mb-4 sticky top-0 z-30 bg-background">
-      <TabsTrigger 
-        value="music" 
-        onClick={() => onTabChange("music")}
-        data-state={activeTab === "music" ? "active" : "inactive"}
-      >
+      <TabsTrigger value="muziek" onClick={() => onTabChange("muziek")}>
         Muziek
       </TabsTrigger>
-      <TabsTrigger 
-        value="playlists" 
-        onClick={() => onTabChange("playlists")}
-        data-state={activeTab === "playlists" ? "active" : "inactive"}
-      >
+      <TabsTrigger value="playlists" onClick={() => onTabChange("playlists")}>
         Afspeellijsten
       </TabsTrigger>
-      <TabsTrigger 
-        value="radio" 
-        onClick={() => onTabChange("radio")}
-        data-state={activeTab === "radio" ? "active" : "inactive"}
-      >
+      <TabsTrigger value="radio" onClick={() => onTabChange("radio")}>
         Streaming
       </TabsTrigger>
     </TabsList>

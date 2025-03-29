@@ -1,98 +1,157 @@
 
-import React from "react";
-import { useAudioPreview } from "./hooks/use-audio-preview";
-import { AudioErrorMessage } from "./components/audio-error-message";
-import { AudioDisplay } from "./components/audio-display";
-import { getAudioMimeType } from "./utils";
-import { useToast } from "@/hooks/use-toast";
+import React, { useRef, useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Play, Pause, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { validateAudioUrl } from "./utils";
 
 interface AudioPreviewProps {
-  url: string;
-  label?: string;
-  showControls?: boolean;
-  autoPlay?: boolean;
-  onEnded?: () => void;
-  onError?: () => void;
-  onLoaded?: () => void;
+  audioUrl: string;
+  className?: string;
+  showDetails?: boolean;
 }
 
 export const AudioPreview: React.FC<AudioPreviewProps> = ({
-  url,
-  label,
-  showControls = true,
-  autoPlay = false,
-  onEnded,
-  onError,
-  onLoaded
+  audioUrl,
+  className = "",
+  showDetails = false,
 }) => {
-  const { toast } = useToast();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
-  const {
-    audioRef,
-    isPlaying,
-    progress,
-    volume,
-    muted,
-    error,
-    loaded,
-    isRetrying,
-    isValidUrl,
-    validatedUrl,
-    togglePlay,
-    toggleMute,
-    handleVolumeChange,
-    handleRetry,
-    getFileNameFromUrl
-  } = useAudioPreview({
-    url,
-    autoPlay,
-    onEnded,
-    onError,
-    onLoaded
-  });
-
-  const displayUrl = label || getFileNameFromUrl(validatedUrl || url);
-
-  if (!url) {
-    return (
-      <div className="text-sm text-muted-foreground p-2 italic">
-        Geen URL opgegeven
-      </div>
-    );
-  }
-
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+      }
+    };
+  }, []);
+  
+  // Update audio source if URL changes
+  useEffect(() => {
+    if (!audioUrl) return;
+    
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    setIsLoading(true);
+    setIsError(false);
+    setIsPlaying(false);
+    
+    const processedUrl = validateAudioUrl(audioUrl);
+    audio.src = processedUrl;
+    
+    const loadHandler = () => {
+      setIsLoading(false);
+      setDuration(audio.duration);
+    };
+    
+    const errorHandler = () => {
+      console.error("Error loading audio preview:", processedUrl);
+      setIsLoading(false);
+      setIsError(true);
+      setIsPlaying(false);
+      toast.error("Kon audio niet laden");
+    };
+    
+    audio.addEventListener('loadedmetadata', loadHandler);
+    audio.addEventListener('error', errorHandler);
+    audio.load();
+    
+    return () => {
+      audio.removeEventListener('loadedmetadata', loadHandler);
+      audio.removeEventListener('error', errorHandler);
+    };
+  }, [audioUrl]);
+  
+  const togglePlayback = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error("Play error:", error);
+            setIsError(true);
+            toast.error("Kon audio niet afspelen");
+          });
+      }
+    }
+  };
+  
+  const formatTime = (seconds: number) => {
+    if (isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  
+  const reloadAudio = () => {
+    if (!audioRef.current || !audioUrl) return;
+    
+    setIsLoading(true);
+    setIsError(false);
+    setIsPlaying(false);
+    
+    audioRef.current.pause();
+    audioRef.current.src = validateAudioUrl(audioUrl);
+    audioRef.current.load();
+  };
+  
   return (
-    <div className="p-2 rounded-md bg-muted/20 space-y-2 border border-border/50">
-      <audio 
-        ref={audioRef} 
-        preload="metadata" 
-        src={validatedUrl}
+    <div className={`flex items-center gap-2 ${className}`}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 w-8 p-0"
+        disabled={!audioUrl || isLoading || isError}
+        onClick={togglePlayback}
       >
-        <source src={validatedUrl} type={getAudioMimeType(validatedUrl)} />
-        Your browser does not support the audio element.
-      </audio>
-
-      {error ? (
-        <AudioErrorMessage 
-          handleRetry={handleRetry} 
-          isRetrying={isRetrying} 
-          message={!isValidUrl ? "Ongeldige URL. Controleer het formaat." : "Kan audio niet laden. Controleer de URL."}
-        />
-      ) : (
-        <AudioDisplay
-          displayUrl={displayUrl}
-          loaded={loaded}
-          showControls={showControls}
-          isPlaying={isPlaying}
-          progress={progress}
-          volume={volume}
-          muted={muted}
-          togglePlay={togglePlay}
-          toggleMute={toggleMute}
-          handleVolumeChange={handleVolumeChange}
-          error={error}
-        />
+        {isLoading ? (
+          <RefreshCw className="h-4 w-4 animate-spin" />
+        ) : isPlaying ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4" />
+        )}
+      </Button>
+      
+      {showDetails && (
+        <div className="text-xs text-muted-foreground">
+          {isError ? (
+            <div className="flex items-center gap-1">
+              <span className="text-red-500">Fout</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-xs"
+                onClick={reloadAudio}
+              >
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : isLoading ? (
+            <span>Laden...</span>
+          ) : (
+            <span>{formatTime(duration)}</span>
+          )}
+        </div>
       )}
+      
+      <audio ref={audioRef} onEnded={() => setIsPlaying(false)} />
     </div>
   );
 };

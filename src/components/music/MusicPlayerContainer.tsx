@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Soundscape } from "@/lib/types";
 import { Playlist } from "@/components/playlist/types";
 import { MusicPlayer } from "./MusicPlayer";
@@ -14,6 +14,7 @@ interface MusicPlayerContainerProps {
   hiddenIframeUrl: string | null;
   hiddenIframeRef: React.RefObject<HTMLIFrameElement>;
   audioPlayerRef: React.RefObject<HTMLAudioElement>;
+  audioContextRef?: React.RefObject<AudioContext>;
   handleStopPreview: () => void;
   handleTrackEnded: () => void;
   handleCrossfadeStart: () => void;
@@ -32,6 +33,7 @@ export const MusicPlayerContainer: React.FC<MusicPlayerContainerProps> = ({
   hiddenIframeUrl,
   hiddenIframeRef,
   audioPlayerRef,
+  audioContextRef,
   handleStopPreview,
   handleTrackEnded,
   handleCrossfadeStart,
@@ -41,6 +43,15 @@ export const MusicPlayerContainer: React.FC<MusicPlayerContainerProps> = ({
   previewTrack
 }) => {
   const shouldShowPlayer = isPlaying || isStreamPlaying || hiddenIframeUrl;
+
+  // Ensure we clean up audio contexts when switching tracks
+  useEffect(() => {
+    return () => {
+      if (audioContextRef?.current) {
+        audioContextRef.current.close().catch(console.error);
+      }
+    };
+  }, [currentPlayingTrack, audioContextRef]);
 
   return (
     <>
@@ -55,6 +66,7 @@ export const MusicPlayerContainer: React.FC<MusicPlayerContainerProps> = ({
           nextTrackUrl={nextTrack?.audioUrl}
           isPlaying={isPlaying}
           audioRef={audioPlayerRef}
+          audioContextRef={audioContextRef}
           onStop={previewTrack ? handleStopPreview : () => {
             setIsPlaying(false);
             setCurrentTrack(null);

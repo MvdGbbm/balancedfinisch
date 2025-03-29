@@ -1,39 +1,38 @@
 
-import React from 'react';
-import { BreathingPhase } from '@/components/breathing/types';
+import React from "react";
+import { BreathingPhaseDisplayProps } from "./types";
 
-export interface BreathingPhaseDisplayProps {
-  phase: BreathingPhase;
-  timeLeft: number;
-}
-
-export const BreathingPhaseDisplay: React.FC<BreathingPhaseDisplayProps> = ({
-  phase,
-  timeLeft
-}) => {
+export function BreathingPhaseDisplay({ 
+  activePhase, 
+  phaseTimeLeft 
+}: BreathingPhaseDisplayProps) {
   const getPhaseText = () => {
-    switch (phase) {
-      case 'inhale':
-        return 'Inademen';
-      case 'hold':
-        return 'Vasthouden';
-      case 'exhale':
-        return 'Uitademen';
-      case 'pause':
-        return 'Pauze';
-      case 'start':
-        return 'Start';
-      case 'end':
-        return 'Einde';
-      default:
-        return '';
+    switch (activePhase) {
+      case "inhale": return "Adem in";
+      case "hold": return "Houd vast";
+      case "exhale": return "Adem uit";
+      case "rest": return "Klaar";
+      default: return "";
     }
   };
 
+  if (activePhase === "rest") {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-2 px-6 py-4">
+        <span className="text-lg font-medium">Klaar</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center">
-      <div className="text-xl font-semibold">{getPhaseText()}</div>
-      {timeLeft > 0 && <div className="text-sm">{timeLeft}s</div>}
+    <div className="flex flex-col items-center space-y-2">
+      <div className="text-xl font-semibold mb-1">
+        {getPhaseText()}
+      </div>
+      <div className="flex items-center justify-center text-4xl font-bold">
+        {phaseTimeLeft}
+        <span className="text-sm ml-1 mt-1">s</span>
+      </div>
     </div>
   );
-};
+}

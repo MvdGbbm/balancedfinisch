@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 interface BreathingVoicePlayerProps {
   veraUrls: {
@@ -42,15 +41,6 @@ export const BreathingVoicePlayer = ({
     if (isActive && activeVoice === "vera") {
       onPause();
     } else {
-      // Check if Vera has required audio URLs
-      if (!veraUrls.inhale || !veraUrls.exhale) {
-        toast.error("De stem 'Vera' heeft niet alle benodigde audio bestanden.");
-        return;
-      }
-      
-      // Log URLs for debugging
-      console.log("Vera voice URLs:", veraUrls);
-      console.log("Starting voice guidance with Vera");
       onPlay("vera");
     }
   };
@@ -59,15 +49,6 @@ export const BreathingVoicePlayer = ({
     if (isActive && activeVoice === "marco") {
       onPause();
     } else {
-      // Check if Marco has required audio URLs
-      if (!marcoUrls.inhale || !marcoUrls.exhale) {
-        toast.error("De stem 'Marco' heeft niet alle benodigde audio bestanden.");
-        return;
-      }
-      
-      // Log URLs for debugging
-      console.log("Marco voice URLs:", marcoUrls);
-      console.log("Starting voice guidance with Marco");
       onPlay("marco");
     }
   };
