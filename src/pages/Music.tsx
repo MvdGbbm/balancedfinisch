@@ -1,21 +1,31 @@
-import React, { useState, useEffect, useRef } from "react";
-import { MobileLayout } from "@/components/mobile-layout";
+import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Volume2, RefreshCw } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Volume2, RefreshCw, Trash } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { Soundscape } from "@/lib/types";
-import { Playlist, PlaylistTrack } from "@/components/playlist/types";
-import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
+import { PlaylistSelector } from "@/components/playlist/playlist-selector";
+import { Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
+import { MobileLayout } from "@/components/mobile-layout";
 import { useQuery } from "@tanstack/react-query";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface RadioStream {
   id: string;
@@ -126,13 +136,54 @@ const Music = () => {
     }
     
     refetchStreams().then(() => {
-      toast.success("Pagina is ververst", {
+      toast("Pagina is ververst", {
         description: "Alle content is opnieuw geladen"
       });
       setIsLoading(false);
     }).catch(() => {
-      toast.error("Fout bij verversen", {
-        description: "Er is een probleem opgetreden bij het verversen van de pagina"
+      toast("Fout bij verversen", {
+        description: "Er is een probleem opgetreden bij het verversen van de pagina",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    });
+  };
+
+  const clearAppCache = () => {
+    setIsLoading(true);
+    
+    if (isPlaying || isStreamPlaying) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+      setIsPlaying(false);
+      setIsStreamPlaying(false);
+      setPreviewTrack(null);
+      setCurrentTrack(null);
+      setSelectedPlaylist(null);
+      setHiddenIframeUrl(null);
+    }
+    
+    localStorage.removeItem('processedMeditations');
+    localStorage.removeItem('processedSoundscapes');
+    localStorage.removeItem('soundscapes');
+    localStorage.removeItem('journalEntries');
+    localStorage.removeItem('quotes');
+    localStorage.removeItem('plannerEvents');
+    localStorage.removeItem('todayQuoteId');
+    
+    refetchStreams().then(() => {
+      toast("Cachegeheugen gewist", {
+        description: "Alle opgeslagen gegevens zijn verwijderd. De app zal opnieuw worden geladen."
+      });
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    }).catch(() => {
+      toast("Fout bij wissen cache", {
+        description: "Er is een probleem opgetreden bij het wissen van het cachegeheugen",
+        variant: "destructive"
       });
       setIsLoading(false);
     });
@@ -384,16 +435,49 @@ const Music = () => {
               Luister naar rustgevende muziek voor meditatie en ontspanning
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleReloadPage}
-            disabled={isLoading}
-            className="flex-shrink-0"
-            title="Pagina verversen"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Wis cachegeheugen"
+                  className="flex-shrink-0"
+                >
+                  <Trash className="h-4 w-4 text-destructive" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cachegeheugen wissen</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Weet je zeker dat je het cachegeheugen wilt wissen? Hierdoor worden alle tijdelijk 
+                    opgeslagen gegevens verwijderd en moet de app opnieuw worden geladen.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={clearAppCache}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Wissen
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleReloadPage}
+              disabled={isLoading}
+              className="flex-shrink-0"
+              title="Pagina verversen"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
