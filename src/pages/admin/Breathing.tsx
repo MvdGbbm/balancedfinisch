@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { toast } from "sonner";
 import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
+
 type BreathingPattern = {
   id: string;
   name: string;
@@ -24,12 +24,15 @@ type BreathingPattern = {
   startUrl: string;
   endUrl: string;
 };
+
 type VoiceURLs = {
   start?: string;
   inhale: string;
   hold: string;
   exhale: string;
+  end?: string;
 };
+
 const defaultBreathingPatterns: BreathingPattern[] = [{
   id: "1",
   name: "4-7-8 Techniek",
@@ -64,26 +67,31 @@ const defaultBreathingPatterns: BreathingPattern[] = [{
   startUrl: "",
   endUrl: ""
 }];
+
 const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
     start: "",
     inhale: "",
     hold: "",
-    exhale: ""
+    exhale: "",
+    end: ""
   },
   marco: {
     start: "",
     inhale: "",
     hold: "",
-    exhale: ""
+    exhale: "",
+    end: ""
   }
 };
+
 const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
   const [activeTab, setActiveTab] = useState<"patterns" | "voices">("patterns");
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
+
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -100,6 +108,7 @@ const AdminBreathing = () => {
     }
     loadVoiceUrls();
   }, []);
+
   const loadVoiceUrls = () => {
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
@@ -122,6 +131,7 @@ const AdminBreathing = () => {
       }
     }
   };
+
   const patternForm = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -136,24 +146,30 @@ const AdminBreathing = () => {
       endUrl: ""
     }
   });
+
   const veraForm = useForm<VoiceURLs>({
     defaultValues: veraVoiceUrls
   });
+
   const marcoForm = useForm<VoiceURLs>({
     defaultValues: marcoVoiceUrls
   });
+
   useEffect(() => {
     veraForm.reset(veraVoiceUrls);
   }, [veraVoiceUrls]);
+
   useEffect(() => {
     marcoForm.reset(marcoVoiceUrls);
   }, [marcoVoiceUrls]);
+
   const handleSelectPattern = (pattern: BreathingPattern) => {
     setSelectedPattern(pattern);
     patternForm.reset({
       ...pattern
     });
   };
+
   const handleCreateNew = () => {
     const newId = `temp_${Date.now()}`;
     const newPattern = {
@@ -171,9 +187,11 @@ const AdminBreathing = () => {
     setSelectedPattern(newPattern);
     patternForm.reset(newPattern);
   };
+
   const saveToLocalStorage = (patterns: BreathingPattern[]) => {
     localStorage.setItem('breathingPatterns', JSON.stringify(patterns));
   };
+
   const handleSave = (data: BreathingPattern) => {
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === selectedPattern?.id);
     let updated: BreathingPattern[];
@@ -198,6 +216,7 @@ const AdminBreathing = () => {
     }
     saveToLocalStorage(updated);
   };
+
   const handleDelete = (id: string) => {
     const filtered = breathingPatterns.filter(p => p.id !== id);
     setBreathingPatterns(filtered);
@@ -217,6 +236,7 @@ const AdminBreathing = () => {
     saveToLocalStorage(filtered);
     toast.success("Ademhalingstechniek verwijderd");
   };
+
   const handleVeraUrlChange = (field: keyof VoiceURLs, value: string) => {
     const updatedUrls = {
       ...veraVoiceUrls,
@@ -224,6 +244,7 @@ const AdminBreathing = () => {
     };
     setVeraVoiceUrls(updatedUrls);
   };
+
   const handleMarcoUrlChange = (field: keyof VoiceURLs, value: string) => {
     const updatedUrls = {
       ...marcoVoiceUrls,
@@ -231,21 +252,25 @@ const AdminBreathing = () => {
     };
     setMarcoVoiceUrls(updatedUrls);
   };
+
   const saveVoiceUrls = () => {
     localStorage.setItem('veraVoiceUrls', JSON.stringify(veraVoiceUrls));
     localStorage.setItem('marcoVoiceUrls', JSON.stringify(marcoVoiceUrls));
     toast.success("Stem audio URLs opgeslagen");
   };
+
   const onVeraSubmit = (data: VoiceURLs) => {
     setVeraVoiceUrls(data);
     localStorage.setItem('veraVoiceUrls', JSON.stringify(data));
     toast.success("Vera stem configuratie opgeslagen");
   };
+
   const onMarcoSubmit = (data: VoiceURLs) => {
     setMarcoVoiceUrls(data);
     localStorage.setItem('marcoVoiceUrls', JSON.stringify(data));
     toast.success("Marco stem configuratie opgeslagen");
   };
+
   return <AdminLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
@@ -440,6 +465,15 @@ const AdminBreathing = () => {
                             </FormControl>
                           </FormItem>} />
                       
+                      <FormField control={veraForm.control} name="end" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Einde Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/einde.mp3" />
+                            </FormControl>
+                          </FormItem>} />
+                      
                       <div className="flex justify-end">
                         <Button type="submit">
                           <Save className="mr-2 h-4 w-4" />
@@ -494,6 +528,15 @@ const AdminBreathing = () => {
                             </FormControl>
                           </FormItem>} />
                       
+                      <FormField control={marcoForm.control} name="end" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Einde Audio URL</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="https://voorbeeld.com/einde.mp3" />
+                            </FormControl>
+                          </FormItem>} />
+                      
                       <div className="flex justify-end">
                         <Button type="submit">
                           <Save className="mr-2 h-4 w-4" />
@@ -514,4 +557,5 @@ const AdminBreathing = () => {
       </div>
     </AdminLayout>;
 };
+
 export default AdminBreathing;

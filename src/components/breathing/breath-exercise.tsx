@@ -37,16 +37,18 @@ export function BreathExercise({
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
   
   // Voice URLs
-  const [veraVoiceUrls, setVeraVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<{inhale: string, hold: string, exhale: string, end?: string}>({
     inhale: "",
     hold: "",
-    exhale: ""
+    exhale: "",
+    end: ""
   });
   
-  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<{inhale: string, hold: string, exhale: string, end?: string}>({
     inhale: "",
     hold: "",
-    exhale: ""
+    exhale: "",
+    end: ""
   });
 
   // Load voice URLs from localStorage

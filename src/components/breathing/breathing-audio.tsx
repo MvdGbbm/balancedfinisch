@@ -10,6 +10,7 @@ interface BreathingAudioProps {
     inhale: string;
     hold: string;
     exhale: string;
+    end?: string;
   } | null;
   isVoiceActive: boolean;
   phase: BreathingPhase;
@@ -32,6 +33,7 @@ export const useBreathingAudio = ({
     inhale: string;
     hold: string;
     exhale: string;
+    end?: string;
   }) => {
     if (!urls.inhale || !urls.exhale) {
       console.log("Voice URLs are incomplete, skipping validation");
@@ -48,6 +50,10 @@ export const useBreathingAudio = ({
       
       if (urls.start) {
         urlsToValidate.push(urls.start);
+      }
+      
+      if (urls.end) {
+        urlsToValidate.push(urls.end);
       }
       
       const validationPromises = urlsToValidate.map(url => preloadAudio(url));
@@ -86,6 +92,9 @@ export const useBreathingAudio = ({
         break;
       case 'exhale':
         audioUrl = voiceUrls.exhale;
+        break;
+      case 'end':
+        audioUrl = voiceUrls.end || '';
         break;
       default:
         audioUrl = '';
