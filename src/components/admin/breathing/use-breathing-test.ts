@@ -36,7 +36,9 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
   } = useBreathingPhases({
     pattern,
     isActive,
-    exerciseCompleted
+    exerciseCompleted,
+    voiceUrls: { vera: veraVoiceUrls, marco: marcoVoiceUrls },
+    activeVoice
   });
 
   // Use the breathing audio hook

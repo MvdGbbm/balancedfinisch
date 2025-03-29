@@ -6,18 +6,38 @@ interface UseBreathingPhasesProps {
   pattern: BreathingPattern | null;
   isActive: boolean;
   exerciseCompleted: boolean;
+  voiceUrls?: {
+    vera: { hold: string };
+    marco: { hold: string };
+  };
+  activeVoice?: "vera" | "marco" | null;
 }
 
 export function useBreathingPhases({ 
   pattern, 
   isActive, 
-  exerciseCompleted 
+  exerciseCompleted,
+  voiceUrls,
+  activeVoice
 }: UseBreathingPhasesProps) {
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
   const [currentCycle, setCurrentCycle] = useState(1);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [progress, setProgress] = useState(0);
   const [circleScale, setCircleScale] = useState(1);
+
+  // Check if hold is disabled based on voice settings
+  const isHoldDisabled = () => {
+    if (!voiceUrls || !activeVoice) return false;
+    
+    if (activeVoice === "vera") {
+      return !voiceUrls.vera.hold;
+    } else if (activeVoice === "marco") {
+      return !voiceUrls.marco.hold;
+    }
+    
+    return false;
+  };
 
   // Reset state when pattern changes
   useEffect(() => {
@@ -44,8 +64,12 @@ export function useBreathingPhases({
         } else {
           // Transition to next phase
           if (currentPhase === "inhale") {
-            // Skip hold1 phase if hold1 is 0 seconds or less
-            if (pattern.hold1 <= 0) {
+            // Skip hold1 phase if:
+            // 1. hold1 is 0 seconds or less, OR
+            // 2. hold audio is disabled and we're using voice guidance
+            const skipHold1 = pattern.hold1 <= 0 || (isHoldDisabled() && activeVoice);
+            
+            if (skipHold1) {
               setCurrentPhase("exhale");
               setSecondsLeft(pattern.exhale);
               setProgress(0);
@@ -60,8 +84,12 @@ export function useBreathingPhases({
             setSecondsLeft(pattern.exhale);
             setProgress(0);
           } else if (currentPhase === "exhale") {
-            // Skip hold2 phase if hold2 is 0 seconds or less
-            if (pattern.hold2 <= 0) {
+            // Skip hold2 phase if:
+            // 1. hold2 is 0 seconds or less, OR
+            // 2. hold audio is disabled and we're using voice guidance
+            const skipHold2 = pattern.hold2 <= 0 || (isHoldDisabled() && activeVoice);
+            
+            if (skipHold2) {
               if (currentCycle < pattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
@@ -126,7 +154,7 @@ export function useBreathingPhases({
       if (timer) clearInterval(timer);
       if (progressTimer) clearInterval(progressTimer);
     };
-  }, [isActive, currentPhase, secondsLeft, currentCycle, pattern, exerciseCompleted]);
+  }, [isActive, currentPhase, secondsLeft, currentCycle, pattern, exerciseCompleted, activeVoice, isHoldDisabled]);
 
   // Function to check if cycle is complete
   const isCycleComplete = () => {
