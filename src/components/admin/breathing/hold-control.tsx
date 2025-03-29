@@ -44,7 +44,7 @@ export function HoldControl({ form, name, enableName, label, enableLabel }: Hold
                 {...field} 
                 type="number" 
                 min="0" 
-                disabled={form.watch(enableName)}
+                disabled={!form.watch(enableName)}
                 onChange={e => field.onChange(parseInt(e.target.value) || 0)} 
               />
             </FormControl>

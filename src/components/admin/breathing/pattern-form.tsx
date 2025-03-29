@@ -31,8 +31,8 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
       cycles: 4,
       startUrl: "",
       endUrl: "",
-      enableHold1: true, // Default to checked (disabled)
-      enableHold2: true  // Default to checked (disabled)
+      enableHold1: false,
+      enableHold2: false
     }
   });
 
@@ -41,9 +41,8 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
     if (selectedPattern) {
       form.reset({
         ...selectedPattern,
-        // Invert the enableHold logic - now checked means "disable this feature"
-        enableHold1: selectedPattern.hold1 === 0,
-        enableHold2: selectedPattern.hold2 === 0
+        enableHold1: selectedPattern.hold1 > 0,
+        enableHold2: selectedPattern.hold2 > 0
       });
     } else {
       form.reset({
@@ -57,8 +56,8 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
         cycles: 4,
         startUrl: "",
         endUrl: "",
-        enableHold1: true, // Default to checked (disabled)
-        enableHold2: true  // Default to checked (disabled)
+        enableHold1: false,
+        enableHold2: false
       });
     }
   }, [selectedPattern, form]);
@@ -66,12 +65,12 @@ export function PatternForm({ selectedPattern, onSave, onDelete }: PatternFormPr
   const handleSubmit = (data: BreathingPattern & { enableHold1: boolean; enableHold2: boolean }) => {
     const { enableHold1, enableHold2, ...patternData } = data;
     
-    // If hold phases are enabled (checkbox is checked), set their durations to 0
-    if (enableHold1) {
+    // If hold phases are disabled, set their durations to 0
+    if (!enableHold1) {
       patternData.hold1 = 0;
     }
     
-    if (enableHold2) {
+    if (!enableHold2) {
       patternData.hold2 = 0;
     }
     

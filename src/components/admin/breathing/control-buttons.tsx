@@ -7,7 +7,7 @@ interface ControlButtonsProps {
   isActive: boolean;
   setIsActive: (active: boolean) => void;
   resetExercise: () => void;
-  activeVoice?: "vera" | "marco" | null;
+  activeVoice: "vera" | "marco" | null;
 }
 
 export function ControlButtons({
