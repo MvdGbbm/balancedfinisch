@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -113,7 +114,7 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     <div className="flex flex-col items-center justify-center">
       <div
         ref={circleRef}
-        className="rounded-full border border-primary flex items-center justify-center transition-all duration-500"
+        className={`rounded-full border border-primary flex items-center justify-center transition-all duration-500`}
         style={{
           width: `${circleDiameter * 2}px`,
           height: `${circleDiameter * 2}px`,

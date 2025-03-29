@@ -13,7 +13,7 @@ interface BreathingCircleProps {
   onToggleActive: () => void;
 }
 
-const BreathingCircle: React.FC<BreathingCircleProps> = ({
+export const BreathingCircle: React.FC<BreathingCircleProps> = ({
   phase,
   count,
   exerciseCompleted,
@@ -83,5 +83,3 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     </div>
   );
 };
-
-export default BreathingCircle;
