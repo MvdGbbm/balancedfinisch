@@ -4,7 +4,6 @@ import { BreathingPattern } from "@/lib/types";
 import { BreathingControls } from "./breathing-controls";
 import { BreathingVisualizer } from "./breathing-visualizer";
 import { BreathingPhaseDisplay } from "./breathing-phase-display";
-import { BreathingPatternDetails } from "./breathing-pattern-details";
 import { BreathingAudioManager } from "./breathing-audio-manager";
 import { BreathingExerciseState } from "./types";
 
@@ -80,8 +79,6 @@ export function BreathingExerciseTester({ pattern }: BreathingExerciseTesterProp
         setState={setState}
         state={state}
       />
-      
-      <BreathingPatternDetails pattern={pattern} />
       
       <BreathingAudioManager 
         pattern={pattern}
