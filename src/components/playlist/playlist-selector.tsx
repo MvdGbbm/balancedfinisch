@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ListMusic, Music, Plus } from "lucide-react";
+import { Plus, ListMusic, Music } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,7 @@ export function PlaylistSelector({
             size="sm" 
             className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
           >
+            <Plus className="h-4 w-4" />
           </Button>
         )}
       </DropdownMenuTrigger>
@@ -66,7 +67,7 @@ export function PlaylistSelector({
           
           {activeTab === "playlists" && (
             <>
-              <DropdownMenuLabel>Toevoegen aan afspeellijst</DropdownMenuLabel>
+              <DropdownMenuLabel>Afspeellijst</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
               {playlists.length > 0 ? (
