@@ -16,6 +16,7 @@ import { MusicTabs } from "@/components/music/MusicTabs";
 import { MusicContent } from "@/components/music/MusicContent";
 import { MusicPlayerContainer } from "@/components/music/MusicPlayerContainer";
 import { MusicActionHandlers } from "@/components/music/MusicActionHandlers";
+import { MusicBackendControls } from "@/components/music/MusicBackendControls";
 
 const Music = () => {
   // Core music page state
@@ -92,11 +93,15 @@ const Music = () => {
   return (
     <MobileLayout>
       <div className="space-y-6 pb-32">
-        <MusicHeader 
-          onRefresh={() => handleReloadPage(refetchStreams, isPlaying, isStreamPlaying, stopAllAudio, handleStreamStop)}
-          onClearCache={() => clearAppCache(isPlaying, isStreamPlaying, stopAllAudio, handleStreamStop, refetchStreams)}
-          isLoading={isLoading}
-        />
+        <div className="flex items-center justify-between">
+          <MusicHeader />
+          
+          <MusicBackendControls 
+            onRefresh={() => handleReloadPage(refetchStreams, isPlaying, isStreamPlaying, stopAllAudio, handleStreamStop)}
+            onClearCache={() => clearAppCache(isPlaying, isStreamPlaying, stopAllAudio, handleStreamStop, refetchStreams)}
+            isLoading={isLoading}
+          />
+        </div>
 
         <Tabs defaultValue="music" value={activeTab}>
           <MusicTabs activeTab={activeTab} onTabChange={handleTabChange} />
