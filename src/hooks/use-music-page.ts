@@ -13,7 +13,7 @@ export function useMusicPage() {
   const [isAudioActive, setIsAudioActive] = useState(false);
   const [musicTracks, setMusicTracks] = useState<Soundscape[]>([]);
 
-  // Filter music tracks on initial load
+  // Filter music tracks on initial load - only those with category "Muziek"
   useEffect(() => {
     const filteredTracks = soundscapes.filter(track => track.category === "Muziek");
     setMusicTracks(filteredTracks);
