@@ -38,31 +38,69 @@ export function BreathingAudioManager({
     exhale: ""
   });
 
-  // Load voice URLs from localStorage
+  // Improved loading of voice URLs with better error handling
   useEffect(() => {
-    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
-    if (savedVeraUrls) {
-      try {
+    try {
+      const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+      if (savedVeraUrls) {
         const parsedUrls = JSON.parse(savedVeraUrls);
+        console.log("Loaded Vera voice URLs in audio manager:", parsedUrls);
         setVeraVoiceUrls(parsedUrls);
-      } catch (error) {
-        console.error("Error loading Vera voice URLs:", error);
       }
-    }
-    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
-    if (savedMarcoUrls) {
-      try {
+      
+      const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+      if (savedMarcoUrls) {
         const parsedUrls = JSON.parse(savedMarcoUrls);
+        console.log("Loaded Marco voice URLs in audio manager:", parsedUrls);
         setMarcoVoiceUrls(parsedUrls);
-      } catch (error) {
-        console.error("Error loading Marco voice URLs:", error);
       }
+    } catch (error) {
+      console.error("Error loading voice URLs:", error);
     }
   }, []);
+
+  // Initialize audio elements and handle reference setup
+  useEffect(() => {
+    if (!audioRef.current) {
+      const audio = new Audio();
+      audio.preload = "auto";
+      audio.addEventListener("error", (e) => {
+        console.error("Audio error:", e);
+        setState(prevState => ({...prevState, audioError: true}));
+        toast.error("Fout bij het afspelen van audio. Controleer de URL.");
+      });
+      audio.addEventListener("canplaythrough", () => {
+        console.log("Audio can play through completely:", audio.src);
+      });
+      audioRef.current = audio;
+    }
+    
+    if (!endAudioRef.current) {
+      const endAudio = new Audio();
+      endAudio.preload = "auto";
+      endAudio.addEventListener("error", (e) => {
+        console.error("End audio error:", e);
+        toast.error("Fout bij het afspelen van eind-audio.");
+      });
+      endAudioRef.current = endAudio;
+    }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      if (endAudioRef.current) {
+        endAudioRef.current.pause();
+        endAudioRef.current.src = "";
+      }
+    };
+  }, [setState]);
 
   // Update audio URL based on current phase and active voice
   useEffect(() => {
     if (!pattern) return;
+    
     let url = "";
     if (activeVoice === "vera") {
       switch (currentPhase) {
@@ -106,45 +144,56 @@ export function BreathingAudioManager({
           break;
       }
     }
-    setState(prevState => ({
-      ...prevState,
-      currentAudioUrl: url,
-      audioError: false
-    }));
-  }, [currentPhase, activeVoice, pattern, veraVoiceUrls, marcoVoiceUrls, setState]);
-
-  // Play audio when URL changes
-  useEffect(() => {
-    if (!pattern || !audioRef.current) return;
     
-    if (!currentAudioUrl && isActive) {
+    if (url !== currentAudioUrl) {
+      console.log(`Updating audio URL for ${currentPhase} phase:`, url);
+      setState(prevState => ({
+        ...prevState,
+        currentAudioUrl: url,
+        audioError: false
+      }));
+    }
+  }, [currentPhase, activeVoice, pattern, veraVoiceUrls, marcoVoiceUrls, setState, currentAudioUrl]);
+
+  // Play audio when URL changes with improved error handling
+  useEffect(() => {
+    if (!pattern || !audioRef.current || !isActive) return;
+    
+    if (!currentAudioUrl) {
       console.log(`No audio URL for ${currentPhase} phase, skipping playback`);
       return;
     }
     
-    if (currentAudioUrl && isActive) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+    console.log("Attempting to play audio:", currentAudioUrl);
+    
+    try {
+      const audio = audioRef.current;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = currentAudioUrl;
+      
+      // Add more explicit loading and error handling
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("Audio playback started successfully");
+        }).catch(error => {
+          console.error("Error playing audio:", error);
+          setState(prevState => ({...prevState, audioError: true}));
+          toast.error("Fout bij het afspelen van audio. Probeer opnieuw.");
+        });
       }
-      audioRef.current.src = currentAudioUrl;
-      audioRef.current.load();
-      const playAudio = () => {
-        if (audioRef.current && isActive) {
-          audioRef.current.play().catch(error => {
-            console.error("Error playing audio:", error);
-            setState(prevState => ({...prevState, audioError: true}));
-            toast.error("Kan audio niet afspelen. Controleer de URL.");
-          });
-        }
-      };
-      setTimeout(playAudio, 100);
+    } catch (error) {
+      console.error("Error setting up audio playback:", error);
+      setState(prevState => ({...prevState, audioError: true}));
+      toast.error("Fout bij het instellen van audio. Controleer de URL.");
     }
   }, [currentAudioUrl, isActive, pattern, currentPhase, setState]);
 
   // Pause audio when exercise is stopped
   useEffect(() => {
     if (!isActive && audioRef.current) {
+      console.log("Pausing audio as exercise is not active");
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
@@ -296,11 +345,16 @@ export function BreathingAudioManager({
     if (pattern?.endUrl) {
       try {
         if (endAudioRef.current) {
+          console.log("Playing end audio:", pattern.endUrl);
           endAudioRef.current.src = pattern.endUrl;
           endAudioRef.current.load();
-          endAudioRef.current.play().catch(err => {
-            console.error("Error playing end audio:", err);
-          });
+          const playPromise = endAudioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(err => {
+              console.error("Error playing end audio:", err);
+              toast.error("Kon eind-audio niet afspelen");
+            });
+          }
         }
       } catch (error) {
         console.error("Error with end audio:", error);

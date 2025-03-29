@@ -13,15 +13,13 @@ export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
   if (!pattern) {
-    return (
-      <Card>
+    return <Card>
         <CardContent className="p-4 text-center text-muted-foreground">
           Selecteer een ademhalingspatroon om te testen.
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-  
+
   // Verify pattern has all required fields
   const validatePattern = (p: BreathingPattern): boolean => {
     if (!p.inhale || !p.exhale || !p.cycles) {
@@ -32,20 +30,16 @@ export function BreathingExerciseTest({
   };
   
   if (!validatePattern(pattern)) {
-    return (
-      <Card>
+    return <Card>
         <CardContent className="p-4 text-center text-muted-foreground">
           Ongeldig ademhalingspatroon. Controleer de waarden.
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card>
-      <CardContent>
+  
+  return <Card>
+      <CardContent className="p-4">
         <BreathingExerciseTester pattern={pattern} />
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }

@@ -47,6 +47,9 @@ export const BreathingVoicePlayer = ({
         toast.error("De stem 'Vera' heeft niet alle benodigde audio bestanden.");
         return;
       }
+      
+      // Log URLs for debugging
+      console.log("Vera voice URLs:", veraUrls);
       console.log("Starting voice guidance with Vera");
       onPlay("vera");
     }
@@ -61,6 +64,9 @@ export const BreathingVoicePlayer = ({
         toast.error("De stem 'Marco' heeft niet alle benodigde audio bestanden.");
         return;
       }
+      
+      // Log URLs for debugging
+      console.log("Marco voice URLs:", marcoUrls);
       console.log("Starting voice guidance with Marco");
       onPlay("marco");
     }
