@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BreathingAnimation } from "@/components/breathing/breathing-animation";
 import { BreathingPhase } from "@/components/breathing/types";
@@ -39,18 +40,15 @@ export const BreathingExercise: React.FC<BreathingExerciseProps> = ({
       {selectedPattern && showAnimation && (
         <div className="mt-8">
           <BreathingAnimation 
-            technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
+            isActive={isExerciseActive}
+            phase={currentPhase}
+            secondsLeft={0}
+            inhaleDuration={selectedPattern.inhale}
+            holdDuration={selectedPattern.hold1}
+            exhaleDuration={selectedPattern.exhale}
             voiceUrls={null}
             isVoiceActive={isExerciseActive}
-            currentPhase={currentPhase}
-            onPhaseChange={onPhaseChange}
-            currentCycle={currentCycle}
-            totalCycles={selectedPattern.cycles}
-            exerciseCompleted={exerciseCompleted}
-            inhaleTime={selectedPattern.inhale}
-            holdTime={selectedPattern.hold1}
-            exhaleTime={selectedPattern.exhale}
-            pauseTime={selectedPattern.hold2}
+            showPhaseText={true}
           />
         </div>
       )}
