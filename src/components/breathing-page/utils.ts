@@ -1,7 +1,7 @@
 
 import { BreathingPattern, BreathType, VoiceURLs } from "./types";
 import { BreathingPhase } from "@/components/breathing/types";
-import { validateAudioUrl, preloadAudio, checkUrlExists } from "@/components/audio-player/utils";
+import { validateAudioUrl, checkUrlExists } from "@/components/audio-player/utils";
 
 export const calculateBreathDuration = (pattern: BreathingPattern): number => {
   const { inhale, hold1, exhale, hold2, cycles } = pattern;
@@ -23,13 +23,13 @@ export const getBreathPhase = (
   
   // Determine phase based on cycleTime
   if (cycleTime < inhale) {
-    return BreathingPhase.INHALE;
+    return "inhale";
   } else if (cycleTime < inhale + hold1) {
-    return BreathingPhase.HOLD_AFTER_INHALE;
+    return "hold";
   } else if (cycleTime < inhale + hold1 + exhale) {
-    return BreathingPhase.EXHALE;
+    return "exhale";
   } else {
-    return BreathingPhase.HOLD_AFTER_EXHALE;
+    return "pause";
   }
 };
 
@@ -48,14 +48,14 @@ export const getVoiceUrl = (
   voiceUrls: VoiceURLs
 ): string => {
   switch (phase) {
-    case BreathingPhase.INHALE:
+    case "inhale":
       return voiceUrls.inhale || "";
-    case BreathingPhase.HOLD_AFTER_INHALE:
-      return voiceUrls.holdAfterInhale || "";
-    case BreathingPhase.EXHALE:
+    case "hold":
+      return voiceUrls.hold || "";
+    case "exhale":
       return voiceUrls.exhale || "";
-    case BreathingPhase.HOLD_AFTER_EXHALE:
-      return voiceUrls.holdAfterExhale || "";
+    case "pause":
+      return voiceUrls.hold || "";
     default:
       return "";
   }
@@ -93,4 +93,84 @@ export const breathTypeToLabel = (type: BreathType): string => {
     default:
       return type || "Overig";
   }
+};
+
+// Add new utility functions to handle voice URLs loading and activation
+export const loadVoiceUrls = (
+  setVeraVoiceUrls: React.Dispatch<React.SetStateAction<VoiceURLs>>,
+  setMarcoVoiceUrls: React.Dispatch<React.SetStateAction<VoiceURLs>>,
+  defaultVoiceUrls: Record<string, VoiceURLs>,
+  setVoiceUrlsValidated: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+  if (savedVeraUrls) {
+    try {
+      const parsedUrls = JSON.parse(savedVeraUrls);
+      setVeraVoiceUrls(parsedUrls);
+    } catch (error) {
+      console.error("Error loading Vera voice URLs:", error);
+      setVeraVoiceUrls(defaultVoiceUrls.vera);
+    }
+  }
+  
+  const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+  if (savedMarcoUrls) {
+    try {
+      const parsedUrls = JSON.parse(savedMarcoUrls);
+      setMarcoVoiceUrls(parsedUrls);
+    } catch (error) {
+      console.error("Error loading Marco voice URLs:", error);
+      setMarcoVoiceUrls(defaultVoiceUrls.marco);
+    }
+  }
+  
+  setVoiceUrlsValidated(true);
+};
+
+export const handleActivateVoice = async (
+  voice: "vera" | "marco",
+  veraVoiceUrls: VoiceURLs,
+  marcoVoiceUrls: VoiceURLs,
+  selectedPattern: BreathingPattern | null,
+  startAudioRef: React.RefObject<HTMLAudioElement>,
+  setActiveVoice: React.Dispatch<React.SetStateAction<"vera" | "marco" | null>>,
+  setIsExerciseActive: React.Dispatch<React.SetStateAction<boolean>>,
+  setCurrentPhase: React.Dispatch<React.SetStateAction<BreathingPhase>>,
+  setShowAnimation: React.Dispatch<React.SetStateAction<boolean>>,
+  setCurrentCycle: React.Dispatch<React.SetStateAction<number>>,
+  setExerciseCompleted: React.Dispatch<React.SetStateAction<boolean>>
+) => {
+  if (!selectedPattern) {
+    console.error("No breathing pattern selected");
+    return;
+  }
+
+  setActiveVoice(voice);
+  setIsExerciseActive(true);
+  setCurrentPhase("start");
+  setShowAnimation(true);
+  setCurrentCycle(1);
+  setExerciseCompleted(false);
+  
+  const voiceUrls = voice === "vera" ? veraVoiceUrls : marcoVoiceUrls;
+  
+  if (selectedPattern.startUrl && startAudioRef.current) {
+    try {
+      startAudioRef.current.src = selectedPattern.startUrl;
+      startAudioRef.current.load();
+      await startAudioRef.current.play();
+    } catch (error) {
+      console.error("Error playing start audio:", error);
+    }
+  }
+};
+
+export const preloadAudio = async (url: string) => {
+  return new Promise<void>((resolve, reject) => {
+    const audio = new Audio();
+    audio.src = url;
+    audio.oncanplaythrough = () => resolve();
+    audio.onerror = (err) => reject(err);
+    audio.load();
+  });
 };
