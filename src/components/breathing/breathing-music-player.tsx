@@ -1,124 +1,136 @@
 
-import React, { useState, useEffect, useRef } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { AudioPlayer } from "@/components/audio-player";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { Soundscape } from "@/lib/types";
-import { Card, CardContent } from "@/components/ui/card";
-import { Music, Sliders } from "lucide-react";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { AudioPlayer } from "@/components/audio-player";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Music } from "lucide-react";
 
-export function BreathingMusicPlayer() {
+interface BreathingMusicPlayerProps {
+  onVolumeChange?: (volume: number) => void;
+  volume?: number;
+}
+
+export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: BreathingMusicPlayerProps) => {
   const { soundscapes } = useApp();
   const [selectedSoundscape, setSelectedSoundscape] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showEqualizer, setShowEqualizer] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
-  // Filter soundscapes to only include those with the "Persoonlijke Meditatie" category
-  const personalMeditationMusic = soundscapes.filter(
-    soundscape => soundscape.category === "Persoonlijke Meditatie"
+  const [musicVolume, setMusicVolume] = useState(volume);
+  const [activeTab, setActiveTab] = useState("music");
+  
+  // Filter soundscapes to only include those with the "Meditation" or "Relaxation" categories
+  const meditationMusic = soundscapes.filter(
+    soundscape => soundscape.category === "Meditatie" || 
+                 soundscape.category === "Ontspanning" || 
+                 soundscape.category === "Persoonlijke Meditatie" ||
+                 soundscape.category === "Muziek"
   );
+  
+  useEffect(() => {
+    // Update the local volume when the parent component changes it
+    if (volume !== musicVolume) {
+      setMusicVolume(volume);
+    }
+  }, [volume]);
 
   useEffect(() => {
-    // Set the first personal meditation music as default if available
-    if (personalMeditationMusic.length > 0 && !selectedSoundscape) {
-      setSelectedSoundscape(personalMeditationMusic[0]);
+    // Notify parent component of volume changes
+    if (onVolumeChange) {
+      onVolumeChange(musicVolume);
     }
-  }, [personalMeditationMusic, selectedSoundscape]);
-
-  const handleSoundscapeChange = (soundscapeId: string) => {
-    const selected = personalMeditationMusic.find(s => s.id === soundscapeId);
-    if (selected) {
-      setSelectedSoundscape(selected);
-      setIsPlaying(true);
+  }, [musicVolume, onVolumeChange]);
+  
+  // Set default soundscape from Muziek category if available
+  useEffect(() => {
+    if (!selectedSoundscape && meditationMusic.length > 0) {
+      const musicTracks = meditationMusic.filter(track => track.category === "Muziek");
+      if (musicTracks.length > 0) {
+        setSelectedSoundscape(musicTracks[0]);
+      } else {
+        setSelectedSoundscape(meditationMusic[0]);
+      }
+    }
+  }, [meditationMusic, selectedSoundscape]);
+  
+  const handleVolumeChange = (values: number[]) => {
+    const newVolume = values[0];
+    setMusicVolume(newVolume);
+    if (onVolumeChange) {
+      onVolumeChange(newVolume);
     }
   };
 
+  const handleSelectMusic = (soundscape: Soundscape) => {
+    setSelectedSoundscape(soundscape);
+    setIsPlaying(true);
+  };
+  
   return (
-    <div className="space-y-4 mb-6 animate-fade-in">
-      <div className="flex items-center gap-2 mb-2">
-        <Music className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-medium">Persoonlijke Meditatie Muziek</h2>
-      </div>
-
-      <Card className="bg-card/60 backdrop-blur-sm">
-        <CardContent className="p-4">
-          <div className="space-y-4">
-            <Select
-              value={selectedSoundscape?.id}
-              onValueChange={handleSoundscapeChange}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecteer meditatie muziek" />
-              </SelectTrigger>
-              <SelectContent>
-                {personalMeditationMusic.map((soundscape) => (
-                  <SelectItem key={soundscape.id} value={soundscape.id}>
-                    {soundscape.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {selectedSoundscape && (
-              <div className="space-y-3">
+    <div className="space-y-4">
+      <Tabs defaultValue="music" className="w-full" onValueChange={setActiveTab}>
+        <TabsList className="mb-2 w-full grid grid-cols-1">
+          <TabsTrigger value="music" className="flex items-center gap-1">
+            <Music className="h-4 w-4" />
+            <span>Muziek</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="music" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground mr-1">Volume:</span>
+              <Slider
+                value={[musicVolume]}
+                min={0}
+                max={1}
+                step={0.01}
+                onValueChange={handleVolumeChange}
+                className="w-24"
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
+            {meditationMusic.map((soundscape) => (
+              <div 
+                key={soundscape.id}
+                className={`p-2 rounded-md cursor-pointer flex items-center gap-2 hover:bg-muted transition-colors ${selectedSoundscape?.id === soundscape.id ? 'bg-muted border-l-4 border-primary pl-1' : ''}`}
+                onClick={() => handleSelectMusic(soundscape)}
+              >
                 <div 
-                  className="w-full h-40 rounded-md bg-cover bg-center"
-                  style={{ backgroundImage: `url(${selectedSoundscape.coverImageUrl})` }}
-                >
-                  <div className="w-full h-full bg-black/20 backdrop-blur-[2px] flex items-center justify-center">
-                    <div className="text-center text-white p-4">
-                      <h3 className="text-xl font-medium mb-1">{selectedSoundscape.title}</h3>
-                      <p className="text-sm opacity-80">{selectedSoundscape.description}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <AudioPlayer 
-                  audioUrl={selectedSoundscape.audioUrl}
-                  title={selectedSoundscape.title}
-                  ref={audioRef}
-                  isPlayingExternal={isPlaying}
-                  onPlayPauseChange={setIsPlaying}
+                  className="w-8 h-8 rounded-md flex-shrink-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${soundscape.coverImageUrl})` }}
                 />
-                
-                {isPlaying && (
-                  <div className="flex justify-end mt-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center gap-1.5"
-                        >
-                          <Sliders className="h-4 w-4" />
-                          Helende Frequenties
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent 
-                        align="end" 
-                        className="w-72 p-0 bg-background/95 backdrop-blur-sm border-0"
-                      >
-                        <ToneEqualizer
-                          isActive={isPlaying}
-                          audioRef={audioRef}
-                        />
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{soundscape.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{soundscape.category}</p>
+                </div>
+                {selectedSoundscape?.id === soundscape.id && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                    Actief
+                  </span>
                 )}
               </div>
-            )}
+            ))}
           </div>
-        </CardContent>
-      </Card>
+          
+          {selectedSoundscape && (
+            <Card className="border-muted bg-background/30 backdrop-blur-sm">
+              <AudioPlayer 
+                audioUrl={selectedSoundscape.audioUrl} 
+                className="w-full"
+                isPlayingExternal={isPlaying}
+                onPlayPauseChange={setIsPlaying}
+                title={selectedSoundscape.title}
+                volume={musicVolume}
+                showMusicSelector={false}
+              />
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};

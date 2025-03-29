@@ -6,7 +6,17 @@ import { ProgressBar } from "./audio-player/progress-bar";
 import { AudioControls } from "./audio-player/audio-controls";
 import { ErrorMessage } from "./audio-player/error-message";
 import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote } from "./audio-player/utils";
+import { getRandomQuote, getAudioMimeType, isAACFile, validateAudioUrl } from "./audio-player/utils";
+import { Soundscape } from "@/lib/types";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from "@/components/ui/select";
+import { Music, Volume2 } from "lucide-react";
+import { useApp } from "@/context/AppContext";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -22,6 +32,8 @@ interface AudioPlayerProps {
   onPlayPauseChange?: (isPlaying: boolean) => void;
   nextAudioUrl?: string;
   onCrossfadeStart?: () => void;
+  volume?: number;
+  showMusicSelector?: boolean;
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
@@ -37,11 +49,36 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   isPlayingExternal,
   onPlayPauseChange,
   nextAudioUrl,
-  onCrossfadeStart
+  onCrossfadeStart,
+  volume,
+  showMusicSelector = false
 }, ref) => {
+  const { soundscapes } = useApp();
   const [randomQuote] = useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
-  const [audioKey, setAudioKey] = useState(0); // Add a key to force remounting
+  const [audioKey, setAudioKey] = useState(0); 
+  const [isAACFormat, setIsAACFormat] = useState(false);
+  const [selectedMusic, setSelectedMusic] = useState<string>("");
+  
+  // Filter music tracks
+  const musicTracks = soundscapes.filter(track => track.category === "Muziek");
+  
+  // Process and fix audio URL if needed
+  const processedAudioUrl = audioUrl ? validateAudioUrl(audioUrl) : "";
+  const processedSelectedMusic = selectedMusic ? validateAudioUrl(selectedMusic) : "";
+  const effectiveAudioUrl = processedSelectedMusic || processedAudioUrl || "";
+  
+  useEffect(() => {
+    if (!selectedMusic && audioUrl) {
+      setSelectedMusic(audioUrl);
+    }
+  }, [audioUrl]);
+  
+  useEffect(() => {
+    if (effectiveAudioUrl) {
+      setIsAACFormat(isAACFile(effectiveAudioUrl));
+    }
+  }, [effectiveAudioUrl]);
   
   // Initialize all hooks unconditionally
   const {
@@ -50,7 +87,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     isPlaying,
     duration,
     currentTime,
-    volume,
+    volume: audioVolume,
     isLooping,
     isLoaded,
     loadError,
@@ -64,26 +101,36 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     handleVolumeChange,
     skipTime
   } = useAudioPlayer({
-    audioUrl: audioUrl || "",
+    audioUrl: effectiveAudioUrl,
     onEnded,
     onError,
     isPlayingExternal,
     onPlayPauseChange,
-    nextAudioUrl,
+    nextAudioUrl: nextAudioUrl ? validateAudioUrl(nextAudioUrl) : undefined,
     onCrossfadeStart,
-    title
+    title,
+    volume
   });
   
   // Log the audio URL for debugging
   useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
-    if (audioUrl?.includes('marco')) {
-      console.log('Marco audio detected:', audioUrl);
+    console.log(`AudioPlayer attempting to load: ${effectiveAudioUrl || "no URL provided"}`);
+    
+    if (isAACFile(effectiveAudioUrl)) {
+      console.log('AAC audio format detected:', effectiveAudioUrl);
     }
     
     // Reset player when URL changes
     setAudioKey(prev => prev + 1);
-  }, [audioUrl]);
+  }, [effectiveAudioUrl]);
+  
+  // Handle music selection change
+  const handleMusicChange = (value: string) => {
+    setSelectedMusic(value);
+    if (onPlayPauseChange) {
+      onPlayPauseChange(true);
+    }
+  };
   
   // Expose the audio element ref to parent components
   useImperativeHandle(ref, () => audioRef.current!, []);
@@ -94,7 +141,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   }, [nextAudioRef]);
   
   // Early return with placeholder if no audioUrl
-  if (!audioUrl) {
+  if (!effectiveAudioUrl) {
     return (
       <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
         <div className="text-center py-3 text-muted-foreground">
@@ -104,13 +151,70 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     );
   }
   
+  // Get the MIME type based on the file extension
+  const audioMimeType = getAudioMimeType(effectiveAudioUrl);
+  
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
-      {nextAudioUrl && <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous" />}
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
+        <source src={effectiveAudioUrl} type={audioMimeType} />
+        Your browser does not support the audio element.
+      </audio>
       
-      {showTitle && title && (
+      {nextAudioUrl && (
+        <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous">
+          <source src={validateAudioUrl(nextAudioUrl)} type={getAudioMimeType(nextAudioUrl)} />
+        </audio>
+      )}
+      
+      {showMusicSelector && (
+        <div className="mb-4">
+          <h3 className="text-base font-semibold mb-2">Muziek op de achtergrond</h3>
+          <Select
+            value={selectedMusic || audioUrl}
+            onValueChange={handleMusicChange}
+          >
+            <SelectTrigger className="w-full bg-background border-muted">
+              <span className="flex items-center">
+                <Music className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Selecteer muziek">
+                  {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || "Selecteer muziek"}
+                </SelectValue>
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              {musicTracks.map(track => (
+                <SelectItem key={track.id} value={track.audioUrl}>
+                  <div className="flex items-center">
+                    {track.audioUrl === (selectedMusic || audioUrl) && (
+                      <Volume2 className="w-4 h-4 mr-2 text-primary animate-pulse" />
+                    )}
+                    <span>{track.title}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      
+      {isPlaying && (
+        <div className="py-2 px-3 bg-background/30 border border-muted rounded-md flex items-center">
+          <Volume2 className="h-4 w-4 text-primary mr-2" />
+          <p className="text-sm">
+            Nu afspelend: {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || title}
+          </p>
+        </div>
+      )}
+      
+      {showTitle && title && !showMusicSelector && (
         <h3 className="text-lg font-medium">{title}</h3>
+      )}
+      
+      {isAACFormat && (
+        <div className="text-xs text-blue-500 font-medium">
+          AAC audio format
+        </div>
       )}
       
       {loadError && (
@@ -144,7 +248,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
           toggleLoop={toggleLoop}
           isCrossfading={isCrossfading}
           isLiveStream={isLiveStream}
-          volume={volume}
+          volume={audioVolume}
           handleVolumeChange={handleVolumeChange}
           loadError={loadError}
         />

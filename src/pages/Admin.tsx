@@ -7,10 +7,10 @@ import {
   Headphones, 
   Quote, 
   Waves, 
-  Music, 
   Radio, 
   RefreshCw, 
-  LayoutGrid 
+  LayoutGrid,
+  Music 
 } from "lucide-react";
 
 interface AdminTileProps {
