@@ -36,28 +36,6 @@ const getNextPhase = (
   }
 };
 
-/**
- * Returns static circle scale values based on the phase
- */
-const calculateCircleScale = (
-  activePhase: string,
-  shouldShowHoldPhase: boolean
-): number => {
-  switch (activePhase) {
-    case "inhale":
-      return 1.0;
-    case "hold":
-      if (shouldShowHoldPhase) {
-        return 1.0;
-      }
-      return 0.5;
-    case "exhale":
-      return 0.5;
-    default:
-      return 0.5;
-  }
-};
-
 export function useBreathingAnimation({
   inhaleDuration,
   holdDuration,
@@ -72,10 +50,9 @@ export function useBreathingAnimation({
     phase: "rest",
     progress: 0,
     phaseTimeLeft: 0,
-    circleScale: 0.5
   });
   
-  const { phase, progress, phaseTimeLeft, circleScale } = state;
+  const { phase, progress, phaseTimeLeft } = state;
   
   // Determine if hold phase should be shown
   const shouldShowHoldPhase = holdDuration > 0;
@@ -88,30 +65,15 @@ export function useBreathingAnimation({
         phase: "inhale",
         progress: 0,
         phaseTimeLeft: Math.ceil(inhaleDuration / 1000),
-        circleScale: 1.0
       }));
     } else {
       setState(prev => ({
         ...prev,
         phase: "rest",
         progress: 0,
-        circleScale: 0.5
       }));
     }
   }, [isActive, inhaleDuration]);
-
-  // Set fixed circle scale based on current phase
-  useEffect(() => {
-    if (!isActive) return;
-
-    const activePhase = currentPhase || phase;
-    const newScale = calculateCircleScale(activePhase, shouldShowHoldPhase);
-    
-    setState(prev => ({
-      ...prev,
-      circleScale: newScale
-    }));
-  }, [currentPhase, phase, isActive, shouldShowHoldPhase]);
 
   // Breathing phase timer effect
   useEffect(() => {
@@ -152,7 +114,6 @@ export function useBreathingAnimation({
         ...prev, 
         phase: nextPhase,
         progress: 0,
-        circleScale: calculateCircleScale(nextPhase, shouldShowHoldPhase)
       }));
       
       currentPhaseLocal = nextPhase;
@@ -192,16 +153,9 @@ export function useBreathingAnimation({
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, shouldShowHoldPhase]);
 
-  // Helper to get transition duration for animation (now returns 0 to disable animations)
-  const getTransitionDuration = () => {
-    return 0;
-  };
-
   return {
     phase: currentPhase || phase,
     progress,
     phaseTimeLeft,
-    circleScale,
-    getTransitionDuration
   };
 }
