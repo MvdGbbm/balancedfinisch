@@ -2,7 +2,7 @@
 import React from 'react';
 import { Soundscape } from '@/lib/types';
 
-interface SoundscapeSelectorProps {
+export interface SoundscapeSelectorProps {
   soundscapes: Soundscape[];
   selectedSoundscape: Soundscape | null;
   onSelectSoundscape: (soundscape: Soundscape) => void;
@@ -38,3 +38,5 @@ export const SoundscapeSelector: React.FC<SoundscapeSelectorProps> = ({
     </div>
   );
 };
+
+export default SoundscapeSelector;

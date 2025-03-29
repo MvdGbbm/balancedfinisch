@@ -1,6 +1,6 @@
-import { quotes } from "@/data/quotes";
 
 export interface Quote {
+  id: string; // Adding id to match DailyQuote
   text: string;
   author: string;
 }
@@ -97,7 +97,12 @@ export const checkUrlExists = async (url: string): Promise<boolean> => {
 
 export const getRandomQuote = (): Quote => {
   const randomIndex = Math.floor(Math.random() * quotes.length);
-  return quotes[randomIndex];
+  const quote = quotes[randomIndex];
+  return {
+    id: `quote-${randomIndex}`, // Add an id field to match DailyQuote structure
+    text: quote.text,
+    author: quote.author
+  };
 };
 
 export const formatTime = (seconds: number): string => {
@@ -209,3 +214,6 @@ export const fixSupabaseStorageUrl = (url: string): string => {
     return url;
   }
 };
+
+// Import quotes at the end to avoid reference error
+import { quotes } from "@/data/quotes";

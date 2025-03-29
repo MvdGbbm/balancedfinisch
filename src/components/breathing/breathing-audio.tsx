@@ -57,3 +57,6 @@ export const BreathingAudio: React.FC<BreathingAudioProps> = ({
     />
   );
 };
+
+// For backward compatibility if imported as default
+export default BreathingAudio;
