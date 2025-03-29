@@ -37,7 +37,7 @@ export function BreathingCircle({
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
         <BreathingCircleVisual 
           circleScale={circleScale}
-          transitionDuration={getTransitionDuration()}
+          transitionDuration={0}
           className={className}
         >
           <BreathingPhaseDisplay 

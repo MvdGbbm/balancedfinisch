@@ -80,35 +80,12 @@
   }
 }
 
-/* Breathing animation styles */
+/* Static breathing circle styles */
 .breathe-circle {
   @apply relative rounded-full bg-cyan-400 flex items-center justify-center;
   box-shadow: 0 0 30px rgba(45, 212, 191, 0.5);
-  transition: transform 0.3s ease-out;
 }
 
 .breathe-inner-circle {
   @apply rounded-full bg-navy-900 text-white flex items-center justify-center;
-}
-
-@keyframes grow {
-  from { transform: scale(1); }
-  to { transform: scale(1.25); }
-}
-
-@keyframes shrink {
-  from { transform: scale(1.25); }
-  to { transform: scale(1); }
-}
-
-.grow-animation {
-  animation-name: grow;
-  animation-timing-function: ease-in;
-  animation-fill-mode: forwards;
-}
-
-.shrink-animation {
-  animation-name: shrink;
-  animation-timing-function: ease-out;
-  animation-fill-mode: forwards;
 }
