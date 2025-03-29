@@ -94,9 +94,16 @@ export const useBreathingState = ({
         setProgress(0);
         
         if (currentPhaseLocal === "inhale") {
-          setPhase("hold");
-          currentPhaseLocal = "hold";
-          phaseDuration = holdDuration;
+          // Skip hold phase if holdDuration is 0
+          if (holdDuration <= 0) {
+            setPhase("exhale");
+            currentPhaseLocal = "exhale";
+            phaseDuration = exhaleDuration;
+          } else {
+            setPhase("hold");
+            currentPhaseLocal = "hold";
+            phaseDuration = holdDuration;
+          }
         } else if (currentPhaseLocal === "hold") {
           setPhase("exhale");
           currentPhaseLocal = "exhale";

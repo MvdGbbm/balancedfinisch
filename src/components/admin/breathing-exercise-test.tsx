@@ -1,9 +1,12 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { CycleProgress } from "@/components/cycle-progress";
+
 type BreathingPattern = {
   id: string;
   name: string;
@@ -19,9 +22,11 @@ type BreathingPattern = {
   hold2Url?: string;
   endUrl?: string;
 };
+
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
+
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -55,6 +60,7 @@ export function BreathingExerciseTest({
   });
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
+
   useEffect(() => {
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
@@ -75,6 +81,7 @@ export function BreathingExerciseTest({
       }
     }
   }, []);
+
   useEffect(() => {
     setIsActive(false);
     setCurrentPhase("inhale");
@@ -89,6 +96,7 @@ export function BreathingExerciseTest({
       setCurrentAudioUrl(pattern.inhaleUrl || "");
     }
   }, [pattern]);
+
   useEffect(() => {
     if (!pattern) return;
     let url = "";
@@ -137,6 +145,7 @@ export function BreathingExerciseTest({
     setCurrentAudioUrl(url);
     setAudioError(false);
   }, [currentPhase, activeVoice, pattern, veraVoiceUrls, marcoVoiceUrls]);
+
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
     if (currentAudioUrl && isActive) {
@@ -158,12 +167,14 @@ export function BreathingExerciseTest({
       setTimeout(playAudio, 100);
     }
   }, [currentAudioUrl, isActive, pattern]);
+
   useEffect(() => {
     if (!isActive && audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
   }, [isActive]);
+
   useEffect(() => {
     if (!isActive || !pattern) return;
     if (currentPhase === "inhale") {
@@ -174,6 +185,7 @@ export function BreathingExerciseTest({
       setCircleScale(1.5 - exhaleProgress * 0.5);
     }
   }, [currentPhase, secondsLeft, isActive, pattern]);
+
   useEffect(() => {
     if (!pattern) return;
     let timer: number | null = null;
@@ -188,21 +200,24 @@ export function BreathingExerciseTest({
             audioRef.current.currentTime = 0;
           }
           if (currentPhase === "inhale") {
-            setCurrentPhase("hold1");
-            setSecondsLeft(pattern.hold1 || 1);
-            setProgress(0);
-            setCircleScale(1.5);
+            // Skip hold1 phase if hold1 is 0 seconds
+            if (pattern.hold1 <= 0) {
+              setCurrentPhase("exhale");
+              setSecondsLeft(pattern.exhale);
+              setProgress(0);
+            } else {
+              setCurrentPhase("hold1");
+              setSecondsLeft(pattern.hold1 || 1);
+              setProgress(0);
+              setCircleScale(1.5);
+            }
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
             setSecondsLeft(pattern.exhale);
             setProgress(0);
           } else if (currentPhase === "exhale") {
-            if (pattern.hold2) {
-              setCurrentPhase("hold2");
-              setSecondsLeft(pattern.hold2);
-              setProgress(0);
-              setCircleScale(1);
-            } else {
+            // Skip hold2 phase if hold2 is 0 seconds or not defined
+            if (!pattern.hold2 || pattern.hold2 <= 0) {
               if (currentCycle < pattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
@@ -237,6 +252,11 @@ export function BreathingExerciseTest({
                 }
                 toast.success("Test voltooid!");
               }
+            } else {
+              setCurrentPhase("hold2");
+              setSecondsLeft(pattern.hold2);
+              setProgress(0);
+              setCircleScale(1);
             }
           } else if (currentPhase === "hold2") {
             if (currentCycle < pattern.cycles) {
@@ -303,6 +323,7 @@ export function BreathingExerciseTest({
       if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern, exerciseCompleted]);
+
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -317,6 +338,7 @@ export function BreathingExerciseTest({
         return "";
     }
   };
+
   const resetExercise = () => {
     if (!pattern) return;
     setIsActive(false);
@@ -338,6 +360,7 @@ export function BreathingExerciseTest({
     }
     setCurrentAudioUrl(pattern.inhaleUrl || "");
   };
+
   const startWithVera = () => {
     if (isActive && activeVoice === "vera") {
       setIsActive(false);
@@ -360,6 +383,7 @@ export function BreathingExerciseTest({
       }, 100);
     }
   };
+
   const startWithMarco = () => {
     if (isActive && activeVoice === "marco") {
       setIsActive(false);
@@ -382,13 +406,92 @@ export function BreathingExerciseTest({
       }, 100);
     }
   };
+
   if (!pattern) {
     return <Card>
-        
+        <CardHeader>
+          <CardTitle>Test Ademhalingspatroon</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center p-8 text-muted-foreground">
+            Selecteer of maak een ademhalingspatroon om te testen.
+          </div>
+        </CardContent>
       </Card>;
   }
+
   return <Card>
-      
-      
+      <CardHeader>
+        <CardTitle>Test Ademhalingspatroon: {pattern.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <audio ref={audioRef} className="hidden" />
+          <audio ref={endAudioRef} className="hidden" />
+          
+          <div className="flex flex-col items-center justify-center">
+            <div className="bg-primary/10 border-2 border-primary/20 rounded-full p-10 mb-4 relative" 
+                style={{ 
+                  transform: `scale(${circleScale})`,
+                  transition: 'transform 0.5s ease-in-out'
+                }}>
+              <div className="text-2xl font-bold text-primary">{secondsLeft}</div>
+            </div>
+            
+            <Progress value={progress} className="w-64 h-2 mb-2" />
+            
+            <div className="text-xl font-medium mb-4">{getInstructions()}</div>
+            
+            <CycleProgress 
+              currentCycle={currentCycle} 
+              totalCycles={pattern.cycles} 
+            />
+            
+            <div className="flex gap-2 mt-4">
+              <Button 
+                onClick={() => setIsActive(!isActive)} 
+                variant="outline"
+                size="sm"
+                className="min-w-24"
+                disabled={!!activeVoice}
+              >
+                {isActive ? <><Pause className="mr-2 h-4 w-4" /> Pauzeren</> : <><Play className="mr-2 h-4 w-4" /> Starten</>}
+              </Button>
+              
+              <Button 
+                onClick={resetExercise} 
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+            
+            <div className="mt-4 flex flex-col gap-2">
+              <div className="text-sm font-medium mb-1">Met stem begeleiding:</div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={startWithVera} 
+                  variant={activeVoice === "vera" ? "default" : "outline"}
+                  size="sm"
+                  className="min-w-24"
+                >
+                  {isActive && activeVoice === "vera" ? "Stop Vera" : "Start met Vera"}
+                </Button>
+                
+                <Button 
+                  onClick={startWithMarco} 
+                  variant={activeVoice === "marco" ? "default" : "outline"}
+                  size="sm"
+                  className="min-w-24"
+                >
+                  {isActive && activeVoice === "marco" ? "Stop Marco" : "Start met Marco"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
     </Card>;
 }

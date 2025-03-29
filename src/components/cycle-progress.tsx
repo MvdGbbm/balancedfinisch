@@ -5,14 +5,15 @@ import { cn } from "@/lib/utils";
 interface CycleProgressProps {
   currentCycle: number;
   totalCycles: number;
+  className?: string;
 }
 
-export function CycleProgress({ currentCycle, totalCycles }: CycleProgressProps) {
+export function CycleProgress({ currentCycle, totalCycles, className }: CycleProgressProps) {
   // Calculate progress percentage
   const progressPercentage = (currentCycle / totalCycles) * 100;
   
   return (
-    <div className="text-center space-y-2 text-white mt-4">
+    <div className={cn("text-center space-y-2 text-white mt-4", className)}>
       <p className="text-sm text-white/70">
         Cyclus {currentCycle} van {totalCycles}
       </p>
