@@ -79,7 +79,11 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
           break;
         case "hold1":
         case "hold2":
-          url = veraVoiceUrls.hold || "";
+          // Only set hold URL if the hold duration is 1 or more seconds
+          if ((currentPhase === "hold1" && pattern.hold1 >= 1) || 
+              (currentPhase === "hold2" && pattern.hold2 >= 1)) {
+            url = veraVoiceUrls.hold || "";
+          }
           break;
         case "exhale":
           url = veraVoiceUrls.exhale || "";
@@ -92,7 +96,11 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
           break;
         case "hold1":
         case "hold2":
-          url = marcoVoiceUrls.hold || "";
+          // Only set hold URL if the hold duration is 1 or more seconds
+          if ((currentPhase === "hold1" && pattern.hold1 >= 1) || 
+              (currentPhase === "hold2" && pattern.hold2 >= 1)) {
+            url = marcoVoiceUrls.hold || "";
+          }
           break;
         case "exhale":
           url = marcoVoiceUrls.exhale || "";
@@ -104,13 +112,19 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
           url = pattern.inhaleUrl || "";
           break;
         case "hold1":
-          url = pattern.hold1Url || "";
+          // Only set hold1 URL if the hold1 duration is 1 or more seconds
+          if (pattern.hold1 >= 1) {
+            url = pattern.hold1Url || "";
+          }
           break;
         case "exhale":
           url = pattern.exhaleUrl || "";
           break;
         case "hold2":
-          url = pattern.hold2Url || "";
+          // Only set hold2 URL if the hold2 duration is 1 or more seconds
+          if (pattern.hold2 >= 1) {
+            url = pattern.hold2Url || "";
+          }
           break;
       }
     }
