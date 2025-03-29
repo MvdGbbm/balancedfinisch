@@ -1,4 +1,3 @@
-
 import { Meditation, Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -39,7 +38,7 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
   }
   
   try {
-    // Updated to match current Supabase JS client response structure
+    // Get public URL from Supabase storage
     const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(path);
