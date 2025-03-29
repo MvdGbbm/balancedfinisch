@@ -6,9 +6,6 @@ import { Play, Pause, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Soundscape } from "@/lib/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
-import { useToast } from "@/hooks/use-toast";
-import { usePlaylists } from "@/hooks/playlists/use-playlists";
-import { useApp } from "@/context/AppContext";
 
 interface MusicTrackCardProps {
   track: Soundscape;
@@ -28,9 +25,6 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
   onAddToPlaylist
 }) => {
   const [showPlaylistSelector, setShowPlaylistSelector] = React.useState(false);
-  const { soundscapes } = useApp();
-  const { toast } = useToast();
-  const { playlists, handleAddToPlaylist, handleCreatePlaylist } = usePlaylists(soundscapes);
   
   const handlePlayClick = () => {
     if (isCurrentTrack && isPlaying) {
@@ -40,24 +34,10 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
     }
   };
 
-  const handleAddToSelectedPlaylist = (playlistId: string) => {
-    handleAddToPlaylist(track, playlistId);
-    setShowPlaylistSelector(false);
-    toast({
-      title: "Toegevoegd aan afspeellijst",
-      description: `${track.title} is toegevoegd aan de afspeellijst`
-    });
-  };
-
-  const handleCreateNewPlaylist = () => {
-    setShowPlaylistSelector(false);
-    onAddToPlaylist(track);
-  };
-
   return (
-    <Card className="overflow-hidden hover:bg-accent/50 transition-colors border-0 bg-transparent">
-      <CardContent className="p-2 flex items-center gap-2">
-        <div className="relative h-10 w-10 flex-shrink-0 rounded overflow-hidden">
+    <Card className="overflow-hidden hover:bg-accent/50 transition-colors">
+      <CardContent className="p-3 flex items-center gap-3">
+        <div className="relative h-12 w-12 flex-shrink-0 rounded overflow-hidden">
           <img 
             src={track.coverImageUrl} 
             alt={track.title}
@@ -69,42 +49,58 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm line-clamp-1">{track.title}</h3>
-          <p className="text-xs text-muted-foreground line-clamp-1">
+          <h3 className="font-bold text-sm line-clamp-1">{track.title}</h3>
+          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
             {track.description}
           </p>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {track.tags.slice(0, 2).map((tag, index) => (
+              <Badge key={index} variant="outline" className="text-xs py-0 px-1.5">
+                {tag}
+              </Badge>
+            ))}
+            {track.tags.length > 2 && (
+              <span className="text-xs text-muted-foreground">+{track.tags.length - 2}</span>
+            )}
+          </div>
         </div>
         
         <div className="flex gap-1 flex-shrink-0">
           <Button 
             size="icon" 
-            variant={isCurrentTrack && isPlaying ? "default" : "ghost"}
+            variant={isCurrentTrack && isPlaying ? "default" : "outline"}
             onClick={handlePlayClick}
-            className="h-7 w-7"
+            className="h-8 w-8"
           >
             {isCurrentTrack && isPlaying ? (
-              <Pause className="h-3 w-3" />
+              <Pause className="h-3.5 w-3.5" />
             ) : (
-              <Play className="h-3 w-3" />
+              <Play className="h-3.5 w-3.5" />
             )}
           </Button>
           
           <Button 
             size="icon" 
-            variant="ghost"
+            variant="outline"
             onClick={() => setShowPlaylistSelector(true)}
-            className="h-7 w-7"
+            className="h-8 w-8"
           >
-            <Plus className="h-3 w-3" />
+            <Plus className="h-3.5 w-3.5" />
           </Button>
         </div>
         
         <PlaylistSelector
           open={showPlaylistSelector}
           onOpenChange={setShowPlaylistSelector}
-          playlists={playlists}
-          onSelect={handleAddToSelectedPlaylist}
-          onCreateNew={handleCreateNewPlaylist}
+          playlists={[]} /* This will be passed from parent */
+          onSelect={(playlistId) => {
+            onAddToPlaylist(track);
+            setShowPlaylistSelector(false);
+          }}
+          onCreateNew={() => {
+            setShowPlaylistSelector(false);
+            /* This will be handled by parent */
+          }}
         />
       </CardContent>
     </Card>
