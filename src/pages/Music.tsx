@@ -15,6 +15,7 @@ import { MusicHeader } from "@/components/music/MusicHeader";
 import { MusicTabs } from "@/components/music/MusicTabs";
 import { MusicContent } from "@/components/music/MusicContent";
 import { MusicPlayerContainer } from "@/components/music/MusicPlayerContainer";
+import { MusicActionHandlers } from "@/components/music/MusicActionHandlers";
 
 const Music = () => {
   // Core music page state
@@ -88,29 +89,6 @@ const Music = () => {
     }
   };
 
-  // Handlers with simplified parameters
-  const handlePlaylistPlay = (playlist) => {
-    handlePlayPlaylist(
-      playlist, 
-      handleStreamStop, 
-      setCurrentTrack, 
-      setIsPlaying
-    );
-  };
-
-  const handlePlaylistStop = () => {
-    handleStopPlaylist(setCurrentTrack, setIsPlaying);
-  };
-
-  const handleTrackRemove = (trackId, playlistId) => {
-    handleRemoveFromPlaylist(
-      trackId, 
-      playlistId, 
-      setCurrentTrack, 
-      setIsPlaying
-    );
-  };
-
   return (
     <MobileLayout>
       <div className="space-y-6 pb-32">
@@ -123,27 +101,38 @@ const Music = () => {
         <Tabs defaultValue="music" value={activeTab}>
           <MusicTabs activeTab={activeTab} onTabChange={handleTabChange} />
           
-          <MusicContent 
-            activeTab={activeTab}
-            musicTracks={musicTracks}
-            playlists={playlists}
-            selectedPlaylist={selectedPlaylist}
-            isPlaying={isPlaying}
-            currentTrack={currentTrack}
-            previewTrack={previewTrack}
-            radioStreams={radioStreams}
-            isLoadingStreams={isLoadingStreams}
-            hiddenIframeUrl={hiddenIframeUrl}
-            setShowPlaylistCreator={setShowPlaylistCreator}
-            handlePreviewTrack={handlePreviewTrack}
-            handleAddToPlaylist={handleAddToPlaylist}
-            handlePlayPlaylist={handlePlaylistPlay}
-            handleStopPlaylist={handlePlaylistStop}
-            handleRemoveFromPlaylist={handleTrackRemove}
-            handleStreamPlay={handleStreamPlay}
+          <MusicActionHandlers
+            handlePlayPlaylist={handlePlayPlaylist}
+            handleStopPlaylist={handleStopPlaylist}
+            handleRemoveFromPlaylist={handleRemoveFromPlaylist}
+            setCurrentTrack={setCurrentTrack}
+            setIsPlaying={setIsPlaying}
             handleStreamStop={handleStreamStop}
-            getPlaylistTracks={getPlaylistTracks}
-          />
+          >
+            {({ handlePlaylistPlay, handlePlaylistStop, handleTrackRemove }) => (
+              <MusicContent 
+                activeTab={activeTab}
+                musicTracks={musicTracks}
+                playlists={playlists}
+                selectedPlaylist={selectedPlaylist}
+                isPlaying={isPlaying}
+                currentTrack={currentTrack}
+                previewTrack={previewTrack}
+                radioStreams={radioStreams}
+                isLoadingStreams={isLoadingStreams}
+                hiddenIframeUrl={hiddenIframeUrl}
+                setShowPlaylistCreator={setShowPlaylistCreator}
+                handlePreviewTrack={handlePreviewTrack}
+                handleAddToPlaylist={handleAddToPlaylist}
+                handlePlayPlaylist={handlePlaylistPlay}
+                handleStopPlaylist={handlePlaylistStop}
+                handleRemoveFromPlaylist={handleTrackRemove}
+                handleStreamPlay={handleStreamPlay}
+                handleStreamStop={handleStreamStop}
+                getPlaylistTracks={getPlaylistTracks}
+              />
+            )}
+          </MusicActionHandlers>
         </Tabs>
       </div>
       
