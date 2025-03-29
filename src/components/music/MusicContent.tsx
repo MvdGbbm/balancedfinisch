@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -72,9 +71,9 @@ export const MusicContent: React.FC<MusicContentProps> = ({
 
   return (
     <>
-      <TabsContent value="muziek" className="space-y-4">
+      <TabsContent value="muziek" className="space-y-1">
         {musicTracks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col divide-y divide-border">
             {musicTracks.map((track) => (
               <MusicTrackCard
                 key={track.id}
