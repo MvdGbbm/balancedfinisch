@@ -100,3 +100,37 @@ export const getRandomQuote = () => {
   
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
+
+// Format time in seconds to MM:SS format
+export const formatTime = (seconds: number): string => {
+  if (isNaN(seconds)) return '00:00';
+  
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+// Helper for Supabase storage URLs
+export const fixSupabaseStorageUrl = (url: string): string => {
+  // Remove any query parameters
+  return url.split('?')[0];
+};
+
+// Detect audio MIME type from URL
+export const getAudioMimeType = (url: string): string => {
+  const extension = url.split('.').pop()?.toLowerCase();
+  
+  switch (extension) {
+    case 'mp3':
+      return 'audio/mpeg';
+    case 'wav':
+      return 'audio/wav';
+    case 'ogg':
+      return 'audio/ogg';
+    case 'm4a':
+      return 'audio/mp4';
+    default:
+      return 'audio/mpeg'; // Default fallback
+  }
+};
