@@ -1,20 +1,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import { getRandomQuote, validateAudioUrl, checkUrlExists } from "@/components/audio-player/utils";
-import MeditationErrorDisplay from "@/components/meditation/meditation-error-display";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-
-interface MeditationPlayerContainerProps {
-  isVisible: boolean;
-  selectedMeditation: Meditation | null;
-}
+import { validateAudioUrl, checkUrlExists } from "@/components/audio-player/utils";
+import { MeditationPlayerContainerProps } from "./types";
+import { MeditationErrorView } from "./meditation-error-view";
+import { MeditationLoadingView } from "./meditation-loading-view";
+import { MeditationCoverImage, ImageErrorMessage } from "./meditation-cover-image";
+import { MeditationPlayerControls } from "./meditation-player-controls";
+import { MeditationAudioPlayer } from "./meditation-audio-player";
 
 export function MeditationPlayerContainer({ 
   isVisible, 
@@ -25,7 +19,6 @@ export function MeditationPlayerContainer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
-  const [randomQuote] = useState(getRandomQuote());
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -81,8 +74,8 @@ export function MeditationPlayerContainer({
   }
   
   const hasValidAudio = !!selectedMeditation.audioUrl || 
-                        !!selectedMeditation.veraLink || 
-                        !!selectedMeditation.marcoLink;
+                      !!selectedMeditation.veraLink || 
+                      !!selectedMeditation.marcoLink;
   
   const hasValidImage = !!selectedMeditation.coverImageUrl;
   
@@ -196,152 +189,47 @@ export function MeditationPlayerContainer({
   };
 
   if (isLoadingAudio) {
-    return (
-      <div className="mt-4 space-y-4">
-        <div className="flex justify-between items-center mb-2">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-8 w-20" />
-        </div>
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    );
+    return <MeditationLoadingView />;
   }
 
   if (!hasValidAudio || audioError) {
     return (
-      <div className="mt-4">
-        <MeditationErrorDisplay
-          message="Geen audio beschikbaar voor deze meditatie."
-          additionalDetails={
-            selectedMeditation.veraLink || selectedMeditation.marcoLink 
-              ? "Probeer de externe links hieronder." 
-              : "Probeer een andere meditatie te selecteren."
-          }
-          onRetry={handleRetryAudio}
-          isRetrying={isRetrying}
-        />
-        
-        {(selectedMeditation.veraLink || selectedMeditation.marcoLink) && (
-          <div className="mt-4 flex gap-2">
-            <Button
-              variant="outline"
-              className={`flex-1 ${selectedMeditation.veraLink ? 'hover:bg-blue-600 hover:text-white' : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('vera')}
-              disabled={!selectedMeditation.veraLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Probeer Vera
-            </Button>
-            
-            <Button
-              variant="outline"
-              className={`flex-1 ${selectedMeditation.marcoLink ? 'hover:bg-purple-600 hover:text-white' : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('marco')}
-              disabled={!selectedMeditation.marcoLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Probeer Marco
-            </Button>
-          </div>
-        )}
-      </div>
+      <MeditationErrorView 
+        selectedMeditation={selectedMeditation}
+        handleRetryAudio={handleRetryAudio}
+        isRetrying={isRetrying}
+        onPlayExternalLink={handlePlayExternalLink}
+      />
     );
   }
 
   return (
     <div className="mt-4">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="font-medium">Nu speelt: {selectedMeditation.title}</h3>
-        {isPlaying ? (
-          <Button 
-            variant="destructive"
-            size="sm"
-            onClick={handleStopPlaying}
-            className="flex items-center gap-1"
-          >
-            <StopCircle className="h-4 w-4" />
-            Stoppen
-          </Button>
-        ) : (
-          <Button 
-            variant="default"
-            size="sm"
-            onClick={handleStartPlaying}
-            className="flex items-center gap-1"
-          >
-            <PlayCircle className="h-4 w-4" />
-            Start
-          </Button>
-        )}
-      </div>
+      <MeditationPlayerControls 
+        isPlaying={isPlaying}
+        onStop={handleStopPlaying}
+        onStart={handleStartPlaying}
+        title={selectedMeditation.title}
+      />
 
       {hasValidImage && !imageError && (
-        <div className="mb-4">
-          <img 
-            src={selectedMeditation.coverImageUrl}
-            alt={selectedMeditation.title}
-            className="w-full h-48 object-cover rounded-lg"
-            onError={handleImageError}
-          />
-        </div>
+        <MeditationCoverImage
+          imageUrl={selectedMeditation.coverImageUrl}
+          title={selectedMeditation.title}
+          onError={handleImageError}
+        />
       )}
       
-      {imageError && (
-        <Alert className="mb-4" variant="default">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.
-          </AlertDescription>
-        </Alert>
-      )}
+      {imageError && <ImageErrorMessage />}
       
-      <div className="mb-4">
-        <QuoteDisplay quote={randomQuote} transparentBackground={true} />
-      </div>
-      
-      <div className="flex gap-2 mb-4">
-        <Button
-          variant="outline"
-          className={`flex-1 ${selectedMeditation.veraLink ? 
-            (currentAudioUrl === selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-blue-600 hover:text-white') 
-            : 'opacity-50 bg-transparent'}`}
-          onClick={() => handlePlayExternalLink('vera')}
-          disabled={!selectedMeditation.veraLink}
-          type="button"
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Vera
-        </Button>
-        
-        <Button
-          variant="outline"
-          className={`flex-1 ${selectedMeditation.marcoLink ? 
-            (currentAudioUrl === selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'hover:bg-purple-600 hover:text-white') 
-            : 'opacity-50 bg-transparent'}`}
-          onClick={() => handlePlayExternalLink('marco')}
-          disabled={!selectedMeditation.marcoLink}
-          type="button"
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Marco
-        </Button>
-      </div>
-      
-      <AudioPlayer 
+      <MeditationAudioPlayer
         key={playerKey}
-        audioUrl={currentAudioUrl || ''}
-        title={selectedMeditation.title}
-        showTitle
-        showControls
-        showQuote={false}
-        className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
-        onError={handleAudioError}
-        isPlayingExternal={isPlaying}
-        onPlayPauseChange={setIsPlaying}
-        ref={audioRef}
+        currentAudioUrl={currentAudioUrl}
+        selectedMeditation={selectedMeditation}
+        handleAudioError={handleAudioError}
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
+        audioRef={audioRef}
       />
     </div>
   );
