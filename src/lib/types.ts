@@ -33,11 +33,12 @@ export interface DailyQuote {
   date?: string;
   tags?: string[];
   category?: string;
+  backgroundClass?: string;
 }
 
 export interface JournalEntry {
   id: string;
-  title: string;
+  title?: string;  // Made optional since some code doesn't provide it
   content: string;
   date: string;
   mood?: string;
@@ -48,6 +49,10 @@ export interface PlannerEvent {
   id: string;
   title: string;
   description?: string;
+  date?: string;        // Added for Planner.tsx
+  time?: string;        // Added for Planner.tsx
+  duration?: number;    // Added for Planner.tsx
+  meditationId?: string; // Added for Planner.tsx
   startDate: string;
   endDate?: string;
   allDay?: boolean;
@@ -59,10 +64,22 @@ export interface PlannerEvent {
 export interface BreathingPattern {
   id: string;
   name: string;
-  inhaleDuration: number;
-  holdDuration: number;
-  exhaleDuration: number;
+  inhale: number;       // Changed from inhaleDuration to match usage
+  hold1: number;        // Changed from holdDuration
+  exhale: number;       // Changed from exhaleDuration
+  hold2?: number;       // Added based on usage
   cycles: number;
   description: string;
   category?: string;
 }
+
+// Voice URLs interface used in breathing components
+export interface VoiceUrls {
+  start?: string;
+  inhale: string;
+  hold: string;
+  exhale: string;
+}
+
+// Added for consistent reference in breathing components
+export type ActiveVoice = "vera" | "marco" | "none";
