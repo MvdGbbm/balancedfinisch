@@ -1,7 +1,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
-import { BreathingPattern } from "../types";
+import { BreathingPattern, VoiceURLs } from "../types";
 
 export function useBreathingAudio(
   pattern: BreathingPattern | null,
@@ -9,8 +9,8 @@ export function useBreathingAudio(
   currentPhase: "inhale" | "hold1" | "exhale" | "hold2",
   activeVoice: "vera" | "marco" | null,
   voiceUrls: {
-    vera: { inhale: string; hold: string; exhale: string };
-    marco: { inhale: string; hold: string; exhale: string };
+    vera: VoiceURLs;
+    marco: VoiceURLs;
   }
 ) {
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
