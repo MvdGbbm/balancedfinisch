@@ -9,7 +9,6 @@ import { PlaylistCard } from "./PlaylistCard";
 import { RadioStreamCard } from "./RadioStreamCard";
 import { RadioStream } from "@/hooks/use-radio-streams";
 import { MusicTrackCard } from "./MusicTrackCard";
-import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 
 interface MusicContentProps {
   activeTab: string;
@@ -165,17 +164,6 @@ export const MusicContent: React.FC<MusicContentProps> = ({
           </div>
         )}
       </TabsContent>
-
-      <PlaylistSelector
-        open={showPlaylistSelector}
-        onOpenChange={setShowPlaylistSelector}
-        playlists={playlists}
-        onSelect={handleSelectPlaylist}
-        onCreateNew={() => {
-          setShowPlaylistSelector(false);
-          setShowPlaylistCreator(true);
-        }}
-      />
     </>
   );
 };

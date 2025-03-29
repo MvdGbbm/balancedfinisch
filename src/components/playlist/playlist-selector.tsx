@@ -45,7 +45,6 @@ export function PlaylistSelector({
           className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
         >
           <Plus className="h-4 w-4" />
-          Toevoegen aan
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 

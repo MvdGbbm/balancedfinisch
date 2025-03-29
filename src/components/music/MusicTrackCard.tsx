@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Plus, Volume2 } from "lucide-react";
+import { Play, Pause, Volume2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Soundscape } from "@/lib/types";
 
@@ -65,7 +65,7 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
         <Volume2 className="h-4 w-4 text-primary animate-pulse flex-shrink-0" />
       )}
       
-      <div className="flex gap-1 flex-shrink-0">
+      <div className="flex-shrink-0">
         <Button 
           size="icon" 
           variant={isCurrentTrack && isPlaying ? "default" : "ghost"}
@@ -77,14 +77,6 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
           ) : (
             <Play className="h-4 w-4" />
           )}
-        </Button>
-        <Button 
-          size="icon" 
-          variant="ghost"
-          onClick={() => onAddToPlaylist(track)}
-          className="h-8 w-8"
-        >
-          <Plus className="h-4 w-4" />
         </Button>
       </div>
     </div>
