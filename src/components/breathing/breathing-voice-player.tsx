@@ -32,7 +32,7 @@ export const BreathingVoicePlayer = ({
   onPlay,
   onPause,
   activeVoice,
-  headerText = "Kies een stem",
+  headerText = "Kies een stem voor begeleiding",
   volume = 0.8,
   onVolumeChange
 }: BreathingVoicePlayerProps) => {

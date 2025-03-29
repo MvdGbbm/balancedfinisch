@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -106,7 +105,6 @@ export function BreathingExerciseTest({
           break;
         case "hold1":
         case "hold2":
-          // Only set the URL if it exists
           url = veraVoiceUrls.hold || "";
           break;
         case "exhale":
@@ -120,7 +118,6 @@ export function BreathingExerciseTest({
           break;
         case "hold1":
         case "hold2":
-          // Only set the URL if it exists
           url = marcoVoiceUrls.hold || "";
           break;
         case "exhale":
@@ -150,7 +147,6 @@ export function BreathingExerciseTest({
   useEffect(() => {
     if (!pattern || !audioRef.current) return;
     
-    // Skip audio playback if no URL is provided for this phase
     if (!currentAudioUrl && isActive) {
       console.log(`No audio URL for ${currentPhase} phase, skipping playback`);
       return;
@@ -203,21 +199,18 @@ export function BreathingExerciseTest({
         if (secondsLeft > 1) {
           setSecondsLeft(seconds => seconds - 1);
         } else {
-          // Always pause any playing audio before transitioning
           if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
           }
           
           if (currentPhase === "inhale") {
-            // Only move to hold1 if there is a hold time
             if (pattern.hold1 > 0) {
               setCurrentPhase("hold1");
               setSecondsLeft(pattern.hold1);
               setProgress(0);
               setCircleScale(1.5);
             } else {
-              // Skip hold1 if hold time is 0
               setCurrentPhase("exhale");
               setSecondsLeft(pattern.exhale);
               setProgress(0);
@@ -233,7 +226,6 @@ export function BreathingExerciseTest({
               setProgress(0);
               setCircleScale(1);
             } else {
-              // Manage cycle completion or exercise completion
               if (currentCycle < pattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
@@ -245,7 +237,6 @@ export function BreathingExerciseTest({
               }
             }
           } else if (currentPhase === "hold2") {
-            // Manage cycle completion or exercise completion
             if (currentCycle < pattern.cycles) {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");
@@ -259,7 +250,6 @@ export function BreathingExerciseTest({
         }
       }, 1000);
       
-      // Progress animation
       const getCurrentPhaseDuration = () => {
         switch (currentPhase) {
           case "inhale":
@@ -367,7 +357,6 @@ export function BreathingExerciseTest({
         audioRef.current.currentTime = 0;
       }
     } else {
-      // Check if essential URLs are provided
       if (!veraVoiceUrls.inhale || !veraVoiceUrls.exhale) {
         toast.error("De Vera stem heeft minimaal inademings- en uitademings-URL's nodig");
         return;
@@ -398,7 +387,6 @@ export function BreathingExerciseTest({
         audioRef.current.currentTime = 0;
       }
     } else {
-      // Check if essential URLs are provided
       if (!marcoVoiceUrls.inhale || !marcoVoiceUrls.exhale) {
         toast.error("De Marco stem heeft minimaal inademings- en uitademings-URL's nodig");
         return;
@@ -422,9 +410,6 @@ export function BreathingExerciseTest({
 
   if (!pattern) {
     return <Card>
-        <CardHeader>
-          <CardTitle>Test Ademhalingsoefening</CardTitle>
-        </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">Selecteer eerst een ademhalingstechniek om te testen.</p>
         </CardContent>
@@ -432,9 +417,6 @@ export function BreathingExerciseTest({
   }
 
   return <Card>
-      <CardHeader>
-        <CardTitle>Test Ademhalingsoefening: {pattern.name}</CardTitle>
-      </CardHeader>
       <CardContent>
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
