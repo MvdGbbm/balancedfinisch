@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Music as MusicIcon, Play, StopCircle, Volume2 } from "lucide-react";
 import { Soundscape } from "@/lib/types";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
+import { Playlist } from "@/components/playlist/types";
 
 interface MusicTrackCardProps {
   track: Soundscape;
@@ -14,6 +15,7 @@ interface MusicTrackCardProps {
   onPreviewTrack: (track: Soundscape) => void;
   onAddToPlaylist: (track: Soundscape, playlistId: string) => void;
   onShowPlaylistCreator: () => void;
+  playlists: Playlist[];
 }
 
 export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
@@ -22,7 +24,8 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
   isCurrentTrack,
   onPreviewTrack,
   onAddToPlaylist,
-  onShowPlaylistCreator
+  onShowPlaylistCreator,
+  playlists
 }) => {
   const isActive = isCurrentTrack && isPlaying;
   
@@ -86,6 +89,7 @@ export const MusicTrackCard: React.FC<MusicTrackCardProps> = ({
           </div>
           
           <PlaylistSelector 
+            playlists={playlists}
             onSelectPlaylist={(playlist) => onAddToPlaylist(track, playlist.id)}
             onCreateNew={onShowPlaylistCreator}
           />

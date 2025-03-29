@@ -124,6 +124,7 @@ const Music = () => {
                       }
                     }}
                     onShowPlaylistCreator={() => setShowPlaylistCreator(true)}
+                    playlists={playlists}
                   />
                 ))}
               </div>
