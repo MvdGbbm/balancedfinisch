@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Soundscape } from "@/lib/types";
 import { useToast } from "./use-toast";
 import { toast } from "sonner";
@@ -10,26 +10,58 @@ export function useMusicPlayer() {
   const [previewTrack, setPreviewTrack] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const audioInitialized = useRef(false);
 
   // Ensure audio element is properly initialized
   useEffect(() => {
-    if (!audioPlayerRef.current) {
+    if (!audioPlayerRef.current && typeof window !== 'undefined') {
       audioPlayerRef.current = new Audio();
       audioPlayerRef.current.preload = "auto";
       
       // Add error handler
-      audioPlayerRef.current.addEventListener('error', (e) => {
+      const handleError = (e: ErrorEvent) => {
         console.error('Audio element error:', e);
         toast.error("Er is een fout opgetreden bij het afspelen van de audio.");
-      });
+        setIsPlaying(false);
+      };
+      
+      audioPlayerRef.current.addEventListener('error', handleError as EventListener);
+      audioInitialized.current = true;
+      
+      console.log('Audio player initialized');
     }
     
     return () => {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.pause();
         audioPlayerRef.current.src = '';
+        audioPlayerRef.current = null;
+        audioInitialized.current = false;
       }
     };
+  }, []);
+
+  // Play audio function
+  const playAudio = useCallback((url: string) => {
+    if (!audioPlayerRef.current) return;
+    
+    try {
+      audioPlayerRef.current.src = url;
+      audioPlayerRef.current.load();
+      
+      const playPromise = audioPlayerRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error('Error playing track:', error);
+          toast.error("Kon de track niet afspelen. Probeer het opnieuw.");
+          setIsPlaying(false);
+        });
+      }
+    } catch (error) {
+      console.error('Error setting up audio playback:', error);
+      toast.error("Kon de audio niet laden. Probeer het opnieuw.");
+      setIsPlaying(false);
+    }
   }, []);
 
   // Update audio source when current track changes
@@ -38,17 +70,11 @@ export function useMusicPlayer() {
     
     if (track && isPlaying && audioPlayerRef.current) {
       console.log(`Setting audio source to: ${track.audioUrl}`);
-      audioPlayerRef.current.src = track.audioUrl;
-      
-      const playPromise = audioPlayerRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.error('Error playing track:', error);
-          toast.error("Kon de track niet afspelen. Probeer het opnieuw.");
-        });
-      }
+      playAudio(track.audioUrl);
+    } else if (!isPlaying && audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
     }
-  }, [currentTrack, previewTrack, isPlaying]);
+  }, [currentTrack, previewTrack, isPlaying, playAudio]);
 
   const handlePreviewTrack = (track: Soundscape) => {
     if (previewTrack?.id === track.id && isPlaying) {
@@ -106,6 +132,7 @@ export function useMusicPlayer() {
     audioPlayerRef,
     handlePreviewTrack,
     handleStopPreview,
-    currentPlayingTrack
+    currentPlayingTrack,
+    playAudio
   };
 }

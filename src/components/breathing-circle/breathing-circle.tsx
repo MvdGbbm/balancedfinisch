@@ -40,12 +40,13 @@ export function BreathingCircle({
           transitionDuration={getTransitionDuration()}
           className={className}
         >
-          <BreathingPhaseDisplay 
-            activePhase={phase} 
-            phaseTimeLeft={secondsLeft || phaseTimeLeft} 
-          />
+          {/* Note: We're not rendering BreathingPhaseDisplay here because we want
+              the parent component to control where and how it's displayed */}
         </BreathingCircleVisual>
       </div>
     </div>
   );
 }
+
+// Make sure to export as default for components that import it that way
+export default BreathingCircle;

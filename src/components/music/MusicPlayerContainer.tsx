@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Soundscape } from "@/lib/types";
 import { Playlist } from "@/components/playlist/types";
 import { MusicPlayer } from "./MusicPlayer";
@@ -42,6 +42,21 @@ export const MusicPlayerContainer: React.FC<MusicPlayerContainerProps> = ({
   previewTrack
 }) => {
   const shouldShowPlayer = isPlaying || isStreamPlaying || hiddenIframeUrl;
+  
+  // Ensure audio is loaded when current track changes
+  useEffect(() => {
+    if (currentPlayingTrack && isPlaying && audioPlayerRef.current) {
+      console.log('MusicPlayerContainer: Loading audio for track:', currentPlayingTrack.title);
+    }
+  }, [currentPlayingTrack, isPlaying, audioPlayerRef]);
+
+  // Handle audio errors
+  const handleAudioError = (e: ErrorEvent) => {
+    console.error('Audio playback error:', e);
+    if (isPlaying) {
+      setIsPlaying(false);
+    }
+  };
 
   return (
     <>
@@ -85,7 +100,10 @@ export const MusicPlayerContainer: React.FC<MusicPlayerContainerProps> = ({
       {/* Audio element with ref */}
       <AudioElement 
         audioRef={audioPlayerRef} 
-        src={currentPlayingTrack?.audioUrl} 
+        src={currentPlayingTrack?.audioUrl}
+        autoPlay={isPlaying}
+        onEnded={handleTrackEnded}
+        onError={handleAudioError}
       />
     </>
   );
