@@ -68,7 +68,7 @@ export function PlaylistSelector({
           
           {activeTab === "playlists" && (
             <>
-              <DropdownMenuLabel>Afspeellijsten</DropdownMenuLabel>
+              <DropdownMenuLabel>Toevoegen aan afspeellijst</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
               {playlists.length > 0 ? (
