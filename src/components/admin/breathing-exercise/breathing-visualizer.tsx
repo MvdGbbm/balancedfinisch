@@ -9,6 +9,7 @@ interface BreathingVisualizerProps {
   holdEnabled?: boolean;
 }
 export function BreathingVisualizer({
+  circleScale,
   isActive,
   currentPhase,
   progress,

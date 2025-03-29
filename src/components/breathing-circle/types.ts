@@ -14,6 +14,8 @@ export interface BreathingCircleProps {
 }
 
 export interface BreathingCircleVisualProps {
+  circleScale: number;
+  transitionDuration: number;
   className?: string;
   children: React.ReactNode;
 }
@@ -38,4 +40,5 @@ export interface BreathingAnimationState {
   phase: "inhale" | "hold" | "exhale" | "rest";
   progress: number;
   phaseTimeLeft: number;
+  circleScale: number;
 }

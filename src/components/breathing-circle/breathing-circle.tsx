@@ -20,7 +20,9 @@ export function BreathingCircle({
   const { 
     phase, 
     phaseTimeLeft, 
-    progress
+    progress, 
+    circleScale, 
+    getTransitionDuration 
   } = useBreathingAnimation({
     inhaleDuration,
     holdDuration,
@@ -35,6 +37,8 @@ export function BreathingCircle({
     <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
         <BreathingCircleVisual 
+          circleScale={circleScale}
+          transitionDuration={0}
           className={className}
         >
           <BreathingPhaseDisplay 

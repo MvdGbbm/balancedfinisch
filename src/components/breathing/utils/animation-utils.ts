@@ -1,16 +1,16 @@
 
 /**
  * Animation and Visual Utilities
- * Functions for managing breathing circle visuals without animations
+ * Functions for managing breathing circle animations and visual effects
  */
 
 import { BreathingPhase } from '../types';
 
 /**
- * Gets the circle static class based on the current phase
+ * Gets the circle animation class based on the current phase
  * @param phase - The current breathing phase
  * @param exerciseCompleted - Whether the exercise is completed
- * @returns The CSS class for the circle
+ * @returns The CSS class for the animation
  */
 export const getCircleAnimationClass = (
   phase: BreathingPhase, 
@@ -24,9 +24,9 @@ export const getCircleAnimationClass = (
     case 'start':
       return 'scale-100'; // No animation for start phase
     case 'inhale':
-      return 'scale-100';
+      return 'scale-125';
     case 'hold':
-      return 'scale-100';
+      return 'scale-125';
     case 'exhale':
       return 'scale-100';
     default:
@@ -37,21 +37,36 @@ export const getCircleAnimationClass = (
 /**
  * Gets an appropriate scale value for a breathing circle based on the phase
  * @param phase - Current breathing phase
- * @returns Scale value (1.0 for all phases)
+ * @returns Scale value (between 0.75 and 1.25)
  */
 export const getCircleScale = (
   phase: BreathingPhase
 ): number => {
-  return 1.0;
+  const baseScale = 0.85;
+  const maxScale = 1.25;
+  const minScale = 0.75;
+  
+  switch (phase) {
+    case 'inhale':
+      return maxScale;
+    case 'hold':
+      return maxScale;
+    case 'exhale':
+      return minScale;
+    case 'start':
+    case 'end':
+    default:
+      return baseScale;
+  }
 };
 
 /**
  * Gets a CSS transition duration string for animations
  * @param phaseTime - The duration of the phase in seconds
- * @returns CSS transition duration string (now always 0)
+ * @returns CSS transition duration string
  */
 export const getTransitionDuration = (phaseTime: number): string => {
-  return '0s';
+  return `${0.5}s`;
 };
 
 /**
