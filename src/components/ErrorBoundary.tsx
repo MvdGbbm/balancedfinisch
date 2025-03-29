@@ -15,7 +15,7 @@ export const ErrorBoundary = () => {
   
   if (isRouteErrorResponse(error)) {
     statusCode = error.status.toString();
-    errorMessage = error.statusText || error.data?.message || errorMessage;
+    errorMessage = error.statusText || error.data.message || errorMessage;
   } else if (error instanceof Error) {
     errorMessage = error.message;
   } else if (typeof error === 'string') {

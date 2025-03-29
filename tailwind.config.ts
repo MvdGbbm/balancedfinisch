@@ -66,20 +66,6 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				navy: {
-					900: '#0F1628',  // Existing navy-900 color
-					950: 'hsl(var(--navy-950))'
-				},
-				tranquil: {
-					300: 'hsl(var(--tranquil-300, 174 60% 50%))',
-					400: 'hsl(var(--tranquil-400))',
-					500: 'hsl(var(--tranquil-500, 174 70% 45%))',
-					600: 'hsl(var(--tranquil-600, 174 80% 40%))',
-					700: 'hsl(var(--tranquil-700, 174 90% 35%))'
-				},
-				teal: {
-					700: '#0D6E6E',  // Adding teal-700 for button backgrounds
 				}
 			},
 			borderRadius: {
