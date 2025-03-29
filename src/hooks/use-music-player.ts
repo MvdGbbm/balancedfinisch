@@ -29,8 +29,8 @@ export function useMusicPlayer() {
     setPreviewTrack(track);
     setIsPlaying(true);
     
-    toast({
-      title: "Voorluisteren gestart",
+    // Use sonner toast instead of the shadcn/ui toast
+    toast("Voorluisteren gestart", {
       description: `${track.title} wordt afgespeeld`
     });
   };
@@ -44,8 +44,8 @@ export function useMusicPlayer() {
     setPreviewTrack(null);
     setIsPlaying(false);
     
-    toast({
-      title: "Voorluisteren gestopt",
+    // Use sonner toast instead of the shadcn/ui toast
+    toast("Voorluisteren gestopt", {
       description: "De muziek is gestopt"
     });
   };
