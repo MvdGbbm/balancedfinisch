@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Soundscape } from "@/lib/types";
 import { Playlist } from "@/components/playlist/types";
-import { MusicTrackCard } from "./MusicTrackCard";
 import { PlaylistCard } from "./PlaylistCard";
 import { RadioStreamCard } from "./RadioStreamCard";
 import { RadioStream } from "@/hooks/use-radio-streams";
@@ -55,29 +54,6 @@ export const MusicContent: React.FC<MusicContentProps> = ({
 }) => {
   return (
     <>
-      <TabsContent value="music" className="space-y-4">
-        {musicTracks.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4">
-            {musicTracks.map((track) => (
-              <MusicTrackCard
-                key={track.id}
-                track={track}
-                isPlaying={isPlaying}
-                isCurrentTrack={(currentTrack?.id === track.id || previewTrack?.id === track.id)}
-                onPreviewTrack={handlePreviewTrack}
-                onAddToPlaylist={handleAddToPlaylist}
-                onShowPlaylistCreator={() => setShowPlaylistCreator(true)}
-                playlists={playlists}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Geen muziek tracks gevonden</p>
-          </div>
-        )}
-      </TabsContent>
-      
       <TabsContent value="playlists" className="space-y-4">
         <div className="flex justify-end">
           <Button onClick={() => setShowPlaylistCreator(true)}>
