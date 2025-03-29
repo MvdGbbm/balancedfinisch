@@ -53,8 +53,9 @@ export const BreathingVoicePlayer = ({
     }
   };
   
-  const areVeraUrlsValid = veraUrls.inhale && veraUrls.hold && veraUrls.exhale;
-  const areMarcoUrlsValid = marcoUrls.inhale && marcoUrls.hold && marcoUrls.exhale;
+  // Checking minimal requirements: inhale and exhale audio must be configured
+  const areVeraUrlsValid = veraUrls.inhale && veraUrls.exhale;
+  const areMarcoUrlsValid = marcoUrls.inhale && marcoUrls.exhale;
   
   return (
     <Card className="overflow-hidden border-muted bg-card/50 backdrop-blur-sm">
@@ -90,7 +91,7 @@ export const BreathingVoicePlayer = ({
         
         {(!areVeraUrlsValid || !areMarcoUrlsValid) && (
           <p className="text-xs text-muted-foreground mt-2">
-            Let op: Niet alle stemaudio is geconfigureerd. Ga naar de Admin om audio te configureren.
+            Let op: Minimaal de inadem- en uitademstem moeten geconfigureerd zijn. Ga naar de Admin om audio te configureren.
           </p>
         )}
       </CardContent>

@@ -27,12 +27,16 @@ export function VoiceUrlForm({ form, onSubmit, voiceName }: VoiceUrlFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="mb-4 text-sm text-muted-foreground">
+          <p>Alleen de inadem- en uitademgeluiden zijn verplicht. De andere zijn optioneel.</p>
+        </div>
+        
         <FormField 
           control={form.control} 
           name="start" 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Start Audio URL</FormLabel>
+              <FormLabel>Start Audio URL <span className="text-xs text-muted-foreground">(optioneel)</span></FormLabel>
               <FormControl>
                 <Input {...field} placeholder="https://voorbeeld.com/start.mp3" />
               </FormControl>
@@ -45,7 +49,7 @@ export function VoiceUrlForm({ form, onSubmit, voiceName }: VoiceUrlFormProps) {
           name="inhale" 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Inademen Audio URL</FormLabel>
+              <FormLabel>Inademen Audio URL <span className="text-xs text-muted-foreground font-bold">(verplicht)</span></FormLabel>
               <FormControl>
                 <Input {...field} placeholder="https://voorbeeld.com/adem-in.mp3" />
               </FormControl>
@@ -73,7 +77,7 @@ export function VoiceUrlForm({ form, onSubmit, voiceName }: VoiceUrlFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className={!isHoldEnabled ? "text-muted-foreground" : ""}>
-                Vasthouden Audio URL
+                Vasthouden Audio URL <span className="text-xs text-muted-foreground">(optioneel)</span>
               </FormLabel>
               <FormControl>
                 <Input 
@@ -97,7 +101,7 @@ export function VoiceUrlForm({ form, onSubmit, voiceName }: VoiceUrlFormProps) {
           name="exhale" 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Uitademen Audio URL</FormLabel>
+              <FormLabel>Uitademen Audio URL <span className="text-xs text-muted-foreground font-bold">(verplicht)</span></FormLabel>
               <FormControl>
                 <Input {...field} placeholder="https://voorbeeld.com/adem-uit.mp3" />
               </FormControl>
@@ -110,7 +114,7 @@ export function VoiceUrlForm({ form, onSubmit, voiceName }: VoiceUrlFormProps) {
           name="end" 
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Einde Audio URL</FormLabel>
+              <FormLabel>Einde Audio URL <span className="text-xs text-muted-foreground">(optioneel)</span></FormLabel>
               <FormControl>
                 <Input {...field} placeholder="https://voorbeeld.com/einde.mp3" />
               </FormControl>
