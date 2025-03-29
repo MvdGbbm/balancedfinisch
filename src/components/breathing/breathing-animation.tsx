@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BreathingPhase, BreathingTechnique, BreathingAnimationProps } from './types';
-import { getCountForPhase, getNextPhase } from './utils';
+import { getCountForPhase, getNextPhase } from './breathing-utils';
 import BreathingAudio from './breathing-audio';
 import BreathingCircle from './breathing-circle';
 import { phaseTranslations } from '../breathing-page/constants';

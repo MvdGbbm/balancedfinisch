@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingExerciseTester } from "./breathing-exercise/breathing-exercise-tester";
@@ -17,8 +16,6 @@ export function BreathingExerciseTest({
       </Card>;
   }
   return <Card>
-      <CardContent>
-        <BreathingExerciseTester pattern={pattern} />
-      </CardContent>
+      
     </Card>;
 }
