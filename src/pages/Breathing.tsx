@@ -148,13 +148,6 @@ const Breathing = () => {
     loadVoiceUrls();
   }, []);
 
-  useEffect(() => {
-    const filteredTracks = soundscapes.filter(
-      soundscape => soundscape.category === "Muziek"
-    );
-    setMusicTracks(filteredTracks);
-  }, [soundscapes]);
-
   const loadVoiceUrls = async () => {
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
@@ -353,6 +346,12 @@ const Breathing = () => {
 
   const voicePlayerHeaderText = "Kies een stem voor begeleiding";
 
+  const meditationMusic = soundscapes.filter(
+    soundscape => soundscape.category === "Meditatie" || 
+                 soundscape.category === "Ontspanning" || 
+                 soundscape.category === "Persoonlijke Meditatie"
+  );
+
   return (
     <MobileLayout>
       <div className="container py-6 animate-fade-in">
@@ -438,14 +437,14 @@ const Breathing = () => {
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full min-w-[240px] max-h-[300px] overflow-y-auto bg-background/95 backdrop-blur-sm border-muted z-50">
+              <DropdownMenuContent className="w-full min-w-[240px] max-h-[300px] overflow-y-auto">
                 <DropdownMenuLabel>Ontspannende Muziek</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  {musicTracks.length === 0 ? (
+                  {meditationMusic.length === 0 ? (
                     <DropdownMenuItem disabled>Geen muziek gevonden</DropdownMenuItem>
                   ) : (
-                    musicTracks.map((track) => (
+                    meditationMusic.map((track) => (
                       <DropdownMenuItem 
                         key={track.id} 
                         className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}

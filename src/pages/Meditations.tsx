@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useApp } from "@/context/AppContext";
 import { MeditationCard } from "@/components/meditation/meditation-card";
@@ -10,8 +10,6 @@ import { Meditation } from "@/lib/types";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonalMeditationMusic } from "@/components/meditation/personal-meditation-music";
-import { validateAudioUrl } from "@/components/audio-player/utils";
-import { MeditationErrorDisplay } from "@/components/meditation/meditation-error-display";
 
 const Meditations = () => {
   const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
@@ -20,46 +18,21 @@ const Meditations = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
   const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
   const [selectedGuidedMeditation, setSelectedGuidedMeditation] = useState<Meditation | null>(null);
   const [activeTab, setActiveTab] = useState("meditations");
   
-  // First time load
   useEffect(() => {
     const fetchAndProcessMeditations = async () => {
       setLoading(true);
-      try {
-        const processed = await processMeditationUrls(meditations);
-        
-        // Filter out meditations with invalid URLs
-        const validMeditations = processed.map(meditation => {
-          if (meditation.audioUrl && meditation.audioUrl.includes('example.com')) {
-            console.warn("Placeholder URL detected for meditation:", meditation.title);
-            return {
-              ...meditation,
-              audioUrl: "" // Clear placeholder URLs
-            };
-          }
-          return meditation;
-        });
-        
-        setProcessedMeditations(validMeditations);
-        setLoadError(false);
-      } catch (error) {
-        console.error("Error processing meditations:", error);
-        setLoadError(true);
-        toast.error("Er is een fout opgetreden bij het laden van meditaties");
-      } finally {
-        setLoading(false);
-      }
+      const processed = await processMeditationUrls(meditations);
+      setProcessedMeditations(processed);
+      setLoading(false);
     };
     
     fetchAndProcessMeditations();
   }, [meditations]);
   
-  // Get unique categories
   const categories = Array.from(
     new Set(processedMeditations.map((meditation) => meditation.category))
   );
@@ -89,41 +62,20 @@ const Meditations = () => {
   
   const getActiveAudioUrl = () => {
     if (selectedGuidedMeditation) {
-      const url = selectedGuidedMeditation.audioUrl || '';
-      return validateAudioUrl(url);
+      return selectedGuidedMeditation.audioUrl || '';
     }
     
     if (!currentMeditationWithUrls) return '';
     
-    const url = currentMeditationWithUrls.audioUrl || '';
-    return validateAudioUrl(url);
+    return currentMeditationWithUrls.audioUrl || '';
   };
   
   const handleGuidedMeditationSelect = (meditation: Meditation) => {
     setSelectedGuidedMeditation(meditation);
-    
-    // Validate URL before attempting to play
-    const validUrl = validateAudioUrl(meditation.audioUrl || '');
-    if (!validUrl) {
-      toast.warning(`Deze meditatie heeft geen geldige audio URL.`);
-    } else {
+    if (meditation.audioUrl) {
       console.log("Selected guided meditation:", meditation.title);
-    }
-  };
-  
-  const handleRetry = async () => {
-    setIsRetrying(true);
-    try {
-      const processed = await processMeditationUrls(meditations);
-      setProcessedMeditations(processed);
-      setLoadError(false);
-      toast.success("Meditaties opnieuw geladen");
-    } catch (error) {
-      console.error("Error retrying meditation load:", error);
-      setLoadError(true);
-      toast.error("Kon meditaties niet opnieuw laden");
-    } finally {
-      setIsRetrying(false);
+    } else {
+      toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
     }
   };
   
@@ -141,21 +93,6 @@ const Meditations = () => {
           <div className="text-center">
             <p className="text-muted-foreground mb-2">Meditaties laden...</p>
           </div>
-        </div>
-      </MobileLayout>
-    );
-  }
-  
-  if (loadError) {
-    return (
-      <MobileLayout>
-        <div className="container py-6">
-          <h1 className="text-2xl font-bold mb-4">Meditaties</h1>
-          <MeditationErrorDisplay 
-            message="Er is een probleem opgetreden bij het laden van de meditaties. Controleer je internetverbinding en probeer het opnieuw."
-            onRetry={handleRetry}
-            isRetrying={isRetrying}
-          />
         </div>
       </MobileLayout>
     );
@@ -196,8 +133,8 @@ const Meditations = () => {
                     setCurrentMeditation(med);
                     setSelectedGuidedMeditation(null);
                     
-                    if (!validateAudioUrl(med.audioUrl || '')) {
-                      toast.warning(`Deze meditatie heeft geen geldige audio URL.`);
+                    if (!med.audioUrl) {
+                      toast.warning(`Deze meditatie heeft geen audio beschikbaar.`);
                       return;
                     }
                   }}

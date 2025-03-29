@@ -1,37 +1,30 @@
 import { Meditation, Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { validateAudioUrl } from "@/components/audio-player/utils";
 
-// Cache to avoid redundant processing
+// Cache voor URL's die al zijn verwerkt om dubbel werk te voorkomen
 const urlCache = new Map<string, string>();
 
 /**
- * Gets a public URL for a file in Supabase storage or uses fallback
+ * Haalt een publieke URL op voor een bestand in Supabase storage of gebruikt de fallback
  */
 export const getPublicUrl = async (path: string, bucket = 'meditations'): Promise<string> => {
   if (!path) {
     console.error('Empty path provided to getPublicUrl');
-    return '/placeholder.svg'; // Fallback to placeholder
+    return '/placeholder.svg'; // Fallback naar placeholder
   }
   
-  // If already a full URL, return it directly
+  // Als al een volledige URL is, retourneer die direct
   if (path.startsWith('http')) {
     return path;
   }
   
-  // If it's a local path (starts with /), use it directly
+  // Als het een lokaal pad is (begint met /), gebruik het direct
   if (path.startsWith('/')) {
     return path;
   }
   
-  // Detect and ignore placeholder URLs
-  if (path.includes('example.com')) {
-    console.warn("Placeholder URL detected:", path);
-    return '';
-  }
-  
-  // Check cache first
+  // Check cache eerst
   const cacheKey = `${bucket}:${path}`;
   if (urlCache.has(cacheKey)) {
     return urlCache.get(cacheKey) as string;
@@ -43,22 +36,22 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
       .getPublicUrl(path);
     
     if (data?.publicUrl) {
-      // Cache URL for later use
+      // Sla op in cache voor later gebruik
       urlCache.set(cacheKey, data.publicUrl);
       console.log(`Loaded URL from ${bucket} for path: ${path}`, data.publicUrl);
       return data.publicUrl;
     }
     
     console.error(`No public URL returned for path: ${path} from bucket: ${bucket}`);
-    return '/placeholder.svg'; // Fallback to placeholder
+    return '/placeholder.svg'; // Fallback naar placeholder
   } catch (error) {
     console.error(`Error getting public URL for ${path} from ${bucket}:`, error);
-    return '/placeholder.svg'; // Fallback to placeholder
+    return '/placeholder.svg'; // Fallback naar placeholder
   }
 };
 
 /**
- * Processes meditation URLs for audio and images
+ * Verwerkt meditatie URL's voor audio en afbeeldingen
  */
 export const processMeditationUrls = async (meditations: Meditation[]): Promise<Meditation[]> => {
   try {
@@ -70,23 +63,12 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
           let audioUrl = meditation.audioUrl || '';
           let coverImageUrl = meditation.coverImageUrl || '/placeholder.svg';
           
-          // Skip placeholder URLs
-          if (audioUrl.includes('example.com')) {
-            console.warn("Skipping placeholder audio URL for meditation:", meditation.title);
-            audioUrl = '';
-          }
-          
-          // Process audio URL if it exists and isn't already processed
+          // Verwerk audio URL als die bestaat
           if (audioUrl && !audioUrl.startsWith('http') && !audioUrl.startsWith('/')) {
             audioUrl = await getPublicUrl(audioUrl);
           }
           
-          // Validate the audio URL
-          if (audioUrl) {
-            audioUrl = validateAudioUrl(audioUrl);
-          }
-          
-          // Process image URL
+          // Verwerk afbeelding URL
           if (coverImageUrl && !coverImageUrl.startsWith('http') && !coverImageUrl.startsWith('/')) {
             coverImageUrl = await getPublicUrl(coverImageUrl, 'meditations');
           }
@@ -98,7 +80,7 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
           };
         } catch (err) {
           console.error(`Error processing meditation ${meditation.id}:`, err);
-          // Return the meditation with unprocessed URLs if there's an error
+          // Return the meditation with unprocessed URLs als er een fout is
           return meditation;
         }
       })
@@ -109,7 +91,7 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
   } catch (error) {
     console.error("Error in processMeditationUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van meditaties");
-    return meditations; // Return original meditations in case of error
+    return meditations; // Retourneer originele meditaties in geval van fout
   }
 };
 
