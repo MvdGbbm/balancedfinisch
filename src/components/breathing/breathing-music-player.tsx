@@ -22,13 +22,8 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
   const [musicVolume, setMusicVolume] = useState(volume);
   const [activeTab, setActiveTab] = useState("music");
   
-  // Filter soundscapes to only include those with the "Meditation" or "Relaxation" categories
-  const meditationMusic = soundscapes.filter(
-    soundscape => soundscape.category === "Meditatie" || 
-                 soundscape.category === "Ontspanning" || 
-                 soundscape.category === "Persoonlijke Meditatie" ||
-                 soundscape.category === "Muziek"
-  );
+  // Filter soundscapes to only include those with the "Muziek" category
+  const musicTracks = soundscapes.filter(soundscape => soundscape.category === "Muziek");
   
   useEffect(() => {
     // Update the local volume when the parent component changes it
@@ -46,15 +41,10 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
   
   // Set default soundscape from Muziek category if available
   useEffect(() => {
-    if (!selectedSoundscape && meditationMusic.length > 0) {
-      const musicTracks = meditationMusic.filter(track => track.category === "Muziek");
-      if (musicTracks.length > 0) {
-        setSelectedSoundscape(musicTracks[0]);
-      } else {
-        setSelectedSoundscape(meditationMusic[0]);
-      }
+    if (!selectedSoundscape && musicTracks.length > 0) {
+      setSelectedSoundscape(musicTracks[0]);
     }
-  }, [meditationMusic, selectedSoundscape]);
+  }, [musicTracks, selectedSoundscape]);
   
   const handleVolumeChange = (values: number[]) => {
     const newVolume = values[0];
@@ -116,7 +106,7 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
           </div>
           
           <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto">
-            {meditationMusic.map((soundscape) => (
+            {musicTracks.map((soundscape) => (
               <div 
                 key={soundscape.id}
                 className={`p-2 rounded-md cursor-pointer flex items-center gap-2 hover:bg-muted transition-colors ${selectedSoundscape?.id === soundscape.id ? 'bg-muted border-l-4 border-primary pl-1' : ''}`}

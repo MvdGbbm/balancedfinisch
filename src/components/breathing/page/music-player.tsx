@@ -36,6 +36,9 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
   onPlayPauseChange,
   onToggleFavorite
 }) => {
+  // Filter to only include music from "Muziek" category
+  const filteredMusicTracks = musicTracks.filter(track => track.category === "Muziek");
+  
   return (
     <div className="mt-6">
       <h3 className="text-lg font-semibold mb-3">Muziek op de achtergrond</h3>
@@ -54,10 +57,10 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
           <DropdownMenuLabel>Ontspannende Muziek</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            {musicTracks.length === 0 ? (
+            {filteredMusicTracks.length === 0 ? (
               <DropdownMenuItem disabled>Geen muziek gevonden</DropdownMenuItem>
             ) : (
-              musicTracks.map((track) => (
+              filteredMusicTracks.map((track) => (
                 <DropdownMenuItem 
                   key={track.id} 
                   className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}
