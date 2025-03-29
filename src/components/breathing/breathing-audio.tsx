@@ -1,167 +1,122 @@
 
-import React, { useRef, useEffect } from 'react';
-import { BreathingPhase } from './types';
-import { toast } from 'sonner';
-import { preloadAudio } from '@/components/audio-player/utils';
+import React, { useRef, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Volume2, VolumeX } from "lucide-react";
+import { validateAudioUrl } from "@/components/audio-player/utils";
 
 interface BreathingAudioProps {
-  voiceUrls: {
-    start?: string;
-    inhale: string;
-    hold: string;
-    exhale: string;
-  } | null;
-  isVoiceActive: boolean;
-  phase: BreathingPhase;
-  isActive: boolean;
+  audioUrl?: string;
+  volume: number;
+  onVolumeChange: (volume: number) => void;
+  isPlaying: boolean;
+  isMuted: boolean;
+  onMuteToggle: () => void;
 }
 
-export const useBreathingAudio = ({
-  voiceUrls,
-  isVoiceActive,
-  phase,
-  isActive
-}: BreathingAudioProps) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const previousPhaseRef = useRef<BreathingPhase | null>(null);
-  const audioErrorCountRef = useRef<number>(0);
-  const audioLoadingRef = useRef<boolean>(false);
-
-  const validateVoiceUrls = async (urls: {
-    start?: string;
-    inhale: string;
-    hold: string;
-    exhale: string;
-  }) => {
-    if (!urls.inhale || !urls.hold || !urls.exhale) {
-      console.log("Voice URLs are incomplete, skipping validation");
-      return false;
-    }
-    try {
-      const urlsToValidate = [urls.inhale, urls.hold, urls.exhale];
-      if (urls.start) {
-        urlsToValidate.push(urls.start);
-      }
-      
-      const validationPromises = urlsToValidate.map(url => preloadAudio(url));
-      const validationResults = await Promise.all(validationPromises);
-      
-      const allValid = validationResults.every(result => result === true);
-      
-      if (!allValid) {
-        console.error("One or more voice audio URLs failed validation");
-        audioErrorCountRef.current = 5;
-        toast.error("Fout bij het laden van audio. Controleer of alle URL's correct zijn.");
-        return false;
-      }
-      console.log("All voice URLs validated successfully");
-      return true;
-    } catch (error) {
-      console.error("Error validating voice URLs:", error);
-      return false;
-    }
-  };
-
-  const playAudio = async (phaseType: BreathingPhase) => {
-    if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
-    let audioUrl = '';
-    switch (phaseType) {
-      case 'start':
-        audioUrl = voiceUrls.start || '';
-        break;
-      case 'inhale':
-        audioUrl = voiceUrls.inhale;
-        break;
-      case 'hold':
-        audioUrl = voiceUrls.hold;
-        break;
-      case 'exhale':
-        audioUrl = voiceUrls.exhale;
-        break;
-      default:
-        audioUrl = '';
-    }
-    if (!audioUrl) {
-      console.log(`No audio URL for ${phaseType} phase`);
-      return;
-    }
-    audioLoadingRef.current = true;
-    try {
-      console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
-      const isValid = await preloadAudio(audioUrl);
-      if (!isValid) {
-        throw new Error(`Failed to preload ${phaseType} audio`);
-      }
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.volume = 1.0;
-        try {
-          await audioRef.current.play();
-          console.log(`Playing ${phaseType} audio successfully`);
-          audioErrorCountRef.current = 0;
-        } catch (playError) {
-          console.error(`Error playing ${phaseType} audio:`, playError);
-          if (audioErrorCountRef.current < 5) {
-            audioErrorCountRef.current++;
-            if (audioErrorCountRef.current === 3) {
-              toast.error("Fout bij afspelen van audio. Controleer de URL's.");
-            }
-          }
-          if (playError.name === 'NotAllowedError') {
-            console.log("Audio playback requires user interaction");
-          }
+export const BreathingAudio: React.FC<BreathingAudioProps> = ({
+  audioUrl,
+  volume,
+  onVolumeChange,
+  isPlaying,
+  isMuted,
+  onMuteToggle
+}) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isError, setIsError] = useState(false);
+  
+  useEffect(() => {
+    const audioElement = audioRef.current;
+    if (!audioElement || !audioUrl) return;
+    
+    const processedUrl = validateAudioUrl(audioUrl);
+    
+    // Check if audio can be loaded
+    const checkAudio = async () => {
+      try {
+        if (audioElement.src !== processedUrl) {
+          audioElement.src = processedUrl;
+          audioElement.load();
         }
+      } catch (error) {
+        console.error("Error loading breathing audio:", error);
+        setIsError(true);
       }
-    } catch (error) {
-      console.error(`Error with ${phaseType} audio:`, error);
-      audioErrorCountRef.current++;
-      if (audioErrorCountRef.current === 3) {
-        toast.error("Fout bij het afspelen van audio. Controleer of alle URL's correct zijn.");
+    };
+    
+    checkAudio();
+    
+    // Event listeners
+    const handleCanPlay = () => setIsLoaded(true);
+    const handleError = () => setIsError(true);
+    
+    audioElement.addEventListener('canplay', handleCanPlay);
+    audioElement.addEventListener('error', handleError);
+    
+    return () => {
+      audioElement.removeEventListener('canplay', handleCanPlay);
+      audioElement.removeEventListener('error', handleError);
+      
+      // Cleanup
+      audioElement.pause();
+      audioElement.src = '';
+    };
+  }, [audioUrl]);
+  
+  // Handle play/pause
+  useEffect(() => {
+    const audioElement = audioRef.current;
+    if (!audioElement || !isLoaded) return;
+    
+    if (isPlaying) {
+      const playPromise = audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Audio play error:", error);
+        });
       }
-    } finally {
-      audioLoadingRef.current = false;
+    } else {
+      audioElement.pause();
     }
-  };
-
+  }, [isPlaying, isLoaded]);
+  
+  // Handle volume changes
   useEffect(() => {
-    if (previousPhaseRef.current !== phase) {
-      console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
-      if (phase !== 'pause' && isVoiceActive && voiceUrls) {
-        playAudio(phase);
-      }
-      previousPhaseRef.current = phase;
-    }
-  }, [phase, voiceUrls, isVoiceActive, isActive]);
-
-  useEffect(() => {
-    if (!isVoiceActive && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
-      playAudio(phase);
-    }
-  }, [isVoiceActive, voiceUrls, isActive, phase]);
-
-  useEffect(() => {
-    if (voiceUrls && isVoiceActive) {
-      validateVoiceUrls(voiceUrls);
-    }
-  }, [voiceUrls, isVoiceActive]);
-
-  return {
-    audioRef,
-    playAudio
-  };
-};
-
-const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
-  const { audioRef } = useBreathingAudio(props);
-
+    const audioElement = audioRef.current;
+    if (!audioElement) return;
+    
+    audioElement.volume = isMuted ? 0 : volume;
+  }, [volume, isMuted]);
+  
+  // Create audio element
   return (
-    <audio ref={audioRef} onError={() => {
-      console.error("Audio element error");
-    }} />
+    <div className="flex items-center gap-2">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onMuteToggle}
+        disabled={isError}
+      >
+        {isMuted ? (
+          <VolumeX className="h-4 w-4" />
+        ) : (
+          <Volume2 className="h-4 w-4" />
+        )}
+      </Button>
+      
+      <Slider
+        className="w-24"
+        value={[isMuted ? 0 : volume]}
+        max={1}
+        step={0.01}
+        onValueChange={(values) => onVolumeChange(values[0])}
+        disabled={isError}
+      />
+      
+      <audio ref={audioRef} loop>
+        <source src={audioUrl ? validateAudioUrl(audioUrl) : ''} type="audio/mpeg" />
+      </audio>
+    </div>
   );
 };
-
-export default BreathingAudio;

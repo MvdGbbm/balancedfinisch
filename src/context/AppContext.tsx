@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Meditation, Soundscape, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 // Sample data
 import { meditations as sampleMeditations } from "@/data/meditations";
@@ -26,7 +27,7 @@ interface AppContextType {
   deleteMeditation: (id: string) => void;
   
   addSoundscape: (soundscape: Omit<Soundscape, 'id'>) => void;
-  updateSoundscape: (id: string, updatedSoundscape: Soundscape) => void;
+  updateSoundscape: (id: string, soundscape: Partial<Soundscape>) => void;
   deleteSoundscape: (id: string) => void;
   setSoundscapes: (soundscapes: Soundscape[]) => void;
   
@@ -50,6 +51,7 @@ interface AppContextType {
   setCurrentSoundscape: (soundscape: Soundscape | null) => void;
   getRandomQuote: () => DailyQuote;
   saveDailyQuoteToCalendar: (quote: DailyQuote) => void;
+  clearAppCache: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -286,6 +288,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return dailyQuotes[randomIndex];
   }
   
+  // Clear app cache function
+  function clearAppCache() {
+    // Clear localStorage items
+    localStorage.removeItem('processedMeditations');
+    localStorage.removeItem('processedSoundscapes');
+    localStorage.removeItem('soundscapes');
+    localStorage.removeItem('journalEntries');
+    localStorage.removeItem('quotes');
+    localStorage.removeItem('plannerEvents');
+    localStorage.removeItem('todayQuoteId');
+    
+    toast("Cachegeheugen gewist", {
+      description: "Alle opgeslagen gegevens zijn verwijderd."
+    });
+    
+    // Reset states
+    setMeditations(sampleMeditations);
+    setSoundscapes(soundscapes);
+    setJournalEntries([]);
+    setDailyQuotes(quotes);
+    setPlannerEvents([]);
+    
+    // Set a new random quote
+    const randomQuote = getRandomQuote();
+    setCurrentQuote(randomQuote);
+  }
+  
   // CRUD functions for meditations
   function addMeditation(meditation: Omit<Meditation, 'id' | 'createdAt'>) {
     const newMeditation: Meditation = {
@@ -329,11 +358,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSoundscapes([...soundscapesData, newSoundscape]);
   }
   
-  function updateSoundscape(id: string, updatedSoundscape: Soundscape) {
-    setSoundscapes(prevSoundscapes => 
-      prevSoundscapes.map(soundscape => 
-        soundscape.id === id ? updatedSoundscape : soundscape
-      )
+  function updateSoundscape(id: string, soundscape: Partial<Soundscape>) {
+    setSoundscapes(
+      soundscapesData.map((s) => (s.id === id ? { ...s, ...soundscape } : s))
     );
   }
   
@@ -423,7 +450,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
   
   // Context value
-  const contextValue: AppContextType = {
+  const value: AppContextType = {
     meditations: meditationsData,
     soundscapes: soundscapesData,
     journalEntries,
@@ -460,9 +487,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentSoundscape,
     getRandomQuote,
     saveDailyQuoteToCalendar,
+    clearAppCache,
   };
   
-  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
 export function useApp() {
