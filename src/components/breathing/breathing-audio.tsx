@@ -43,8 +43,8 @@ export const useBreathingAudio = ({
       // Only validate URLs that are actually provided and will be used
       const urlsToValidate = [urls.inhale, urls.exhale].filter(Boolean);
       
-      // Only add the hold URL to validation if it exists
-      if (urls.hold) {
+      // Only add the hold URL to validation if it exists and is not empty
+      if (urls.hold && urls.hold.trim() !== '') {
         urlsToValidate.push(urls.hold);
       }
       
@@ -87,8 +87,8 @@ export const useBreathingAudio = ({
         audioUrl = voiceUrls.inhale;
         break;
       case 'hold':
-        // Skip if no hold URL is provided
-        audioUrl = voiceUrls.hold || '';
+        // Skip if no hold URL is provided or if it's empty
+        audioUrl = voiceUrls.hold && voiceUrls.hold.trim() !== '' ? voiceUrls.hold : '';
         break;
       case 'exhale':
         audioUrl = voiceUrls.exhale;

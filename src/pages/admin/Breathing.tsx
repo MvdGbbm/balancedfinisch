@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
@@ -23,8 +22,8 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 8,
     hold2: 0,
     cycles: 5,
-    startUrl: "",
-    endUrl: ""
+    inhaleUrl: "",
+    exhaleUrl: ""
   }, 
   {
     id: "2",
@@ -35,8 +34,8 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 4,
     hold2: 4,
     cycles: 4,
-    startUrl: "",
-    endUrl: ""
+    inhaleUrl: "",
+    exhaleUrl: ""
   }, 
   {
     id: "3",
@@ -47,8 +46,8 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     exhale: 6,
     hold2: 0,
     cycles: 6,
-    startUrl: "",
-    endUrl: ""
+    inhaleUrl: "",
+    exhaleUrl: ""
   }
 ];
 
@@ -76,7 +75,6 @@ const AdminBreathing = () => {
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceUrls>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceUrls>(defaultVoiceUrls.marco);
 
-  // Setup forms
   const patternForm = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
@@ -100,7 +98,6 @@ const AdminBreathing = () => {
     defaultValues: marcoVoiceUrls
   });
 
-  // Load saved data on component mount
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -118,7 +115,6 @@ const AdminBreathing = () => {
     loadVoiceUrls();
   }, []);
 
-  // Update form values when voice URLs change
   useEffect(() => {
     veraForm.reset(veraVoiceUrls);
   }, [veraVoiceUrls]);
