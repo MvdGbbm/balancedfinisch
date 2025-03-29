@@ -76,6 +76,10 @@ export function useBreathingExercise() {
   };
 
   const onActivateVoice = async (voice: "vera" | "marco") => {
+    console.log("Activating voice:", voice);
+    console.log("Vera URLs:", veraVoiceUrls);
+    console.log("Marco URLs:", marcoVoiceUrls);
+    
     await handleActivateVoice(
       voice,
       veraVoiceUrls,
@@ -96,6 +100,7 @@ export function useBreathingExercise() {
   };
 
   const handlePhaseChange = (phase: BreathingPhase) => {
+    console.log("Phase changed to:", phase);
     setCurrentPhase(phase);
     
     if (phase === "inhale" && currentPhase === "pause") {

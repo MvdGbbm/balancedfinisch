@@ -27,6 +27,9 @@ export const loadVoiceUrls = async (setVeraVoiceUrls: React.Dispatch<React.SetSt
       console.error("Error loading Vera voice URLs:", error);
       setVeraVoiceUrls(defaultVoiceUrls.vera);
     }
+  } else {
+    // Set default voice URLs if none are saved
+    setVeraVoiceUrls(defaultVoiceUrls.vera);
   }
   
   const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
@@ -49,13 +52,20 @@ export const loadVoiceUrls = async (setVeraVoiceUrls: React.Dispatch<React.SetSt
       console.error("Error loading Marco voice URLs:", error);
       setMarcoVoiceUrls(defaultVoiceUrls.marco);
     }
+  } else {
+    // Set default voice URLs if none are saved
+    setMarcoVoiceUrls(defaultVoiceUrls.marco);
   }
   
   setVoiceUrlsValidated(true);
 };
 
 export const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
-  const urlsToValidate = [urls.inhale, urls.hold, urls.exhale].filter(Boolean);
+  const urlsToValidate = [urls.inhale, urls.exhale].filter(Boolean);
+  
+  if (urls.hold && urls.hold.trim() !== '') {
+    urlsToValidate.push(urls.hold);
+  }
   
   if (urls.start) {
     urlsToValidate.push(urls.start);
@@ -66,7 +76,7 @@ export const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promis
     return false;
   }
   
-  console.log(`Validating ${voice} audio URLs...`);
+  console.log(`Validating ${voice} audio URLs...`, urlsToValidate);
   
   try {
     const validationPromises = urlsToValidate.map(url => preloadAudio(url));
@@ -102,6 +112,8 @@ export const handleActivateVoice = async (
 ) => {
   const urls = voice === "vera" ? veraVoiceUrls : marcoVoiceUrls;
   
+  console.log(`Activating ${voice} voice with URLs:`, urls);
+  
   if (!urls.inhale || !urls.exhale) {
     toast.error(`${voice === "vera" ? "Vera" : "Marco"} audio URL's ontbreken`);
     return;
@@ -115,11 +127,17 @@ export const handleActivateVoice = async (
   }
   
   if (selectedPattern?.startUrl && startAudioRef.current) {
-    startAudioRef.current.src = selectedPattern.startUrl;
-    startAudioRef.current.load();
-    
     try {
-      await startAudioRef.current.play();
+      startAudioRef.current.src = selectedPattern.startUrl;
+      startAudioRef.current.load();
+      const playPromise = startAudioRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Error playing start audio:", error);
+        });
+      }
+      
       console.log("Playing start audio:", selectedPattern.startUrl);
     } catch (error) {
       console.error("Error playing start audio:", error);

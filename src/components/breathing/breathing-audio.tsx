@@ -149,7 +149,7 @@ export const useBreathingAudio = ({
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
       if (phase !== 'pause' && isVoiceActive && voiceUrls) {
         // If it's the hold phase and there's no URL for it, just skip
-        if (phase === 'hold' && !voiceUrls.hold) {
+        if (phase === 'hold' && (!voiceUrls.hold || voiceUrls.hold.trim() === '')) {
           console.log('Skipping hold audio because no URL is provided');
         } else {
           playAudio(phase);
@@ -165,7 +165,7 @@ export const useBreathingAudio = ({
       audioRef.current.currentTime = 0;
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
       // Don't try to play audio for hold phase if no URL exists
-      if (phase === 'hold' && !voiceUrls.hold) {
+      if (phase === 'hold' && (!voiceUrls.hold || voiceUrls.hold.trim() === '')) {
         console.log('Skipping initial hold audio because no URL is provided');
       } else {
         playAudio(phase);
@@ -189,9 +189,14 @@ const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
   const { audioRef } = useBreathingAudio(props);
 
   return (
-    <audio ref={audioRef} onError={() => {
-      console.error("Audio element error");
-    }} />
+    <audio 
+      ref={audioRef} 
+      style={{ display: 'none' }} 
+      controls={false} 
+      onError={() => {
+        console.error("Audio element error");
+      }}
+    />
   );
 };
 

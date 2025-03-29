@@ -40,14 +40,14 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
 export const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
     start: "",
-    inhale: "",
-    hold: "",
-    exhale: "",
+    inhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/inhale.mp3",
+    hold: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/hold.mp3",
+    exhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/exhale.mp3",
   },
   marco: {
     start: "",
-    inhale: "",
-    hold: "",
-    exhale: "",
+    inhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/inhale.mp3",
+    hold: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/hold.mp3", 
+    exhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/exhale.mp3",
   }
 };
