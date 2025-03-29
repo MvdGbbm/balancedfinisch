@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import React from "react";
 import { BreathingCircleProps } from "./types";
 import { BreathingCircleVisual } from "./breathing-circle-visual";
 import { BreathingPhaseDisplay } from "./breathing-phase-display";
@@ -14,7 +13,8 @@ export function BreathingCircle({
   onBreathComplete,
   isActive = false,
   currentPhase = "rest",
-  secondsLeft = 0
+  secondsLeft = 0,
+  holdEnabled = true
 }: BreathingCircleProps) {
   const { 
     phase, 

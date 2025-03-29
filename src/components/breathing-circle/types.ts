@@ -9,6 +9,7 @@ export interface BreathingCircleProps {
   isActive: boolean;
   currentPhase?: "inhale" | "hold" | "exhale" | "rest";
   secondsLeft?: number;
+  holdEnabled?: boolean;
 }
 
 export interface BreathingCircleVisualProps {
