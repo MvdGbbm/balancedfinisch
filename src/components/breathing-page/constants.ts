@@ -40,14 +40,24 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
 export const defaultVoiceUrls: Record<string, VoiceURLs> = {
   vera: {
     start: "",
-    inhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/inhale.mp3",
-    hold: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/hold.mp3",
-    exhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/exhale.mp3",
+    inhale: "https://storage.googleapis.com/breathly-963a5.appspot.com/breathing/inhale_nl_female.mp3",
+    hold: "https://storage.googleapis.com/breathly-963a5.appspot.com/breathing/hold_nl_female.mp3",
+    exhale: "https://storage.googleapis.com/breathly-963a5.appspot.com/breathing/exhale_nl_female.mp3",
   },
   marco: {
     start: "",
-    inhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/inhale.mp3",
-    hold: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/hold.mp3", 
-    exhale: "https://nnblogtutorials.s3.ap-southeast-1.amazonaws.com/exhale.mp3",
+    inhale: "https://storage.googleapis.com/breathly-963a5.appspot.com/breathing/inhale_nl_male.mp3",
+    hold: "https://storage.googleapis.com/breathly-963a5.appspot.com/breathing/hold_nl_male.mp3", 
+    exhale: "https://storage.googleapis.com/breathly-963a5.appspot.com/breathing/exhale_nl_male.mp3",
   }
+};
+
+// Make sure the "inademen", "vasthouden", and "uitademen" prompts match the image
+export const phaseTranslations = {
+  inhale: "Inademen",
+  hold: "Vasthouden",
+  exhale: "Uitademen",
+  rest: "Rust",
+  start: "Start",
+  end: "Voltooid"
 };

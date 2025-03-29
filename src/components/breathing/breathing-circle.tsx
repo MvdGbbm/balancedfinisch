@@ -1,84 +1,70 @@
 
-import React from 'react';
-import { BreathingPhase } from './types';
-import { getBreathingMessage } from './breathing-utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface BreathingCircleProps {
-  phase: BreathingPhase;
+  phase: string;
   count: number;
-  exerciseCompleted: boolean;
-  currentCycle: number;
-  totalCycles: number;
-  animationDuration: number;
-  onToggleActive: () => void;
+  exerciseCompleted?: boolean;
+  currentCycle?: number;
+  totalCycles?: number;
+  animationDuration?: number;
+  onToggleActive?: () => void;
+  phaseLabel?: string;
 }
 
 const BreathingCircle: React.FC<BreathingCircleProps> = ({
   phase,
   count,
-  exerciseCompleted,
-  currentCycle,
-  totalCycles,
-  animationDuration,
-  onToggleActive
+  exerciseCompleted = false,
+  currentCycle = 1,
+  totalCycles = 5,
+  animationDuration = 4,
+  onToggleActive,
+  phaseLabel
 }) => {
-  const circleClass = () => {
-    if (exerciseCompleted) {
-      return 'scale-100'; // Reset to default scale when exercise is completed
-    }
-    
+  // Determine the circle scale based on the phase
+  const getCircleScale = () => {
     switch (phase) {
-      case 'start':
-        return 'scale-100'; // No animation for start phase
       case 'inhale':
-        return `grow-animation`;
+        return 'scale-100';
       case 'hold':
-        return 'scale-125';
+        return 'scale-100';
       case 'exhale':
-        return `shrink-animation`;
-      case 'pause':
-        return 'scale-100';
+        return 'scale-50';
       default:
-        return 'scale-100';
+        return 'scale-75';
     }
   };
 
-  const animationStyle = () => {
-    return {
-      animationDuration: `${animationDuration}s`
-    };
+  // Determine the animation duration
+  const getAnimationDuration = () => {
+    return `${animationDuration}s`;
   };
-
-  const shouldShowCounter = (phase !== 'pause' && phase !== 'start') && !exerciseCompleted;
-  const circleSize = 'w-48 h-48';
-  const innerCircleSize = 'w-40 h-40';
 
   return (
-    <div className="breathe-animation-container h-[450px] flex flex-col items-center justify-center my-0 rounded-lg">
+    <div className="relative flex flex-col items-center justify-center my-8">
+      {/* Cycle indicator */}
+      <div className="text-center mb-2 text-sm text-blue-200">
+        Cyclus {currentCycle} van {totalCycles} | Nog {count} seconden
+      </div>
+
+      {/* Breathing circle */}
       <div 
-        className={`breathe-circle ${circleSize} ${circleClass()}`} 
-        style={animationStyle()} 
+        className={cn(
+          "relative h-64 w-64 rounded-full bg-blue-50 border-4 border-blue-400 flex items-center justify-center transition-transform duration-1000",
+          getCircleScale(),
+          exerciseCompleted && "bg-green-50 border-green-400"
+        )}
+        style={{ 
+          transitionDuration: getAnimationDuration(),
+          boxShadow: "0 0 30px rgba(96, 165, 250, 0.5)"
+        }}
         onClick={onToggleActive}
       >
-        <div className={`breathe-inner-circle ${innerCircleSize}`}>
-          <div className="flex flex-col items-center justify-center text-center">
-            {!exerciseCompleted ? (
-              <>
-                <p className="text-xl font-light mb-2">{getBreathingMessage(phase)}</p>
-                {phase === 'start' && <p className="text-3xl font-medium">{count}</p>}
-                {shouldShowCounter && <p className="text-3xl font-medium">{count}</p>}
-              </>
-            ) : (
-              <p className="text-xl font-light">Voltooid</p>
-            )}
-          </div>
+        <div className="text-blue-800 text-xl font-medium">
+          {exerciseCompleted ? "Voltooid!" : phaseLabel || phase}
         </div>
-      </div>
-      
-      <div className="mt-4 text-center">
-        <p className="text-sm text-white/70 my-0 py-[11px]">
-          {phase === 'start' ? 'Voorbereiding' : `Cyclus ${currentCycle} van ${totalCycles}`}
-        </p>
       </div>
     </div>
   );

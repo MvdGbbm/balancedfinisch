@@ -5,8 +5,8 @@ import { BreathingPhase, BreathingTechnique, BreathingAnimationProps } from './t
 import { getCountForPhase, getNextPhase } from './breathing-utils';
 import BreathingAudio from './breathing-audio';
 import BreathingCircle from './breathing-circle';
+import { phaseTranslations } from '../breathing-page/constants';
 
-// Changed from const BreathingAnimation: React.FC<...> to export const
 export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   technique,
   voiceUrls,
@@ -78,6 +78,7 @@ export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         totalCycles={totalCycles}
         animationDuration={getCountForPhase(phase, inhaleTime, holdTime, exhaleTime, pauseTime)}
         onToggleActive={toggleActive}
+        phaseLabel={phaseTranslations[phase] || phase}
       />
     </>
   );

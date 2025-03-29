@@ -70,6 +70,13 @@ export const BreathingPageContent: React.FC<BreathingPageContentProps> = ({
   onPlayTrack,
   onTrackPlayPauseChange
 }) => {
+  // Debug logs for audio setup
+  React.useEffect(() => {
+    console.log("BreathingPageContent rendered with activeVoice:", activeVoice);
+    console.log("Vera voice URLs:", veraVoiceUrls);
+    console.log("Marco voice URLs:", marcoVoiceUrls);
+  }, [activeVoice, veraVoiceUrls, marcoVoiceUrls]);
+
   return (
     <div className="container py-6 animate-fade-in">
       <BreathingHeader />
@@ -85,10 +92,13 @@ export const BreathingPageContent: React.FC<BreathingPageContentProps> = ({
           exerciseCompleted={exerciseCompleted}
           currentPhase={currentPhase}
           onPhaseChange={onPhaseChange}
+          veraVoiceUrls={veraVoiceUrls}
+          marcoVoiceUrls={marcoVoiceUrls}
+          activeVoice={activeVoice}
         />
         
-        <audio ref={startAudioRef} style={{ display: 'none' }} />
-        <audio ref={endAudioRef} style={{ display: 'none' }} />
+        <audio ref={startAudioRef} style={{ display: 'none' }} preload="auto" />
+        <audio ref={endAudioRef} style={{ display: 'none' }} preload="auto" />
         
         {selectedPattern && (
           <BreathingVoiceSection 

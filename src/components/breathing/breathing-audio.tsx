@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';
 import { preloadAudio } from '@/components/audio-player/utils';
@@ -27,6 +27,7 @@ export const useBreathingAudio = ({
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
   const audioErrorCountRef = useRef<number>(0);
   const audioLoadingRef = useRef<boolean>(false);
+  const [audioPlayed, setAudioPlayed] = useState<boolean>(false);
 
   const validateVoiceUrls = async (urls: {
     start?: string;
@@ -109,28 +110,36 @@ export const useBreathingAudio = ({
     audioLoadingRef.current = true;
     try {
       console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
-      const isValid = await preloadAudio(audioUrl);
-      if (!isValid) {
-        throw new Error(`Failed to preload ${phaseType} audio`);
-      }
+      
       if (audioRef.current) {
         audioRef.current.src = audioUrl;
         audioRef.current.volume = 1.0;
+        
         try {
-          await audioRef.current.play();
-          console.log(`Playing ${phaseType} audio successfully`);
-          audioErrorCountRef.current = 0;
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log(`Playing ${phaseType} audio successfully`);
+                setAudioPlayed(true);
+                audioErrorCountRef.current = 0;
+              })
+              .catch((playError) => {
+                console.error(`Error playing ${phaseType} audio:`, playError);
+                if (audioErrorCountRef.current < 5) {
+                  audioErrorCountRef.current++;
+                  if (audioErrorCountRef.current === 3) {
+                    toast.error("Fout bij afspelen van audio. Controleer de URL's.");
+                  }
+                }
+                if (playError.name === 'NotAllowedError') {
+                  console.log("Audio playback requires user interaction");
+                  toast.error("Audio kan niet automatisch worden afgespeeld. Klik op het scherm om geluid te activeren.");
+                }
+              });
+          }
         } catch (playError) {
           console.error(`Error playing ${phaseType} audio:`, playError);
-          if (audioErrorCountRef.current < 5) {
-            audioErrorCountRef.current++;
-            if (audioErrorCountRef.current === 3) {
-              toast.error("Fout bij afspelen van audio. Controleer de URL's.");
-            }
-          }
-          if (playError.name === 'NotAllowedError') {
-            console.log("Audio playback requires user interaction");
-          }
         }
       }
     } catch (error) {
@@ -181,22 +190,36 @@ export const useBreathingAudio = ({
 
   return {
     audioRef,
-    playAudio
+    playAudio,
+    audioPlayed
   };
 };
 
 const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
-  const { audioRef } = useBreathingAudio(props);
+  const { audioRef, audioPlayed } = useBreathingAudio(props);
+
+  // Log when component renders
+  useEffect(() => {
+    console.log("BreathingAudio component rendered", props);
+  }, [props]);
 
   return (
-    <audio 
-      ref={audioRef} 
-      style={{ display: 'none' }} 
-      controls={false} 
-      onError={() => {
-        console.error("Audio element error");
-      }}
-    />
+    <>
+      <audio 
+        ref={audioRef} 
+        style={{ display: 'none' }} 
+        controls={false} 
+        preload="auto"
+        onError={() => {
+          console.error("Audio element error");
+        }}
+      />
+      {!audioPlayed && props.isVoiceActive && (
+        <div className="sr-only">
+          Audio playback is activated. If you don't hear anything, check your volume settings.
+        </div>
+      )}
+    </>
   );
 };
 
