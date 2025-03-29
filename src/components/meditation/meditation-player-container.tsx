@@ -1,16 +1,12 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote, Heart } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import { getRandomQuote, validateAudioUrl, checkUrlExists } from "@/components/audio-player/utils";
-import MeditationErrorDisplay from "@/components/meditation/meditation-error-display";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useApp } from "@/context/AppContext";
+import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -21,15 +17,12 @@ export function MeditationPlayerContainer({
   isVisible, 
   selectedMeditation 
 }: MeditationPlayerContainerProps) {
-  const { updateMeditation } = useApp();
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
   const [randomQuote] = useState(getRandomQuote());
-  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -37,57 +30,17 @@ export function MeditationPlayerContainer({
       setAudioError(false);
       setImageError(false);
       setIsPlaying(false);
+      setCurrentAudioUrl(selectedMeditation.audioUrl || "");
+      setPlayerKey(prevKey => prevKey + 1);
       
-      const loadMeditation = async () => {
-        setIsLoadingAudio(true);
-        
-        const url = selectedMeditation.audioUrl || "";
-        const validatedUrl = validateAudioUrl(url);
-        
-        console.log("Loading meditation:", selectedMeditation.title);
-        console.log("Original URL:", url);
-        console.log("Validated URL:", validatedUrl);
-        
-        if (validatedUrl) {
-          try {
-            // Check if URL is accessible
-            const isAccessible = await checkUrlExists(validatedUrl);
-            
-            if (!isAccessible) {
-              console.error("Audio URL is not accessible:", validatedUrl);
-              setAudioError(true);
-              setIsLoadingAudio(false);
-              toast.error(`Kon de audio niet laden voor "${selectedMeditation.title}". URL is niet toegankelijk.`);
-              return;
-            }
-            
-            setCurrentAudioUrl(validatedUrl);
-            setPlayerKey(prevKey => prevKey + 1);
-            
-            console.log("Selected meditation:", selectedMeditation);
-            console.log("Audio URL:", validatedUrl);
-            console.log("Marco link:", selectedMeditation.marcoLink);
-            console.log("Vera link:", selectedMeditation.veraLink);
-            
-            setTimeout(() => {
-              setIsPlaying(true);
-              setIsLoadingAudio(false);
-            }, 500);
-          } catch (error) {
-            console.error("Error checking audio URL:", error);
-            setAudioError(true);
-            setIsLoadingAudio(false);
-            toast.error(`Fout bij het laden van audio voor "${selectedMeditation.title}".`);
-          }
-        } else {
-          setAudioError(true);
-          setIsLoadingAudio(false);
-          console.error("Invalid audio URL:", url);
-          toast.error(`Ongeldige audio URL voor "${selectedMeditation.title}".`);
-        }
-      };
+      console.log("Selected meditation:", selectedMeditation);
+      console.log("Audio URL:", selectedMeditation.audioUrl);
+      console.log("Marco link:", selectedMeditation.marcoLink);
+      console.log("Vera link:", selectedMeditation.veraLink);
       
-      loadMeditation();
+      setTimeout(() => {
+        setIsPlaying(true);
+      }, 500);
     }
   }, [selectedMeditation]);
   
@@ -105,7 +58,7 @@ export function MeditationPlayerContainer({
     setAudioError(true);
     setIsPlaying(false);
     console.error("Audio error for:", currentAudioUrl);
-    toast.error(`Kon de audio niet laden voor "${selectedMeditation.title}". Controleer de URL.`);
+    toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
   const handleImageError = () => {
@@ -125,68 +78,6 @@ export function MeditationPlayerContainer({
     toast("De meditatie wordt afgespeeld", {
       description: "Start"
     });
-  };
-  
-  const toggleFavorite = () => {
-    if (selectedMeditation) {
-      const updatedFavoriteStatus = !selectedMeditation.isFavorite;
-      updateMeditation(selectedMeditation.id, {
-        ...selectedMeditation,
-        isFavorite: updatedFavoriteStatus
-      });
-      
-      toast(updatedFavoriteStatus 
-        ? "Meditatie toegevoegd aan favorieten" 
-        : "Meditatie verwijderd uit favorieten", {
-        description: selectedMeditation.title
-      });
-    }
-  };
-  
-  const handleRetryAudio = async () => {
-    setIsRetrying(true);
-    
-    try {
-      // Try the original URL first
-      let urlToTry = selectedMeditation.audioUrl || "";
-      let validatedUrl = validateAudioUrl(urlToTry);
-      
-      // If original URL isn't valid, try external links
-      if (!validatedUrl) {
-        if (selectedMeditation.veraLink) {
-          urlToTry = selectedMeditation.veraLink;
-          validatedUrl = validateAudioUrl(urlToTry);
-        } else if (selectedMeditation.marcoLink) {
-          urlToTry = selectedMeditation.marcoLink;
-          validatedUrl = validateAudioUrl(urlToTry);
-        }
-      }
-      
-      if (validatedUrl) {
-        const isAccessible = await checkUrlExists(validatedUrl);
-        
-        if (isAccessible) {
-          setCurrentAudioUrl(validatedUrl);
-          setPlayerKey(prevKey => prevKey + 1);
-          setAudioError(false);
-          setIsPlaying(true);
-          
-          toast.success("Audio succesvol hersteld");
-        } else {
-          toast.error("Audio URL is niet toegankelijk");
-          setAudioError(true);
-        }
-      } else {
-        toast.error("Geen geldige audio URL beschikbaar");
-        setAudioError(true);
-      }
-    } catch (error) {
-      console.error("Error retrying audio:", error);
-      toast.error("Fout bij opnieuw proberen");
-      setAudioError(true);
-    } finally {
-      setIsRetrying(false);
-    }
   };
 
   const handlePlayExternalLink = (linkType: 'vera' | 'marco') => {
@@ -217,7 +108,6 @@ export function MeditationPlayerContainer({
       setCurrentAudioUrl(validatedUrl);
       setPlayerKey(prevKey => prevKey + 1);
       setIsPlaying(true);
-      setAudioError(false);
       
       toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
     } catch (e) {
@@ -226,58 +116,29 @@ export function MeditationPlayerContainer({
     }
   };
 
-  if (isLoadingAudio) {
-    return (
-      <div className="mt-4 space-y-4">
-        <div className="flex justify-between items-center mb-2">
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-8 w-20" />
-        </div>
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    );
-  }
-
   if (!hasValidAudio || audioError) {
     return (
       <div className="mt-4">
-        <MeditationErrorDisplay
-          message="Geen audio beschikbaar voor deze meditatie."
-          additionalDetails={
-            selectedMeditation.veraLink || selectedMeditation.marcoLink 
-              ? "Probeer de externe links hieronder." 
-              : "Probeer een andere meditatie te selecteren."
-          }
-          onRetry={handleRetryAudio}
-          isRetrying={isRetrying}
-        />
-        
-        {(selectedMeditation.veraLink || selectedMeditation.marcoLink) && (
-          <div className="mt-4 flex gap-2">
-            <Button
-              variant="outline"
-              className={`flex-1 ${selectedMeditation.veraLink ? 'hover:bg-blue-600 hover:text-white' : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('vera')}
-              disabled={!selectedMeditation.veraLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Probeer Vera
-            </Button>
-            
-            <Button
-              variant="outline"
-              className={`flex-1 ${selectedMeditation.marcoLink ? 'hover:bg-purple-600 hover:text-white' : 'opacity-50 bg-transparent'}`}
-              onClick={() => handlePlayExternalLink('marco')}
-              disabled={!selectedMeditation.marcoLink}
-              type="button"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Probeer Marco
-            </Button>
-          </div>
-        )}
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
+            {selectedMeditation.audioUrl && (
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setAudioError(false);
+                    handleStartPlaying();
+                  }}
+                >
+                  Probeer opnieuw
+                </Button>
+              </div>
+            )}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -286,39 +147,27 @@ export function MeditationPlayerContainer({
     <div className="mt-4">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-medium">Nu speelt: {selectedMeditation.title}</h3>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
+        {isPlaying ? (
+          <Button 
+            variant="destructive"
             size="sm"
-            onClick={toggleFavorite}
+            onClick={handleStopPlaying}
             className="flex items-center gap-1"
-            title={selectedMeditation.isFavorite ? "Verwijder uit favorieten" : "Voeg toe aan favorieten"}
           >
-            <Heart className={`h-4 w-4 ${selectedMeditation.isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+            <StopCircle className="h-4 w-4" />
+            Stoppen
           </Button>
-          
-          {isPlaying ? (
-            <Button 
-              variant="destructive"
-              size="sm"
-              onClick={handleStopPlaying}
-              className="flex items-center gap-1"
-            >
-              <StopCircle className="h-4 w-4" />
-              Stoppen
-            </Button>
-          ) : (
-            <Button 
-              variant="default"
-              size="sm"
-              onClick={handleStartPlaying}
-              className="flex items-center gap-1"
-            >
-              <PlayCircle className="h-4 w-4" />
-              Start
-            </Button>
-          )}
-        </div>
+        ) : (
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={handleStartPlaying}
+            className="flex items-center gap-1"
+          >
+            <PlayCircle className="h-4 w-4" />
+            Start
+          </Button>
+        )}
       </div>
 
       {hasValidImage && !imageError && (
