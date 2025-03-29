@@ -6,7 +6,8 @@ import { getCountForPhase, getNextPhase } from './breathing-utils';
 import BreathingAudio from './breathing-audio';
 import BreathingCircle from './breathing-circle';
 
-const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
+// Changed from const BreathingAnimation: React.FC<...> to export const
+export const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   technique,
   voiceUrls,
   isVoiceActive,
@@ -82,4 +83,5 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
   );
 };
 
+// Add a default export pointing to the named export
 export default BreathingAnimation;

@@ -1,6 +1,6 @@
 
 import React from "react";
-import BreathingAnimation from "@/components/breathing/breathing-animation";
+import { BreathingAnimation } from "@/components/breathing/breathing-animation";
 import { BreathingPhase } from "@/components/breathing/types";
 import { PatternSelector } from "@/components/breathing-page/pattern-selector";
 import { BreathingPattern } from "@/components/breathing-page/types";
