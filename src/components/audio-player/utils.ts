@@ -24,6 +24,38 @@ export const validateAudioUrl = (url: string): string | null => {
 };
 
 /**
+ * Checks if a URL is accessible
+ * Returns a promise that resolves to true if the URL is accessible, false otherwise
+ */
+export const checkUrlExists = async (url: string): Promise<boolean> => {
+  if (!url) return false;
+  
+  try {
+    // For audio files, we use a HEAD request to check if they exist
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: controller.signal,
+      mode: 'no-cors' // This prevents CORS errors but limits response info
+    }).catch(err => {
+      console.warn("Error checking URL existence:", err);
+      return null;
+    });
+    
+    clearTimeout(timeoutId);
+    
+    // With no-cors, we can't reliably check status, so we assume success if no error
+    return !!response;
+    
+  } catch (error) {
+    console.warn("Error checking URL existence:", error);
+    return false;
+  }
+};
+
+/**
  * Checks if a URL points to a streaming resource
  */
 export const isStreamUrl = (url: string): boolean => {
@@ -171,16 +203,16 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
 /**
  * Returns a random quote about sound, music or listening
  */
-export const getRandomQuote = (): { text: string; author: string } => {
+export const getRandomQuote = (): { text: string; author: string; id?: string } => {
   const quotes = [
-    { text: "Muziek geeft de ziel een stem.", author: "Plato" },
-    { text: "Muziek is de universele taal van de mensheid.", author: "Henry Wadsworth Longfellow" },
-    { text: "Waar woorden falen, spreekt muziek.", author: "Hans Christian Andersen" },
-    { text: "Stilte is even belangrijk als geluid.", author: "Miles Davis" },
-    { text: "Luister naar de stilte. Het heeft zoveel te zeggen.", author: "Rumi" },
-    { text: "De muziek drukt uit wat niet gezegd kan worden en waarover het onmogelijk is om te zwijgen.", author: "Victor Hugo" },
-    { text: "Zonder muziek zou het leven een vergissing zijn.", author: "Friedrich Nietzsche" },
-    { text: "Muziek is de kortste weg naar het hart.", author: "Søren Kierkegaard" }
+    { text: "Muziek geeft de ziel een stem.", author: "Plato", id: "1" },
+    { text: "Muziek is de universele taal van de mensheid.", author: "Henry Wadsworth Longfellow", id: "2" },
+    { text: "Waar woorden falen, spreekt muziek.", author: "Hans Christian Andersen", id: "3" },
+    { text: "Stilte is even belangrijk als geluid.", author: "Miles Davis", id: "4" },
+    { text: "Luister naar de stilte. Het heeft zoveel te zeggen.", author: "Rumi", id: "5" },
+    { text: "De muziek drukt uit wat niet gezegd kan worden en waarover het onmogelijk is om te zwijgen.", author: "Victor Hugo", id: "6" },
+    { text: "Zonder muziek zou het leven een vergissing zijn.", author: "Friedrich Nietzsche", id: "7" },
+    { text: "Muziek is de kortste weg naar het hart.", author: "Søren Kierkegaard", id: "8" }
   ];
   
   return quotes[Math.floor(Math.random() * quotes.length)];

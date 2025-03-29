@@ -15,6 +15,12 @@ export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   onPlayPauseChange?: (isPlaying: boolean) => void;
   onError?: () => void;
   volume?: number;
+  title?: string;
+  showTitle?: boolean;
+  showQuote?: boolean;
+  nextAudioUrl?: string;
+  onEnded?: () => void;
+  onCrossfadeStart?: () => void;
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>(
@@ -25,7 +31,13 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
     isPlayingExternal,
     onPlayPauseChange,
     onError,
-    volume: externalVolume 
+    volume: externalVolume,
+    title,
+    showTitle = false,
+    showQuote = true,
+    nextAudioUrl,
+    onEnded,
+    onCrossfadeStart
   }, ref) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -85,7 +97,11 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
       isPlayingExternal,
       onPlayPauseChange,
       onError,
-      volume: externalVolume
+      volume: externalVolume,
+      nextAudioUrl,
+      onEnded,
+      onCrossfadeStart,
+      title
     });
     
     // Expose the audio element ref
@@ -117,6 +133,10 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
     
     return (
       <div className={cn("space-y-2", className)}>
+        {showTitle && title && (
+          <div className="text-sm font-medium mb-1">{title}</div>
+        )}
+        
         {finalError ? (
           <AudioPreview 
             url={audioUrl} 

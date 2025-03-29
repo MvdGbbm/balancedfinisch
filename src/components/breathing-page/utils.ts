@@ -1,7 +1,7 @@
 
 import { BreathingPattern, BreathType, VoiceURLs } from "./types";
 import { BreathingPhase } from "@/components/breathing/types";
-import { validateAudioUrl, checkUrlExists } from "@/components/audio-player/utils";
+import { validateAudioUrl, preloadAudio, checkUrlExists } from "@/components/audio-player/utils";
 
 export const calculateBreathDuration = (pattern: BreathingPattern): number => {
   const { inhale, hold1, exhale, hold2, cycles } = pattern;
@@ -69,7 +69,11 @@ export const validateVoiceUrls = async (
   for (const [key, url] of Object.entries(voiceUrls)) {
     if (url) {
       const validUrl = validateAudioUrl(url);
-      results[key] = validUrl ? await checkUrlExists(validUrl) : false;
+      if (validUrl) {
+        results[key] = await checkUrlExists(validUrl);
+      } else {
+        results[key] = false;
+      }
     } else {
       results[key] = false;
     }

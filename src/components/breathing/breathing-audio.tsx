@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
@@ -43,7 +42,6 @@ export function MeditationPlayerContainer({
         const validatedUrl = validateAudioUrl(url);
         
         if (validatedUrl) {
-          // Check if URL is accessible
           const isAccessible = await checkUrlExists(validatedUrl);
           
           if (!isAccessible) {
@@ -112,15 +110,13 @@ export function MeditationPlayerContainer({
     });
   };
   
-  const handleRetryAudio = async () => {
+  const handleRetry = async () => {
     setIsRetrying(true);
     
     try {
-      // Try the original URL first
       let urlToTry = selectedMeditation.audioUrl || '';
       let validatedUrl = validateAudioUrl(urlToTry);
       
-      // If original URL isn't valid, try external links
       if (!validatedUrl) {
         if (selectedMeditation.veraLink) {
           urlToTry = selectedMeditation.veraLink;
@@ -218,7 +214,7 @@ export function MeditationPlayerContainer({
               ? "Probeer de externe links hieronder." 
               : "Probeer een andere meditatie te selecteren."
           }
-          onRetry={handleRetryAudio}
+          onRetry={handleRetry}
           isRetrying={isRetrying}
         />
         

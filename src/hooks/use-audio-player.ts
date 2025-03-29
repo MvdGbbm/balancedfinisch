@@ -68,7 +68,7 @@ export const useAudioPlayer = ({
       return;
     }
     
-    url = validateAudioUrl(url);
+    url = validateAudioUrl(url) || '';
     if (!url) {
       console.error("Invalid audio URL");
       setLoadError(true);
