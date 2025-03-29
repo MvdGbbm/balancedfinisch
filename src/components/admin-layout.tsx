@@ -143,7 +143,6 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
                         <SidebarMenuButton 
                           isActive={location.pathname === item.path}
                           onClick={() => navigate(item.path)}
-                          tooltip={item.description}
                         >
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>

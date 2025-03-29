@@ -14,6 +14,14 @@ import { Toaster } from './components/ui/sonner';
 import { ThemeProvider } from './components/theme-provider';
 import './App.css';
 
+// Import admin pages
+import AdminStreams from './pages/admin/Streams';
+import AdminQuotes from './pages/admin/Quotes';
+import AdminSoundscapes from './pages/admin/Soundscapes';
+import AdminMeditations from './pages/admin/Meditations';
+import AdminMusic from './pages/admin/Music';
+import AdminBreathing from './pages/admin/Breathing';
+
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="balanced-mind-theme">
@@ -26,7 +34,16 @@ function App() {
           <Route path="/soundscapes" element={<Soundscapes />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/daily-quote" element={<DailyQuote />} />
-          <Route path="/admin/*" element={<Admin />} />
+          
+          {/* Admin routes */}
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/streams" element={<AdminStreams />} />
+          <Route path="/admin/quotes" element={<AdminQuotes />} />
+          <Route path="/admin/soundscapes" element={<AdminSoundscapes />} />
+          <Route path="/admin/meditations" element={<AdminMeditations />} />
+          <Route path="/admin/music" element={<AdminMusic />} />
+          <Route path="/admin/breathing" element={<AdminBreathing />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
