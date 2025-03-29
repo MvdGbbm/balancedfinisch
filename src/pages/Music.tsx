@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { PlaylistSelector } from "@/components/playlist/playlist-selector";
 import { Soundscape } from "@/lib/types";
+import { Playlist } from "@/components/playlist/types";
 import { supabase } from "@/integrations/supabase/client";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useQuery } from "@tanstack/react-query";
@@ -38,7 +39,7 @@ interface RadioStream {
 
 const Music = () => {
   const { soundscapes } = useApp();
-  const { toast } = useToast();
+  const { toast: useToastHook } = useToast();
   const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
   const [previewTrack, setPreviewTrack] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -78,7 +79,7 @@ const Music = () => {
     meta: {
       onError: (error: Error) => {
         console.error("Error fetching radio streams:", error);
-        toast({
+        useToastHook({
           variant: "destructive",
           title: "Fout bij laden",
           description: "Kon de radiostreams niet laden."
@@ -136,14 +137,17 @@ const Music = () => {
     }
     
     refetchStreams().then(() => {
-      toast("Pagina is ververst", {
+      useToastHook({
+        variant: "destructive",
+        title: "Pagina is ververst",
         description: "Alle content is opnieuw geladen"
       });
       setIsLoading(false);
     }).catch(() => {
-      toast("Fout bij verversen", {
-        description: "Er is een probleem opgetreden bij het verversen van de pagina",
-        variant: "destructive"
+      useToastHook({
+        variant: "destructive",
+        title: "Fout bij verversen",
+        description: "Er is een probleem opgetreden bij het verversen van de pagina"
       });
       setIsLoading(false);
     });
@@ -173,7 +177,9 @@ const Music = () => {
     localStorage.removeItem('todayQuoteId');
     
     refetchStreams().then(() => {
-      toast("Cachegeheugen gewist", {
+      useToastHook({
+        variant: "destructive",
+        title: "Cachegeheugen gewist",
         description: "Alle opgeslagen gegevens zijn verwijderd. De app zal opnieuw worden geladen."
       });
       
@@ -181,9 +187,10 @@ const Music = () => {
         window.location.reload();
       }, 1500);
     }).catch(() => {
-      toast("Fout bij wissen cache", {
-        description: "Er is een probleem opgetreden bij het wissen van het cachegeheugen",
-        variant: "destructive"
+      useToastHook({
+        variant: "destructive",
+        title: "Fout bij wissen cache",
+        description: "Er is een probleem opgetreden bij het wissen van het cachegeheugen"
       });
       setIsLoading(false);
     });
@@ -220,7 +227,7 @@ const Music = () => {
       setPreviewTrack(null);
       setIsPlaying(false);
       
-      toast({
+      useToastHook({
         title: "Voorluisteren gestopt",
         description: `${track.title} is gestopt met afspelen`
       });
@@ -238,7 +245,7 @@ const Music = () => {
     setPreviewTrack(null);
     setIsPlaying(false);
     
-    toast({
+    useToastHook({
       title: "Voorluisteren gestopt",
       description: "De muziek is gestopt"
     });
@@ -247,7 +254,7 @@ const Music = () => {
   const handleStreamPlay = (stream: RadioStream) => {
     setHiddenIframeUrl(stream.url);
     
-    toast({
+    useToastHook({
       title: "Radio link geopend",
       description: `"${stream.title}" speelt nu in de achtergrond`
     });
@@ -256,7 +263,7 @@ const Music = () => {
   const handleStreamStop = () => {
     setHiddenIframeUrl(null);
     
-    toast({
+    useToastHook({
       title: "Streaming gestopt",
       description: "De streaming verbinding is verbroken"
     });
@@ -276,7 +283,7 @@ const Music = () => {
         setCurrentTrack(nextTrackObj);
         setIsPlaying(true);
         
-        toast({
+        useToastHook({
           title: "Volgende nummer",
           description: `Nu speelt: ${nextTrackObj.title}`
         });
@@ -297,7 +304,7 @@ const Music = () => {
     }
     
     if (playlist.tracks.length === 0) {
-      toast({
+      useToastHook({
         title: "Lege afspeellijst",
         description: "Deze afspeellijst bevat geen nummers.",
         variant: "destructive"
@@ -319,7 +326,7 @@ const Music = () => {
     setCurrentTrack(track);
     setIsPlaying(true);
     
-    toast({
+    useToastHook({
       title: "Afspeellijst gestart",
       description: `${playlist.name} wordt nu afgespeeld`
     });
@@ -327,7 +334,7 @@ const Music = () => {
   
   const handleStopPlaylist = () => {
     setIsPlaying(false);
-    toast({
+    useToastHook({
       title: "Afspeellijst gestopt",
       description: "De afspeellijst is gestopt met afspelen"
     });
@@ -335,7 +342,7 @@ const Music = () => {
 
   const handleAddToPlaylist = (track: Soundscape, playlist: Playlist) => {
     if (playlist.tracks.some(t => t.trackId === track.id)) {
-      toast({
+      useToastHook({
         title: "Track bestaat al in afspeellijst",
         description: `${track.title} is al toegevoegd aan ${playlist.name}`,
         variant: "destructive"
@@ -356,9 +363,9 @@ const Music = () => {
     );
     
     setPlaylists(updatedPlaylists);
-    toast({
+    useToastHook({
       title: "Toegevoegd aan afspeellijst",
-      description: `${track.title} is toegevoegd aan ${playlist.name}`,
+      description: `${track.title} is toegevoegd aan ${playlist.name}`
     });
   };
 
@@ -394,7 +401,7 @@ const Music = () => {
       setSelectedPlaylist(updatedPlaylist);
     }
     
-    toast({
+    useToastHook({
       title: "Nummer verwijderd",
       description: "Het nummer is verwijderd uit de afspeellijst."
     });
@@ -410,7 +417,7 @@ const Music = () => {
     
     setPlaylists([...playlists, newPlaylist]);
     setShowPlaylistCreator(false);
-    toast({
+    useToastHook({
       title: "Afspeellijst aangemaakt",
       description: `Afspeellijst '${name}' is aangemaakt`,
     });
