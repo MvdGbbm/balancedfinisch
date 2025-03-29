@@ -9,9 +9,9 @@ import {
   DailyQuote, 
   PlannerEvent 
 } from '@/lib/types';
-import { defaultMeditations } from '@/data/meditations';
-import { defaultSoundscapes } from '@/data/soundscapes';
-import { defaultQuotes } from '@/data/quotes';
+import { meditations as sampleMeditations } from '@/data/meditations';
+import { soundscapes as sampleSoundscapes } from '@/data/soundscapes';
+import { quotes as sampleQuotes } from '@/data/quotes';
 
 // Create context with default empty values
 const AppContext = createContext<AppContextType>({
@@ -55,7 +55,7 @@ const AppContext = createContext<AppContextType>({
   // App functions
   setCurrentMeditation: () => {},
   setCurrentSoundscape: () => {},
-  getRandomQuote: () => ({ id: '', text: '', author: '', date: new Date() }),
+  getRandomQuote: () => ({ id: '', text: '', author: '', date: '' }),
   saveDailyQuoteToCalendar: () => {},
 });
 
@@ -91,7 +91,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Using cached meditations');
     } else {
       // Use default meditations
-      const processedMeditations = defaultMeditations.map(meditation => ({
+      const processedMeditations = sampleMeditations.map(meditation => ({
         ...meditation,
         audioUrl: meditation.audioUrl || '',
         favorites: meditation.favorites || 0,
@@ -112,7 +112,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Using cached soundscapes');
     } else {
       // Use default soundscapes
-      const processedSoundscapes = defaultSoundscapes.map(soundscape => ({
+      const processedSoundscapes = sampleSoundscapes.map(soundscape => ({
         ...soundscape,
         audioUrl: soundscape.audioUrl || '',
         isFavorite: soundscape.isFavorite || false,
@@ -133,17 +133,17 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     if (savedDailyQuotes) {
       setDailyQuotes(JSON.parse(savedDailyQuotes));
     } else {
-      setDailyQuotes(defaultQuotes);
-      localStorage.setItem('dailyQuotes', JSON.stringify(defaultQuotes));
+      setDailyQuotes(sampleQuotes);
+      localStorage.setItem('dailyQuotes', JSON.stringify(sampleQuotes));
     }
     
     // Load current quote
     const savedCurrentQuote = localStorage.getItem('currentQuote');
     if (savedCurrentQuote) {
       setCurrentQuote(JSON.parse(savedCurrentQuote));
-    } else if (defaultQuotes.length > 0) {
-      setCurrentQuote(defaultQuotes[0]);
-      localStorage.setItem('currentQuote', JSON.stringify(defaultQuotes[0]));
+    } else if (sampleQuotes.length > 0) {
+      setCurrentQuote(sampleQuotes[0]);
+      localStorage.setItem('currentQuote', JSON.stringify(sampleQuotes[0]));
     }
     
     // Load planner events
@@ -335,7 +335,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
   // App Functions
   const getRandomQuote = (): DailyQuote => {
-    if (dailyQuotes.length === 0) return { id: '', text: '', author: '', date: new Date() };
+    if (dailyQuotes.length === 0) return { id: '', text: '', author: '', date: '' };
     
     const randomIndex = Math.floor(Math.random() * dailyQuotes.length);
     const randomQuote = dailyQuotes[randomIndex];
