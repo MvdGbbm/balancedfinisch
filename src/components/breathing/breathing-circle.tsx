@@ -8,6 +8,7 @@ interface BreathingCircleProps {
   exerciseCompleted?: boolean;
   currentCycle?: number;
   totalCycles?: number;
+  animationDuration?: number;
   onToggleActive?: () => void;
   phaseLabel?: string;
 }
@@ -18,6 +19,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   exerciseCompleted = false,
   currentCycle = 1,
   totalCycles = 5,
+  animationDuration = 4,
   onToggleActive,
   phaseLabel
 }) => {
@@ -29,10 +31,15 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
       case 'hold':
         return 'scale-100';
       case 'exhale':
-        return 'scale-75';
+        return 'scale-50';
       default:
         return 'scale-75';
     }
+  };
+
+  // Determine the animation duration
+  const getAnimationDuration = () => {
+    return `${animationDuration}s`;
   };
 
   return (
@@ -45,12 +52,12 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
       {/* Breathing circle */}
       <div 
         className={cn(
-          "relative h-64 w-64 rounded-full bg-blue-50 border-4 border-blue-400 flex items-center justify-center transition-transform",
+          "relative h-64 w-64 rounded-full bg-blue-50 border-4 border-blue-400 flex items-center justify-center transition-transform duration-1000",
           getCircleScale(),
           exerciseCompleted && "bg-green-50 border-green-400"
         )}
         style={{ 
-          transition: "transform 0.5s ease-in-out",
+          transitionDuration: getAnimationDuration(),
           boxShadow: "0 0 30px rgba(96, 165, 250, 0.5)"
         }}
         onClick={onToggleActive}

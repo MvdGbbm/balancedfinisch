@@ -32,11 +32,6 @@ export function BreathingVisualizer({
   
   // Calculate colors based on the current phase
   const getGradientColors = () => {
-    // If it's hold1/hold2 phase but hold is disabled, treat it as inhale phase
-    if ((currentPhase === "hold1" || currentPhase === "hold2") && !holdEnabled) {
-      return "from-blue-100 to-blue-300";
-    }
-    
     switch (currentPhase) {
       case "inhale":
         return "from-blue-100 to-blue-300";
@@ -52,11 +47,6 @@ export function BreathingVisualizer({
 
   // Calculate border color based on the current phase
   const getBorderColor = () => {
-    // If it's hold1/hold2 phase but hold is disabled, treat it as inhale phase
-    if ((currentPhase === "hold1" || currentPhase === "hold2") && !holdEnabled) {
-      return "border-blue-500";
-    }
-    
     switch (currentPhase) {
       case "inhale":
         return "border-blue-500";
@@ -76,7 +66,7 @@ export function BreathingVisualizer({
         {/* Background glow effect */}
         <div 
           className={`absolute inset-0 rounded-full opacity-30 blur-xl ${
-            currentPhase === "inhale" || ((currentPhase === "hold1" || currentPhase === "hold2") && !holdEnabled) ? "bg-blue-300" : 
+            currentPhase === "inhale" ? "bg-blue-300" : 
             (currentPhase === "hold1" || currentPhase === "hold2") ? "bg-purple-300" : 
             "bg-teal-300"
           }`}
@@ -89,7 +79,7 @@ export function BreathingVisualizer({
         {/* Pulsing effect for "breathing" feel */}
         <div 
           className={`absolute inset-0 rounded-full opacity-20 ${
-            currentPhase === "inhale" || ((currentPhase === "hold1" || currentPhase === "hold2") && !holdEnabled) ? "bg-blue-400" : 
+            currentPhase === "inhale" ? "bg-blue-400" : 
             (currentPhase === "hold1" || currentPhase === "hold2") ? "bg-purple-400" : 
             "bg-teal-400"
           }`}

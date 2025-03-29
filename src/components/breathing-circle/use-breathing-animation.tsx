@@ -37,22 +37,26 @@ const getNextPhase = (
 };
 
 /**
- * Updates the circle scale based on the current phase
+ * Updates the circle scale based on the current phase and progress
  */
 const calculateCircleScale = (
-  activePhase: string,
+  activePhase: string, 
+  progressRatio: number,
   shouldShowHoldPhase: boolean
 ): number => {
   switch (activePhase) {
     case "inhale":
-      return 1.0;
+      // Expand from 50% to 100% during inhale
+      return 0.5 + (progressRatio * 0.5);
     case "hold":
       if (shouldShowHoldPhase) {
+        // Stay at 100% during hold
         return 1.0;
       }
       return 0.5;
     case "exhale":
-      return 0.5;
+      // Shrink from 100% back to 50% during exhale
+      return 1.0 - (progressRatio * 0.5);
     default:
       // Rest at 50%
       return 0.5;
@@ -101,24 +105,43 @@ export function useBreathingAnimation({
     }
   }, [isActive, inhaleDuration]);
 
-  // Updates circle scale in the state based on phase
-  const updateCircleScale = (activePhase: string) => {
-    const newScale = calculateCircleScale(activePhase, shouldShowHoldPhase);
+  // Updates circle scale in the state based on phase and progress
+  const updateCircleScale = (activePhase: string, progressRatio: number) => {
+    const newScale = calculateCircleScale(activePhase, progressRatio, shouldShowHoldPhase);
     setState(prev => ({
       ...prev,
       circleScale: newScale
     }));
   };
 
-  // Handle circle scaling based on phase
+  // Handle circle scaling based on phase and progress
   useEffect(() => {
     if (!isActive) return;
 
     const activePhase = currentPhase || phase;
-    updateCircleScale(activePhase);
-  }, [currentPhase, phase, isActive, inhaleDuration, holdDuration, exhaleDuration, shouldShowHoldPhase]);
+    
+    // Calculate maximum seconds for current phase
+    const getMaxSeconds = (phase: string): number => {
+      switch (phase) {
+        case "inhale": return Math.ceil(inhaleDuration / 1000);
+        case "hold": return shouldShowHoldPhase ? Math.ceil(holdDuration / 1000) : 0;
+        case "exhale": return Math.ceil(exhaleDuration / 1000);
+        default: return 1;
+      }
+    };
 
-  // Breathing phase timer effect
+    const maxSeconds = getMaxSeconds(activePhase);
+
+    // Scale circle differently based on secondsLeft or progress
+    if (secondsLeft !== undefined && maxSeconds > 0) {
+      const percentComplete = (maxSeconds - secondsLeft) / maxSeconds;
+      updateCircleScale(activePhase, percentComplete);
+    } else {
+      updateCircleScale(activePhase, progress / 100);
+    }
+  }, [currentPhase, phase, progress, isActive, secondsLeft, inhaleDuration, holdDuration, exhaleDuration, shouldShowHoldPhase]);
+
+  // Breathing animation timer effect
   useEffect(() => {
     if (!isActive) {
       return;
@@ -138,11 +161,12 @@ export function useBreathingAnimation({
     const calculateProgress = () => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, phaseDuration - elapsed);
+      const phaseProgress = (elapsed / phaseDuration) * 100;
       
       setState(prev => ({
         ...prev,
         phaseTimeLeft: Math.ceil(remaining / 1000),
-        progress: 100 // Set to 100% instantly
+        progress: Math.min(phaseProgress, 100)
       }));
       
       return elapsed >= phaseDuration;
@@ -177,9 +201,6 @@ export function useBreathingAnimation({
         ...prev, 
         phaseTimeLeft: Math.ceil(phaseDuration / 1000) 
       }));
-
-      // Update circle scale immediately for the new phase
-      updateCircleScale(nextPhase);
     };
 
     calculateProgress();
@@ -190,14 +211,21 @@ export function useBreathingAnimation({
       if (phaseComplete) {
         transitionToNextPhase();
       }
-    }, 1000); // Update once per second instead of 60fps
+    }, 16); // ~60 FPS
 
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase, shouldShowHoldPhase]);
 
   // Helper to get transition duration for animation
   const getTransitionDuration = () => {
-    return 500; // Fixed 500ms transition
+    const activePhase = currentPhase || phase;
+    return getPhaseTimeDuration(
+      activePhase, 
+      inhaleDuration, 
+      holdDuration, 
+      exhaleDuration, 
+      shouldShowHoldPhase
+    );
   };
 
   return {

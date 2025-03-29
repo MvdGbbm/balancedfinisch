@@ -24,10 +24,12 @@ export const getCircleAnimationClass = (
     case 'start':
       return 'scale-100'; // No animation for start phase
     case 'inhale':
-      return 'scale-125';
+      return 'grow-animation';
     case 'hold':
       return 'scale-125';
     case 'exhale':
+      return 'shrink-animation';
+    case 'pause':
       return 'scale-100';
     default:
       return 'scale-100';
@@ -37,25 +39,34 @@ export const getCircleAnimationClass = (
 /**
  * Gets an appropriate scale value for a breathing circle based on the phase
  * @param phase - Current breathing phase
- * @returns Scale value (between 0.75 and 1.25)
+ * @param progress - Current progress through the phase (0-100)
+ * @returns Scale value (between 0.5 and 1.25)
  */
 export const getCircleScale = (
-  phase: BreathingPhase
+  phase: BreathingPhase,
+  progress: number = 0
 ): number => {
   const baseScale = 0.85;
   const maxScale = 1.25;
-  const minScale = 0.75;
+  const minScale = 0.5;
   
   switch (phase) {
     case 'inhale':
-      return maxScale;
+      // Scale from base to max during inhale
+      return baseScale + ((maxScale - baseScale) * (progress / 100));
     case 'hold':
+      // Stay at max scale during hold
       return maxScale;
     case 'exhale':
+      // Scale from max to min during exhale
+      return maxScale - ((maxScale - minScale) * (progress / 100));
+    case 'pause':
+      // Stay at min scale during pause
       return minScale;
     case 'start':
     case 'end':
     default:
+      // Default scale for other phases
       return baseScale;
   }
 };
@@ -66,7 +77,7 @@ export const getCircleScale = (
  * @returns CSS transition duration string
  */
 export const getTransitionDuration = (phaseTime: number): string => {
-  return `${0.5}s`;
+  return `${phaseTime}s`;
 };
 
 /**
@@ -79,5 +90,5 @@ export const shouldShowCounter = (
   phase: BreathingPhase, 
   exerciseCompleted: boolean
 ): boolean => {
-  return (phase !== 'start') && !exerciseCompleted;
+  return (phase !== 'pause' && phase !== 'start') && !exerciseCompleted;
 };
