@@ -1,13 +1,11 @@
 
 import React, { useState } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { MeditationCategoryTabs } from "@/components/meditation/meditation-category-tabs";
 import { Input } from "@/components/ui/input";
 import { Search, Filter } from "lucide-react";
 import { useApp } from "@/context/AppContext";
-import { MeditationFilters } from "@/components/meditation/meditation-filters";
-import { MeditationCard } from "@/components/meditation/meditation-card";
 import { Button } from "@/components/ui/button";
+import { MeditationCard } from "@/components/meditation/meditation-card";
 import { MeditationDetailDialog } from "@/components/meditation/meditation-detail-dialog";
 import { Meditation } from "@/lib/types";
 import { filterMeditations } from "@/utils/meditation-utils";
@@ -75,21 +73,59 @@ const Meditations = () => {
         </div>
 
         {isFiltersOpen && (
-          <MeditationFilters
-            selectedDurations={selectedDurations}
-            onDurationChange={setSelectedDurations}
-            className="mb-6"
-          />
+          <div className="mb-6">
+            {/* Simple duration selector */}
+            <div className="space-y-2">
+              <h3 className="font-medium">Duur</h3>
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 15, 20, 30].map((duration) => (
+                  <Button
+                    key={duration}
+                    variant={selectedDurations.includes(duration) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDurations(prev =>
+                        prev.includes(duration)
+                          ? prev.filter(d => d !== duration)
+                          : [...prev, duration]
+                      );
+                    }}
+                  >
+                    {duration} min
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
-        {categories.length > 0 ? (
-          <MeditationCategoryTabs
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            className="mb-4"
-          />
-        ) : null}
+        {categories.length > 0 && (
+          <div className="mb-4">
+            <div className="overflow-x-auto pb-2">
+              <div className="flex space-x-2">
+                <Button
+                  variant={selectedCategory === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  Alle
+                </Button>
+                {categories.map((category) => (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(
+                      selectedCategory === category ? null : category
+                    )}
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {categories.length > 0 ? (
@@ -126,7 +162,7 @@ const Meditations = () => {
       {selectedMeditation && (
         <MeditationDetailDialog
           meditation={selectedMeditation}
-          open={detailDialogOpen}
+          isOpen={detailDialogOpen}
           onOpenChange={setDetailDialogOpen}
           onPlay={() => handlePlayMeditation(selectedMeditation)}
         />

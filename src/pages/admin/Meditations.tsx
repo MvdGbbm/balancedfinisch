@@ -1,13 +1,13 @@
+
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { Meditation } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Plus, ListMusic, Search } from "lucide-react";
 import { MeditationFormDialog } from "@/components/admin/meditation/MeditationFormDialog";
 import { CategoryManagementDialog } from "@/components/admin/meditation/CategoryManagementDialog";
-import { MeditationCategoryCard } from "@/components/admin/meditation/MeditationCategoryCard";
+import { MeditationHeader } from "@/components/admin/meditation/MeditationHeader";
+import { EmptyMeditationState } from "@/components/admin/meditation/EmptyMeditationState";
+import { MeditationsList } from "@/components/admin/meditation/MeditationsList";
 
 const AdminMeditations = () => {
   const { meditations, addMeditation, updateMeditation, deleteMeditation } = useApp();
@@ -129,70 +129,31 @@ const AdminMeditations = () => {
   return (
     <AdminLayout>
       <div className="space-y-4 animate-fade-in">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Meditaties Beheren</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
-              <ListMusic className="h-4 w-4 mr-2" />
-              Categorieën
-            </Button>
-            <Button onClick={handleOpenNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nieuwe Meditatie
-            </Button>
-          </div>
-        </div>
+        <MeditationHeader
+          onNewMeditation={handleOpenNew}
+          onOpenCategoryDialog={() => setIsCategoryDialogOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
         
-        <div className="flex justify-between items-center">
-          <p className="text-muted-foreground">
-            Voeg nieuwe meditaties toe of bewerk bestaande content
-          </p>
-          
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              type="search"
-              placeholder="Zoek meditaties..." 
-              className="pl-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-6 pb-20">
-          {Object.entries(groupedMeditations).length > 0 ? (
-            Object.entries(groupedMeditations).map(([category, meditationsList]) => (
-              <MeditationCategoryCard
-                key={category}
-                category={category}
-                meditations={meditationsList}
-                onEditMeditation={handleEdit}
-                onEditCategory={(cat) => {
-                  setEditingCategory(cat);
-                  setUpdatedCategoryName(cat);
-                  setIsCategoryDialogOpen(true);
-                }}
-                onDeleteCategory={handleDeleteCategory}
-                onDeleteMeditation={handleDelete}
-              />
-            ))
-          ) : (
-            <div className="text-center py-10">
-              <p className="text-muted-foreground mb-4">
-                {searchQuery 
-                  ? "Geen meditaties gevonden die aan je zoekopdracht voldoen." 
-                  : "Er zijn nog geen meditaties. Voeg je eerste meditatie toe!"}
-              </p>
-              {!searchQuery && (
-                <Button onClick={handleOpenNew}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nieuwe Meditatie
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+        {Object.entries(groupedMeditations).length > 0 ? (
+          <MeditationsList
+            groupedMeditations={groupedMeditations}
+            onEditMeditation={handleEdit}
+            onEditCategory={(cat) => {
+              setEditingCategory(cat);
+              setUpdatedCategoryName(cat);
+              setIsCategoryDialogOpen(true);
+            }}
+            onDeleteCategory={handleDeleteCategory}
+            onDeleteMeditation={handleDelete}
+          />
+        ) : (
+          <EmptyMeditationState
+            searchQuery={searchQuery}
+            onNewMeditation={handleOpenNew}
+          />
+        )}
       </div>
       
       <MeditationFormDialog
