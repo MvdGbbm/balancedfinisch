@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Dialog,
@@ -12,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { FileAudio, Image, Play, StopCircle, ExternalLink, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { AudioPlayer } from "@/components/audio-player";
@@ -56,7 +56,6 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     }
   }, [currentMusic, isOpen]);
   
-  // Validate and update URL when it changes
   useEffect(() => {
     if (audioUrl) {
       setIsValidatingUrl(true);
@@ -66,7 +65,6 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       
       setValidatedUrl(supabaseUrl);
       
-      // Check if the URL is valid
       preloadAudio(supabaseUrl).then(success => {
         setIsUrlValid(success);
         setIsValidatingUrl(false);
@@ -114,7 +112,6 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       return;
     }
     
-    // Validate URLs before saving
     const processedAudioUrl = validateAudioUrl(audioUrl);
     const finalAudioUrl = processedAudioUrl.includes('supabase.co') 
       ? fixSupabaseStorageUrl(processedAudioUrl) 
@@ -122,7 +119,6 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       
     let processedCoverImageUrl = coverImageUrl;
     
-    // Basic validation for image URL
     if (!coverImageUrl.startsWith('http://') && !coverImageUrl.startsWith('https://')) {
       processedCoverImageUrl = 'https://' + coverImageUrl.replace(/^\/\//, '');
     }
@@ -155,7 +151,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {currentMusic ? "Muziek Bewerken" : "Nieuwe Muziek"}
@@ -165,8 +161,8 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="title">Titel</Label>
               <Input
@@ -184,7 +180,8 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
                 placeholder="Beschrijving van de muziek"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={4}
+                rows={3}
+                className="resize-none"
               />
             </div>
             
@@ -194,7 +191,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
             </div>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="space-y-2">
               <Label htmlFor="audioUrl">Audio URL <span className="text-red-500">*</span></Label>
               <div className="flex gap-2">
@@ -234,18 +231,6 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
                   Kon audio niet laden. Controleer of de URL juist is en toegankelijk.
                 </div>
               )}
-              {isValidUrl(audioUrl) && (
-                <div className="text-xs text-muted-foreground flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Directe URL naar een online audio bestand
-                </div>
-              )}
-              {audioUrl && audioUrl.includes('supabase.co') && (
-                <div className="text-xs text-blue-500 flex items-center mt-1">
-                  <FileAudio className="h-3 w-3 mr-1" />
-                  Supabase Storage URL gedetecteerd
-                </div>
-              )}
             </div>
             
             <div className="space-y-2">
@@ -266,30 +251,26 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
                   <Image className="h-4 w-4" />
                 </Button>
               </div>
-              {isValidUrl(coverImageUrl) && (
-                <div className="text-xs text-muted-foreground flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Directe URL naar een online afbeelding
-                </div>
-              )}
             </div>
             
             {coverImageUrl && (
-              <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
-                <img 
-                  src={coverImageUrl} 
-                  alt="Preview" 
-                  className="w-full h-full object-cover" 
-                  onError={(e) => {
-                    e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
-                    toast.error("Kon de afbeelding niet laden. Controleer de URL.");
-                  }}
-                />
+              <div className="mt-3 rounded-md overflow-hidden relative border">
+                <AspectRatio ratio={16/9}>
+                  <img 
+                    src={coverImageUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      toast.error("Kon de afbeelding niet laden. Controleer de URL.");
+                    }}
+                  />
+                </AspectRatio>
               </div>
             )}
             
             {audioUrl && isPreviewPlaying && isUrlValid && (
-              <div className="mt-4">
+              <div className="mt-3">
                 <Label>Audio Preview</Label>
                 <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
                 <AudioPlayer 

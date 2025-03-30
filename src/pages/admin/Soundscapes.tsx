@@ -4,24 +4,22 @@ import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
   Card, 
-  CardContent, 
-  CardFooter,
+  CardContent,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { AudioPlayer } from "@/components/audio-player";
 import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag } from "lucide-react";
+  Edit, 
+  Trash2, 
+  Plus, 
+  Search, 
+  Music, 
+  Volume2
+} from "lucide-react";
 
+import { MusicFormDialog } from "@/components/admin/music/MusicFormDialog";
 import { Soundscape } from "@/lib/types";
 
 const AdminSoundscapes = () => {
@@ -29,37 +27,15 @@ const AdminSoundscapes = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentSoundscape, setCurrentSoundscape] = useState<Soundscape | null>(null);
-  
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [audioUrl, setAudioUrl] = useState("");
-  const [coverImageUrl, setCoverImageUrl] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-  
-  const resetForm = () => {
-    setTitle("");
-    setDescription("");
-    setAudioUrl("");
-    setCoverImageUrl("");
-    setTags([]);
-    setTagInput("");
-  };
+  const [searchQuery, setSearchQuery] = useState("");
   
   const handleOpenNew = () => {
     setCurrentSoundscape(null);
-    resetForm();
     setIsDialogOpen(true);
   };
   
   const handleEdit = (soundscape: Soundscape) => {
     setCurrentSoundscape(soundscape);
-    setTitle(soundscape.title);
-    setDescription(soundscape.description);
-    setAudioUrl(soundscape.audioUrl);
-    setCoverImageUrl(soundscape.coverImageUrl);
-    setTags([...soundscape.tags]);
     setIsDialogOpen(true);
   };
   
@@ -69,46 +45,22 @@ const AdminSoundscapes = () => {
     }
   };
   
-  const handleAddTag = () => {
-    if (tagInput && !tags.includes(tagInput)) {
-      setTags([...tags, tagInput]);
-      setTagInput("");
-    }
-  };
-  
-  const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
-  };
-  
-  const handleSave = () => {
-    if (!title || !description || !audioUrl || !coverImageUrl) {
-      alert("Vul alle verplichte velden in");
-      return;
-    }
-    
+  const handleSave = (soundscapeData: Partial<Soundscape>) => {
     if (currentSoundscape) {
-      updateSoundscape(currentSoundscape.id, {
-        title,
-        description,
-        audioUrl,
-        category: "Muziek", // Default category
-        coverImageUrl,
-        tags,
-      });
+      updateSoundscape(currentSoundscape.id, soundscapeData);
     } else {
-      addSoundscape({
-        title,
-        description,
-        audioUrl,
-        category: "Muziek", // Default category
-        coverImageUrl,
-        tags,
-      });
+      addSoundscape(soundscapeData);
     }
     
     setIsDialogOpen(false);
-    resetForm();
   };
+  
+  // Filter soundscapes based on search query
+  const filteredSoundscapes = soundscapes.filter((soundscape) =>
+    soundscape.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    soundscape.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    soundscape.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
   
   return (
     <AdminLayout>
@@ -121,215 +73,101 @@ const AdminSoundscapes = () => {
           </Button>
         </div>
         
-        <p className="text-muted-foreground">
-          Voeg nieuwe soundscapes toe of bewerk bestaande geluiden
-        </p>
+        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Zoek soundscapes..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {filteredSoundscapes.length} soundscapes gevonden
+          </p>
+        </div>
         
-        <div className="space-y-8 pb-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {soundscapes.map((soundscape) => (
-              <Card key={soundscape.id} className="overflow-hidden">
-                <div className="aspect-video bg-cover bg-center relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
+          {filteredSoundscapes.map((soundscape) => (
+            <Card key={soundscape.id} className="overflow-hidden group hover:shadow-md transition-all">
+              <div className="relative">
+                <AspectRatio ratio={16/9}>
                   <img 
                     src={soundscape.coverImageUrl} 
                     alt={soundscape.title}
                     className="w-full h-full object-cover" 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <h3 className="text-white font-medium">{soundscape.title}</h3>
-                    <p className="text-white/80 text-sm truncate">
-                      {soundscape.description}
-                    </p>
-                  </div>
-                  <div className="absolute top-2 right-2 flex gap-1">
-                    <Button 
-                      variant="secondary" 
-                      size="icon"
-                      className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                      onClick={() => handleEdit(soundscape)}
-                    >
-                      <Edit className="h-4 w-4 text-white" />
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="icon"
-                      className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                      onClick={() => handleDelete(soundscape.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-white" />
-                    </Button>
-                  </div>
+                </AspectRatio>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-2 left-2 right-2">
+                  <h3 className="text-white font-medium text-sm line-clamp-1">{soundscape.title}</h3>
                 </div>
-                <CardFooter className="p-3 bg-background">
-                  <AudioPlayer audioUrl={soundscape.audioUrl} showControls={false} />
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button 
+                    variant="secondary" 
+                    size="icon"
+                    className="h-7 w-7 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    onClick={() => handleEdit(soundscape)}
+                  >
+                    <Edit className="h-3.5 w-3.5 text-white" />
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="icon"
+                    className="h-7 w-7 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    onClick={() => handleDelete(soundscape.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-white" />
+                  </Button>
+                </div>
+              </div>
+              <CardContent className="p-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Music className="h-3 w-3" />
+                  <span className="truncate max-w-[100px]">{soundscape.title}</span>
+                </div>
+                <AudioPlayer 
+                  audioUrl={soundscape.audioUrl} 
+                  showControls={false} 
+                  customPlayButton={
+                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                      <Volume2 className="h-3.5 w-3.5" />
+                    </Button>
+                  }
+                />
+              </CardContent>
+            </Card>
+          ))}
           
-          {soundscapes.length === 0 && (
-            <div className="text-center py-10">
+          {/* Empty state */}
+          {filteredSoundscapes.length === 0 && (
+            <div className="col-span-full text-center py-10">
               <p className="text-muted-foreground mb-4">
-                Er zijn nog geen soundscapes. Voeg je eerste soundscape toe!
+                {searchQuery ? "Geen soundscapes gevonden voor je zoekopdracht." : "Er zijn nog geen soundscapes. Voeg je eerste soundscape toe!"}
               </p>
-              <Button onClick={handleOpenNew}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nieuwe Soundscape
-              </Button>
+              {searchQuery ? (
+                <Button variant="outline" onClick={() => setSearchQuery("")}>
+                  Wis zoekopdracht
+                </Button>
+              ) : (
+                <Button onClick={handleOpenNew}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nieuwe Soundscape
+                </Button>
+              )}
             </div>
           )}
         </div>
       </div>
       
       {/* Add/Edit Soundscape Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              {currentSoundscape ? "Soundscape Bewerken" : "Nieuwe Soundscape"}
-            </DialogTitle>
-            <DialogDescription>
-              Vul de details in voor de soundscape
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Titel</Label>
-                <Input
-                  id="title"
-                  placeholder="Titel van de soundscape"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Beschrijving</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Beschrijving van de soundscape"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="tags">Tags</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="tags"
-                    placeholder="Voeg een tag toe"
-                    value={tagInput}
-                    onChange={(e) => setTagInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                  />
-                  <Button 
-                    type="button" 
-                    onClick={handleAddTag}
-                  >
-                    <Tag className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 text-muted-foreground hover:text-foreground"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="audioUrl">Audio URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="audioUrl"
-                    placeholder="URL naar audio bestand"
-                    value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    className="shrink-0"
-                  >
-                    <FileAudio className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="coverImageUrl">Cover Afbeelding URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="coverImageUrl"
-                    placeholder="URL naar afbeelding"
-                    value={coverImageUrl}
-                    onChange={(e) => setCoverImageUrl(e.target.value)}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    className="shrink-0"
-                  >
-                    <Image className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              {coverImageUrl && (
-                <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
-                  <img 
-                    src={coverImageUrl} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
-                    }}
-                  />
-                </div>
-              )}
-              
-              {audioUrl && (
-                <div className="mt-4">
-                  <Label>Audio Preview</Label>
-                  <AudioPlayer audioUrl={audioUrl} />
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              Annuleren
-            </Button>
-            <Button onClick={handleSave}>
-              Opslaan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <MusicFormDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSave={handleSave}
+        currentMusic={currentSoundscape}
+      />
     </AdminLayout>
   );
 };
