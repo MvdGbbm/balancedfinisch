@@ -18,7 +18,10 @@ export function useMeditationState() {
       try {
         setIsLoading(true);
         
-        // Try to fetch from Supabase first (assuming you've created this table)
+        // Check if the meditations table exists in Supabase
+        // For now we'll use sample data since the meditations table might not exist yet
+        // Once the table is created, uncomment this code
+        /*
         const { data: dbMeditations, error } = await supabase
           .from('meditations')
           .select('*')
@@ -26,7 +29,7 @@ export function useMeditationState() {
         
         if (error) {
           console.error("Error fetching from database:", error);
-          // For now we'll use sample data since the meditations table might not exist yet
+          // Use sample data if there's an error
           const processedMeditations = await processMeditationUrls(sampleMeditations);
           setMeditations(processedMeditations);
           return;
@@ -35,7 +38,7 @@ export function useMeditationState() {
         if (dbMeditations && dbMeditations.length > 0) {
           console.log("Loaded meditations from Supabase:", dbMeditations.length);
           
-          // Transform Supabase data to our app format (this would need adjustment based on your actual DB schema)
+          // Transform Supabase data to our app format
           const transformedMeditations: Meditation[] = dbMeditations.map(item => ({
             id: item.id,
             title: item.title,
@@ -54,12 +57,13 @@ export function useMeditationState() {
           const processedMeditations = await processMeditationUrls(transformedMeditations);
           setMeditations(processedMeditations);
         } else {
+        */
           console.log("No meditations found in database, using sample data");
           
           // Use sample data as fallback
           const processedMeditations = await processMeditationUrls(sampleMeditations);
           setMeditations(processedMeditations);
-        }
+        // }
       } catch (error) {
         console.error("Error fetching meditations:", error);
         toast.error("Fout bij het laden van meditaties");

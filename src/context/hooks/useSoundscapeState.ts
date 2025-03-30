@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { processSoundscapeUrls } from "@/utils/meditation-utils";
 
 export function useSoundscapeState() {
-  const [soundscapesData, setSoundscapes] = useState<Soundscape[]>([]);
+  // Changed variable name to avoid duplicate declaration
+  const [soundscapesData, setSoundscapesData] = useState<Soundscape[]>([]);
   const [currentSoundscape, setCurrentSoundscape] = useState<Soundscape | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -44,15 +45,13 @@ export function useSoundscapeState() {
           
           // Process URLs to ensure they are valid
           const processedSoundscapes = await processSoundscapeUrls(transformedSoundscapes);
-          setSoundscapes(processedSoundscapes);
+          setSoundscapesData(processedSoundscapes);
         } else {
           console.log("No soundscapes found in database, using sample data");
           
           // Use sample data as fallback
           const processedSoundscapes = await processSoundscapeUrls(sampleSoundscapes);
-          setSoundscapes(processedSoundscapes);
-          
-          // Optionally, could also initialize the database with sample data here
+          setSoundscapesData(processedSoundscapes);
         }
       } catch (error) {
         console.error("Error fetching soundscapes:", error);
@@ -60,7 +59,7 @@ export function useSoundscapeState() {
         
         // Fallback to sample data on error
         const processedSoundscapes = await processSoundscapeUrls(sampleSoundscapes);
-        setSoundscapes(processedSoundscapes);
+        setSoundscapesData(processedSoundscapes);
       } finally {
         setIsLoading(false);
       }
@@ -106,7 +105,7 @@ export function useSoundscapeState() {
         const processedSoundscape = await processSoundscapeUrls([newSoundscape]);
         
         // Update local state
-        setSoundscapes(prev => [...prev, processedSoundscape[0]]);
+        setSoundscapesData(prev => [...prev, processedSoundscape[0]]);
         toast.success("Soundscape toegevoegd");
       }
     } catch (error) {
@@ -118,7 +117,7 @@ export function useSoundscapeState() {
         ...soundscape,
         id: generateId(),
       };
-      setSoundscapes(prev => [...prev, newSoundscape]);
+      setSoundscapesData(prev => [...prev, newSoundscape]);
     }
   }
   
@@ -143,7 +142,7 @@ export function useSoundscapeState() {
       }
       
       // Update local state
-      setSoundscapes(prev => 
+      setSoundscapesData(prev => 
         prev.map(s => {
           if (s.id === id) {
             const updated = { ...s, ...soundscape };
@@ -159,7 +158,7 @@ export function useSoundscapeState() {
       toast.error("Fout bij het bijwerken van soundscape");
       
       // Still update local state even if Supabase update fails
-      setSoundscapes(prev => 
+      setSoundscapesData(prev => 
         prev.map(s => (s.id === id ? { ...s, ...soundscape } : s))
       );
     }
@@ -178,19 +177,20 @@ export function useSoundscapeState() {
       }
       
       // Update local state
-      setSoundscapes(prev => prev.filter(s => s.id !== id));
+      setSoundscapesData(prev => prev.filter(s => s.id !== id));
       toast.success("Soundscape verwijderd");
     } catch (error) {
       console.error("Error deleting soundscape:", error);
       toast.error("Fout bij het verwijderen van soundscape");
       
       // Still update local state even if Supabase delete fails
-      setSoundscapes(prev => prev.filter(s => s.id !== id));
+      setSoundscapesData(prev => prev.filter(s => s.id !== id));
     }
   }
   
-  function setSoundscapes(newSoundscapes: Soundscape[]) {
-    setSoundscapes(newSoundscapes);
+  // Renamed from setSoundscapes to updateSoundscapesData to avoid duplication
+  function updateSoundscapesData(newSoundscapes: Soundscape[]) {
+    setSoundscapesData(newSoundscapes);
   }
   
   return {
@@ -200,7 +200,7 @@ export function useSoundscapeState() {
     addSoundscape,
     updateSoundscape,
     deleteSoundscape,
-    setSoundscapes,
+    setSoundscapes: updateSoundscapesData, // Return with original name for backwards compatibility
     isLoading
   };
 }
