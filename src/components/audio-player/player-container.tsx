@@ -2,7 +2,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Volume2 } from "lucide-react";
-import { getAudioMimeType, isAACFile } from "./utils";
+import { getAudioMimeType } from "./utils";
 
 interface PlayerContainerProps {
   audioRef: React.RefObject<HTMLAudioElement>;
@@ -28,6 +28,8 @@ export const PlayerContainer: React.FC<PlayerContainerProps> = ({
   title,
   isAACFormat,
   loadError,
+  handleRetry,
+  isRetrying,
   isPlaying,
   children
 }) => {
