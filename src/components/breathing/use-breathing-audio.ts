@@ -1,3 +1,4 @@
+
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { preloadAudio } from "@/components/audio-player/utils";
@@ -49,6 +50,7 @@ export const useBreathingAudio = () => {
   };
 
   const playAudio = async (audioUrl: string, phaseType?: BreathingPhase, holdDuration?: number) => {
+    // Skip playing audio if this is a hold phase and duration is 0
     if (phaseType === 'hold' && holdDuration === 0) {
       console.log('Skipping hold audio because duration is 0');
       return false;
