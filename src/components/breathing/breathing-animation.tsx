@@ -41,15 +41,12 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     const interval = setInterval(() => {
       setCount(prevCount => {
         if (prevCount <= 1) {
-          // Get next phase based on current phase and durations
-          const nextPhase = getNextPhase(phase, holdTime, pauseTime);
-          
+          const nextPhase = getNextPhase(phase);
           if (!externalPhase) {
             setInternalPhase(nextPhase);
           } else if (onPhaseChange) {
             onPhaseChange(nextPhase);
           }
-          
           return getCountForPhase(nextPhase, inhaleTime, holdTime, exhaleTime, pauseTime);
         }
         return prevCount - 1;
@@ -63,10 +60,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
     setIsActive(!isActive);
   };
 
-  // Skip hold/pause phases in the audio playback if their duration is 0
-  const shouldSkipHoldAudio = holdTime <= 0;
-  const shouldSkipPauseAudio = pauseTime <= 0;
-
   return (
     <>
       <BreathingAudio 
@@ -74,8 +67,6 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         isVoiceActive={isVoiceActive}
         phase={phase}
         isActive={isActive}
-        skipHoldAudio={shouldSkipHoldAudio}
-        skipPauseAudio={shouldSkipPauseAudio}
       />
       
       <BreathingCircle

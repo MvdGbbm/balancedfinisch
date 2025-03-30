@@ -14,18 +14,14 @@ interface BreathingAudioProps {
   isVoiceActive: boolean;
   phase: BreathingPhase;
   isActive: boolean;
-  skipHoldAudio?: boolean;
-  skipPauseAudio?: boolean;
 }
 
-const BreathingAudio: React.FC<BreathingAudioProps> = ({
+export const useBreathingAudio = ({
   voiceUrls,
   isVoiceActive,
   phase,
-  isActive,
-  skipHoldAudio = false,
-  skipPauseAudio = false
-}) => {
+  isActive
+}: BreathingAudioProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
   const audioErrorCountRef = useRef<number>(0);
@@ -68,21 +64,7 @@ const BreathingAudio: React.FC<BreathingAudioProps> = ({
 
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
-    
-    // Skip playing audio for 'hold' phase if skipHoldAudio is true
-    if (skipHoldAudio && phaseType === 'hold') {
-      console.log("Skipping hold audio as configured");
-      return;
-    }
-    
-    // Skip playing audio for 'pause' phase if skipPauseAudio is true
-    if (skipPauseAudio && phaseType === 'pause') {
-      console.log("Skipping pause audio as configured");
-      return;
-    }
-    
     let audioUrl = '';
-    
     switch (phaseType) {
       case 'start':
         audioUrl = voiceUrls.start || '';
@@ -99,12 +81,10 @@ const BreathingAudio: React.FC<BreathingAudioProps> = ({
       default:
         audioUrl = '';
     }
-    
     if (!audioUrl) {
       console.log(`No audio URL for ${phaseType} phase`);
       return;
     }
-    
     audioLoadingRef.current = true;
     try {
       console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
@@ -151,7 +131,7 @@ const BreathingAudio: React.FC<BreathingAudioProps> = ({
       }
       previousPhaseRef.current = phase;
     }
-  }, [phase, voiceUrls, isVoiceActive, isActive, skipHoldAudio, skipPauseAudio]);
+  }, [phase, voiceUrls, isVoiceActive, isActive]);
 
   useEffect(() => {
     if (!isVoiceActive && audioRef.current) {
@@ -160,13 +140,22 @@ const BreathingAudio: React.FC<BreathingAudioProps> = ({
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
       playAudio(phase);
     }
-  }, [isVoiceActive, voiceUrls, isActive, phase, skipHoldAudio, skipPauseAudio]);
+  }, [isVoiceActive, voiceUrls, isActive, phase]);
 
   useEffect(() => {
     if (voiceUrls && isVoiceActive) {
       validateVoiceUrls(voiceUrls);
     }
   }, [voiceUrls, isVoiceActive]);
+
+  return {
+    audioRef,
+    playAudio
+  };
+};
+
+const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
+  const { audioRef } = useBreathingAudio(props);
 
   return (
     <audio ref={audioRef} onError={() => {

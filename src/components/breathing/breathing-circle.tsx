@@ -49,8 +49,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     };
   };
 
-  const message = getBreathingMessage(phase);
-  const shouldShowCounter = (phase !== 'pause' && phase !== 'start' && message !== '') && !exerciseCompleted;
+  const shouldShowCounter = (phase !== 'pause' && phase !== 'start') && !exerciseCompleted;
   const circleSize = 'w-48 h-48';
   const innerCircleSize = 'w-40 h-40';
 
@@ -65,7 +64,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
           <div className="flex flex-col items-center justify-center text-center">
             {!exerciseCompleted ? (
               <>
-                {message && <p className="text-xl font-light mb-2">{message}</p>}
+                <p className="text-xl font-light mb-2">{getBreathingMessage(phase)}</p>
                 {phase === 'start' && <p className="text-3xl font-medium">{count}</p>}
                 {shouldShowCounter && <p className="text-3xl font-medium">{count}</p>}
               </>

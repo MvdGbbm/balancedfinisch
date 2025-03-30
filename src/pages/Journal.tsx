@@ -32,6 +32,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { JournalEntry } from "@/lib/types";
 
+type MoodType = "happy" | "calm" | "neutral" | "sad" | "anxious";
+
 const moodOptions = [
   { value: "happy", label: "Blij", icon: SmilePlus, color: "text-green-500" },
   { value: "calm", label: "Rustig", icon: Smile, color: "text-blue-500" },
@@ -44,7 +46,7 @@ const Journal = () => {
   const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useApp();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [content, setContent] = useState("");
-  const [selectedMood, setSelectedMood] = useState<"happy" | "calm" | "neutral" | "sad" | "anxious">("neutral");
+  const [selectedMood, setSelectedMood] = useState<MoodType>("neutral");
   const [tags, setTags] = useState<string[]>([]);
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   
@@ -62,8 +64,13 @@ const Journal = () => {
   
   const handleEditEntry = (entry: JournalEntry) => {
     setContent(entry.content);
-    setSelectedMood(entry.mood);
-    setTags(entry.tags);
+    if (entry.mood && (entry.mood === "happy" || entry.mood === "calm" || 
+        entry.mood === "neutral" || entry.mood === "sad" || entry.mood === "anxious")) {
+      setSelectedMood(entry.mood as MoodType);
+    } else {
+      setSelectedMood("neutral");
+    }
+    setTags(entry.tags || []);
     setCurrentEntryId(entry.id);
     setIsDialogOpen(true);
   };

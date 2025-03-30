@@ -1,22 +1,16 @@
 
 import { BreathingPhase } from './types';
 
-export const getNextPhase = (
-  currentPhase: BreathingPhase,
-  holdTime: number = 0,
-  pauseTime: number = 0
-): BreathingPhase => {
+export const getNextPhase = (currentPhase: BreathingPhase): BreathingPhase => {
   switch (currentPhase) {
     case 'start':
       return 'inhale';
     case 'inhale':
-      // Skip hold phase if holdTime is 0
-      return holdTime > 0 ? 'hold' : 'exhale';
+      return 'hold';
     case 'hold':
       return 'exhale';
     case 'exhale':
-      // Skip pause phase if pauseTime is 0
-      return pauseTime > 0 ? 'pause' : 'inhale';
+      return 'pause';
     case 'pause':
       return 'inhale';
     default:
@@ -47,22 +41,18 @@ export const getCountForPhase = (
   }
 };
 
-export const getBreathingMessage = (
-  phase: BreathingPhase,
-  holdTime: number = 0,
-  pauseTime: number = 0
-): string => {
+export const getBreathingMessage = (phase: BreathingPhase): string => {
   switch (phase) {
     case 'start':
       return 'Start';
     case 'inhale':
       return 'Adem in';
     case 'hold':
-      return holdTime > 0 ? 'Houd vast' : '';
+      return 'Houd vast';
     case 'exhale':
       return 'Adem uit';
     case 'pause':
-      return pauseTime > 0 ? 'Pauze' : '';
+      return '';
     default:
       return 'Adem in';
   }
