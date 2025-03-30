@@ -4,7 +4,6 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { Check, ChevronRight, Circle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 
@@ -181,22 +180,6 @@ const DropdownMenuShortcut = ({
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
-// Added these for tabs support in dropdowns
-const DropdownMenuTabs = Tabs
-const DropdownMenuTabsList = TabsList
-const DropdownMenuTabsTrigger = TabsTrigger
-const DropdownMenuTabsContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("", className)}
-    {...props}
-  />
-))
-DropdownMenuTabsContent.displayName = "DropdownMenuTabsContent"
-
 export {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -213,8 +196,4 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
-  DropdownMenuTabs,
-  DropdownMenuTabsList,
-  DropdownMenuTabsTrigger,
-  DropdownMenuTabsContent,
 }
