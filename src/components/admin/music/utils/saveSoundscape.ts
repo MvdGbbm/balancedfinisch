@@ -19,11 +19,11 @@ export const saveSoundscapeToSupabase = async ({
   coverImageUrl,
   tags,
   currentMusic
-}: SaveOptions): Promise<boolean> => {
+}: SaveOptions): Promise<{ success: boolean; data?: any }> => {
   try {
     if (currentMusic) {
       // Update existing record
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('soundscapes')
         .update({
           title: title,
@@ -34,18 +34,19 @@ export const saveSoundscapeToSupabase = async ({
           tags: tags,
           updated_at: new Date().toISOString()
         })
-        .eq('id', currentMusic.id);
+        .eq('id', currentMusic.id)
+        .select();
         
       if (error) {
         console.error("Error updating soundscape in database:", error);
-        return false;
+        return { success: false };
       } else {
         console.log("Soundscape successfully updated in Supabase");
-        return true;
+        return { success: true, data: data?.[0] };
       }
     } else {
       // Insert new record
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('soundscapes')
         .insert({
           title: title,
@@ -54,18 +55,19 @@ export const saveSoundscapeToSupabase = async ({
           cover_image_url: coverImageUrl,
           category: "Muziek", // Default category
           tags: tags
-        });
+        })
+        .select();
         
       if (error) {
         console.error("Error saving soundscape in database:", error);
-        return false;
+        return { success: false };
       } else {
-        console.log("Soundscape successfully saved in Supabase");
-        return true;
+        console.log("Soundscape successfully saved in Supabase:", data);
+        return { success: true, data: data?.[0] };
       }
     }
   } catch (error) {
     console.error("Error in saveSoundscapeToSupabase:", error);
-    return false;
+    return { success: false };
   }
 };

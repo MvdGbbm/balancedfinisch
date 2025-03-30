@@ -68,57 +68,45 @@ export const useMusicManagement = () => {
     },
   });
 
-  // Mutation to create or update a music track
-  const mutation = useMutation({
-    mutationFn: async (music: Partial<Soundscape>) => {
-      const isEdit = !!music.id;
+  // Optimized saveMusic function to prevent duplicates
+  const handleSaveMusic = (music: Partial<Soundscape>) => {
+    const isEdit = !!music.id;
+    
+    if (isEdit) {
+      // For edits, update in the local state directly
+      const updatedSoundscapes = soundscapes.map(s => {
+        if (s.id === music.id) {
+          return {
+            ...s,
+            ...music
+          };
+        }
+        return s;
+      });
+      setSoundscapes(updatedSoundscapes);
       
-      const musicData = {
-        title: music.title,
-        description: music.description,
-        audio_url: music.audioUrl,
-        category: "Muziek",
-        cover_image_url: music.coverImageUrl,
-        tags: music.tags || [],
-      };
-
-      let result;
+      // Invalidate query to ensure the UI is up to date with server
+      queryClient.invalidateQueries({ queryKey: ["music"] });
       
-      if (isEdit && music.id) {
-        // Update existing track
-        const { data, error } = await supabase
-          .from("soundscapes")
-          .update(musicData)
-          .eq("id", music.id)
-          .select();
-        
-        if (error) throw error;
-        result = data?.[0];
-      } else {
-        // Create new track
-        const { data, error } = await supabase
-          .from("soundscapes")
-          .insert(musicData)
-          .select();
-        
-        if (error) throw error;
-        result = data?.[0];
+      // Reset current music
+      setCurrentMusic(null);
+    } else if (music.id) {
+      // For new music with server-generated ID, add directly to state
+      const newMusic = music as Soundscape;
+      // Only add if it doesn't already exist
+      if (!soundscapes.some(s => s.id === newMusic.id)) {
+        const updatedSoundscapes = [...soundscapes, newMusic];
+        setSoundscapes(updatedSoundscapes);
       }
       
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["music"] });
-      toast.success(
-        currentMusic ? "Muziek bijgewerkt" : "Nieuwe muziek toegevoegd"
-      );
+      // Reset current music
       setCurrentMusic(null);
-    },
-    onError: (error) => {
-      console.error("Error saving music:", error);
-      toast.error(`Fout bij opslaan: ${error.message}`);
-    },
-  });
+    }
+  };
+
+  const handleEditMusic = (music: Soundscape) => {
+    setCurrentMusic(music);
+  };
 
   // Mutation to delete a music track - Handles both UUID and string IDs
   const deleteMutation = useMutation({
@@ -161,14 +149,6 @@ export const useMusicManagement = () => {
       toast.error(`Fout bij verwijderen: ${error.message}`);
     },
   });
-
-  const handleSaveMusic = (music: Partial<Soundscape>) => {
-    mutation.mutate(music);
-  };
-
-  const handleEditMusic = (music: Soundscape) => {
-    setCurrentMusic(music);
-  };
 
   const handleDeleteMusic = (id: string) => {
     deleteMutation.mutate(id);

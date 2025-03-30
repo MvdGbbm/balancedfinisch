@@ -7,7 +7,7 @@ import { saveSoundscapeToSupabase } from "../utils/saveSoundscape";
 
 export const useMusicForm = (
   currentMusic: Soundscape | null,
-  onSave: (music: Omit<Soundscape, "id">) => void,
+  onSave: (music: Partial<Soundscape>) => void,
   onOpenChange: (open: boolean) => void,
   isOpen: boolean
 ) => {
@@ -119,8 +119,8 @@ export const useMusicForm = (
       
       console.log("Soundscape opslaan met audioUrl:", finalAudioUrl || validatedUrl);
       
-      // Save to Supabase
-      await saveSoundscapeToSupabase({
+      // Save to Supabase and get the response
+      const result = await saveSoundscapeToSupabase({
         title,
         description,
         audioUrl: finalAudioUrl || validatedUrl,
@@ -129,19 +129,24 @@ export const useMusicForm = (
         currentMusic
       });
       
-      // Call the onSave callback to update local state
-      onSave({
-        title,
-        description,
-        audioUrl: finalAudioUrl || validatedUrl,
-        category: "Muziek", // Default category
-        coverImageUrl: processedCoverImageUrl,
-        tags,
-      });
-      
-      toast.success("Muziek succesvol opgeslagen");
-      onOpenChange(false);
-      resetForm();
+      if (result.success) {
+        // Call the onSave callback with the data from the response
+        onSave(result.data || {
+          id: currentMusic?.id,
+          title,
+          description,
+          audioUrl: finalAudioUrl || validatedUrl,
+          category: "Muziek", // Default category
+          coverImageUrl: processedCoverImageUrl,
+          tags,
+        });
+        
+        toast.success("Muziek succesvol opgeslagen");
+        onOpenChange(false);
+        resetForm();
+      } else {
+        toast.error("Er is een fout opgetreden bij het opslaan");
+      }
     } catch (error) {
       console.error("Fout bij opslaan soundscape:", error);
       toast.error("Er is een fout opgetreden bij het opslaan");

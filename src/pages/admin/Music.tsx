@@ -53,6 +53,18 @@ const AdminMusic = () => {
     }
   }, [isPlaying, previewUrl]);
 
+  // Prevent duplicate music creation
+  const handleCreateDialogSave = (music: Partial<Soundscape>) => {
+    handleSaveMusic(music);
+    setIsCreateDialogOpen(false);
+  };
+  
+  // Prevent duplicate music editing
+  const handleEditDialogSave = (music: Partial<Soundscape>) => {
+    handleSaveMusic(music);
+    setIsEditDialogOpen(false);
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-4">
@@ -80,7 +92,7 @@ const AdminMusic = () => {
       <MusicFormDialog
         isOpen={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        onSave={handleSaveMusic}
+        onSave={handleCreateDialogSave}
         currentMusic={null}
       />
 
@@ -88,7 +100,7 @@ const AdminMusic = () => {
       <MusicFormDialog
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
-        onSave={handleSaveMusic}
+        onSave={handleEditDialogSave}
         currentMusic={currentMusic}
       />
 
