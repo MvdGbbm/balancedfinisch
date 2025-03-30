@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Meditation, Soundscape, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 // Sample data
 import { meditations as sampleMeditations } from "@/data/meditations";
@@ -51,7 +50,6 @@ interface AppContextType {
   setCurrentSoundscape: (soundscape: Soundscape | null) => void;
   getRandomQuote: () => DailyQuote;
   saveDailyQuoteToCalendar: (quote: DailyQuote) => void;
-  clearAppCache: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -288,33 +286,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return dailyQuotes[randomIndex];
   }
   
-  // Clear app cache function
-  function clearAppCache() {
-    // Clear localStorage items
-    localStorage.removeItem('processedMeditations');
-    localStorage.removeItem('processedSoundscapes');
-    localStorage.removeItem('soundscapes');
-    localStorage.removeItem('journalEntries');
-    localStorage.removeItem('quotes');
-    localStorage.removeItem('plannerEvents');
-    localStorage.removeItem('todayQuoteId');
-    
-    toast("Cachegeheugen gewist", {
-      description: "Alle opgeslagen gegevens zijn verwijderd."
-    });
-    
-    // Reset states
-    setMeditations(sampleMeditations);
-    setSoundscapes(soundscapes);
-    setJournalEntries([]);
-    setDailyQuotes(quotes);
-    setPlannerEvents([]);
-    
-    // Set a new random quote
-    const randomQuote = getRandomQuote();
-    setCurrentQuote(randomQuote);
-  }
-  
   // CRUD functions for meditations
   function addMeditation(meditation: Omit<Meditation, 'id' | 'createdAt'>) {
     const newMeditation: Meditation = {
@@ -487,7 +458,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentSoundscape,
     getRandomQuote,
     saveDailyQuoteToCalendar,
-    clearAppCache,
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

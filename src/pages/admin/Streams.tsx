@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { AudioPlayer } from "@/components/audio-player";
 
 interface RadioStream {
   id: string;
@@ -34,6 +35,7 @@ interface RadioStream {
 }
 
 const AdminStreams = () => {
+  
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStream, setCurrentStream] = useState<RadioStream | null>(null);
@@ -45,7 +47,6 @@ const AdminStreams = () => {
   const [pendingOrderChanges, setPendingOrderChanges] = useState(false);
   const [reorderedStreams, setReorderedStreams] = useState<RadioStream[]>([]);
   const [playingStreamId, setPlayingStreamId] = useState<string | null>(null);
-  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ['radioStreams'],
@@ -227,11 +228,6 @@ const AdminStreams = () => {
       return;
     }
     
-    if (!isValidUrl(url)) {
-      toast.error("De ingevoerde URL is niet geldig");
-      return;
-    }
-    
     if (currentStream) {
       updateStreamMutation.mutate({
         ...currentStream,
@@ -265,26 +261,23 @@ const AdminStreams = () => {
     }
   };
   
-  const isValidStreamUrl = (url: string) => {
+  const isValidAudioUrl = (url: string) => {
     if (!isValidUrl(url)) return false;
     
     const lowercaseUrl = url.toLowerCase();
-    return lowercaseUrl.includes('stream') || 
-           lowercaseUrl.includes('radio') || 
-           lowercaseUrl.includes('mp3') || 
-           lowercaseUrl.includes('audio') ||
-           lowercaseUrl.includes('aac') ||
-           lowercaseUrl.includes('ogg');
+    const audioExtensions = ['.mp3', '.aac', '.ogg', '.m3u', '.m3u8', '.pls', '.xspf'];
+    const streamingServices = ['icecast', 'shoutcast', 'radio', 'stream', 'listen', 'audio'];
+    
+    return audioExtensions.some(ext => lowercaseUrl.includes(ext)) || 
+           streamingServices.some(service => lowercaseUrl.includes(service));
   };
   
   const handlePlayStream = (stream: RadioStream) => {
     if (playingStreamId === stream.id) {
       setPlayingStreamId(null);
-      setIframeUrl(null);
       toast.info(`Gestopt met afspelen: ${stream.title}`);
     } else {
       setPlayingStreamId(stream.id);
-      setIframeUrl(stream.url);
       toast.success(`Nu afspelen: ${stream.title}`);
     }
   };
@@ -396,37 +389,14 @@ const AdminStreams = () => {
                                 />
                                 {playingStreamId === stream.id && (
                                   <div className="mt-2 px-2">
-                                    <div className="bg-background/30 p-3 rounded-md border border-border">
-                                      <div className="flex items-center mb-3">
-                                        <Radio className="h-4 w-4 text-primary mr-2" />
-                                        <p className="text-sm">Streaming in achtergrond</p>
-                                      </div>
-                                      
-                                      <div className="rounded-md overflow-hidden bg-muted p-2">
-                                        <p className="text-xs text-muted-foreground mb-1">
-                                          Als de stream niet afspeelt, probeer deze in een nieuwe tab te openen:
-                                        </p>
-                                        <div className="flex items-center space-x-2">
-                                          <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            onClick={() => window.open(stream.url, '_blank')}
-                                            className="text-xs py-1 h-auto"
-                                          >
-                                            Open in nieuwe tab
-                                          </Button>
-                                          <p className="text-xs truncate">{stream.url}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    {iframeUrl && (
-                                      <iframe 
-                                        src={iframeUrl} 
-                                        style={{ display: 'none' }}
-                                        title="Radio Stream"
-                                      />
-                                    )}
+                                    <AudioPlayer 
+                                      audioUrl={stream.url}
+                                      showTitle={false}
+                                      isPlayingExternal={true}
+                                      onPlayPauseChange={(isPlaying) => {
+                                        if (!isPlaying) setPlayingStreamId(null);
+                                      }}
+                                    />
                                   </div>
                                 )}
                               </div>
@@ -468,37 +438,14 @@ const AdminStreams = () => {
                     />
                     {playingStreamId === stream.id && (
                       <div className="mt-2 px-2">
-                        <div className="bg-background/30 p-3 rounded-md border border-border">
-                          <div className="flex items-center mb-3">
-                            <Radio className="h-4 w-4 text-primary mr-2" />
-                            <p className="text-sm">Streaming in achtergrond</p>
-                          </div>
-                          
-                          <div className="rounded-md overflow-hidden bg-muted p-2">
-                            <p className="text-xs text-muted-foreground mb-1">
-                              Als de stream niet afspeelt, probeer deze in een nieuwe tab te openen:
-                            </p>
-                            <div className="flex items-center space-x-2">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => window.open(stream.url, '_blank')}
-                                className="text-xs py-1 h-auto"
-                              >
-                                Open in nieuwe tab
-                              </Button>
-                              <p className="text-xs truncate">{stream.url}</p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {iframeUrl && (
-                          <iframe 
-                            src={iframeUrl} 
-                            style={{ display: 'none' }}
-                            title="Radio Stream"
-                          />
-                        )}
+                        <AudioPlayer 
+                          audioUrl={stream.url}
+                          showTitle={false}
+                          isPlayingExternal={true}
+                          onPlayPauseChange={(isPlaying) => {
+                            if (!isPlaying) setPlayingStreamId(null);
+                          }}
+                        />
                       </div>
                     )}
                   </div>
@@ -545,15 +492,10 @@ const AdminStreams = () => {
                 type="url"
               />
               {isValidUrl(url) && (
-                <div className={`text-xs flex items-center mt-1 ${isValidStreamUrl(url) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                  {isValidStreamUrl(url) 
+                <div className={`text-xs flex items-center mt-1 ${isValidAudioUrl(url) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  {isValidAudioUrl(url) 
                     ? "Lijkt een geldige audio stream URL" 
                     : "Geldige URL, maar mogelijk geen audio stream"}
-                </div>
-              )}
-              {url && !isValidUrl(url) && (
-                <div className="text-xs text-destructive flex items-center mt-1">
-                  Deze URL lijkt ongeldig. Zorg dat deze begint met http:// of https://
                 </div>
               )}
             </div>
@@ -583,7 +525,7 @@ const AdminStreams = () => {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Annuleren
             </Button>
-            <Button onClick={handleSave} disabled={!title || !isValidUrl(url)}>
+            <Button onClick={handleSave}>
               Opslaan
             </Button>
           </DialogFooter>

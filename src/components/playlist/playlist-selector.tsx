@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ListMusic, Music } from "lucide-react";
+import { Plus, ListMusic, Music } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,21 +21,11 @@ import { Soundscape } from "@/lib/types";
 
 interface PlaylistSelectorProps {
   playlists: Playlist[];
-  onSelect: (playlistId: string) => void;
+  onSelectPlaylist: (playlist: Playlist) => void;
   onCreateNew: () => void;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  triggerElement?: React.ReactNode;
 }
 
-export function PlaylistSelector({ 
-  playlists, 
-  onSelect, 
-  onCreateNew, 
-  open, 
-  onOpenChange,
-  triggerElement
-}: PlaylistSelectorProps) {
+export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: PlaylistSelectorProps) {
   const [activeTab, setActiveTab] = useState<string>("playlists");
   const { soundscapes } = useApp();
   
@@ -42,16 +33,16 @@ export function PlaylistSelector({
   const musicTracks = soundscapes.filter(track => track.category === "Muziek");
 
   return (
-    <DropdownMenu open={open} onOpenChange={onOpenChange}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        {triggerElement || (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
-          >
-          </Button>
-        )}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
+        >
+          <Plus className="h-4 w-4" />
+          Toevoegen aan
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
@@ -65,14 +56,14 @@ export function PlaylistSelector({
           
           {activeTab === "playlists" && (
             <>
-              <DropdownMenuLabel>Toevoegen aan afspeellijst</DropdownMenuLabel>
+              <DropdownMenuLabel>Afspeellijsten</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
               {playlists.length > 0 ? (
                 playlists.map(playlist => (
                   <DropdownMenuItem 
                     key={playlist.id}
-                    onClick={() => onSelect(playlist.id)}
+                    onClick={() => onSelectPlaylist(playlist)}
                     className="flex items-center gap-2"
                   >
                     <ListMusic className="h-4 w-4" />

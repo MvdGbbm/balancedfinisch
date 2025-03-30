@@ -1,4 +1,3 @@
-
 export interface Meditation {
   id: string;
   title: string;
@@ -58,8 +57,6 @@ export interface BreathingPattern {
   hold2: number;
   cycles: number;
   description?: string;
-  // URL to play at the start of the exercise
-  startUrl?: string;
   // Audio URLs for specific phases
   inhaleUrl?: string;
   exhaleUrl?: string;
