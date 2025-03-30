@@ -47,4 +47,5 @@ export interface FormFieldsProps {
   isUrlValid: boolean;
   validatedUrl: string;
   handleAudioPreview: () => void;
+  isPreviewPlaying: boolean;
 }
