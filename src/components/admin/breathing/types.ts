@@ -15,9 +15,6 @@ export interface BreathingPattern {
   exhaleText?: string;
   hold1Text?: string;
   hold2Text?: string;
-  circleSize?: "small" | "medium" | "large";
-  textSize?: "small" | "medium" | "large";
-  showCycleCount?: boolean;
 }
 
 export interface VoiceURLs {
@@ -28,17 +25,8 @@ export interface VoiceURLs {
   end?: string;
 }
 
-export interface AudioControllerProps {
-  audioRef: React.RefObject<HTMLAudioElement>;
-  endAudioRef: React.RefObject<HTMLAudioElement>;
-  currentAudioUrl: string;
-}
-
-export interface ControlButtonsProps {
-  isActive: boolean;
-  setIsActive: (isActive: boolean) => void;
-  resetExercise: () => void;
-  activeVoice: "vera" | "marco" | null;
+export interface BreathingExerciseTestProps {
+  pattern: BreathingPattern | null;
 }
 
 export interface CircleAnimationProps {
@@ -57,4 +45,17 @@ export interface PhaseTimerProps {
   totalCycles: number;
   secondsLeft: number;
   pattern: BreathingPattern | null;
+}
+
+export interface AudioControllerProps {
+  audioRef: React.RefObject<HTMLAudioElement>;
+  endAudioRef: React.RefObject<HTMLAudioElement>;
+  currentAudioUrl: string;
+}
+
+export interface ControlButtonsProps {
+  isActive: boolean;
+  setIsActive: (isActive: boolean) => void;
+  resetExercise: () => void;
+  activeVoice: "vera" | "marco" | null;
 }

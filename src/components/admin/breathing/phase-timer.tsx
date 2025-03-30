@@ -19,11 +19,13 @@ export function PhaseTimer({
       case "inhale":
         return pattern.inhaleText || "Inademen";
       case "hold1":
-        return pattern.hold1Text || "Vasthouden";
+        // Only show hold text if hold duration is greater than 0
+        return pattern.hold1 > 0 ? (pattern.hold1Text || "Vasthouden") : "";
       case "exhale":
         return pattern.exhaleText || "Uitademen";
       case "hold2":
-        return pattern.hold2Text || "Vasthouden";
+        // Only show hold text if hold duration is greater than 0
+        return pattern.hold2 > 0 ? (pattern.hold2Text || "Vasthouden") : "";
       default:
         return "";
     }
@@ -32,7 +34,9 @@ export function PhaseTimer({
   return (
     <>
       <Progress value={progress} className="w-64 h-2 mb-2" />
-      <div className="text-xl font-medium mb-4">{getInstructions()}</div>
+      {getInstructions() && (
+        <div className="text-xl font-medium mb-4">{getInstructions()}</div>
+      )}
       <CycleProgress 
         currentCycle={currentCycle} 
         totalCycles={totalCycles} 
