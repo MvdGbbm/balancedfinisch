@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { AdminLayout } from "@/components/admin-layout";
@@ -79,7 +78,7 @@ const Admin: React.FC = () => {
       title: "Muziek",
       description: "Beheer muziekbibliotheek",
       icon: <Music className="h-5 w-5" style={{ color: "#10B981" }} />,
-      path: "/admin/music",
+      path: "/admin/muziek",
       color: "#10B981" // Green
     },
     {

@@ -1,5 +1,5 @@
 
-import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Route, createRoutesFromElements, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +22,7 @@ import AdminQuotes from "./pages/admin/Quotes";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminStreams from "./pages/admin/Streams";
 import AdminBreathing from "./pages/admin/Breathing";
+import AdminMusic from "./pages/admin/Music";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +65,10 @@ const router = createBrowserRouter(
       <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
+      <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
+      
+      {/* Dutch version of the music admin page route */}
+      <Route path="/admin/muziek" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
     </>
   )
 );
