@@ -57,27 +57,3 @@ export const getBreathingMessage = (phase: BreathingPhase): string => {
       return 'Adem in';
   }
 };
-
-// New function to determine if audio should be played for a phase
-export const shouldPlayAudioForPhase = (
-  phase: BreathingPhase,
-  inhaleTime: number,
-  holdTime: number,
-  exhaleTime: number,
-  pauseTime: number
-): boolean => {
-  switch (phase) {
-    case 'start':
-      return true;
-    case 'inhale':
-      return inhaleTime > 0;
-    case 'hold':
-      return holdTime > 0;
-    case 'exhale':
-      return exhaleTime > 0;
-    case 'pause':
-      return pauseTime > 0;
-    default:
-      return true;
-  }
-};

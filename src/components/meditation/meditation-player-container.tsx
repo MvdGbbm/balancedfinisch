@@ -1,255 +1,240 @@
-
-import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Meditation, DailyQuote } from "@/lib/types";
-import { useApp } from "@/context/AppContext";
+import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  Maximize2, 
-  Minimize2,
-  Quote,
-  ListMusic,
-  Calendar
-} from "lucide-react";
-import { MeditationList } from "./meditation-subcategory";
+import { Meditation } from "@/lib/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { QuoteDisplay } from "@/components/audio-player/quote-display";
+import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationPlayerContainerProps {
-  meditation: Meditation | null;
-  recommendedMeditations?: Meditation[];
-  onSelectMeditation: (meditation: Meditation) => void;
-  onClose: () => void;
+  isVisible: boolean;
+  selectedMeditation: Meditation | null;
 }
 
-export const MeditationPlayerContainer: React.FC<MeditationPlayerContainerProps> = ({
-  meditation,
-  recommendedMeditations,
-  onSelectMeditation,
-  onClose,
-}) => {
-  const { meditations, plannerEvents, addPlannerEvent, getRandomQuote } = useApp();
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showRecommended, setShowRecommended] = useState(false);
-  const [showQuote, setShowQuote] = useState(false);
-  const [currentQuote, setCurrentQuote] = useState<DailyQuote | null>(null);
+export function MeditationPlayerContainer({ 
+  isVisible, 
+  selectedMeditation 
+}: MeditationPlayerContainerProps) {
+  const [audioError, setAudioError] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playerKey, setPlayerKey] = useState(0);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
+  const [randomQuote] = useState(getRandomQuote());
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
-    // Reset states when meditation changes
-    setShowRecommended(false);
-    setShowQuote(false);
-  }, [meditation?.id]);
-  
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-  
-  const handlePrevious = () => {
-    if (!meditation) return;
-    
-    const index = meditations.findIndex(m => m.id === meditation.id);
-    if (index > 0) {
-      onSelectMeditation(meditations[index - 1]);
-    } else {
-      // Loop to the end
-      onSelectMeditation(meditations[meditations.length - 1]);
+    if (selectedMeditation) {
+      setAudioError(false);
+      setImageError(false);
+      setIsPlaying(false);
+      setCurrentAudioUrl(selectedMeditation.audioUrl || "");
+      setPlayerKey(prevKey => prevKey + 1);
+      
+      console.log("Selected meditation:", selectedMeditation);
+      console.log("Audio URL:", selectedMeditation.audioUrl);
+      console.log("Marco link:", selectedMeditation.marcoLink);
+      console.log("Vera link:", selectedMeditation.veraLink);
+      
+      setTimeout(() => {
+        setIsPlaying(true);
+      }, 500);
     }
-  };
+  }, [selectedMeditation]);
   
-  const handleNext = () => {
-    if (!meditation) return;
-    
-    const index = meditations.findIndex(m => m.id === meditation.id);
-    if (index < meditations.length - 1) {
-      onSelectMeditation(meditations[index + 1]);
-    } else {
-      // Loop to the beginning
-      onSelectMeditation(meditations[0]);
-    }
-  };
-  
-  const handleShowRandomQuote = () => {
-    setCurrentQuote(getRandomQuote());
-    setShowQuote(true);
-  };
-  
-  const handleAddToPlanner = () => {
-    if (!meditation) return;
-    
-    const now = new Date();
-    const dateStr = now.toISOString().split("T")[0];
-    
-    const existingEvent = plannerEvents.find(
-      event => event.meditationId === meditation.id && event.date === dateStr
-    );
-    
-    if (existingEvent) {
-      toast.info("Deze meditatie staat al in je planner voor vandaag");
-      return;
-    }
-    
-    addPlannerEvent({
-      title: meditation.title,
-      date: dateStr,
-      time: null,
-      duration: meditation.duration,
-      completed: false,
-      meditationId: meditation.id,
-    });
-    
-    toast.success("Meditatie toegevoegd aan planner voor vandaag");
-  };
-  
-  if (!meditation) {
+  if (!isVisible || !selectedMeditation) {
     return null;
   }
   
-  // Create a meditation related quote
-  const meditationQuote: DailyQuote = {
-    id: "meditation-quote",
-    text: "Adem diep in, en voel je lichaam ontspannen met elke uitademing.",
-    author: "ZenMind"
+  const hasValidAudio = !!selectedMeditation.audioUrl || 
+                        !!selectedMeditation.veraLink || 
+                        !!selectedMeditation.marcoLink;
+  
+  const hasValidImage = !!selectedMeditation.coverImageUrl;
+  
+  const handleAudioError = () => {
+    setAudioError(true);
+    setIsPlaying(false);
+    console.error("Audio error for:", currentAudioUrl);
+    toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent 
-        className={`p-0 ${isFullscreen ? 'w-full h-full max-w-none rounded-none' : 'sm:max-w-xl'}`}
-        hideCloseButton
-      >
-        <div className={`flex flex-col ${isFullscreen ? 'h-[calc(100vh-2rem)]' : 'max-h-[80vh]'}`}>
-          <div 
-            className="relative aspect-video w-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent">
-              <div className="flex justify-between items-start p-4">
+  const handleImageError = () => {
+    setImageError(true);
+    toast.error("Kon de afbeelding niet laden. Controleer de URL.");
+  };
+
+  const handleStopPlaying = () => {
+    setIsPlaying(false);
+    toast("De meditatie is gestopt met afspelen", {
+      description: "Gestopt"
+    });
+  };
+  
+  const handleStartPlaying = () => {
+    setIsPlaying(true);
+    toast("De meditatie wordt afgespeeld", {
+      description: "Start"
+    });
+  };
+
+  const handlePlayExternalLink = (linkType: 'vera' | 'marco') => {
+    let url = '';
+    
+    if (linkType === 'vera') {
+      url = selectedMeditation.veraLink || '';
+    } else {
+      url = selectedMeditation.marcoLink || '';
+    }
+    
+    if (!url) {
+      toast.error(`Geen ${linkType === 'vera' ? 'Vera' : 'Marco'} link beschikbaar voor deze meditatie`);
+      return;
+    }
+    
+    try {
+      url = url.trim();
+      
+      if (!/^https?:\/\//i.test(url)) {
+        url = 'https://' + url;
+      }
+      
+      const validatedUrl = new URL(url).toString();
+      
+      console.log(`Playing ${linkType} link:`, validatedUrl);
+      
+      setCurrentAudioUrl(validatedUrl);
+      setPlayerKey(prevKey => prevKey + 1);
+      setIsPlaying(true);
+      
+      toast.success(`${linkType === 'vera' ? 'Vera' : 'Marco'} audio wordt afgespeeld`);
+    } catch (e) {
+      console.error(`Invalid URL for ${linkType}:`, url, e);
+      toast.error(`Ongeldige ${linkType === 'vera' ? 'Vera' : 'Marco'} URL: ${url}`);
+    }
+  };
+
+  if (!hasValidAudio || audioError) {
+    return (
+      <div className="mt-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Geen audio beschikbaar voor deze meditatie. Probeer een andere meditatie te selecteren.
+            {selectedMeditation.audioUrl && (
+              <div className="mt-2">
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={onClose}
-                  className="h-8 w-8 bg-black/30 backdrop-blur-sm hover:bg-black/50"
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setAudioError(false);
+                    handleStartPlaying();
+                  }}
                 >
-                  <ChevronLeft className="h-4 w-4 text-white" />
-                  <span className="sr-only">Close</span>
+                  Probeer opnieuw
                 </Button>
-                
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={toggleFullscreen}
-                    className="h-8 w-8 bg-black/30 backdrop-blur-sm hover:bg-black/50"
-                  >
-                    {isFullscreen ? (
-                      <Minimize2 className="h-4 w-4 text-white" />
-                    ) : (
-                      <Maximize2 className="h-4 w-4 text-white" />
-                    )}
-                    <span className="sr-only">Fullscreen</span>
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="absolute bottom-4 left-4 right-4">
-                <h2 className="text-xl font-bold text-white">{meditation.title}</h2>
-                <p className="text-sm text-white/80">{meditation.duration} minuten</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8"
-                onClick={handleAddToPlanner}
-              >
-                <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                Toevoegen aan planner
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8"
-                onClick={() => setShowRecommended(!showRecommended)}
-              >
-                <ListMusic className="h-3.5 w-3.5 mr-1.5" />
-                {showRecommended ? "Verberg aanbevolen" : "Toon aanbevolen"}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8"
-                onClick={handleShowRandomQuote}
-              >
-                <Quote className="h-3.5 w-3.5 mr-1.5" />
-                Inspiratie
-              </Button>
-            </div>
-            
-            {showRecommended && (
-              <div className="space-y-2 pt-2">
-                <h3 className="text-sm font-medium">Aanbevolen meditaties</h3>
-                <div className="rounded-md border overflow-hidden">
-                  <MeditationList 
-                    meditations={recommendedMeditations || []}
-                    onSelectMeditation={onSelectMeditation}
-                    compact={true}
-                  />
-                </div>
               </div>
             )}
-            
-            <div className="rounded-lg overflow-hidden border">
-              <AudioPlayer
-                audioUrl={meditation.audioUrl}
-                title={meditation.title}
-                showTitle={false}
-                autoPlay={false}
-                loop={false}
-                quote={currentQuote || meditationQuote}
-                onPlay={() => console.log("Playing...")}
-                onPause={() => console.log("Paused...")}
-              />
-            </div>
-            
-            <div className="pt-2">
-              <h3 className="text-sm font-medium">Beschrijving</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {meditation.description}
-              </p>
-            </div>
-            
-            <div className="flex justify-between pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevious}
-                className="flex-1 sm:flex-none mr-2"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Vorige
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNext}
-                className="flex-1 sm:flex-none"
-              >
-                Volgende
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-medium">Nu speelt: {selectedMeditation.title}</h3>
+        {isPlaying ? (
+          <Button 
+            variant="destructive"
+            size="sm"
+            onClick={handleStopPlaying}
+            className="flex items-center gap-1"
+          >
+            <StopCircle className="h-4 w-4" />
+            Stoppen
+          </Button>
+        ) : (
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={handleStartPlaying}
+            className="flex items-center gap-1"
+          >
+            <PlayCircle className="h-4 w-4" />
+            Start
+          </Button>
+        )}
+      </div>
+
+      {hasValidImage && !imageError && (
+        <div className="mb-4">
+          <img 
+            src={selectedMeditation.coverImageUrl}
+            alt={selectedMeditation.title}
+            className="w-full h-48 object-cover rounded-lg"
+            onError={handleImageError}
+          />
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+      
+      {imageError && (
+        <Alert className="mb-4" variant="default">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Kon de afbeelding niet laden. De meditatie is nog steeds beschikbaar.
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="mb-4">
+        <QuoteDisplay quote={randomQuote} transparentBackground={true} />
+      </div>
+      
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant="outline"
+          className={`flex-1 ${selectedMeditation.veraLink ? 
+            (currentAudioUrl === selectedMeditation.veraLink ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-blue-600 hover:text-white') 
+            : 'opacity-50 bg-transparent'}`}
+          onClick={() => handlePlayExternalLink('vera')}
+          disabled={!selectedMeditation.veraLink}
+          type="button"
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Vera
+        </Button>
+        
+        <Button
+          variant="outline"
+          className={`flex-1 ${selectedMeditation.marcoLink ? 
+            (currentAudioUrl === selectedMeditation.marcoLink ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'hover:bg-purple-600 hover:text-white') 
+            : 'opacity-50 bg-transparent'}`}
+          onClick={() => handlePlayExternalLink('marco')}
+          disabled={!selectedMeditation.marcoLink}
+          type="button"
+        >
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Marco
+        </Button>
+      </div>
+      
+      <AudioPlayer 
+        key={playerKey}
+        audioUrl={currentAudioUrl || ''}
+        title={selectedMeditation.title}
+        showTitle
+        showControls
+        showQuote={false}
+        className="bg-card/30 backdrop-blur-sm border border-border/50 rounded-lg shadow-sm"
+        onError={handleAudioError}
+        isPlayingExternal={isPlaying}
+        onPlayPauseChange={setIsPlaying}
+        ref={audioRef}
+      />
+    </div>
   );
-};
+}

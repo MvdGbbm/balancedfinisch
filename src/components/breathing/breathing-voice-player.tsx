@@ -2,16 +2,18 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Volume2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
+import { Mic, Pause, Play, Volume2 } from "lucide-react";
 
 interface BreathingVoicePlayerProps {
   veraUrls: {
+    start?: string;
     inhale: string;
     hold: string;
     exhale: string;
   };
   marcoUrls: {
+    start?: string;
     inhale: string;
     hold: string;
     exhale: string;
@@ -20,80 +22,94 @@ interface BreathingVoicePlayerProps {
   onPlay: (voice: "vera" | "marco") => void;
   onPause: () => void;
   activeVoice: "vera" | "marco" | null;
-  headerText?: string;
+  headerText: string;
   volume?: number;
-  onVolumeChange?: (volume: number) => void;
+  onVolumeChange?: (newValue: number[]) => void;
 }
 
-export const BreathingVoicePlayer = ({
+export function BreathingVoicePlayer({
   veraUrls,
   marcoUrls,
   isActive,
   onPlay,
   onPause,
   activeVoice,
-  headerText = "Kies een stem",
+  headerText,
   volume = 0.8,
-  onVolumeChange
-}: BreathingVoicePlayerProps) => {
+  onVolumeChange = () => {}
+}: BreathingVoicePlayerProps) {
+  const hasVeraUrls = veraUrls.inhale && veraUrls.hold && veraUrls.exhale;
+  const hasMarcoUrls = marcoUrls.inhale && marcoUrls.hold && marcoUrls.exhale;
   
-  const handlePlayVera = () => {
-    if (isActive && activeVoice === "vera") {
+  const handleVoiceToggle = (voice: "vera" | "marco") => {
+    if (isActive && activeVoice === voice) {
       onPause();
     } else {
-      onPlay("vera");
+      onPlay(voice);
     }
   };
-  
-  const handlePlayMarco = () => {
-    if (isActive && activeVoice === "marco") {
-      onPause();
-    } else {
-      onPlay("marco");
-    }
-  };
-  
-  const areVeraUrlsValid = veraUrls.inhale && veraUrls.hold && veraUrls.exhale;
-  const areMarcoUrlsValid = marcoUrls.inhale && marcoUrls.hold && marcoUrls.exhale;
   
   return (
-    <Card className="overflow-hidden border-muted bg-card/50 backdrop-blur-sm">
-      <CardHeader className="p-3 pb-0">
-        <CardTitle className="text-sm font-medium">{headerText}</CardTitle>
+    <Card className="bg-card/60 backdrop-blur-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Mic className="h-5 w-5 text-primary" />
+          {headerText}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-3 flex flex-col gap-2">
-        <div className="grid grid-cols-2 gap-2">
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-3 pt-2">
           <Button
             variant={activeVoice === "vera" ? "default" : "outline"}
-            className={cn(
-              "w-full text-sm flex items-center justify-center gap-2",
-              !areVeraUrlsValid && "opacity-50 cursor-not-allowed"
-            )}
-            onClick={handlePlayVera}
-            disabled={!areVeraUrlsValid}
+            size="sm"
+            className={`flex-1 ${!hasVeraUrls ? "opacity-50" : ""}`}
+            disabled={!hasVeraUrls}
+            onClick={() => handleVoiceToggle("vera")}
           >
-            {activeVoice === "vera" && isActive ? "Pauze Vera" : "Vera"}
+            {isActive && activeVoice === "vera" ? (
+              <Pause className="h-4 w-4 mr-2" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            Vera
           </Button>
           
           <Button
             variant={activeVoice === "marco" ? "default" : "outline"}
-            className={cn(
-              "w-full text-sm flex items-center justify-center gap-2",
-              !areMarcoUrlsValid && "opacity-50 cursor-not-allowed"
-            )}
-            onClick={handlePlayMarco}
-            disabled={!areMarcoUrlsValid}
+            size="sm"
+            className={`flex-1 ${!hasMarcoUrls ? "opacity-50" : ""}`}
+            disabled={!hasMarcoUrls}
+            onClick={() => handleVoiceToggle("marco")}
           >
-            {activeVoice === "marco" && isActive ? "Pauze Marco" : "Marco"}
+            {isActive && activeVoice === "marco" ? (
+              <Pause className="h-4 w-4 mr-2" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            Marco
           </Button>
         </div>
         
-        {(!areVeraUrlsValid || !areMarcoUrlsValid) && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Let op: Niet alle stemaudio is geconfigureerd. Ga naar de Admin om audio te configureren.
+        {(activeVoice === "vera" || activeVoice === "marco") && (
+          <div className="flex items-center space-x-2 mt-3">
+            <Volume2 className="h-4 w-4 text-muted-foreground" />
+            <Slider
+              value={[volume]}
+              min={0}
+              max={1}
+              step={0.01}
+              onValueChange={onVolumeChange}
+              className="w-full"
+            />
+          </div>
+        )}
+        
+        {!hasVeraUrls && !hasMarcoUrls && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Er zijn nog geen stembestanden toegevoegd. Voeg deze toe in de admin instellingen.
           </p>
         )}
       </CardContent>
     </Card>
   );
-};
+}

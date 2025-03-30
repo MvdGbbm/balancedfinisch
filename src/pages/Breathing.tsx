@@ -1,189 +1,172 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
+import BreathingAnimation from "@/components/breathing/breathing-animation";
+import { BreathExercise } from "@/components/breathing/breath-exercise";
+import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
+import { BreathingMusicPlayer } from "@/components/breathing/breathing-music-player";
+import { Wand2, Music } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import BreathingPatternSelector from "@/components/breathing/breathing-pattern-selector";
-import BreathingExerciseAnimation from "@/components/breathing/breathing-exercise-animation";
-import { BreathingControls } from "@/components/breathing/breathing-controls";
-import { BreathingPhase } from '@/components/breathing/types';
+
+// Define the ExerciseType type
+type ExerciseType = "box" | "4-7-8";
 
 const Breathing = () => {
-  // Core breathing session state and hooks
-  const {
-    breathingPatterns,
-    selectedPattern,
-    isExerciseActive,
-    activeVoice,
-    currentPhase,
-    showAnimation,
-    currentCycle,
-    exerciseCompleted,
-    voiceVolume,
-    musicVolume,
-    handleSelectPattern,
-    handleActivateVoice,
-    handlePauseVoice,
-    handlePhaseChange,
-    handleVoiceVolumeChange,
-    handleMusicVolumeChange
-  } = useBreathingSession();
+  const [exerciseType, setExerciseType] = useState<ExerciseType>("box");
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false);
+  const [activeVoice, setActiveVoice] = useState<"vera" | "marco" | null>(null);
+  const [showMusicPlayer, setShowMusicPlayer] = useState(false);
+  const [voiceVolume, setVoiceVolume] = useState(0.8);
   
-  // Audio references
-  const startAudioRef = useRef<HTMLAudioElement | null>(null);
-  const endAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Correcte URL's voor audiobestanden - relatieve paden vanaf public folder
+  const veraUrls = {
+    start: "./audio/vera_breathing_start.mp3",
+    inhale: "./audio/vera_breathing_inhale.mp3",
+    hold: "./audio/vera_breathing_hold.mp3",
+    exhale: "./audio/vera_breathing_exhale.mp3",
+  };
+
+  const marcoUrls = {
+    start: "./audio/marco_breathing_start.mp3",
+    inhale: "./audio/marco_breathing_inhale.mp3",
+    hold: "./audio/marco_breathing_hold.mp3",
+    exhale: "./audio/marco_breathing_exhale.mp3",
+  };
+
+  // Map exerciseType to the proper technique format expected by BreathingAnimation
+  const getTechnique = (type: ExerciseType): "box-breathing" | "4-7-8" => {
+    return type === "box" ? "box-breathing" : "4-7-8";
+  };
+
+  // Define breathing times based on technique
+  const getBreathingTimes = (type: ExerciseType) => {
+    if (type === "box") {
+      return {
+        inhaleTime: 4,
+        holdTime: 4,
+        exhaleTime: 4,
+        pauseTime: 4
+      };
+    } else {
+      return {
+        inhaleTime: 4,
+        holdTime: 7,
+        exhaleTime: 8,
+        pauseTime: 0
+      };
+    }
+  };
+
+  const breathingTimes = getBreathingTimes(exerciseType);
+
+  const handlePlayVoice = (voice: "vera" | "marco") => {
+    setIsPlayingVoice(true);
+    setActiveVoice(voice);
+    toast.info(`Stembegeleiding ${voice === "vera" ? "Vera" : "Marco"} geactiveerd`);
+  };
+
+  const handlePauseVoice = () => {
+    setIsPlayingVoice(false);
+    setActiveVoice(null);
+    toast.info("Stembegeleiding gepauzeerd");
+  };
+
+  const handleVoiceVolumeChange = (newValue: number[]) => {
+    setVoiceVolume(newValue[0]);
+  };
+
+  const toggleMusicPlayer = () => {
+    setShowMusicPlayer(!showMusicPlayer);
+  };
+
+  // Logging om probleemdiagnose te doen
+  useEffect(() => {
+    console.log("Audio URLs:", {
+      vera: veraUrls,
+      marco: marcoUrls,
+      activeVoice
+    });
+  }, [activeVoice]);
 
   return (
     <MobileLayout>
-      <div className="container py-6 animate-fade-in">
-        <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
-        
-        <div className="space-y-6">
-          <BreathingPatternSelector 
-            breathingPatterns={breathingPatterns}
-            selectedPattern={selectedPattern}
-            isExerciseActive={isExerciseActive}
-            onSelectPattern={handleSelectPattern}
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">Ademhalingsoefeningen</h1>
+          <p className="text-muted-foreground">
+            Ontspan en vind je focus met begeleide ademhalingsoefeningen
+          </p>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              variant={exerciseType === "box" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setExerciseType("box")}
+            >
+              Box Breathing
+            </Button>
+            <Button
+              variant={exerciseType === "4-7-8" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setExerciseType("4-7-8")}
+            >
+              4-7-8 Techniek
+            </Button>
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Music className="h-4 w-4 mr-2" />
+                Muziek
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[350px] p-0 bg-background border" align="end">
+              <BreathingMusicPlayer />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="space-y-8">
+          <BreathingAnimation 
+            technique={getTechnique(exerciseType)}
+            voiceUrls={activeVoice === "vera" ? veraUrls : activeVoice === "marco" ? marcoUrls : null}
+            isVoiceActive={isPlayingVoice}
+            inhaleTime={breathingTimes.inhaleTime}
+            holdTime={breathingTimes.holdTime}
+            exhaleTime={breathingTimes.exhaleTime}
+            pauseTime={breathingTimes.pauseTime}
           />
           
-          {selectedPattern && showAnimation && (
-            <BreathingExerciseAnimation 
-              technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
-              voiceUrls={activeVoice === "vera" ? {
-                inhale: "https://example.com/vera/inhale.mp3",
-                hold: "https://example.com/vera/hold.mp3",
-                exhale: "https://example.com/vera/exhale.mp3",
-              } : activeVoice === "marco" ? {
-                inhale: "https://example.com/marco/inhale.mp3",
-                hold: "https://example.com/marco/hold.mp3",
-                exhale: "https://example.com/marco/exhale.mp3",
-              } : null}
-              isVoiceActive={isExerciseActive && !!activeVoice}
-              currentPhase={currentPhase}
-              onPhaseChange={(phase) => handlePhaseChange(phase)}
-              currentCycle={currentCycle}
-              totalCycles={selectedPattern.cycles}
-              exerciseCompleted={exerciseCompleted}
-              inhaleTime={selectedPattern.inhale}
-              holdTime={selectedPattern.hold1}
-              exhaleTime={selectedPattern.exhale}
-              pauseTime={selectedPattern.hold2}
-            />
-          )}
+          <BreathExercise 
+            exerciseType={exerciseType}
+            activeVoice={activeVoice}
+            isPlayingVoice={isPlayingVoice}
+          />
           
-          <BreathingControls 
-            isPlaying={isExerciseActive}
-            onTogglePlay={isExerciseActive ? handlePauseVoice : () => handleActivateVoice("vera")}
-            onSkipToNextPhase={() => console.log("Skip to next phase")}
-            currentPhase={currentPhase}
-            currentCycle={currentCycle}
-            totalCycles={selectedPattern?.cycles || 0}
-            completionPercentage={(currentCycle / (selectedPattern?.cycles || 1)) * 100}
-            breathsCompleted={currentCycle - 1}
-            volume={voiceVolume * 100}
-            onVolumeChange={(values) => handleVoiceVolumeChange(values[0] / 100)}
-            isMuted={voiceVolume <= 0}
-            onToggleMute={() => handleVoiceVolumeChange(voiceVolume > 0 ? 0 : 0.8)}
+          <BreathingVoicePlayer 
+            veraUrls={veraUrls}
+            marcoUrls={marcoUrls}
+            isActive={isPlayingVoice}
+            onPlay={handlePlayVoice}
+            onPause={handlePauseVoice}
+            activeVoice={activeVoice}
+            headerText="Stembegeleiding"
+            volume={voiceVolume}
+            onVolumeChange={handleVoiceVolumeChange}
           />
         </div>
       </div>
     </MobileLayout>
   );
 };
-
-// Hook for managing breathing session state
-function useBreathingSession() {
-  const [breathingPatterns, setBreathingPatterns] = useState([
-    { id: "1", name: "4-7-8 Ademhaling", description: "Inademen (4s), vasthouden (7s), uitademen (8s)", inhale: 4, hold1: 7, exhale: 8, hold2: 0, cycles: 5 },
-    { id: "2", name: "Box Breathing", description: "Inademen (4s), vasthouden (4s), uitademen (4s), pauze (4s)", inhale: 4, hold1: 4, exhale: 4, hold2: 4, cycles: 4 },
-    { id: "3", name: "Diafragmatische Ademhaling", description: "Diepe buikademhaling. Inademen (4s), uitademen (6s)", inhale: 4, hold1: 0, exhale: 6, hold2: 0, cycles: 6 }
-  ]);
-  
-  const [selectedPattern, setSelectedPattern] = useState(null);
-  const [isExerciseActive, setIsExerciseActive] = useState(false);
-  const [activeVoice, setActiveVoice] = useState(null);
-  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("start");
-  const [showAnimation, setShowAnimation] = useState(false);
-  const [currentCycle, setCurrentCycle] = useState(1);
-  const [exerciseCompleted, setExerciseCompleted] = useState(false);
-  const [voiceVolume, setVoiceVolume] = useState(0.8);
-  const [musicVolume, setMusicVolume] = useState(0.5);
-  
-  const handleSelectPattern = (pattern) => {
-    setSelectedPattern(pattern);
-    
-    if (isExerciseActive) {
-      setIsExerciseActive(false);
-      setActiveVoice(null);
-    }
-    
-    setCurrentCycle(1);
-    setExerciseCompleted(false);
-    setShowAnimation(true);
-    
-    toast.success(`${pattern.name} geselecteerd`);
-  };
-  
-  const handleActivateVoice = (voice) => {
-    if (!selectedPattern) {
-      toast.error("Selecteer eerst een ademhalingspatroon");
-      return;
-    }
-    
-    setActiveVoice(voice);
-    setIsExerciseActive(true);
-    setCurrentPhase("inhale");
-    setCurrentCycle(1);
-    setExerciseCompleted(false);
-    
-    toast.success(`Start ${selectedPattern.name} met ${voice === "vera" ? "Vera" : "Marco"} stem`);
-  };
-  
-  const handlePauseVoice = () => {
-    setIsExerciseActive(false);
-    toast.info("Oefening gepauzeerd");
-  };
-  
-  const handlePhaseChange = (newPhase: BreathingPhase) => {
-    setCurrentPhase(newPhase);
-    
-    if (newPhase === "inhale" && currentPhase === "pause") {
-      if (selectedPattern && currentCycle < selectedPattern.cycles) {
-        setCurrentCycle(prevCycle => prevCycle + 1);
-      } else if (selectedPattern && currentCycle >= selectedPattern.cycles) {
-        setIsExerciseActive(false);
-        setExerciseCompleted(true);
-        
-        toast.success("Oefening voltooid!");
-      }
-    }
-  };
-  
-  const handleVoiceVolumeChange = (volume) => {
-    setVoiceVolume(volume);
-  };
-  
-  const handleMusicVolumeChange = (volume) => {
-    setMusicVolume(volume);
-  };
-  
-  return {
-    breathingPatterns,
-    selectedPattern,
-    isExerciseActive,
-    activeVoice,
-    currentPhase,
-    showAnimation,
-    currentCycle,
-    exerciseCompleted,
-    voiceVolume,
-    musicVolume,
-    handleSelectPattern,
-    handleActivateVoice,
-    handlePauseVoice,
-    handlePhaseChange,
-    handleVoiceVolumeChange,
-    handleMusicVolumeChange
-  };
-}
 
 export default Breathing;

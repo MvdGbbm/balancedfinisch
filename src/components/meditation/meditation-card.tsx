@@ -1,143 +1,90 @@
 
 import React, { useState } from "react";
 import { Meditation } from "@/lib/types";
-import { Clock, Play, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useApp } from "@/context/AppContext";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { Clock, Play, ImageOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MeditationCardProps {
   meditation: Meditation;
   isSelected: boolean;
-  onClick: () => void;
-  showDeleteButton?: boolean;
-  onDelete?: () => void;
-  onShowDetails?: () => void;
+  onClick: (meditation: Meditation) => void;
 }
 
-export function MeditationCard({
-  meditation,
-  isSelected,
-  onClick,
-  showDeleteButton = false,
-  onDelete,
-  onShowDetails,
-}: MeditationCardProps) {
-  const { deleteMeditation } = useApp();
-  const { toast } = useToast();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowDeleteConfirm(true);
+export const MeditationCard = ({ meditation, isSelected, onClick }: MeditationCardProps) => {
+  const [imageError, setImageError] = useState(false);
+  
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    onClick(meditation); // Use the same click handler to open the meditation
   };
 
-  const confirmDelete = () => {
-    if (onDelete) {
-      onDelete();
-    } else {
-      deleteMeditation(meditation.id);
-      toast({
-        title: "Meditatie verwijderd",
-        description: `${meditation.title} is verwijderd.`,
-      });
-    }
-  };
-
-  const handleShowDetails = (e: React.MouseEvent) => {
-    if (onShowDetails) {
-      e.stopPropagation();
-      onShowDetails();
-    }
+  // Check if meditation has audio URL before rendering play button
+  const hasAudio = !!meditation.audioUrl;
+  
+  const handleImageError = () => {
+    setImageError(true);
+    console.error(`Failed to load image for meditation: ${meditation.title}`);
   };
 
   return (
-    <>
-      <div
-        onClick={onClick}
-        className={cn(
-          "group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-lg transition-all duration-300 hover:shadow-md",
-          isSelected
-            ? "ring-2 ring-primary ring-offset-2"
-            : "bg-card hover:bg-accent/10"
+    <Card 
+      key={meditation.id} 
+      className={cn(
+        "overflow-hidden cursor-pointer transition-all hover:shadow-md animate-slide-in",
+        isSelected 
+          ? "ring-2 ring-primary/50 bg-primary/5" 
+          : "neo-morphism hover:translate-y-[-2px]"
+      )}
+      onClick={() => onClick(meditation)}
+    >
+      <div className="flex h-20">
+        {!imageError ? (
+          <div
+            className="w-20 bg-cover bg-center"
+            style={{ backgroundImage: `url(${meditation.coverImageUrl})` }}
+            onError={handleImageError}
+          >
+            {/* Dit is een achtergrondafbeelding dus we voegen een extra img toe voor foutafhandeling */}
+            <img 
+              src={meditation.coverImageUrl} 
+              alt="" 
+              className="hidden" 
+              onError={handleImageError} 
+            />
+          </div>
+        ) : (
+          <div className="w-20 bg-muted flex items-center justify-center">
+            <ImageOff className="h-8 w-8 text-muted-foreground" />
+          </div>
         )}
-      >
-        <div className="aspect-video w-full overflow-hidden bg-muted">
-          <img
-            src={meditation.coverImageUrl}
-            alt={meditation.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </div>
-
-        <div className="flex flex-1 flex-col justify-between p-4">
+        <CardContent className="flex-1 p-2.5 flex flex-col justify-between">
           <div>
-            <h3 className="font-medium">{meditation.title}</h3>
-            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+            <h3 className="font-medium text-sm mb-0.5 line-clamp-1">{meditation.title}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">
               {meditation.description}
             </p>
           </div>
-
-          <div className="mt-auto flex items-center justify-between pt-4">
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Clock className="mr-1 h-3.5 w-3.5" />
-              <span>{meditation.duration} min</span>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center text-xs text-muted-foreground">
+              <Clock className="h-3 w-3 mr-1" />
+              {meditation.duration} min
             </div>
-
-            <div className="flex items-center gap-2">
-              {showDeleteButton && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={handleDeleteClick}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 rounded-full"
-                onClick={onShowDetails ? handleShowDetails : undefined}
+            {hasAudio && (
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-6 w-6 text-primary hover:text-primary/70 hover:bg-primary/10"
+                onClick={handlePlayClick}
+                aria-label="Speel meditatie af"
               >
-                <Play className="h-4 w-4" />
+                <Play className="h-3 w-3" />
               </Button>
-            </div>
+            )}
           </div>
-        </div>
+        </CardContent>
       </div>
-
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Meditatie verwijderen</AlertDialogTitle>
-            <AlertDialogDescription>
-              Weet je zeker dat je "{meditation.title}" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuleren</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Verwijderen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </Card>
   );
-}
+};

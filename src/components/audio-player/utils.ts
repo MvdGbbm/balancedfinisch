@@ -1,165 +1,129 @@
 
-// Format time in MM:SS format
-export const formatTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+import { quotes, colorGradients } from "@/data/quotes";
+
+export const formatTime = (time: number) => {
+  if (isNaN(time)) return "0:00";
+  
+  const minutes = Math.floor(time / 60);
+  const seconds = Math.floor(time % 60);
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-// Get MIME type based on audio file extension
-export const getAudioMimeType = (url?: string): string => {
-  if (!url) return 'audio/mpeg';
+export const getRandomQuote = () => {
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
+  return {
+    ...quotes[randomIndex],
+    backgroundClass: colorGradients[randomGradientIndex]
+  };
+};
+
+export const validateAudioUrl = (url: string | undefined): string => {
+  if (!url) return '';
   
-  const extension = url.split('.').pop()?.toLowerCase();
+  // Remove any trailing or leading whitespace
+  url = url.trim();
   
-  switch (extension) {
-    case 'mp3':
-      return 'audio/mpeg';
-    case 'wav':
-      return 'audio/wav';
-    case 'ogg':
-      return 'audio/ogg';
-    case 'aac':
-    case 'm4a':
-      return 'audio/aac';
-    default:
-      return 'audio/mpeg';
+  // Ensure URL has valid protocol
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+    // If it's a relative path, add leading slash
+    if (!url.startsWith('/')) {
+      url = '/' + url;
+    }
+  }
+  
+  // Handle URL encoding for special characters
+  try {
+    // Only encode parts of the URL that need encoding
+    const urlObj = new URL(url, window.location.origin);
+    // Make sure pathname is properly encoded (file names with spaces, etc.)
+    urlObj.pathname = urlObj.pathname.split('/')
+      .map(segment => segment.includes(' ') ? encodeURIComponent(segment) : segment)
+      .join('/');
+    
+    return urlObj.toString();
+  } catch (error) {
+    console.error("Error encoding URL:", error, url);
+    // If URL parsing fails, try a simpler approach
+    return url;
   }
 };
 
-// Preload an audio file and check if it's valid
-export const preloadAudio = async (url: string): Promise<boolean> => {
-  if (!url) return false;
+export const isStreamUrl = (url: string): boolean => {
+  return url.includes('stream') || 
+         url.includes('radio') || 
+         url.includes('live') || 
+         url.endsWith('.m3u8') || 
+         url.includes('icecast') || 
+         url.includes('shoutcast');
+};
+
+// Check if file is likely an AAC audio file
+export const isAACFile = (url: string): boolean => {
+  const lowercaseUrl = url.toLowerCase();
+  return lowercaseUrl.endsWith('.aac') || 
+         lowercaseUrl.endsWith('.m4a') || 
+         lowercaseUrl.includes('audio/aac') || 
+         lowercaseUrl.includes('audio/mp4a');
+};
+
+// Check if browser supports AAC playback
+export const checkAACSupport = (): boolean => {
+  const audio = document.createElement('audio');
+  return audio.canPlayType('audio/aac') !== '' || 
+         audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
+};
+
+// Get appropriate MIME type based on file extension
+export const getAudioMimeType = (url: string): string => {
+  const lowercaseUrl = url.toLowerCase();
   
-  return new Promise<boolean>((resolve) => {
+  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
+  if (lowercaseUrl.endsWith('.m4a') || lowercaseUrl.endsWith('.mp4a')) return 'audio/mp4';
+  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
+  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
+  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
+  if (lowercaseUrl.endsWith('.flac')) return 'audio/flac';
+  
+  // Default to general audio type
+  return 'audio/mpeg';
+};
+
+// Preload and test an audio URL
+export const preloadAudio = async (url: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(false);
+      return;
+    }
+    
+    const validatedUrl = validateAudioUrl(url);
+    if (!validatedUrl) {
+      resolve(false);
+      return;
+    }
+    
     const audio = new Audio();
     
-    const onCanPlayThrough = () => {
-      cleanup();
-      resolve(true);
-    };
-    
-    const onError = () => {
-      cleanup();
-      console.error(`Error preloading audio: ${url}`);
-      resolve(false);
-    };
-    
-    const cleanup = () => {
-      audio.removeEventListener('canplaythrough', onCanPlayThrough);
-      audio.removeEventListener('error', onError);
-    };
-    
-    audio.addEventListener('canplaythrough', onCanPlayThrough);
-    audio.addEventListener('error', onError);
-    
-    // Set a timeout in case the audio loading hangs
+    // Set a timeout for loading
     const timeout = setTimeout(() => {
-      cleanup();
-      console.warn(`Timeout preloading audio: ${url}`);
+      console.warn("Audio preload timed out:", validatedUrl);
       resolve(false);
     }, 5000);
     
-    audio.src = url;
-    audio.load();
-    
-    return () => {
+    // Event listeners for success/failure
+    audio.oncanplaythrough = () => {
       clearTimeout(timeout);
-      cleanup();
+      resolve(true);
     };
+    
+    audio.onerror = (error) => {
+      clearTimeout(timeout);
+      console.error("Error preloading audio:", error, validatedUrl);
+      resolve(false);
+    };
+    
+    audio.src = validatedUrl;
+    audio.load();
   });
-};
-
-// Check if a URL is a live stream URL
-export const isStreamUrl = (url: string): boolean => {
-  if (!url) return false;
-  
-  // Common stream extensions and URL patterns
-  const streamPatterns = [
-    '.m3u8', '.pls', '.xspf', '.asx', 
-    'icecast', 'shoutcast', 'streaming', 'stream', 
-    'radio', 'live', '/listen/'
-  ];
-  
-  const lowerUrl = url.toLowerCase();
-  return streamPatterns.some(pattern => lowerUrl.includes(pattern));
-};
-
-// Remove a specific radio stream from local storage
-export const removeFromRecentStreams = (streamId: string): void => {
-  try {
-    const recentStreams = localStorage.getItem('recentStreams');
-    if (recentStreams) {
-      const streams = JSON.parse(recentStreams);
-      const updatedStreams = streams.filter((id: string) => id !== streamId);
-      localStorage.setItem('recentStreams', JSON.stringify(updatedStreams));
-    }
-  } catch (error) {
-    console.error('Error removing from recent streams:', error);
-  }
-};
-
-// Add a radio stream to local storage
-export const addToRecentStreams = (streamId: string): void => {
-  try {
-    const recentStreams = localStorage.getItem('recentStreams');
-    let streams = recentStreams ? JSON.parse(recentStreams) : [];
-    
-    // Remove if already exists
-    streams = streams.filter((id: string) => id !== streamId);
-    
-    // Add to beginning
-    streams.unshift(streamId);
-    
-    // Limit to 5 recent streams
-    if (streams.length > 5) {
-      streams = streams.slice(0, 5);
-    }
-    
-    localStorage.setItem('recentStreams', JSON.stringify(streams));
-  } catch (error) {
-    console.error('Error adding to recent streams:', error);
-  }
-};
-
-// Fix any issues with audio URLs before playback
-export const validateAudioUrl = (url?: string): string => {
-  if (!url) return '';
-  
-  // If URL doesn't have a protocol, assume https
-  if (url && !url.startsWith('http') && !url.startsWith('/')) {
-    return `https://${url}`;
-  }
-  
-  return url;
-};
-
-// Fix issue with Supabase storage URLs
-export const fixSupabaseStorageUrl = (url: string): string => {
-  if (!url) return '';
-  
-  // Check if it's already a full URL
-  if (url.startsWith('http')) {
-    return url;
-  }
-  
-  // Check if it's a relative URL
-  if (url.startsWith('/')) {
-    return url;
-  }
-  
-  // Otherwise, assume it's a Supabase storage path
-  return `https://storage.googleapis.com/${url}`;
-};
-
-// Complete URL validation
-export const completeUrlValidation = (url: string): string => {
-  let validatedUrl = validateAudioUrl(url);
-  
-  // If it looks like a Supabase storage URL
-  if (validatedUrl.includes('storage.googleapis.com') || validatedUrl.includes('supabase')) {
-    validatedUrl = fixSupabaseStorageUrl(validatedUrl);
-  }
-  
-  return validatedUrl;
 };

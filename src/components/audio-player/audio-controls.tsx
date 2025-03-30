@@ -1,61 +1,56 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, SkipBack, SkipForward, RefreshCw, Volume2, Quote } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, RefreshCw, Volume2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
 interface AudioControlsProps {
   isPlaying: boolean;
-  onPlayPause: () => void;
-  onPrevious?: () => void;
-  onNext?: () => void;
-  onToggleLoop: () => void;
+  togglePlay: () => void;
+  skipTime: (amount: number) => void;
+  isLoaded: boolean;
   isLooping: boolean;
+  toggleLoop: () => void;
+  isCrossfading: boolean;
+  isLiveStream: boolean;
   volume: number;
-  onVolumeChange: (newValue: number[]) => void;
-  hasNextTrack?: boolean;
-  isLiveStream?: boolean;
-  showQuote?: boolean;
-  onToggleQuote?: () => void;
-  hasQuote?: boolean;
+  handleVolumeChange: (newValue: number[]) => void;
+  loadError: boolean;
 }
 
 export const AudioControls: React.FC<AudioControlsProps> = ({
   isPlaying,
-  onPlayPause,
-  onPrevious,
-  onNext,
-  onToggleLoop,
+  togglePlay,
+  skipTime,
+  isLoaded,
   isLooping,
+  toggleLoop,
+  isCrossfading,
+  isLiveStream,
   volume,
-  onVolumeChange,
-  hasNextTrack = false,
-  isLiveStream = false,
-  showQuote = false,
-  onToggleQuote,
-  hasQuote = false
+  handleVolumeChange,
+  loadError
 }) => {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-2">
-        {onPrevious && (
-          <Button
-            onClick={onPrevious}
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 rounded-full"
-            disabled={isLiveStream}
-          >
-            <SkipBack className="h-4 w-4" />
-          </Button>
-        )}
+        <Button
+          onClick={() => skipTime(-10)}
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 rounded-full"
+          disabled={!isLoaded || isCrossfading || isLiveStream}
+        >
+          <SkipBack className="h-4 w-4" />
+        </Button>
         
         <Button
-          onClick={onPlayPause}
+          onClick={togglePlay}
           size="icon"
           variant="outline"
           className="h-10 w-10 rounded-full"
+          disabled={!isLoaded && !loadError}
         >
           {isPlaying ? (
             <Pause className="h-5 w-5" />
@@ -64,45 +59,29 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
           )}
         </Button>
         
-        {onNext && (
-          <Button
-            onClick={onNext}
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 rounded-full"
-            disabled={isLiveStream || !hasNextTrack}
-          >
-            <SkipForward className="h-4 w-4" />
-          </Button>
-        )}
+        <Button
+          onClick={() => skipTime(10)}
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 rounded-full"
+          disabled={!isLoaded || isCrossfading || isLiveStream}
+        >
+          <SkipForward className="h-4 w-4" />
+        </Button>
         
         <div className="flex items-center ml-2 space-x-1">
           <Button
-            onClick={onToggleLoop}
+            onClick={toggleLoop}
             size="icon"
             variant={isLooping ? "default" : "ghost"}
             className={cn(
               "h-8 w-8 rounded-full transition-colors",
               isLooping && "bg-primary text-primary-foreground"
             )}
-            disabled={isLiveStream}
+            disabled={!isLoaded || isLiveStream}
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          
-          {hasQuote && (
-            <Button
-              onClick={onToggleQuote}
-              size="icon"
-              variant={showQuote ? "default" : "ghost"}
-              className={cn(
-                "h-8 w-8 rounded-full transition-colors",
-                showQuote && "bg-primary text-primary-foreground"
-              )}
-            >
-              <Quote className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </div>
       
@@ -113,7 +92,7 @@ export const AudioControls: React.FC<AudioControlsProps> = ({
           min={0}
           max={1}
           step={0.01}
-          onValueChange={onVolumeChange}
+          onValueChange={handleVolumeChange}
           className="w-24"
         />
       </div>

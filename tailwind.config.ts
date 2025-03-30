@@ -80,14 +80,7 @@ export default {
 				},
 				teal: {
 					700: '#0D6E6E',  // Adding teal-700 for button backgrounds
-				},
-				// New modern accent colors
-				'accent-blue': '#0c66e4',
-				'accent-orange': '#ff7a00',
-				'accent-cyan': '#00b8d9',
-				'accent-pink': '#ff1493',
-				'accent-purple': '#9b87f5',
-				'accent-green': '#36b37e'
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -142,10 +135,6 @@ export default {
 				'pulse-gentle': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.8' }
-				},
-				'border-glow': {
-					'0%, 100%': { borderColor: 'currentColor', boxShadow: '0 0 5px rgba(255, 255, 255, 0.1)' },
-					'50%': { borderColor: 'transparent', boxShadow: '0 0 15px rgba(255, 255, 255, 0.3)' }
 				}
 			},
 			animation: {
@@ -160,8 +149,7 @@ export default {
 				'slide-in-left': 'slide-in-left 0.4s ease-out',
 				'slide-in-right': 'slide-in-right 0.4s ease-out',
 				'breathe': 'breathe 5s ease-in-out infinite',
-				'pulse-gentle': 'pulse-gentle 2s ease-in-out infinite',
-				'border-glow': 'border-glow 2s ease-in-out infinite'
+				'pulse-gentle': 'pulse-gentle 2s ease-in-out infinite'
 			}
 		}
 	},

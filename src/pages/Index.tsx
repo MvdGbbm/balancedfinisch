@@ -1,57 +1,13 @@
+
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sunrise, BookOpen, Quote, Heart, Music, Radio, RefreshCw, Headphones, Lock } from "lucide-react";
+import { Sunrise, BookOpen, Music, Quote, Heart } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
-// Define admin menu items matching the image
-const adminFeatures = [
-  {
-    title: "Meditaties",
-    description: "Beheer meditatie audio",
-    icon: Headphones,
-    color: "modern-card-blue",
-    iconBg: "icon-container-blue",
-    path: "/admin/meditations"
-  },
-  {
-    title: "Inspiratie quotes",
-    description: "Beheer dagelijkse quotes",
-    icon: Quote,
-    color: "modern-card-orange",
-    iconBg: "icon-container-orange",
-    path: "/admin/quotes"
-  },
-  {
-    title: "Muziek",
-    description: "Beheer muziekbibliotheek",
-    icon: Music,
-    color: "modern-card-pink",
-    iconBg: "icon-container-pink",
-    path: "/admin/muziek"
-  },
-  {
-    title: "Streaming Links",
-    description: "Beheer radiostreams",
-    icon: Radio,
-    color: "modern-card-purple",
-    iconBg: "icon-container-purple",
-    path: "/admin/streams"
-  },
-  {
-    title: "Ademhaling",
-    description: "Beheer ademhalingsoefeningen",
-    icon: RefreshCw,
-    color: "modern-card-green",
-    iconBg: "icon-container-green",
-    path: "/admin/breathing"
-  }
-];
-
-// User-facing features
 const features = [
   {
     title: "Meditaties",
@@ -64,10 +20,18 @@ const features = [
   {
     title: "Ademhalingsoefeningen",
     description: "Verbeter je ademhaling met visuele oefeningen",
-    icon: RefreshCw,
+    icon: Sunrise,
     color: "bg-emerald-100 dark:bg-emerald-900/30",
     textColor: "text-emerald-600 dark:text-emerald-300",
     path: "/breathing"
+  },
+  {
+    title: "Muziek",
+    description: "Ontdek rustgevende muziek voor meditatie en ontspanning",
+    icon: Music,
+    color: "bg-amber-100 dark:bg-amber-900/30",
+    textColor: "text-amber-600 dark:text-amber-300",
+    path: "/music"
   },
   {
     title: "Dagboek",
@@ -76,6 +40,14 @@ const features = [
     color: "bg-rose-100 dark:bg-rose-900/30",
     textColor: "text-rose-600 dark:text-rose-300",
     path: "/journal"
+  },
+  {
+    title: "Soundscapes",
+    description: "Ontspan met rustgevende natuurgeluiden en muziek",
+    icon: Music,
+    color: "bg-indigo-100 dark:bg-indigo-900/30",
+    textColor: "text-indigo-600 dark:text-indigo-300",
+    path: "/soundscapes"
   },
   {
     title: "Dagelijkse Quote",
@@ -92,15 +64,8 @@ const Index = () => {
   const { currentQuote, meditations } = useApp();
   const [displayMeditations, setDisplayMeditations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAdminView, setShowAdminView] = useState(false);
   
   useEffect(() => {
-    // Get url path to check if we're on admin
-    const path = window.location.pathname;
-    if (path.startsWith('/admin')) {
-      setShowAdminView(true);
-    }
-    
     setDisplayMeditations(meditations.slice(0, 3));
     setLoading(false);
   }, [meditations]);
@@ -109,47 +74,6 @@ const Index = () => {
     return displayMeditations.length > 0 ? displayMeditations : [];
   };
   
-  // If we're in the admin view, show the admin features
-  if (showAdminView) {
-    return (
-      <MobileLayout showNav={false}>
-        <div className="space-y-6 animate-fade-in">
-          <div className="text-center mb-8">
-            <h1 className="font-bold tracking-tight mb-2 text-2xl">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Beheer alle content voor de Balanced Mind app
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {adminFeatures.map((feature) => (
-              <Card 
-                key={feature.title} 
-                className={feature.color} 
-                onClick={() => navigate(feature.path)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={feature.iconBg}>
-                      <feature.icon className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-lg mb-1">{feature.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </MobileLayout>
-    );
-  }
-  
-  // User-facing home page
   return (
     <MobileLayout>
       <section className="space-y-6 animate-fade-in">
@@ -198,7 +122,7 @@ const Index = () => {
               {getRecentMeditations().map(meditation => (
                 <Card 
                   key={meditation.id} 
-                  className="flex-shrink-0 w-40 overflow-hidden modern-card" 
+                  className="flex-shrink-0 w-40 overflow-hidden neo-morphism animate-slide-in" 
                   onClick={() => navigate("/meditations")}
                 >
                   <div 
@@ -231,7 +155,7 @@ const Index = () => {
           {features.map(feature => (
             <Card 
               key={feature.title} 
-              className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow duration-300 animate-scale-in bg-navy-950 border border-white/10" 
+              className={cn("overflow-hidden cursor-pointer neo-morphism hover:shadow-md transition-shadow duration-300 animate-scale-in")} 
               onClick={() => navigate(feature.path)}
             >
               <CardContent className="p-4">
@@ -245,18 +169,6 @@ const Index = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
-        
-        <div className="text-center mt-8">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => navigate('/admin')}
-            className="bg-accent-blue/10 text-accent-blue border-accent-blue/30 hover:bg-accent-blue/20"
-          >
-            <Lock className="h-4 w-4 mr-2" />
-            Admin Panel
-          </Button>
         </div>
       </section>
     </MobileLayout>

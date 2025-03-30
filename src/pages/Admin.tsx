@@ -6,9 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   Headphones, 
   Quote, 
-  RefreshCw,
-  LayoutGrid,
-  Music 
+  Waves, 
+  Music, 
+  Radio, 
+  RefreshCw, 
+  LayoutGrid 
 } from "lucide-react";
 
 interface AdminTileProps {
@@ -67,11 +69,25 @@ const Admin: React.FC = () => {
       color: "#F97316" // Orange
     },
     {
+      title: "Soundscapes",
+      description: "Beheer achtergrondgeluiden",
+      icon: <Waves className="h-5 w-5" style={{ color: "#0EA5E9" }} />,
+      path: "/admin/soundscapes",
+      color: "#0EA5E9" // Blue
+    },
+    {
       title: "Muziek",
       description: "Beheer muziekbibliotheek",
       icon: <Music className="h-5 w-5" style={{ color: "#10B981" }} />,
-      path: "/admin/muziek",
+      path: "/admin/music",
       color: "#10B981" // Green
+    },
+    {
+      title: "Streaming Links",
+      description: "Beheer radiostreams",
+      icon: <Radio className="h-5 w-5" style={{ color: "#EC4899" }} />,
+      path: "/admin/streams",
+      color: "#EC4899" // Pink
     },
     {
       title: "Ademhaling",

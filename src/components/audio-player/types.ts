@@ -38,6 +38,4 @@ export interface AudioPlayerProps {
   nextAudioUrl?: string;
   onCrossfadeStart?: () => void;
   volume?: number;
-  ref?: React.Ref<HTMLAudioElement>;
-  showMusicSelector?: boolean;
 }
