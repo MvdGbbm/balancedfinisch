@@ -1,6 +1,4 @@
 
-// This file should be fixed to avoid build errors
-
 import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { MeditationCard } from "@/components/meditation/meditation-card";

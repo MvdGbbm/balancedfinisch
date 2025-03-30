@@ -22,6 +22,8 @@ interface MeditationCardProps {
   isSelected: boolean;
   onClick: () => void;
   showDeleteButton?: boolean;
+  onDelete?: () => void;
+  onShowDetails?: () => void;
 }
 
 export function MeditationCard({
@@ -29,6 +31,8 @@ export function MeditationCard({
   isSelected,
   onClick,
   showDeleteButton = false,
+  onDelete,
+  onShowDetails,
 }: MeditationCardProps) {
   const { deleteMeditation } = useApp();
   const { toast } = useToast();
@@ -40,11 +44,22 @@ export function MeditationCard({
   };
 
   const confirmDelete = () => {
-    deleteMeditation(meditation.id);
-    toast({
-      title: "Meditatie verwijderd",
-      description: `${meditation.title} is verwijderd.`,
-    });
+    if (onDelete) {
+      onDelete();
+    } else {
+      deleteMeditation(meditation.id);
+      toast({
+        title: "Meditatie verwijderd",
+        description: `${meditation.title} is verwijderd.`,
+      });
+    }
+  };
+
+  const handleShowDetails = (e: React.MouseEvent) => {
+    if (onShowDetails) {
+      e.stopPropagation();
+      onShowDetails();
+    }
   };
 
   return (
@@ -95,6 +110,7 @@ export function MeditationCard({
                 variant="secondary"
                 size="icon"
                 className="h-8 w-8 rounded-full"
+                onClick={onShowDetails ? handleShowDetails : undefined}
               >
                 <Play className="h-4 w-4" />
               </Button>
