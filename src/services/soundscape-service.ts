@@ -99,12 +99,25 @@ export const updateSoundscapeInDb = async (id: string, soundscape: Partial<Sound
  * Deletes a soundscape from Supabase
  */
 export const deleteSoundscapeFromDb = async (id: string): Promise<void> => {
-  const { error } = await supabase
-    .from('soundscapes')
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    throw error;
+  // Only attempt to delete if it's a UUID (not a sample ID like "sound-1")
+  if (!id.startsWith('sound-')) {
+    try {
+      const { error } = await supabase
+        .from('soundscapes')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error("Error deleting from Supabase:", error);
+        throw error;
+      }
+      
+      console.log(`Soundscape with ID ${id} successfully deleted from database`);
+    } catch (error) {
+      console.error("Exception when deleting soundscape:", error);
+      throw error;
+    }
+  } else {
+    console.log(`Skipping database delete for sample ID: ${id}`);
   }
 };

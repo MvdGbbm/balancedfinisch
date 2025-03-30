@@ -11,6 +11,7 @@ export interface SaveOptions {
   tags: string[];
   category: string; // Add category field
   currentMusic: Soundscape | null;
+  isFavorite?: boolean; // Add favorite flag
 }
 
 export const saveSoundscapeToSupabase = async ({
@@ -20,7 +21,8 @@ export const saveSoundscapeToSupabase = async ({
   coverImageUrl,
   tags,
   category,
-  currentMusic
+  currentMusic,
+  isFavorite = false
 }: SaveOptions): Promise<{ success: boolean; data?: any }> => {
   try {
     if (currentMusic) {
@@ -34,6 +36,7 @@ export const saveSoundscapeToSupabase = async ({
           cover_image_url: coverImageUrl,
           category: category, // Use the provided category
           tags: tags,
+          is_favorite: isFavorite,
           updated_at: new Date().toISOString()
         })
         .eq('id', currentMusic.id)
@@ -56,7 +59,8 @@ export const saveSoundscapeToSupabase = async ({
           audio_url: audioUrl,
           cover_image_url: coverImageUrl,
           category: category, // Use the provided category
-          tags: tags
+          tags: tags,
+          is_favorite: isFavorite
         })
         .select();
         

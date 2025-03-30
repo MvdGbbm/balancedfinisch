@@ -21,6 +21,16 @@ import {
 import { MusicFormDialog } from "@/components/admin/music/MusicFormDialog";
 import { Soundscape } from "@/lib/types";
 import { AudioPlayer } from "@/components/audio-player";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const AdminSoundscapes = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
@@ -28,6 +38,9 @@ const AdminSoundscapes = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentSoundscape, setCurrentSoundscape] = useState<Soundscape | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [soundscapeToDelete, setSoundscapeToDelete] = useState<string | null>(null);
+  const [isPlayingId, setIsPlayingId] = useState<string | null>(null);
   
   const handleOpenNew = () => {
     setCurrentSoundscape(null);
@@ -39,10 +52,22 @@ const AdminSoundscapes = () => {
     setIsDialogOpen(true);
   };
   
-  const handleDelete = (id: string) => {
-    if (window.confirm("Weet je zeker dat je deze soundscape wilt verwijderen?")) {
-      deleteSoundscape(id);
+  const handleDeleteConfirm = () => {
+    if (soundscapeToDelete) {
+      // If we're playing the item being deleted, stop it
+      if (isPlayingId === soundscapeToDelete) {
+        setIsPlayingId(null);
+      }
+      
+      deleteSoundscape(soundscapeToDelete);
+      setDeleteDialogOpen(false);
+      setSoundscapeToDelete(null);
     }
+  };
+  
+  const handleDeleteClick = (id: string) => {
+    setSoundscapeToDelete(id);
+    setDeleteDialogOpen(true);
   };
   
   const handleSave = (soundscapeData: Omit<Soundscape, "id">) => {
@@ -53,6 +78,14 @@ const AdminSoundscapes = () => {
     }
     
     setIsDialogOpen(false);
+  };
+  
+  const handlePlayerToggle = (id: string) => {
+    if (isPlayingId === id) {
+      setIsPlayingId(null);
+    } else {
+      setIsPlayingId(id);
+    }
   };
   
   // Filter soundscapes based on search query
@@ -116,7 +149,7 @@ const AdminSoundscapes = () => {
                     variant="destructive" 
                     size="icon"
                     className="h-6 w-6 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                    onClick={() => handleDelete(soundscape.id)}
+                    onClick={() => handleDeleteClick(soundscape.id)}
                   >
                     <Trash2 className="h-3 w-3 text-white" />
                   </Button>
@@ -127,10 +160,18 @@ const AdminSoundscapes = () => {
                   <Music className="h-3 w-3 flex-shrink-0" />
                   <span className="truncate max-w-[60px]">{soundscape.title}</span>
                 </div>
-                <AudioPlayer 
-                  audioUrl={soundscape.audioUrl} 
-                  showControls={false}
-                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => handlePlayerToggle(soundscape.id)}
+                >
+                  {isPlayingId === soundscape.id ? (
+                    <Volume2 className="h-3 w-3 text-primary animate-pulse" />
+                  ) : (
+                    <Volume2 className="h-3 w-3" />
+                  )}
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -156,13 +197,57 @@ const AdminSoundscapes = () => {
         </div>
       </div>
       
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Soundscape verwijderen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze soundscape wilt verwijderen?
+              Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setSoundscapeToDelete(null);
+            }}>
+              Annuleren
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       {/* Add/Edit Soundscape Dialog */}
       <MusicFormDialog
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSave={handleSave}
         currentMusic={currentSoundscape}
+        categories={["Muziek", "Natuur", "Meditatie"]} // Add default categories
       />
+      
+      {/* Hidden audio players for playback */}
+      {soundscapes.map(soundscape => (
+        isPlayingId === soundscape.id && (
+          <div key={`player-${soundscape.id}`} className="hidden">
+            <AudioPlayer 
+              audioUrl={soundscape.audioUrl} 
+              showControls={false}
+              isPlayingExternal={true}
+              onPlayPauseChange={(playing) => {
+                if (!playing) setIsPlayingId(null);
+              }}
+            />
+          </div>
+        )
+      ))}
     </AdminLayout>
   );
 };

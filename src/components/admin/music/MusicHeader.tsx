@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ListFilter, Music, PlusCircle } from "lucide-react";
+import { ListFilter, Music, PlusCircle, Trash } from "lucide-react";
 
 interface MusicHeaderProps {
   onCreateClick: () => void;

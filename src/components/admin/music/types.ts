@@ -8,6 +8,7 @@ export interface MusicFormData extends Omit<Soundscape, "id"> {
   coverImageUrl: string;
   tags: string[];
   category: string;
+  isFavorite?: boolean;
 }
 
 export interface MusicFormProps {

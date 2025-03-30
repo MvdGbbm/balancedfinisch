@@ -62,7 +62,13 @@ export function useSoundscapeState() {
         // Update local state
         setSoundscapesData(prev => [...prev, newSoundscape]);
         toast.success("Soundscape toegevoegd");
+        return newSoundscape;
       }
+      
+      // If we couldn't get a new soundscape from the DB, create a local one
+      const localSoundscape = createLocalSoundscape(soundscape);
+      setSoundscapesData(prev => [...prev, localSoundscape]);
+      return localSoundscape;
     } catch (error) {
       console.error("Error adding soundscape:", error);
       toast.error("Fout bij het toevoegen van soundscape");
@@ -70,6 +76,7 @@ export function useSoundscapeState() {
       // Fallback to local-only if Supabase insert fails
       const localSoundscape = createLocalSoundscape(soundscape);
       setSoundscapesData(prev => [...prev, localSoundscape]);
+      return localSoundscape;
     }
   }
   
@@ -102,18 +109,28 @@ export function useSoundscapeState() {
   
   async function deleteSoundscape(id: string) {
     try {
-      // Delete from Supabase
-      await deleteSoundscapeFromDb(id);
+      console.log(`Attempting to delete soundscape with ID: ${id}`);
       
-      // Update local state
-      setSoundscapesData(prev => prev.filter(s => s.id !== id));
+      // First update local state to provide immediate user feedback
+      setSoundscapesData(prev => {
+        const filtered = prev.filter(s => s.id !== id);
+        console.log(`Filtered soundscapes length: ${filtered.length} (removed ${prev.length - filtered.length})`);
+        return filtered;
+      });
+      
+      // Try to delete from Supabase if it's a UUID (not a sample ID)
+      if (!id.startsWith('sound-')) {
+        await deleteSoundscapeFromDb(id);
+      } else {
+        console.log(`Skipping database deletion for sample ID: ${id}`);
+      }
+      
       toast.success("Soundscape verwijderd");
     } catch (error) {
       console.error("Error deleting soundscape:", error);
       toast.error("Fout bij het verwijderen van soundscape");
       
-      // Still update local state even if Supabase delete fails
-      setSoundscapesData(prev => prev.filter(s => s.id !== id));
+      // The local state is already updated, so no need to do it again
     }
   }
   

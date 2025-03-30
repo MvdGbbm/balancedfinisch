@@ -87,6 +87,7 @@ export const useMusicManagement = () => {
           category: item.category,
           coverImageUrl: item.cover_image_url,
           tags: item.tags || [],
+          isFavorite: item.is_favorite,
         }));
 
         // Fetch unique categories from the data
@@ -177,19 +178,38 @@ export const useMusicManagement = () => {
   // Mutation to delete a music track - Handles both UUID and string IDs
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Check if the ID is a UUID format or a string format like "sound-7"
-      if (id.startsWith('sound-')) {
-        // If it's a sample ID (not from database), just delete from local state
-        return id;
-      } else {
-        // If it's a UUID, attempt to delete from database
-        const { error } = await supabase
-          .from("soundscapes")
-          .delete()
-          .eq("id", id);
+      try {
+        // If we're currently playing the track being deleted, stop playback
+        const trackToDelete = soundscapes.find(s => s.id === id);
+        if (trackToDelete && previewUrl === trackToDelete.audioUrl && isPlaying) {
+          setIsPlaying(false);
+          setPreviewUrl(null);
+        }
         
-        if (error) throw error;
-        return id;
+        // Check if the ID is a UUID format or a string format like "sound-7"
+        if (id.startsWith('sound-')) {
+          // If it's a sample ID (not from database), just delete from local state
+          console.log(`Deleting sample soundscape with ID: ${id}`);
+          return id;
+        } else {
+          // If it's a UUID, attempt to delete from database
+          console.log(`Deleting soundscape with ID: ${id} from database`);
+          const { error } = await supabase
+            .from("soundscapes")
+            .delete()
+            .eq("id", id);
+          
+          if (error) {
+            console.error("Error deleting from database:", error);
+            throw error;
+          }
+          
+          console.log(`Soundscape with ID ${id} deleted successfully`);
+          return id;
+        }
+      } catch (error) {
+        console.error("Error in delete mutation:", error);
+        throw error;
       }
     },
     onSuccess: (id) => {
@@ -204,10 +224,9 @@ export const useMusicManagement = () => {
       
       toast.success("Muziek verwijderd");
       
-      // Stop preview if the deleted track was playing
-      if (currentMusic?.id === id && isPlaying) {
-        setIsPlaying(false);
-        setPreviewUrl(null);
+      // Reset current music if it was the one being deleted
+      if (currentMusic?.id === id) {
+        setCurrentMusic(null);
       }
     },
     onError: (error) => {
@@ -217,6 +236,7 @@ export const useMusicManagement = () => {
   });
 
   const handleDeleteMusic = (id: string) => {
+    console.log(`Initiating delete for soundscape ID: ${id}`);
     deleteMutation.mutate(id);
   };
 
