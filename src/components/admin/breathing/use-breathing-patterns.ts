@@ -12,9 +12,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 7,
     exhale: 8,
     hold2: 0,
-    cycles: 5,
-    startUrl: "",
-    endUrl: ""
+    cycles: 5
   }, 
   {
     id: "2",
@@ -24,9 +22,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 4,
     exhale: 4,
     hold2: 4,
-    cycles: 4,
-    startUrl: "",
-    endUrl: ""
+    cycles: 4
   }, 
   {
     id: "3",
@@ -36,9 +32,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 2,
     exhale: 6,
     hold2: 0,
-    cycles: 6,
-    startUrl: "",
-    endUrl: ""
+    cycles: 6
   }
 ];
 
@@ -80,9 +74,7 @@ export function useBreathingPatterns() {
       hold1: 0,
       exhale: 4,
       hold2: 0,
-      cycles: 4,
-      startUrl: "",
-      endUrl: ""
+      cycles: 4
     };
     setSelectedPattern(newPattern);
     return newPattern;

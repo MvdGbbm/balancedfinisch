@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 import { BreathingPhase } from "@/components/breathing/types";
 import { BreathingPattern, VoiceURLs } from "../types/breathing-page-types";
@@ -92,13 +91,13 @@ export const useBreathingPageHandlers = ({
       return;
     }
     
-    if (selectedPattern?.startUrl && startAudioRef.current) {
-      startAudioRef.current.src = selectedPattern.startUrl;
+    if (urls.start && startAudioRef.current) {
+      startAudioRef.current.src = urls.start;
       startAudioRef.current.load();
       
       try {
         await startAudioRef.current.play();
-        console.log("Playing start audio:", selectedPattern.startUrl);
+        console.log("Playing start audio from voice config:", urls.start);
       } catch (error) {
         console.error("Error playing start audio:", error);
       }
@@ -122,7 +121,6 @@ export const useBreathingPageHandlers = ({
     
     if (phase === "inhale" && currentPhase === "pause") {
       if (selectedPattern && currentCycle < selectedPattern.cycles) {
-        // Fix: Use the numeric value directly rather than a function
         setCurrentCycle(currentCycle + 1);
       } else if (selectedPattern && currentCycle >= selectedPattern.cycles && phase === "inhale") {
         setIsExerciseActive(false);
@@ -134,9 +132,8 @@ export const useBreathingPageHandlers = ({
             return veraVoiceUrls.end;
           } else if (activeVoice === "marco" && marcoVoiceUrls.end) {
             return marcoVoiceUrls.end;
-          } else {
-            return selectedPattern.startUrl; // Fallback to pattern start URL if no end URL is set
-          }
+          } 
+          return "";
         };
 
         const endAudioUrl = getEndAudioUrl();

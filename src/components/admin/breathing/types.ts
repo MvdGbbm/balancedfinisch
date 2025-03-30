@@ -8,7 +8,6 @@ export interface BreathingPattern {
   exhale: number;
   hold2: number;
   cycles: number;
-  startUrl?: string;
 }
 
 export interface VoiceURLs {
