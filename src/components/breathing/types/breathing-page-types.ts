@@ -11,6 +11,13 @@ export interface BreathingPattern {
   hold2: number;
   cycles: number;
   description?: string;
+  inhaleText?: string;
+  hold1Text?: string;
+  exhaleText?: string;
+  hold2Text?: string;
+  animationEnabled?: boolean;
+  animationStyle?: "grow" | "glow" | "pulse" | "fade" | "none";
+  animationColor?: string;
 }
 
 export interface VoiceURLs {
