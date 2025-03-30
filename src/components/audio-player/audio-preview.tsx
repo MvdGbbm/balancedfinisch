@@ -42,7 +42,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   const [isValidUrl, setIsValidUrl] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [validatedUrl, setValidatedUrl] = useState("");
-  const { toast } = toast;
   const maxRetries = 2;
   const [retryCount, setRetryCount] = useState(0);
 

@@ -3,17 +3,20 @@ import { useEffect } from "react";
 import { CROSSFADE_DURATION } from "./types";
 
 export const useAudioEffects = ({
-  state,
   audioRef,
   nextAudioRef,
   audioUrl,
   nextAudioUrl,
+  volume,
+  isLooping,
+  state,
+  setVolume,
+  setIsLooping,
   crossfadeTimeoutRef,
   onCrossfadeStart,
   onEnded,
   setIsCrossfading,
   setCurrentTime,
-  volume
 }) => {
   // Effect: Initialize audio element
   useEffect(() => {
@@ -25,9 +28,9 @@ export const useAudioEffects = ({
     // Initialize next audio if available
     if (nextAudioRef.current && nextAudioUrl) {
       nextAudioRef.current.volume = 0;
-      nextAudioRef.current.loop = state.isLooping;
+      nextAudioRef.current.loop = isLooping;
     }
-  }, [audioRef, nextAudioRef, nextAudioUrl, state.isLooping, volume]);
+  }, [audioRef, nextAudioRef, nextAudioUrl, isLooping, volume]);
   
   // Effect: Handle crossfade when current audio is about to end
   useEffect(() => {
@@ -35,10 +38,10 @@ export const useAudioEffects = ({
     if (!audio || !nextAudioUrl || !nextAudioRef.current) return;
     
     // Skip for live streams
-    if (state.isLiveStream) return;
+    if (state?.isLiveStream) return;
     
     // If audio is playing and has a duration 
-    if (state.isPlaying && state.duration > 0 && !state.isLooping) {
+    if (state?.isPlaying && state?.duration > 0 && !state?.isLooping) {
       const timeRemaining = state.duration - state.currentTime;
       
       // If we're close to the end and should start crossfade
@@ -57,7 +60,7 @@ export const useAudioEffects = ({
           nextAudio.src = nextAudioUrl;
           nextAudio.volume = 0;
           nextAudio.currentTime = 0;
-          nextAudio.loop = state.isLooping;
+          nextAudio.loop = isLooping;
           
           // Attempt to play the next audio
           nextAudio.play().catch(error => {
@@ -113,14 +116,10 @@ export const useAudioEffects = ({
   }, [
     audioRef,
     nextAudioRef,
-    state.isPlaying,
-    state.duration,
-    state.currentTime,
-    state.isLooping,
-    state.isCrossfading,
-    state.isLiveStream,
+    state,
     nextAudioUrl,
     volume,
+    isLooping,
     crossfadeTimeoutRef,
     onCrossfadeStart,
     onEnded,

@@ -15,6 +15,7 @@ import Journal from "./pages/Journal";
 import Planner from "./pages/Planner";
 import DailyQuote from "./pages/DailyQuote";
 import AdminMusicOverview from "./pages/AdminMusicOverview";
+import AdminMusic from "./pages/admin/Music";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,13 +37,7 @@ const router = createBrowserRouter(
       <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
       <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin" element={<Admin />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
       <Route path="/admin-music-overview" element={<AdminMusicOverview />} />
       <Route path="*" element={<NotFound />} />
     </>

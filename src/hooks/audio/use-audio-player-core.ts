@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { isStreamUrl, formatTime } from "@/components/audio-player/utils";
@@ -87,6 +88,9 @@ export const useAudioPlayerCore = ({
       nextAudioUrl,
       setIsCrossfading: (isCrossfading: boolean) => setState(prev => ({ ...prev, isCrossfading })),
       isCrossfading: state.isCrossfading,
+      onPlayPauseChange,
+      audioUrl,
+      isPlayingExternal,
     };
   };
   
@@ -173,6 +177,7 @@ export const useAudioPlayerCore = ({
     ...state,
     audioRef,
     nextAudioRef,
+    setState,
     togglePlay: () => { /* Will be implemented in use-audio-controls */ },
     handleVolumeChange: () => { /* Will be implemented in use-audio-controls */ },
     handleTimeUpdate: () => { /* Will be implemented in use-audio-controls */ },

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useAudioPlayerCore } from "./audio/use-audio-player-core";
-import { useAudioControls } from "./audio/use-audio-controls";
-import { useAudioEvents } from "./audio/use-audio-events";
-import { useAudioEffects } from "./audio/use-audio-effects";
+import { useAudioPlayerCore } from "./hooks/audio/use-audio-player-core";
+import { useAudioControls } from "./hooks/audio/use-audio-controls";
+import { useAudioEvents } from "./hooks/audio/use-audio-events";
+import { useAudioEffects } from "./hooks/audio/use-audio-effects";
 
 /**
  * Custom hook that handles audio player functionality
@@ -32,6 +33,8 @@ export const useAudioPlayer = (options: {
     title: options.title,
   });
 
+  const crossfadeTimeoutRef = useRef(null);
+
   // Use the audio controls hook
   const audioControls = useAudioControls(audioCore.setupAudioHandlers());
 
@@ -41,22 +44,30 @@ export const useAudioPlayer = (options: {
   // Use the audio effects hook
   const audioEffects = useAudioEffects({
     audioRef: audioCore.audioRef,
+    nextAudioRef: audioCore.nextAudioRef,
+    audioUrl: options.audioUrl,
+    nextAudioUrl: options.nextAudioUrl,
     volume: audioCore.volume,
     isLooping: audioCore.isLooping,
-    setVolume: audioCore.setVolume,
-    setIsLooping: audioCore.setIsLooping,
+    state: audioCore,
+    setVolume: (volume) => audioCore.setState(prev => ({ ...prev, volume })),
+    setIsLooping: (isLooping) => audioCore.setState(prev => ({ ...prev, isLooping })),
+    crossfadeTimeoutRef,
+    onCrossfadeStart: options.onCrossfadeStart,
+    onEnded: options.onEnded,
+    setIsCrossfading: (isCrossfading) => audioCore.setState(prev => ({ ...prev, isCrossfading })),
+    setCurrentTime: (currentTime) => audioCore.setState(prev => ({ ...prev, currentTime })),
   });
 
   useEffect(() => {
     if (options.volume !== undefined) {
-      audioCore.setVolume(options.volume);
+      audioCore.setState(prev => ({ ...prev, volume: options.volume }));
     }
-  }, [options.volume, audioCore.setVolume]);
+  }, [options.volume]);
 
   return {
     ...audioCore,
     ...audioControls,
     ...audioEvents,
-    ...audioEffects,
   };
 };
