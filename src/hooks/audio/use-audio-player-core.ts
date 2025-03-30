@@ -1,136 +1,185 @@
-
 import { useState, useRef, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { AudioPlayerState, AudioPlayerHookReturn, UseAudioPlayerProps, CROSSFADE_DURATION } from "./types";
-import { useAudioControls } from "./use-audio-controls";
-import { useAudioEffects } from "./use-audio-effects";
-import { useAudioEvents } from "./use-audio-events";
-import { playDirectly } from "./utils";
+import { toast } from "sonner";
+import { isStreamUrl, formatTime } from "@/components/audio-player/utils";
+import { AudioPlayerState } from "./types";
 
+/**
+ * Core audio player hook that handles the main audio functionality
+ */
 export const useAudioPlayerCore = ({
   audioUrl,
-  onEnded,
-  onError,
+  nextAudioUrl,
   isPlayingExternal,
   onPlayPauseChange,
-  nextAudioUrl,
+  onEnded,
   onCrossfadeStart,
+  initialVolume = 0.7,
   title,
-  volume: initialVolume
-}: UseAudioPlayerProps): AudioPlayerHookReturn => {
-  // Core state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(initialVolume ?? 0.8);
-  const [isLooping, setIsLooping] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [isCrossfading, setIsCrossfading] = useState(false);
-  const [isLiveStream, setIsLiveStream] = useState(false);
-  
+}: {
+  audioUrl: string;
+  nextAudioUrl?: string;
+  isPlayingExternal?: boolean;
+  onPlayPauseChange?: (isPlaying: boolean) => void;
+  onEnded?: () => void;
+  onCrossfadeStart?: () => void;
+  initialVolume?: number;
+  title?: string;
+}) => {
+  // State
+  const [state, setState] = useState<AudioPlayerState>({
+    isPlaying: false,
+    volume: initialVolume,
+    currentTime: 0,
+    duration: 0,
+    isLoaded: false,
+    isLiveStream: false,
+    loadError: false,
+    isRetrying: false,
+    isLooping: false,
+    isCrossfading: false,
+  });
+
   // Refs
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const nextAudioRef = useRef<HTMLAudioElement | null>(null);
-  const crossfadeTimeoutRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
-  
-  const { toast } = useToast();
-  
-  const state: AudioPlayerState = {
-    isPlaying,
-    duration,
-    currentTime,
-    volume,
-    isLooping,
-    isLoaded,
-    loadError,
-    isRetrying,
-    isCrossfading,
-    isLiveStream
+  const lastUrlRef = useRef<string | null>(null);
+
+  // Set up handlers for the audio element
+  const setupAudioHandlers = () => {
+    if (!audioRef.current) return;
+
+    return {
+      state,
+      audioRef,
+      nextAudioRef,
+      audioUrl,
+      setIsPlaying: (isPlaying: boolean) => setState(prev => ({ ...prev, isPlaying })),
+      setVolume: (volume: number) => setState(prev => ({ ...prev, volume })),
+      setIsLooping: (isLooping: boolean) => setState(prev => ({ ...prev, isLooping })),
+      setLoadError: (loadError: boolean) => setState(prev => ({ ...prev, loadError })),
+      setIsRetrying: (isRetrying: boolean) => setState(prev => ({ ...prev, isRetrying })),
+      retryCountRef,
+      onPlayPauseChange,
+      title,
+      isCrossfading: state.isCrossfading,
+    };
+  };
+
+  // Set up event handlers for the audio element
+  const setupAudioEventHandlers = () => {
+    if (!audioRef.current) return;
+
+    return {
+      state,
+      audioRef,
+      setDuration: (duration: number) => setState(prev => ({ ...prev, duration })),
+      setCurrentTime: (currentTime: number) => setState(prev => ({ ...prev, currentTime })),
+      setIsLoaded: (isLoaded: boolean) => setState(prev => ({ ...prev, isLoaded })),
+      setLoadError: (loadError: boolean) => setState(prev => ({ ...prev, loadError })),
+      setIsPlaying: (isPlaying: boolean) => setState(prev => ({ ...prev, isPlaying })),
+      setIsLiveStream: (isLiveStream: boolean) => setState(prev => ({ ...prev, isLiveStream })),
+      retryCountRef,
+      setIsRetrying: (isRetrying: boolean) => setState(prev => ({ ...prev, isRetrying })),
+      onEnded,
+      onCrossfadeStart,
+      nextAudioRef,
+      nextAudioUrl,
+      setIsCrossfading: (isCrossfading: boolean) => setState(prev => ({ ...prev, isCrossfading })),
+      isCrossfading: state.isCrossfading,
+    };
   };
   
-  // Controls
-  const controls = useAudioControls({
-    state,
-    audioRef,
-    nextAudioRef,
-    audioUrl,
-    toast,
-    setIsPlaying,
-    setVolume,
-    setIsLooping,
-    setLoadError,
-    setIsRetrying,
-    retryCountRef,
-    onPlayPauseChange,
-    title,
-    isCrossfading
-  });
-  
-  // Effects for crossfading, volume changes, etc.
-  useAudioEffects({
-    state,
-    audioRef,
-    nextAudioRef,
-    audioUrl,
-    nextAudioUrl,
-    crossfadeTimeoutRef,
-    onCrossfadeStart,
-    onEnded,
-    setIsCrossfading,
-    setCurrentTime,
-    volume
-  });
-  
-  // Events (audio element event handlers)
-  useAudioEvents({
-    state,
-    audioRef,
-    setDuration,
-    setCurrentTime,
-    setIsLoaded,
-    setLoadError,
-    setIsPlaying,
-    setIsLiveStream,
-    retryCountRef,
-    setIsRetrying,
-    toast,
-    onEnded,
-    onError,
-    onPlayPauseChange,
-    audioUrl,
-    isPlayingExternal,
-    crossfadeTimeoutRef,
-    isCrossfading
-  });
-  
-  // Handle external play/pause
+  // Initialize the audio element and set up event listeners
   useEffect(() => {
-    if (isPlayingExternal !== undefined && audioRef.current) {
-      console.log("External play control:", isPlayingExternal, "Current state:", isPlaying);
-      if (isPlayingExternal && !isPlaying) {
-        playDirectly(audioUrl, audioRef.current, retryCountRef, setLoadError, onError, setIsPlaying, onPlayPauseChange);
-      } else if (!isPlayingExternal && isPlaying) {
-        audioRef.current.pause();
-        setIsPlaying(false);
+    if (!audioUrl) return;
+
+    // Create audio element if it doesn't exist
+    if (!audioRef.current) {
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.volume = state.volume;
+      audioRef.current.preload = "metadata";
+    }
+
+    const audio = audioRef.current;
+    const isStream = isStreamUrl(audioUrl);
+
+    // Update isLiveStream state
+    setState(prev => ({ ...prev, isLiveStream: isStream }));
+
+    // Load metadata and set duration
+    const handleMetadataLoaded = () => {
+      if (audio) {
+        setState(prev => ({
+          ...prev,
+          duration: audio.duration,
+        }));
+      }
+    };
+
+    // Handle audio load error
+    const handleLoadError = () => {
+      console.error("Error loading audio:", audioUrl);
+      setState(prev => ({ ...prev, loadError: true }));
+      toast({
+        title: "Fout bij laden",
+        description: "Audio kon niet worden geladen. Controleer de URL.",
+        variant: "destructive",
+      });
+    };
+
+    // Set initial volume
+    audio.volume = state.volume;
+
+    // Add event listeners
+    audio.addEventListener("loadedmetadata", handleMetadataLoaded);
+    audio.addEventListener("error", handleLoadError);
+
+    // Clean up event listeners on unmount
+    return () => {
+      audio.removeEventListener("loadedmetadata", handleMetadataLoaded);
+      audio.removeEventListener("error", handleLoadError);
+    };
+  }, [audioUrl, state.volume]);
+
+  // Handle external isPlaying changes
+  useEffect(() => {
+    if (isPlayingExternal !== undefined && state.isPlaying !== isPlayingExternal) {
+      if (isPlayingExternal) {
+        audioRef.current?.play()
+          .then(() => setState(prev => ({ ...prev, isPlaying: true })))
+          .catch(error => {
+            console.error("Error playing audio:", error);
+            setState(prev => ({ ...prev, loadError: true }));
+            toast({
+              title: "Fout bij afspelen",
+              description: "Audio kon niet worden afgespeeld.",
+              variant: "destructive",
+            });
+          });
+      } else {
+        audioRef.current?.pause();
+        setState(prev => ({ ...prev, isPlaying: false }));
+      }
+
+      if (onPlayPauseChange) {
+        onPlayPauseChange(isPlayingExternal);
       }
     }
-  }, [isPlayingExternal, audioUrl, isPlaying, onPlayPauseChange, onError]);
-  
-  // Initial volume setting
-  useEffect(() => {
-    if (initialVolume !== undefined && audioRef.current) {
-      audioRef.current.volume = initialVolume;
-      setVolume(initialVolume);
-    }
-  }, [initialVolume]);
+  }, [isPlayingExternal, onPlayPauseChange, state.isPlaying]);
   
   return {
+    // Expose the state and methods
     ...state,
-    ...controls,
     audioRef,
-    nextAudioRef
+    nextAudioRef,
+    togglePlay: () => { /* Will be implemented in use-audio-controls */ },
+    handleVolumeChange: () => { /* Will be implemented in use-audio-controls */ },
+    handleTimeUpdate: () => { /* Will be implemented in use-audio-controls */ },
+    handleRetry: () => { /* Will be implemented in use-audio-controls */ },
+    formatTime,
+    setupAudioHandlers,
+    setupAudioEventHandlers,
+    lastUrlRef,
   };
 };

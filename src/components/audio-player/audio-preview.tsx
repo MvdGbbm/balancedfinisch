@@ -5,8 +5,13 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle } from "lucide-react";
 import { ErrorMessage } from "./error-message";
-import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "@/components/audio-player/utils";
-import { useToast } from "@/hooks/use-toast";
+import { 
+  validateAudioUrl, 
+  preloadAudio, 
+  fixSupabaseStorageUrl, 
+  getAudioMimeType 
+} from "./utils";
+import { toast } from "sonner";
 
 interface AudioPreviewProps {
   url: string;
@@ -37,11 +42,10 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   const [isValidUrl, setIsValidUrl] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [validatedUrl, setValidatedUrl] = useState("");
-  const { toast } = useToast();
+  const { toast } = toast;
   const maxRetries = 2;
   const [retryCount, setRetryCount] = useState(0);
 
-  // Set validated URL when the URL changes
   useEffect(() => {
     if (url) {
       const originalUrl = url;
@@ -53,15 +57,13 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
         return;
       }
       
-      // Handle Supabase storage URLs
       if (fixedUrl.includes('supabase.co')) {
         fixedUrl = fixSupabaseStorageUrl(fixedUrl);
       }
       
       setValidatedUrl(fixedUrl);
-      setIsValidUrl(!!fixedUrl && (fixedUrl === originalUrl || fixedUrl === url)); // Check if URL needed fixing
+      setIsValidUrl(!!fixedUrl && (fixedUrl === originalUrl || fixedUrl === url));
       
-      // Reset states when URL changes
       setError(false);
       setLoaded(false);
       setProgress(0);
@@ -74,7 +76,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
         isValid: !!fixedUrl
       });
       
-      // Pre-validate audio URL
       preloadAudio(fixedUrl).then((success) => {
         if (!success && !error) {
           console.warn("Audio preload check failed:", fixedUrl);
@@ -90,7 +91,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     }
   }, [url, onError, error]);
 
-  // Auto-play when requested and URL is valid
   useEffect(() => {
     if (audioRef.current && autoPlay && validatedUrl && !error) {
       try {
@@ -111,7 +111,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     }
   }, [autoPlay, validatedUrl, error, onError]);
 
-  // Update progress during playback
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -134,13 +133,10 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       setIsPlaying(false);
       
       if (retryCount < maxRetries) {
-        // Auto-retry once
-        console.log(`Auto-retrying (${retryCount + 1}/${maxRetries})...`);
         setRetryCount(prev => prev + 1);
         
         setTimeout(() => {
           if (audio) {
-            // Try with a different approach
             if (validatedUrl.includes('supabase.co')) {
               const correctedUrl = fixSupabaseStorageUrl(validatedUrl);
               if (correctedUrl !== validatedUrl) {
@@ -171,7 +167,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     audio.addEventListener("error", handleError);
     audio.addEventListener("ended", handleEnded);
     
-    // Add additional event listeners for troubleshooting
     audio.addEventListener("stalled", () => {
       console.warn("Audio playback stalled:", validatedUrl);
     });
@@ -195,7 +190,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     };
   }, [validatedUrl, onEnded, onError, onLoaded, retryCount, maxRetries]);
 
-  // Apply volume settings
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = muted ? 0 : volume;
@@ -209,7 +203,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      setError(false); // Reset error on manual play attempt
+      setError(false);
       audioRef.current.play()
         .then(() => {
           setIsPlaying(true);
@@ -239,7 +233,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     setIsRetrying(true);
     setError(false);
     
-    // Check if it's a Supabase URL and fix it if needed
     let retryUrl = validatedUrl;
     if (validatedUrl.includes('supabase.co')) {
       retryUrl = fixSupabaseStorageUrl(validatedUrl);
@@ -249,7 +242,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       }
     }
     
-    // Force reload the audio
     const audio = audioRef.current;
     audio.src = retryUrl;
     audio.load();
@@ -289,7 +281,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
     };
   };
 
-  // Extract filename from URL for better display
   const getFileNameFromUrl = (url: string): string => {
     if (!url) return "";
     try {
@@ -297,9 +288,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       const pathSegments = urlObj.pathname.split('/');
       return pathSegments[pathSegments.length - 1] || url;
     } catch {
-      // If URL parsing fails, try to get the last segment
-      const segments = url.split('/');
-      return segments[segments.length - 1] || url;
+      return url.split('/')[url.split('/').length - 1] || url;
     }
   };
 

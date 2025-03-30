@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
@@ -6,9 +5,8 @@ import { Play, Pause, Volume2, Volume1, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { AudioPreview } from "./audio-player/audio-preview";
-import { validateAudioUrl, preloadAudio } from "./audio-player/utils";
+import { validateAudioUrl, preloadAudio, getRandomQuote } from "./audio-player/utils";
 import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote } from "./audio-player/utils";
 
 export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   audioUrl: string;
@@ -54,7 +52,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
       };
     });
     
-    // Process and validate the URL
     useEffect(() => {
       const processUrl = async () => {
         setIsLoading(true);
@@ -66,7 +63,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
           return;
         }
         
-        // Validate and normalize the URL
         const processed = validateAudioUrl(audioUrl);
         if (!processed) {
           setIsLoading(false);
@@ -78,7 +74,6 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
         setValidatedUrl(processed);
         console.log("AudioPlayer attempting to load:", processed);
         
-        // Preload to check if audio is valid
         const canPlay = await preloadAudio(processed);
         if (!canPlay) {
           setIsLoading(false);
@@ -115,18 +110,14 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
       title
     });
     
-    // Expose the audio element ref
     useImperativeHandle(ref, () => audioRef.current);
     
-    // If we've identified an error, show better error UI
     const finalError = error || loadError;
     
-    // Don't show anything if URL is empty
     if (!audioUrl) {
       return null;
     }
     
-    // If not showing controls, just render the hidden audio element
     if (!showControls) {
       return (
         <Button 
