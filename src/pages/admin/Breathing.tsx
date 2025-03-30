@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Plus, Save, Trash2, Link } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,10 +23,6 @@ type BreathingPattern = {
   hold2: number;
   cycles: number;
   description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
 };
 
 // Define voice URL type
@@ -152,10 +148,6 @@ const AdminBreathing = () => {
       exhale: 4,
       hold2: 0,
       cycles: 4,
-      inhaleUrl: "",
-      exhaleUrl: "",
-      hold1Url: "",
-      hold2Url: "",
     }
   });
 
@@ -387,44 +379,12 @@ const AdminBreathing = () => {
 
                           <FormField
                             control={patternForm.control}
-                            name="inhaleUrl"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="flex items-center gap-1">
-                                  <Link className="h-4 w-4" />
-                                  <span>Audio URL voor inademen</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="https://..." />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={patternForm.control}
                             name="hold1"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Vasthouden na inademen (seconden)</FormLabel>
                                 <FormControl>
                                   <Input {...field} type="number" min="0" onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={patternForm.control}
-                            name="hold1Url"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="flex items-center gap-1">
-                                  <Link className="h-4 w-4" />
-                                  <span>Audio URL voor vasthouden</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="https://..." />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -445,44 +405,12 @@ const AdminBreathing = () => {
 
                           <FormField
                             control={patternForm.control}
-                            name="exhaleUrl"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="flex items-center gap-1">
-                                  <Link className="h-4 w-4" />
-                                  <span>Audio URL voor uitademen</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="https://..." />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={patternForm.control}
                             name="hold2"
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Vasthouden na uitademen (seconden)</FormLabel>
                                 <FormControl>
                                   <Input {...field} type="number" min="0" onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
-                                </FormControl>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={patternForm.control}
-                            name="hold2Url"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="flex items-center gap-1">
-                                  <Link className="h-4 w-4" />
-                                  <span>Audio URL voor vasthouden na uitademen</span>
-                                </FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="https://..." />
                                 </FormControl>
                               </FormItem>
                             )}
@@ -538,46 +466,6 @@ const AdminBreathing = () => {
                 <CardContent>
                   <Form {...veraForm}>
                     <form onSubmit={veraForm.handleSubmit(onVeraSubmit)} className="space-y-4">
-                      <FormField
-                        control={veraForm.control}
-                        name="inhale"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Inademen Audio URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://..." />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={veraForm.control}
-                        name="hold"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Vasthouden Audio URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://..." />
-                            </FormControl>
-                            <p className="text-xs text-muted-foreground">Deze audio wordt gebruikt voor beide vasthoud-fases</p>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={veraForm.control}
-                        name="exhale"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Uitademen Audio URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://..." />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
                       <div className="flex justify-end">
                         <Button type="submit">
                           <Save className="mr-2 h-4 w-4" />
@@ -597,46 +485,6 @@ const AdminBreathing = () => {
                 <CardContent>
                   <Form {...marcoForm}>
                     <form onSubmit={marcoForm.handleSubmit(onMarcoSubmit)} className="space-y-4">
-                      <FormField
-                        control={marcoForm.control}
-                        name="inhale"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Inademen Audio URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://..." />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={marcoForm.control}
-                        name="hold"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Vasthouden Audio URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://..." />
-                            </FormControl>
-                            <p className="text-xs text-muted-foreground">Deze audio wordt gebruikt voor beide vasthoud-fases</p>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={marcoForm.control}
-                        name="exhale"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Uitademen Audio URL</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="https://..." />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
                       <div className="flex justify-end">
                         <Button type="submit">
                           <Save className="mr-2 h-4 w-4" />
