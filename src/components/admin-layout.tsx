@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -9,7 +10,6 @@ import {
   Quote, 
   Home, 
   RefreshCw,
-  Radio,
   Music
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,14 +63,6 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       description: "/admin/muziek",
       accentColor: "accent-pink",
       iconBg: "icon-container-pink"
-    },
-    { 
-      path: "/admin/streams", 
-      icon: Radio, 
-      label: "Streaming Links", 
-      description: "/admin/streams",
-      accentColor: "accent-purple",
-      iconBg: "icon-container-purple"
     },
     { 
       path: "/admin/breathing", 

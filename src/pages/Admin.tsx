@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   Headphones, 
   Quote, 
-  Radio, 
   RefreshCw,
   LayoutGrid,
   Music 
@@ -73,13 +72,6 @@ const Admin: React.FC = () => {
       icon: <Music className="h-5 w-5" style={{ color: "#10B981" }} />,
       path: "/admin/muziek",
       color: "#10B981" // Green
-    },
-    {
-      title: "Streaming Links",
-      description: "Beheer radiostreams",
-      icon: <Radio className="h-5 w-5" style={{ color: "#EC4899" }} />,
-      path: "/admin/streams",
-      color: "#EC4899" // Pink
     },
     {
       title: "Ademhaling",
