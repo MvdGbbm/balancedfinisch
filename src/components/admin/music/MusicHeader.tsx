@@ -1,7 +1,8 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Music } from "lucide-react";
+import { Plus } from "lucide-react";
+import { AdminMusicLink } from "./AdminMusicLink";
 
 interface MusicHeaderProps {
   onCreateNew: () => void;
@@ -10,19 +11,19 @@ interface MusicHeaderProps {
 export const MusicHeader: React.FC<MusicHeaderProps> = ({ onCreateNew }) => {
   return (
     <div className="flex items-center justify-between">
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <Music className="h-5 w-5 text-primary" />
-          <h2 className="text-2xl font-bold tracking-tight">Muziek</h2>
-        </div>
-        <p className="text-muted-foreground">
-          Beheer ontspannende muziek voor de app.
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Muziek Beheer</h1>
+        <p className="text-sm text-muted-foreground">
+          Voeg nieuwe muziek toe en bewerk bestaande muziekstukken.
         </p>
       </div>
-      <Button onClick={onCreateNew}>
-        <PlusCircle className="mr-2 h-4 w-4" />
-        Nieuwe Muziek
-      </Button>
+      <div className="flex space-x-2">
+        <AdminMusicLink />
+        <Button onClick={onCreateNew}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nieuwe muziek
+        </Button>
+      </div>
     </div>
   );
 };
