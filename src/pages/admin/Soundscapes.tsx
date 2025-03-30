@@ -45,7 +45,7 @@ const AdminSoundscapes = () => {
     }
   };
   
-  const handleSave = (soundscapeData: Partial<Soundscape>) => {
+  const handleSave = (soundscapeData: Omit<Soundscape, "id">) => {
     if (currentSoundscape) {
       updateSoundscape(currentSoundscape.id, soundscapeData);
     } else {
@@ -88,54 +88,53 @@ const AdminSoundscapes = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-20">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 pb-20">
           {filteredSoundscapes.map((soundscape) => (
             <Card key={soundscape.id} className="overflow-hidden group hover:shadow-md transition-all">
               <div className="relative">
-                <AspectRatio ratio={16/9}>
+                <AspectRatio ratio={1/1}>
                   <img 
                     src={soundscape.coverImageUrl} 
                     alt={soundscape.title}
                     className="w-full h-full object-cover" 
                   />
                 </AspectRatio>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute bottom-2 left-2 right-2">
-                  <h3 className="text-white font-medium text-sm line-clamp-1">{soundscape.title}</h3>
+                  <h3 className="text-white font-medium text-xs line-clamp-1">{soundscape.title}</h3>
                 </div>
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button 
                     variant="secondary" 
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    className="h-6 w-6 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
                     onClick={() => handleEdit(soundscape)}
                   >
-                    <Edit className="h-3.5 w-3.5 text-white" />
+                    <Edit className="h-3 w-3 text-white" />
                   </Button>
                   <Button 
                     variant="destructive" 
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                    className="h-6 w-6 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
                     onClick={() => handleDelete(soundscape.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5 text-white" />
+                    <Trash2 className="h-3 w-3 text-white" />
                   </Button>
                 </div>
               </div>
               <CardContent className="p-2 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Music className="h-3 w-3" />
-                  <span className="truncate max-w-[100px]">{soundscape.title}</span>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                  <Music className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate max-w-[60px]">{soundscape.title}</span>
                 </div>
                 <AudioPlayer 
                   audioUrl={soundscape.audioUrl} 
-                  showControls={false} 
-                  customPlayButton={
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <Volume2 className="h-3.5 w-3.5" />
-                    </Button>
-                  }
-                />
+                  showControls={false}
+                >
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Volume2 className="h-3 w-3" />
+                  </Button>
+                </AudioPlayer>
               </CardContent>
             </Card>
           ))}

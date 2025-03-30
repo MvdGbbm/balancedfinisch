@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Dialog,
@@ -23,7 +24,7 @@ import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType
 interface MusicFormDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (music: Partial<Soundscape>) => void;
+  onSave: (music: Omit<Soundscape, "id">) => void;
   currentMusic: Soundscape | null;
 }
 
@@ -138,130 +139,128 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
     onOpenChange(false);
     resetForm();
   };
-  
-  const isValidUrl = (url: string) => {
-    if (!url) return false;
-    try {
-      new URL(url);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-lg">
+        <DialogHeader className="space-y-1">
           <DialogTitle>
-            {currentMusic ? "Muziek Bewerken" : "Nieuwe Muziek"}
+            {currentMusic ? "Soundscape Bewerken" : "Nieuwe Soundscape"}
           </DialogTitle>
           <DialogDescription>
-            Vul de details in voor de muziek
+            Vul de details in voor de soundscape
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="title">Titel</Label>
-              <Input
-                id="title"
-                placeholder="Titel van de muziek"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+        <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="title" className="text-xs">Titel</Label>
+                <Input
+                  id="title"
+                  placeholder="Titel van de soundscape"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="description" className="text-xs">Beschrijving</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Beschrijving van de soundscape"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="tags" className="text-xs">Tags</Label>
+                <TagInput tags={tags} setTags={setTags} />
+              </div>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschrijving</Label>
-              <Textarea
-                id="description"
-                placeholder="Beschrijving van de muziek"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
-              <TagInput tags={tags} setTags={setTags} />
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="audioUrl" className="text-xs">Audio URL <span className="text-red-500">*</span></Label>
+                <div className="flex gap-1">
+                  <Input
+                    id="audioUrl"
+                    placeholder="URL naar audio bestand"
+                    value={audioUrl}
+                    onChange={(e) => setAudioUrl(e.target.value)}
+                    required
+                    className={`h-8 text-sm ${!isUrlValid && audioUrl ? "border-red-500" : ""}`}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 h-8"
+                    onClick={handleAudioPreview}
+                    disabled={isValidatingUrl || !isUrlValid}
+                  >
+                    {isValidatingUrl ? (
+                      <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    ) : isPreviewPlaying ? (
+                      <StopCircle className="h-3 w-3" />
+                    ) : (
+                      <Play className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+                {validatedUrl && validatedUrl !== audioUrl && (
+                  <div className="text-xs text-amber-500 flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    URL wordt aangepast naar: {validatedUrl}
+                  </div>
+                )}
+                {!isUrlValid && audioUrl && (
+                  <div className="text-xs text-red-500 flex items-center mt-1">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Kon audio niet laden. Controleer of de URL juist is.
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-1">
+                <Label htmlFor="coverImageUrl" className="text-xs">Cover Afbeelding URL <span className="text-red-500">*</span></Label>
+                <div className="flex gap-1">
+                  <Input
+                    id="coverImageUrl"
+                    placeholder="URL naar afbeelding"
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
+                    required
+                    className="h-8 text-sm"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 h-8"
+                  >
+                    <Image className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
           
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="audioUrl">Audio URL <span className="text-red-500">*</span></Label>
-              <div className="flex gap-2">
-                <Input
-                  id="audioUrl"
-                  placeholder="URL naar audio bestand"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  required
-                  className={!isUrlValid && audioUrl ? "border-red-500" : ""}
-                />
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={handleAudioPreview}
-                  disabled={isValidatingUrl || !isUrlValid}
-                >
-                  {isValidatingUrl ? (
-                    <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                  ) : isPreviewPlaying ? (
-                    <StopCircle className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {validatedUrl && validatedUrl !== audioUrl && (
-                <div className="text-xs text-amber-500 flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  URL wordt aangepast naar: {validatedUrl}
-                </div>
-              )}
-              {!isUrlValid && audioUrl && (
-                <div className="text-xs text-red-500 flex items-center mt-1">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Kon audio niet laden. Controleer of de URL juist is en toegankelijk.
-                </div>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="coverImageUrl">Cover Afbeelding URL <span className="text-red-500">*</span></Label>
-              <div className="flex gap-2">
-                <Input
-                  id="coverImageUrl"
-                  placeholder="URL naar afbeelding"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                  required
-                />
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  className="shrink-0"
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {coverImageUrl && (
-              <div className="mt-3 rounded-md overflow-hidden relative border">
-                <AspectRatio ratio={16/9}>
+              <div className="rounded-md overflow-hidden relative border">
+                <AspectRatio ratio={1/1}>
                   <img 
                     src={coverImageUrl} 
                     alt="Preview" 
                     className="w-full h-full object-cover" 
                     onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      e.currentTarget.src = "https://via.placeholder.com/400x400?text=Invalid+Image+URL";
                       toast.error("Kon de afbeelding niet laden. Controleer de URL.");
                     }}
                   />
@@ -270,8 +269,8 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
             )}
             
             {audioUrl && isPreviewPlaying && isUrlValid && (
-              <div className="mt-3">
-                <Label>Audio Preview</Label>
+              <div>
+                <Label className="text-xs">Audio Preview</Label>
                 <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
                 <AudioPlayer 
                   audioUrl={validatedUrl || audioUrl} 
@@ -286,10 +285,11 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
           <Button 
+            size="sm"
             onClick={handleSave}
             disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid}
           >
