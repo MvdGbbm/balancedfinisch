@@ -20,13 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Edit, Trash2, Play, Plus, FileAudio, Image, Tag } from "lucide-react";
 
 import { Soundscape } from "@/lib/types";
@@ -41,25 +34,14 @@ const AdminSoundscapes = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
-  const [category, setCategory] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  
-  // Extract unique categories from existing soundscapes
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  
-  useEffect(() => {
-    // Get unique categories from all soundscapes
-    const categories = [...new Set(soundscapes.map(s => s.category))];
-    setAvailableCategories(categories);
-  }, [soundscapes]);
   
   const resetForm = () => {
     setTitle("");
     setDescription("");
     setAudioUrl("");
-    setCategory("");
     setCoverImageUrl("");
     setTags([]);
     setTagInput("");
@@ -76,7 +58,6 @@ const AdminSoundscapes = () => {
     setTitle(soundscape.title);
     setDescription(soundscape.description);
     setAudioUrl(soundscape.audioUrl);
-    setCategory(soundscape.category);
     setCoverImageUrl(soundscape.coverImageUrl);
     setTags([...soundscape.tags]);
     setIsDialogOpen(true);
@@ -100,7 +81,7 @@ const AdminSoundscapes = () => {
   };
   
   const handleSave = () => {
-    if (!title || !description || !audioUrl || !category || !coverImageUrl) {
+    if (!title || !description || !audioUrl || !coverImageUrl) {
       alert("Vul alle verplichte velden in");
       return;
     }
@@ -110,7 +91,7 @@ const AdminSoundscapes = () => {
         title,
         description,
         audioUrl,
-        category,
+        category: "Muziek", // Default category
         coverImageUrl,
         tags,
       });
@@ -119,7 +100,7 @@ const AdminSoundscapes = () => {
         title,
         description,
         audioUrl,
-        category,
+        category: "Muziek", // Default category
         coverImageUrl,
         tags,
       });
@@ -128,15 +109,6 @@ const AdminSoundscapes = () => {
     setIsDialogOpen(false);
     resetForm();
   };
-  
-  const groupedSoundscapes = soundscapes.reduce((acc, soundscape) => {
-    const category = soundscape.category;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(soundscape);
-    return acc;
-  }, {} as Record<string, Soundscape[]>);
   
   return (
     <AdminLayout>
@@ -154,52 +126,47 @@ const AdminSoundscapes = () => {
         </p>
         
         <div className="space-y-8 pb-20">
-          {Object.entries(groupedSoundscapes).map(([category, soundscapesList]) => (
-            <div key={category} className="space-y-3">
-              <h2 className="text-lg font-medium">{category}</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {soundscapesList.map((soundscape) => (
-                  <Card key={soundscape.id} className="overflow-hidden">
-                    <div className="aspect-video bg-cover bg-center relative">
-                      <img 
-                        src={soundscape.coverImageUrl} 
-                        alt={soundscape.title}
-                        className="w-full h-full object-cover" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-white font-medium">{soundscape.title}</h3>
-                        <p className="text-white/80 text-sm truncate">
-                          {soundscape.description}
-                        </p>
-                      </div>
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button 
-                          variant="secondary" 
-                          size="icon"
-                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                          onClick={() => handleEdit(soundscape)}
-                        >
-                          <Edit className="h-4 w-4 text-white" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="icon"
-                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                          onClick={() => handleDelete(soundscape.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-white" />
-                        </Button>
-                      </div>
-                    </div>
-                    <CardFooter className="p-3 bg-background">
-                      <AudioPlayer audioUrl={soundscape.audioUrl} showControls={false} />
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {soundscapes.map((soundscape) => (
+              <Card key={soundscape.id} className="overflow-hidden">
+                <div className="aspect-video bg-cover bg-center relative">
+                  <img 
+                    src={soundscape.coverImageUrl} 
+                    alt={soundscape.title}
+                    className="w-full h-full object-cover" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <h3 className="text-white font-medium">{soundscape.title}</h3>
+                    <p className="text-white/80 text-sm truncate">
+                      {soundscape.description}
+                    </p>
+                  </div>
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <Button 
+                      variant="secondary" 
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                      onClick={() => handleEdit(soundscape)}
+                    >
+                      <Edit className="h-4 w-4 text-white" />
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                      onClick={() => handleDelete(soundscape.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-white" />
+                    </Button>
+                  </div>
+                </div>
+                <CardFooter className="p-3 bg-background">
+                  <AudioPlayer audioUrl={soundscape.audioUrl} showControls={false} />
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
           
           {soundscapes.length === 0 && (
             <div className="text-center py-10">
@@ -248,47 +215,6 @@ const AdminSoundscapes = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="category">Categorie</Label>
-                <div className="flex gap-2 items-start">
-                  {availableCategories.length > 0 ? (
-                    <Select
-                      value={category}
-                      onValueChange={setCategory}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecteer of typ een categorie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCategories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Input
-                      id="category"
-                      placeholder="Categorie"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                    />
-                  )}
-                </div>
-                {availableCategories.length > 0 && (
-                  <div className="mt-1">
-                    <Input
-                      id="custom-category"
-                      placeholder="Of voer een nieuwe categorie in"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
               </div>
               
               <div className="space-y-2">

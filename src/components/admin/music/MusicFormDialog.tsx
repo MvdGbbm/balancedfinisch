@@ -133,7 +133,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       title,
       description,
       audioUrl: finalAudioUrl,
-      category: "Muziek",
+      category: "Muziek", // Default category
       coverImageUrl: processedCoverImageUrl,
       tags,
     });
