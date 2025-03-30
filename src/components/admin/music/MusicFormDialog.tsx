@@ -9,25 +9,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { FileAudio, Image, Play, StopCircle, ExternalLink, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { AudioPlayer } from "@/components/audio-player";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import { TagInput } from "./TagInput";
+import { 
+  validateAudioUrl, 
+  preloadAudio, 
+  fixSupabaseStorageUrl, 
+  completeUrlValidation 
+} from "@/components/audio-player/utils";
+import { FormFields } from "./form/FormFields";
+import { AudioPreview } from "./form/AudioPreview";
+import { ImagePreview } from "./form/ImagePreview";
+import { MusicFormProps } from "./types";
 import { Soundscape } from "@/lib/types";
-import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "@/components/audio-player/utils";
+import { supabase } from "@/integrations/supabase/client";
 
-interface MusicFormDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave: (music: Partial<Soundscape>) => void;
-  currentMusic: Soundscape | null;
-}
-
-export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
+export const MusicFormDialog: React.FC<MusicFormProps> = ({
   isOpen,
   onOpenChange,
   onSave,
@@ -42,6 +38,7 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
   const [validatedUrl, setValidatedUrl] = useState("");
   const [isValidatingUrl, setIsValidatingUrl] = useState(false);
   const [isUrlValid, setIsUrlValid] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -51,38 +48,69 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
       setAudioUrl(currentMusic.audioUrl);
       setCoverImageUrl(currentMusic.coverImageUrl);
       setTags([...currentMusic.tags]);
+      
+      // Valideer de URL direct wanneer een bestaand item wordt geladen
+      if (currentMusic.audioUrl) {
+        validateAndSetAudioUrl(currentMusic.audioUrl);
+      }
     } else {
       resetForm();
     }
   }, [currentMusic, isOpen]);
   
-  // Validate and update URL when it changes
   useEffect(() => {
     if (audioUrl) {
-      setIsValidatingUrl(true);
-      
-      const fixedUrl = validateAudioUrl(audioUrl);
-      const supabaseUrl = fixedUrl.includes('supabase.co') ? fixSupabaseStorageUrl(fixedUrl) : fixedUrl;
-      
-      setValidatedUrl(supabaseUrl);
-      
-      // Check if the URL is valid
-      preloadAudio(supabaseUrl).then(success => {
-        setIsUrlValid(success);
-        setIsValidatingUrl(false);
-        
-        if (success) {
-          console.log("Audio URL validated successfully:", supabaseUrl);
-        } else {
-          console.warn("Audio URL validation failed:", supabaseUrl);
-        }
-      });
+      validateAndSetAudioUrl(audioUrl);
     } else {
       setValidatedUrl("");
       setIsUrlValid(true);
       setIsValidatingUrl(false);
     }
   }, [audioUrl]);
+  
+  const validateAndSetAudioUrl = async (url: string) => {
+    setIsValidatingUrl(true);
+    
+    try {
+      // Eerste validatie van basis-URL
+      const fixedUrl = validateAudioUrl(url);
+      
+      // Extra validatie voor Supabase URLs
+      let finalUrl = fixedUrl;
+      if (fixedUrl.includes('supabase.co')) {
+        finalUrl = fixSupabaseStorageUrl(fixedUrl);
+      }
+      
+      setValidatedUrl(finalUrl);
+      
+      // Controleer of de URL daadwerkelijk werkt
+      const success = await preloadAudio(finalUrl);
+      setIsUrlValid(success);
+      
+      if (success) {
+        console.log("Audio URL succesvol gevalideerd:", finalUrl);
+      } else {
+        console.warn("Audio URL validatie mislukt:", finalUrl);
+        
+        // Probeer extra correcties voor Supabase URLs
+        if (finalUrl.includes('supabase.co')) {
+          // Laatste poging met uitgebreide validatie
+          const correctedUrl = await completeUrlValidation(url, true, 'soundscapes');
+          if (correctedUrl) {
+            setValidatedUrl(correctedUrl);
+            const retrySuccess = await preloadAudio(correctedUrl);
+            setIsUrlValid(retrySuccess);
+            console.log("Hervalidatie resultaat:", retrySuccess ? "Succesvol" : "Mislukt", correctedUrl);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Fout bij valideren audio URL:", error);
+      setIsUrlValid(false);
+    } finally {
+      setIsValidatingUrl(false);
+    }
+  };
   
   const resetForm = () => {
     setTitle("");
@@ -96,222 +124,180 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
   };
   
   const handleAudioPreview = () => {
-    if (audioUrl) {
+    if (audioUrl && isUrlValid) {
       setIsPreviewPlaying(!isPreviewPlaying);
     } else {
-      toast.error("Voer eerst een audio URL in om voor te luisteren");
+      toast.error("Voer eerst een geldige audio URL in om voor te luisteren");
     }
   };
   
   const handleAudioError = () => {
     toast.error("Kon de audio niet laden. Controleer of de URL correct is.");
     setIsPreviewPlaying(false);
+    setIsUrlValid(false);
   };
   
-  const handleSave = () => {
+  const processUrl = (url: string): string => {
+    if (!url) return "";
+    
+    // Voeg http toe indien nodig
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'https://' + url.replace(/^\/\//, '');
+    }
+    
+    return url;
+  };
+  
+  const handleSave = async () => {
     if (!title || !description || !audioUrl || !coverImageUrl) {
       toast.error("Vul alle verplichte velden in");
       return;
     }
     
-    // Validate URLs before saving
-    const processedAudioUrl = validateAudioUrl(audioUrl);
-    const finalAudioUrl = processedAudioUrl.includes('supabase.co') 
-      ? fixSupabaseStorageUrl(processedAudioUrl) 
-      : processedAudioUrl;
-      
-    let processedCoverImageUrl = coverImageUrl;
-    
-    // Basic validation for image URL
-    if (!coverImageUrl.startsWith('http://') && !coverImageUrl.startsWith('https://')) {
-      processedCoverImageUrl = 'https://' + coverImageUrl.replace(/^\/\//, '');
+    if (!isUrlValid) {
+      toast.error("De audio URL is ongeldig. Controleer of de URL correct is.");
+      return;
     }
     
-    console.log("Saving music with audioUrl:", finalAudioUrl);
+    setIsSaving(true);
     
-    onSave({
-      title,
-      description,
-      audioUrl: finalAudioUrl,
-      category: "Muziek",
-      coverImageUrl: processedCoverImageUrl,
-      tags,
-    });
-    
-    toast.success("Muziek succesvol opgeslagen");
-    onOpenChange(false);
-    resetForm();
-  };
-  
-  const isValidUrl = (url: string) => {
-    if (!url) return false;
     try {
-      new URL(url);
-      return true;
-    } catch (e) {
-      return false;
+      // Gebruik de gevalideerde URL indien beschikbaar, anders probeer de URL te corrigeren
+      const finalAudioUrl = validatedUrl || await completeUrlValidation(audioUrl, true, 'soundscapes');
+      
+      if (!finalAudioUrl) {
+        toast.error("Kon de audio URL niet valideren. Controleer of de URL correct is.");
+        setIsSaving(false);
+        return;
+      }
+        
+      const processedCoverImageUrl = processUrl(coverImageUrl);
+      
+      console.log("Soundscape opslaan met audioUrl:", finalAudioUrl);
+      
+      // First, save the data directly to Supabase if possible
+      if (currentMusic) {
+        // Update existing record
+        const { error } = await supabase
+          .from('soundscapes')
+          .update({
+            title: title,
+            description: description,
+            audio_url: finalAudioUrl,
+            cover_image_url: processedCoverImageUrl,
+            category: "Muziek", // Standaard categorie
+            tags: tags,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentMusic.id);
+          
+        if (error) {
+          console.error("Fout bij updaten soundscape in database:", error);
+          // Continue with local save despite Supabase error
+        } else {
+          console.log("Soundscape succesvol bijgewerkt in Supabase");
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('soundscapes')
+          .insert({
+            title: title,
+            description: description,
+            audio_url: finalAudioUrl,
+            cover_image_url: processedCoverImageUrl,
+            category: "Muziek", // Standaard categorie
+            tags: tags
+          });
+          
+        if (error) {
+          console.error("Fout bij opslaan soundscape in database:", error);
+          // Continue with local save despite Supabase error
+        } else {
+          console.log("Soundscape succesvol opgeslagen in Supabase");
+        }
+      }
+      
+      // Then call the onSave callback to update local state as well
+      onSave({
+        title,
+        description,
+        audioUrl: finalAudioUrl,
+        category: "Muziek", // Standaard categorie
+        coverImageUrl: processedCoverImageUrl,
+        tags,
+      });
+      
+      toast.success("Muziek succesvol opgeslagen");
+      onOpenChange(false);
+      resetForm();
+    } catch (error) {
+      console.error("Fout bij opslaan soundscape:", error);
+      toast.error("Er is een fout opgetreden bij het opslaan");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="max-w-lg">
+        <DialogHeader className="space-y-1">
           <DialogTitle>
-            {currentMusic ? "Muziek Bewerken" : "Nieuwe Muziek"}
+            {currentMusic ? "Soundscape Bewerken" : "Nieuwe Soundscape"}
           </DialogTitle>
           <DialogDescription>
-            Vul de details in voor de muziek
+            Vul de details in voor de soundscape
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Titel</Label>
-              <Input
-                id="title"
-                placeholder="Titel van de muziek"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Beschrijving</Label>
-              <Textarea
-                id="description"
-                placeholder="Beschrijving van de muziek"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
-              <TagInput tags={tags} setTags={setTags} />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-4">
+          <FormFields 
+            title={title}
+            setTitle={setTitle}
+            description={description}
+            setDescription={setDescription}
+            audioUrl={audioUrl}
+            setAudioUrl={setAudioUrl}
+            coverImageUrl={coverImageUrl}
+            setCoverImageUrl={setCoverImageUrl}
+            tags={tags}
+            setTags={setTags}
+            isValidatingUrl={isValidatingUrl}
+            isUrlValid={isUrlValid}
+            validatedUrl={validatedUrl}
+            handleAudioPreview={handleAudioPreview}
+            isPreviewPlaying={isPreviewPlaying}
+          />
           
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="audioUrl">Audio URL <span className="text-red-500">*</span></Label>
-              <div className="flex gap-2">
-                <Input
-                  id="audioUrl"
-                  placeholder="URL naar audio bestand"
-                  value={audioUrl}
-                  onChange={(e) => setAudioUrl(e.target.value)}
-                  required
-                  className={!isUrlValid && audioUrl ? "border-red-500" : ""}
-                />
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  className="shrink-0"
-                  onClick={handleAudioPreview}
-                  disabled={isValidatingUrl || !isUrlValid}
-                >
-                  {isValidatingUrl ? (
-                    <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                  ) : isPreviewPlaying ? (
-                    <StopCircle className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              {validatedUrl && validatedUrl !== audioUrl && (
-                <div className="text-xs text-amber-500 flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  URL wordt aangepast naar: {validatedUrl}
-                </div>
-              )}
-              {!isUrlValid && audioUrl && (
-                <div className="text-xs text-red-500 flex items-center mt-1">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Kon audio niet laden. Controleer of de URL juist is en toegankelijk.
-                </div>
-              )}
-              {isValidUrl(audioUrl) && (
-                <div className="text-xs text-muted-foreground flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Directe URL naar een online audio bestand
-                </div>
-              )}
-              {audioUrl && audioUrl.includes('supabase.co') && (
-                <div className="text-xs text-blue-500 flex items-center mt-1">
-                  <FileAudio className="h-3 w-3 mr-1" />
-                  Supabase Storage URL gedetecteerd
-                </div>
-              )}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ImagePreview coverImageUrl={coverImageUrl} />
             
-            <div className="space-y-2">
-              <Label htmlFor="coverImageUrl">Cover Afbeelding URL <span className="text-red-500">*</span></Label>
-              <div className="flex gap-2">
-                <Input
-                  id="coverImageUrl"
-                  placeholder="URL naar afbeelding"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                  required
-                />
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  className="shrink-0"
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-              </div>
-              {isValidUrl(coverImageUrl) && (
-                <div className="text-xs text-muted-foreground flex items-center mt-1">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Directe URL naar een online afbeelding
-                </div>
-              )}
-            </div>
-            
-            {coverImageUrl && (
-              <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
-                <img 
-                  src={coverImageUrl} 
-                  alt="Preview" 
-                  className="w-full h-full object-cover" 
-                  onError={(e) => {
-                    e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
-                    toast.error("Kon de afbeelding niet laden. Controleer de URL.");
-                  }}
-                />
-              </div>
-            )}
-            
-            {audioUrl && isPreviewPlaying && isUrlValid && (
-              <div className="mt-4">
-                <Label>Audio Preview</Label>
-                <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
-                <AudioPlayer 
-                  audioUrl={validatedUrl || audioUrl} 
-                  isPlayingExternal={isPreviewPlaying}
-                  onPlayPauseChange={setIsPreviewPlaying}
-                  onError={handleAudioError}
-                  ref={audioRef}
-                />
-              </div>
-            )}
+            <AudioPreview 
+              audioUrl={audioUrl}
+              isPreviewPlaying={isPreviewPlaying}
+              setIsPreviewPlaying={setIsPreviewPlaying}
+              isValidatingUrl={isValidatingUrl}
+              isUrlValid={isUrlValid}
+              validatedUrl={validatedUrl}
+              audioRef={audioRef}
+              handleAudioError={handleAudioError}
+            />
           </div>
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
           <Button 
+            size="sm"
             onClick={handleSave}
-            disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid}
+            disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid || isValidatingUrl || isSaving}
           >
+            {isSaving ? (
+              <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
+            ) : null}
             Opslaan
           </Button>
         </DialogFooter>

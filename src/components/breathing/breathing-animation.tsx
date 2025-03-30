@@ -67,6 +67,10 @@ const BreathingAnimation: React.FC<BreathingAnimationProps> = ({
         isVoiceActive={isVoiceActive}
         phase={phase}
         isActive={isActive}
+        inhaleTime={inhaleTime}
+        holdTime={holdTime}
+        exhaleTime={exhaleTime}
+        pauseTime={pauseTime}
       />
       
       <BreathingCircle

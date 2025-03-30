@@ -19,10 +19,123 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
  */
 export const getPublicUrl = (bucket: string, filePath: string): string | null => {
   try {
-    const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-    return data.publicUrl || null;
+    if (!filePath) {
+      console.error('Leeg bestandspad opgegeven aan getPublicUrl');
+      return null;
+    }
+    
+    // Als het al een volledige URL is, geef deze direct terug
+    if (filePath.startsWith('http')) {
+      return filePath;
+    }
+    
+    // Behandel paden die al de bucket naam bevatten
+    const cleanFilePath = filePath.startsWith(`${bucket}/`) 
+      ? filePath.substring(bucket.length + 1) // Verwijder bucket/ prefix
+      : filePath;
+    
+    const { data } = supabase.storage.from(bucket).getPublicUrl(cleanFilePath);
+    
+    if (!data?.publicUrl) {
+      console.error(`Geen publieke URL verkregen voor ${cleanFilePath} in bucket ${bucket}`);
+      return null;
+    }
+    
+    return data.publicUrl;
   } catch (error) {
-    console.error('Error getting public URL:', error);
+    console.error('Fout bij verkrijgen van publieke URL:', error);
     return null;
   }
+};
+
+/**
+ * Upload een bestand naar Supabase Storage
+ * @param bucket De naam van de storage bucket
+ * @param filePath Het pad waar het bestand moet worden opgeslagen
+ * @param file Het bestand om te uploaden
+ * @returns De publieke URL van het geüploade bestand of null bij een fout
+ */
+export const uploadFile = async (
+  bucket: string, 
+  filePath: string, 
+  file: File
+): Promise<string | null> => {
+  try {
+    // Upload het bestand
+    const { error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error('Fout bij uploaden bestand:', uploadError);
+      return null;
+    }
+    
+    // Haal de publieke URL op
+    return getPublicUrl(bucket, filePath);
+  } catch (error) {
+    console.error('Onverwachte fout bij bestandsupload:', error);
+    return null;
+  }
+};
+
+/**
+ * Verwijder een bestand uit Supabase Storage
+ * @param bucket De naam van de storage bucket
+ * @param filePath Het pad van het te verwijderen bestand
+ * @returns true als het verwijderen succesvol was, anders false
+ */
+export const deleteFile = async (bucket: string, filePath: string): Promise<boolean> => {
+  try {
+    if (!filePath) return false;
+    
+    // Als het een volledige URL is, extraheer dan het bestandspad
+    if (filePath.startsWith('http')) {
+      const url = new URL(filePath);
+      // Verkrijg het laatste deel van het pad na /storage/v1/object/public/bucket/
+      const pathParts = url.pathname.split('/');
+      const bucketIndex = pathParts.findIndex(part => part === bucket);
+      
+      if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
+        filePath = pathParts.slice(bucketIndex + 1).join('/');
+      } else {
+        // Als we de bucket niet kunnen vinden, gebruik het laatste deel van het pad
+        filePath = pathParts[pathParts.length - 1];
+      }
+    }
+    
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([filePath]);
+    
+    if (error) {
+      console.error('Fout bij verwijderen bestand:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Onverwachte fout bij bestandsverwijdering:', error);
+    return false;
+  }
+};
+
+/**
+ * Create a Supabase-compatible storage file path
+ * @param fileName The name of the file
+ * @param useTimestamp Whether to include a timestamp in the filename
+ * @returns A storage file path string
+ */
+export const createStoragePath = (fileName: string, useTimestamp: boolean = true): string => {
+  // Remove unsafe characters from the filename
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9-_.]/g, '_');
+  
+  // Optionally add a timestamp to prevent name collisions
+  const timestamp = useTimestamp ? `_${Date.now()}` : '';
+  
+  // Create a path with proper structure
+  return `${safeFileName}${timestamp}`;
 };

@@ -3,6 +3,7 @@ import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';
 import { preloadAudio } from '@/components/audio-player/utils';
+import { shouldPlayAudioForPhase } from './breathing-utils';
 
 interface BreathingAudioProps {
   voiceUrls: {
@@ -14,13 +15,21 @@ interface BreathingAudioProps {
   isVoiceActive: boolean;
   phase: BreathingPhase;
   isActive: boolean;
+  inhaleTime: number;
+  holdTime: number;
+  exhaleTime: number;
+  pauseTime: number;
 }
 
 export const useBreathingAudio = ({
   voiceUrls,
   isVoiceActive,
   phase,
-  isActive
+  isActive,
+  inhaleTime,
+  holdTime,
+  exhaleTime,
+  pauseTime
 }: BreathingAudioProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
@@ -38,7 +47,13 @@ export const useBreathingAudio = ({
       return false;
     }
     try {
-      const urlsToValidate = [urls.inhale, urls.hold, urls.exhale];
+      const urlsToValidate = [urls.inhale, urls.exhale];
+      
+      // Only validate hold URL if hold time is > 0
+      if (holdTime > 0 && urls.hold) {
+        urlsToValidate.push(urls.hold);
+      }
+      
       if (urls.start) {
         urlsToValidate.push(urls.start);
       }
@@ -64,6 +79,13 @@ export const useBreathingAudio = ({
 
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
+    
+    // Skip playing audio if the corresponding phase time is zero
+    if (!shouldPlayAudioForPhase(phaseType, inhaleTime, holdTime, exhaleTime, pauseTime)) {
+      console.log(`Skipping audio for ${phaseType} because duration is zero`);
+      return;
+    }
+    
     let audioUrl = '';
     switch (phaseType) {
       case 'start':
@@ -73,6 +95,11 @@ export const useBreathingAudio = ({
         audioUrl = voiceUrls.inhale;
         break;
       case 'hold':
+        // Skip if hold time is zero
+        if (holdTime <= 0) {
+          console.log(`Hold time is ${holdTime}, skipping hold audio`);
+          return;
+        }
         audioUrl = voiceUrls.hold;
         break;
       case 'exhale':
@@ -81,10 +108,12 @@ export const useBreathingAudio = ({
       default:
         audioUrl = '';
     }
+    
     if (!audioUrl) {
       console.log(`No audio URL for ${phaseType} phase`);
       return;
     }
+    
     audioLoadingRef.current = true;
     try {
       console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);

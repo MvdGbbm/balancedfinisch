@@ -1,269 +1,190 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { useApp } from "@/context/AppContext";
 import { MeditationCard } from "@/components/meditation/meditation-card";
-import { MeditationFilters } from "@/components/meditation/meditation-filters";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MeditationPlayerContainer } from "@/components/meditation/meditation-player-container";
 import { MeditationDetailDialog } from "@/components/meditation/meditation-detail-dialog";
-import { processMeditationUrls, filterMeditations } from "@/utils/meditation-utils";
+import { useApp } from "@/context/AppContext";
+import { MeditationCategoryTabs } from "@/components/meditation/meditation-category-tabs";
+import { MeditationFilters } from "@/components/meditation/meditation-filters";
+import { useNavigate } from "react-router-dom";
+import { groupBy } from "lodash";
 import { Meditation } from "@/lib/types";
-import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PersonalMeditationMusic } from "@/components/meditation/personal-meditation-music";
-import { validateAudioUrl } from "@/components/audio-player/utils";
-import { MeditationErrorDisplay } from "@/components/meditation/meditation-error-display";
+import { MeditationSubcategory } from "@/components/meditation/meditation-subcategory";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
-const Meditations = () => {
-  const { meditations, soundscapes, setCurrentMeditation, currentMeditation } = useApp();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [processedMeditations, setProcessedMeditations] = useState<Meditation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
-  const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
-  const [selectedGuidedMeditation, setSelectedGuidedMeditation] = useState<Meditation | null>(null);
-  const [activeTab, setActiveTab] = useState("meditations");
+// Main component
+const MeditationsPage = () => {
+  const { meditations, currentMeditation, setCurrentMeditation, deleteMeditation } = useApp();
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [durationFilter, setDurationFilter] = useState<number | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [meditationToDelete, setMeditationToDelete] = useState<string | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [detailMeditation, setDetailMeditation] = useState<Meditation | null>(null);
+  const navigate = useNavigate();
   
-  // First time load
-  useEffect(() => {
-    const fetchAndProcessMeditations = async () => {
-      setLoading(true);
-      try {
-        const processed = await processMeditationUrls(meditations);
-        
-        // Filter out meditations with invalid URLs
-        const validMeditations = processed.map(meditation => {
-          if (meditation.audioUrl && meditation.audioUrl.includes('example.com')) {
-            console.warn("Placeholder URL detected for meditation:", meditation.title);
-            return {
-              ...meditation,
-              audioUrl: "" // Clear placeholder URLs
-            };
-          }
-          return meditation;
-        });
-        
-        setProcessedMeditations(validMeditations);
-        setLoadError(false);
-      } catch (error) {
-        console.error("Error processing meditations:", error);
-        setLoadError(true);
-        toast.error("Er is een fout opgetreden bij het laden van meditaties");
-      } finally {
-        setLoading(false);
+  // Filter meditations based on active tab and duration filter
+  const filteredMeditations = meditations.filter(meditation => {
+    const categoryMatch = activeTab === "all" || meditation.category === activeTab;
+    const durationMatch = durationFilter === null || meditation.duration <= durationFilter;
+    return categoryMatch && durationMatch;
+  });
+  
+  // Group meditations by category
+  const groupedMeditations = groupBy(filteredMeditations, "category");
+  
+  // Handle meditation selection
+  const handleMeditationClick = (meditation: Meditation) => {
+    setCurrentMeditation(meditation);
+  };
+  
+  // Show detail dialog
+  const handleShowDetail = (meditation: Meditation) => {
+    setDetailMeditation(meditation);
+    setShowDetailDialog(true);
+  };
+  
+  // Handle delete meditation
+  const handleDeleteClick = (id: string) => {
+    setMeditationToDelete(id);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDelete = () => {
+    if (meditationToDelete) {
+      deleteMeditation(meditationToDelete);
+      if (currentMeditation?.id === meditationToDelete) {
+        setCurrentMeditation(null);
       }
-    };
-    
-    fetchAndProcessMeditations();
-  }, [meditations]);
-  
-  // Get unique categories
-  const categories = Array.from(
-    new Set(processedMeditations.map((meditation) => meditation.category))
-  );
-  
-  const filteredMeditations = filterMeditations(processedMeditations, searchQuery, selectedCategory);
-  
-  const guidedMeditations = processedMeditations.filter(
-    meditation => meditation.category === "Geleide Meditaties"
-  );
-  
-  const handleClearFilters = () => {
-    setSelectedCategory(null);
-    setSearchQuery("");
-  };
-  
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category === "all" ? null : category);
-  };
-  
-  const currentMeditationWithUrls = currentMeditation
-    ? processedMeditations.find(m => m.id === currentMeditation.id) || currentMeditation
-    : null;
-    
-  const handleSoundscapeChange = (soundscapeId: string) => {
-    setCurrentSoundscapeId(soundscapeId);
-  };
-  
-  const getActiveAudioUrl = () => {
-    if (selectedGuidedMeditation) {
-      const url = selectedGuidedMeditation.audioUrl || '';
-      return validateAudioUrl(url);
-    }
-    
-    if (!currentMeditationWithUrls) return '';
-    
-    const url = currentMeditationWithUrls.audioUrl || '';
-    return validateAudioUrl(url);
-  };
-  
-  const handleGuidedMeditationSelect = (meditation: Meditation) => {
-    setSelectedGuidedMeditation(meditation);
-    
-    // Validate URL before attempting to play
-    const validUrl = validateAudioUrl(meditation.audioUrl || '');
-    if (!validUrl) {
-      toast.warning(`Deze meditatie heeft geen geldige audio URL.`);
-    } else {
-      console.log("Selected guided meditation:", meditation.title);
+      setShowDeleteDialog(false);
+      setMeditationToDelete(null);
     }
   };
   
-  const handleRetry = async () => {
-    setIsRetrying(true);
-    try {
-      const processed = await processMeditationUrls(meditations);
-      setProcessedMeditations(processed);
-      setLoadError(false);
-      toast.success("Meditaties opnieuw geladen");
-    } catch (error) {
-      console.error("Error retrying meditation load:", error);
-      setLoadError(true);
-      toast.error("Kon meditaties niet opnieuw laden");
-    } finally {
-      setIsRetrying(false);
-    }
+  // Navigation to admin
+  const navigateToAdmin = () => {
+    navigate("/admin/meditations");
   };
   
-  useEffect(() => {
-    if (currentMeditationWithUrls) {
-      console.log("Current meditation:", currentMeditationWithUrls.title);
-      console.log("Active URL:", getActiveAudioUrl());
-    }
-  }, [currentMeditationWithUrls]);
+  // Check if we should render "all" meditations or groupBy category
+  const shouldShowGrouped = activeTab === "all" && Object.keys(groupedMeditations).length > 0;
   
-  if (loading) {
-    return (
-      <MobileLayout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="text-center">
-            <p className="text-muted-foreground mb-2">Meditaties laden...</p>
-          </div>
-        </div>
-      </MobileLayout>
-    );
-  }
-  
-  if (loadError) {
-    return (
-      <MobileLayout>
-        <div className="container py-6">
-          <h1 className="text-2xl font-bold mb-4">Meditaties</h1>
-          <MeditationErrorDisplay 
-            message="Er is een probleem opgetreden bij het laden van de meditaties. Controleer je internetverbinding en probeer het opnieuw."
-            onRetry={handleRetry}
-            isRetrying={isRetrying}
-          />
-        </div>
-      </MobileLayout>
-    );
-  }
+  // Get unique categories from the grouped meditations
+  const categories = Object.keys(groupedMeditations);
   
   return (
     <MobileLayout>
-      <div className="space-y-4 animate-fade-in">
-        <Tabs defaultValue="meditations" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full h-auto flex overflow-x-auto bg-background border">
-            <TabsTrigger value="meditations" className="flex-1">Meditaties</TabsTrigger>
-            <TabsTrigger value="geleide-meditaties" className="flex-1">Geleide Meditaties</TabsTrigger>
-            <TabsTrigger value="slaap" className="flex-1">Slaap</TabsTrigger>
-            <TabsTrigger value="focus" className="flex-1">Focus</TabsTrigger>
-            <TabsTrigger value="persoonlijke-muziek" className="flex-1">Persoonlijke meditatie muziek</TabsTrigger>
-          </TabsList>
+      <div className="space-y-6 pb-32">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Meditaties</h1>
+            <Button variant="outline" size="sm" onClick={navigateToAdmin}>
+              Beheren
+            </Button>
+          </div>
+          <p className="text-muted-foreground">
+            Ontdek geleide meditaties voor rust en balans in je leven.
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <MeditationCategoryTabs 
+            categories={categories}
+            selectedCategory={activeTab}
+            onCategoryChange={setActiveTab}
+          />
           
-          <TabsContent value="meditations" className="mt-4">
-            <MeditationFilters 
-              categories={categories}
-              selectedCategory={selectedCategory}
-              searchQuery={searchQuery}
-              showFilters={showFilters}
-              onCategoryChange={handleCategoryChange}
-              onSearchChange={setSearchQuery}
-              onToggleFilters={() => setShowFilters(!showFilters)}
-              onClearFilters={handleClearFilters}
-            />
-            
-            <div className="space-y-3 pb-20">
-              {filteredMeditations.map((meditation) => (
-                <MeditationCard 
+          <MeditationFilters 
+            categories={categories}
+            selectedCategory={activeTab}
+            searchQuery=""
+            showFilters={true}
+            onCategoryChange={setActiveTab}
+            onSearchChange={() => {}}
+            onToggleFilters={() => {}}
+            onClearFilters={() => {}}
+          />
+        </div>
+        
+        <div className="space-y-6">
+          {shouldShowGrouped ? (
+            // Show grouped by category
+            Object.entries(groupedMeditations).map(([category, meditations]) => (
+              <MeditationSubcategory 
+                key={category}
+                tag={category}
+                meditations={meditations}
+                selectedMeditationId={currentMeditation?.id || null}
+                onSelectMeditation={handleMeditationClick}
+              />
+            ))
+          ) : (
+            // Show filtered list
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMeditations.map(meditation => (
+                <MeditationCard
                   key={meditation.id}
                   meditation={meditation}
                   isSelected={currentMeditation?.id === meditation.id}
-                  onClick={(med) => {
-                    console.log("Selected meditation card:", med.title);
-                    setCurrentMeditation(med);
-                    setSelectedGuidedMeditation(null);
-                    
-                    if (!validateAudioUrl(med.audioUrl || '')) {
-                      toast.warning(`Deze meditatie heeft geen geldige audio URL.`);
-                      return;
-                    }
-                  }}
-                />
-              ))}
-              
-              {filteredMeditations.length === 0 && (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p>Geen meditaties gevonden die aan je filters voldoen.</p>
-                  <button 
-                    className="text-primary underline mt-2"
-                    onClick={handleClearFilters}
-                  >
-                    Wis filters
-                  </button>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="geleide-meditaties" className="mt-4">
-            <div className="space-y-3 pb-20">
-              {guidedMeditations.map((meditation) => (
-                <MeditationCard 
-                  key={meditation.id}
-                  meditation={meditation}
-                  isSelected={currentMeditation?.id === meditation.id}
-                  onClick={(med) => {
-                    setCurrentMeditation(med);
-                    setSelectedGuidedMeditation(null);
-                  }}
+                  onClick={() => handleMeditationClick(meditation)}
+                  showDeleteButton={true}
+                  onDelete={() => handleDeleteClick(meditation.id)}
+                  onShowDetails={() => handleShowDetail(meditation)}
                 />
               ))}
             </div>
-          </TabsContent>
+          )}
           
-          <TabsContent value="slaap" className="mt-4">
-            <div className="text-center py-10 text-muted-foreground">
-              <p>Slaap meditaties komen binnenkort beschikbaar.</p>
+          {filteredMeditations.length === 0 && (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground">Geen meditaties gevonden met deze filters.</p>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="focus" className="mt-4">
-            <div className="text-center py-10 text-muted-foreground">
-              <p>Focus meditaties komen binnenkort beschikbaar.</p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="persoonlijke-muziek" className="mt-4">
-            <PersonalMeditationMusic />
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
       
-      <MeditationDetailDialog 
-        meditation={currentMeditationWithUrls}
-        soundscapes={soundscapes}
-        isOpen={currentMeditation !== null}
-        onOpenChange={(open) => !open && setCurrentMeditation(null)}
-        currentSoundscapeId={currentSoundscapeId}
-        onSoundscapeChange={handleSoundscapeChange}
-        guidedMeditations={guidedMeditations}
-        onGuidedMeditationSelect={handleGuidedMeditationSelect}
-      />
+      {currentMeditation && (
+        <MeditationPlayerContainer
+          isVisible={!!currentMeditation}
+          selectedMeditation={currentMeditation}
+        />
+      )}
+      
+      {detailMeditation && (
+        <MeditationDetailDialog
+          meditation={detailMeditation}
+          isOpen={showDetailDialog}
+          onOpenChange={setShowDetailDialog}
+          soundscapes={[]}
+          currentSoundscapeId={null}
+          onSoundscapeChange={() => {}}
+          guidedMeditations={[]}
+          onGuidedMeditationSelect={() => {}}
+        />
+      )}
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Meditatie verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze meditatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MobileLayout>
   );
 };
 
-export default Meditations;
+export default MeditationsPage;
