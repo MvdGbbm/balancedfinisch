@@ -122,3 +122,20 @@ export const deleteFile = async (bucket: string, filePath: string): Promise<bool
     return false;
   }
 };
+
+/**
+ * Create a Supabase-compatible storage file path
+ * @param fileName The name of the file
+ * @param useTimestamp Whether to include a timestamp in the filename
+ * @returns A storage file path string
+ */
+export const createStoragePath = (fileName: string, useTimestamp: boolean = true): string => {
+  // Remove unsafe characters from the filename
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9-_.]/g, '_');
+  
+  // Optionally add a timestamp to prevent name collisions
+  const timestamp = useTimestamp ? `_${Date.now()}` : '';
+  
+  // Create a path with proper structure
+  return `${safeFileName}${timestamp}`;
+};

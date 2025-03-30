@@ -21,6 +21,7 @@ import { AudioPreview } from "./form/AudioPreview";
 import { ImagePreview } from "./form/ImagePreview";
 import { MusicFormProps } from "./types";
 import { Soundscape } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
 
 export const MusicFormDialog: React.FC<MusicFormProps> = ({
   isOpen,
@@ -37,6 +38,7 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
   const [validatedUrl, setValidatedUrl] = useState("");
   const [isValidatingUrl, setIsValidatingUrl] = useState(false);
   const [isUrlValid, setIsUrlValid] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
@@ -157,30 +159,84 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
       return;
     }
     
-    // Gebruik de gevalideerde URL indien beschikbaar, anders probeer de URL te corrigeren
-    const finalAudioUrl = validatedUrl || await completeUrlValidation(audioUrl, true, 'soundscapes');
+    setIsSaving(true);
     
-    if (!finalAudioUrl) {
-      toast.error("Kon de audio URL niet valideren. Controleer of de URL correct is.");
-      return;
-    }
+    try {
+      // Gebruik de gevalideerde URL indien beschikbaar, anders probeer de URL te corrigeren
+      const finalAudioUrl = validatedUrl || await completeUrlValidation(audioUrl, true, 'soundscapes');
       
-    const processedCoverImageUrl = processUrl(coverImageUrl);
-    
-    console.log("Soundscape opslaan met audioUrl:", finalAudioUrl);
-    
-    onSave({
-      title,
-      description,
-      audioUrl: finalAudioUrl,
-      category: "Muziek", // Standaard categorie
-      coverImageUrl: processedCoverImageUrl,
-      tags,
-    });
-    
-    toast.success("Muziek succesvol opgeslagen");
-    onOpenChange(false);
-    resetForm();
+      if (!finalAudioUrl) {
+        toast.error("Kon de audio URL niet valideren. Controleer of de URL correct is.");
+        setIsSaving(false);
+        return;
+      }
+        
+      const processedCoverImageUrl = processUrl(coverImageUrl);
+      
+      console.log("Soundscape opslaan met audioUrl:", finalAudioUrl);
+      
+      // First, save the data directly to Supabase if possible
+      if (currentMusic) {
+        // Update existing record
+        const { error } = await supabase
+          .from('soundscapes')
+          .update({
+            title: title,
+            description: description,
+            audio_url: finalAudioUrl,
+            cover_image_url: processedCoverImageUrl,
+            category: "Muziek", // Standaard categorie
+            tags: tags,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentMusic.id);
+          
+        if (error) {
+          console.error("Fout bij updaten soundscape in database:", error);
+          // Continue with local save despite Supabase error
+        } else {
+          console.log("Soundscape succesvol bijgewerkt in Supabase");
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('soundscapes')
+          .insert({
+            title: title,
+            description: description,
+            audio_url: finalAudioUrl,
+            cover_image_url: processedCoverImageUrl,
+            category: "Muziek", // Standaard categorie
+            tags: tags
+          });
+          
+        if (error) {
+          console.error("Fout bij opslaan soundscape in database:", error);
+          // Continue with local save despite Supabase error
+        } else {
+          console.log("Soundscape succesvol opgeslagen in Supabase");
+        }
+      }
+      
+      // Then call the onSave callback to update local state as well
+      onSave({
+        title,
+        description,
+        audioUrl: finalAudioUrl,
+        category: "Muziek", // Standaard categorie
+        coverImageUrl: processedCoverImageUrl,
+        tags,
+      });
+      
+      toast.success("Muziek succesvol opgeslagen");
+      onOpenChange(false);
+      resetForm();
+    } catch (error) {
+      console.error("Fout bij opslaan soundscape:", error);
+      toast.error("Er is een fout opgetreden bij het opslaan");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -237,8 +293,11 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
           <Button 
             size="sm"
             onClick={handleSave}
-            disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid || isValidatingUrl}
+            disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid || isValidatingUrl || isSaving}
           >
+            {isSaving ? (
+              <div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
+            ) : null}
             Opslaan
           </Button>
         </DialogFooter>

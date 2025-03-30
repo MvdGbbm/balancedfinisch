@@ -7,8 +7,10 @@ import { useQuoteState } from "./hooks/useQuoteState";
 import { useJournalState } from "./hooks/useJournalState";
 import { usePlannerState } from "./hooks/usePlannerState";
 
+// Create the context
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Create the provider
 export function AppProvider({ children }: { children: React.ReactNode }) {
   // Use custom hooks for each domain
   const meditationState = useMeditationState();
@@ -66,6 +68,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 
+// Hook to use the context
 export function useApp() {
   const context = useContext(AppContext);
   if (context === undefined) {
