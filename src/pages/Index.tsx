@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sunrise, BookOpen, Quote, Heart, Music, Radio, RefreshCw, Headphones, Waves, Lock } from "lucide-react";
+import { Sunrise, BookOpen, Quote, Heart, Music, Radio, RefreshCw, Headphones, Lock } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,14 +24,6 @@ const adminFeatures = [
     color: "modern-card-orange",
     iconBg: "icon-container-orange",
     path: "/admin/quotes"
-  },
-  {
-    title: "Soundscapes",
-    description: "Beheer achtergrondgeluiden",
-    icon: Waves,
-    color: "modern-card-cyan",
-    iconBg: "icon-container-cyan",
-    path: "/admin/soundscapes"
   },
   {
     title: "Muziek",
