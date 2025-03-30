@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
 import { AudioPreview } from "./audio-player/audio-preview";
 import { validateAudioUrl, preloadAudio } from "./audio-player/utils";
+import { QuoteDisplay } from "./audio-player/quote-display";
+import { getRandomQuote } from "./audio-player/utils";
 
 export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   audioUrl: string;
@@ -21,6 +23,7 @@ export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   nextAudioUrl?: string;
   onEnded?: () => void;
   onCrossfadeStart?: () => void;
+  showMusicSelector?: boolean;
 }
 
 export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>(
@@ -37,11 +40,19 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
     showQuote = true,
     nextAudioUrl,
     onEnded,
-    onCrossfadeStart
+    onCrossfadeStart,
+    showMusicSelector = false
   }, ref) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
     const [validatedUrl, setValidatedUrl] = useState("");
+    const [quote] = useState(() => {
+      const randomQuote = getRandomQuote();
+      return {
+        ...randomQuote,
+        id: randomQuote.id || `quote-${Date.now()}`
+      };
+    });
     
     // Process and validate the URL
     useEffect(() => {
@@ -135,6 +146,12 @@ export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>
       <div className={cn("space-y-2", className)}>
         {showTitle && title && (
           <div className="text-sm font-medium mb-1">{title}</div>
+        )}
+        
+        {showQuote && !finalError && (
+          <div className="mb-3">
+            <QuoteDisplay quote={quote} transparentBackground={true} />
+          </div>
         )}
         
         {finalError ? (

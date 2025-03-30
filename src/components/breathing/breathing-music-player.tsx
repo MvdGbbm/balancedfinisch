@@ -118,6 +118,7 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
                 title={selectedSoundscape.title}
                 volume={musicVolume}
                 showMusicSelector={false}
+                showQuote={true}
               />
             </Card>
           )}

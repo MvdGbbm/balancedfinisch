@@ -72,6 +72,8 @@ export const MusicPlayer: React.FC<MusicPlayerProps> = ({
           isPlayingExternal={isPlaying}
           onPlayPauseChange={onPlayPauseChange}
           ref={audioRef}
+          showMusicSelector={false}
+          showQuote={false}
         />
       </div>
     </div>
