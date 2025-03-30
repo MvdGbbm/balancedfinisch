@@ -7,10 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Meditation } from "@/lib/types";
 import { MeditationCategoryTabs } from "./meditation/meditation-category-tabs";
 import { MeditationPlayerContainer } from "./meditation/meditation-player-container";
+import { MeditationSubcategory } from "./meditation/meditation-subcategory";
 
 export function MeditationMusicPlayer() {
   const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Group meditations by category
@@ -29,6 +31,7 @@ export function MeditationMusicPlayer() {
   useEffect(() => {
     if (!selectedMeditation && categories.length > 0) {
       const firstCategory = categories[0];
+      setSelectedCategory(firstCategory);
       const firstMeditation = meditationsByCategory[firstCategory][0];
       
       // Log the available meditations for debugging
@@ -62,6 +65,10 @@ export function MeditationMusicPlayer() {
       title: "Meditatie geselecteerd",
       description: `${meditation.title} is geselecteerd en klaar om af te spelen.`
     });
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
   };
 
   // Group meditations for display, without depending on tags
@@ -104,6 +111,11 @@ export function MeditationMusicPlayer() {
     return tagGroups;
   };
 
+  // Filter meditations based on selected category
+  const filteredMeditations = selectedCategory === 'all' || !selectedCategory
+    ? meditations
+    : meditationsByCategory[selectedCategory] || [];
+
   return (
     <div className="w-full max-w-4xl mx-auto mb-6 animate-fade-in">
       <div className="flex items-center gap-2 mb-4">
@@ -114,12 +126,33 @@ export function MeditationMusicPlayer() {
       <Tabs defaultValue={categories[0]} className="w-full">
         <MeditationCategoryTabs 
           categories={categories}
-          meditationsByCategory={meditationsByCategory}
-          selectedMeditationId={selectedMeditation?.id || null}
-          getSubcategories={getSubcategories}
-          onSelectMeditation={handleMeditationSelect}
+          selectedCategory={selectedCategory}
+          onCategoryChange={handleCategoryChange}
         />
       </Tabs>
+
+      <div className="space-y-6 mt-4">
+        {selectedCategory === 'all' ? (
+          // Show all categories
+          Object.entries(meditationsByCategory).map(([category, meditations]) => (
+            <MeditationSubcategory 
+              key={category}
+              tag={category}
+              meditations={meditations}
+              selectedMeditationId={selectedMeditation?.id || null}
+              onSelectMeditation={handleMeditationSelect}
+            />
+          ))
+        ) : (
+          // Show selected category
+          <MeditationSubcategory 
+            tag={selectedCategory || categories[0]}
+            meditations={filteredMeditations}
+            selectedMeditationId={selectedMeditation?.id || null}
+            onSelectMeditation={handleMeditationSelect}
+          />
+        )}
+      </div>
       
       <MeditationPlayerContainer 
         isVisible={isPlayerVisible}

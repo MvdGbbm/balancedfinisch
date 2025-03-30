@@ -75,6 +75,9 @@ const MeditationsPage = () => {
   // Check if we should render "all" meditations or groupBy category
   const shouldShowGrouped = activeTab === "all" && Object.keys(groupedMeditations).length > 0;
   
+  // Get unique categories from the grouped meditations
+  const categories = Object.keys(groupedMeditations);
+  
   return (
     <MobileLayout>
       <div className="space-y-6 pb-32">
@@ -92,13 +95,13 @@ const MeditationsPage = () => {
         
         <div className="space-y-4">
           <MeditationCategoryTabs 
-            categories={Object.keys(groupedMeditations)}
+            categories={categories}
             selectedCategory={activeTab}
             onCategoryChange={setActiveTab}
           />
           
           <MeditationFilters 
-            categories={Object.keys(groupedMeditations)}
+            categories={categories}
             selectedCategory={activeTab}
             searchQuery=""
             showFilters={true}
@@ -131,6 +134,8 @@ const MeditationsPage = () => {
                   isSelected={currentMeditation?.id === meditation.id}
                   onClick={() => handleMeditationClick(meditation)}
                   showDeleteButton={true}
+                  onDelete={() => handleDeleteClick(meditation.id)}
+                  onShowDetails={() => handleShowDetail(meditation)}
                 />
               ))}
             </div>
