@@ -6,7 +6,7 @@ import { ProgressBar } from "./audio-player/progress-bar";
 import { AudioControls } from "./audio-player/audio-controls";
 import { ErrorMessage } from "./audio-player/error-message";
 import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote } from "./audio-player/utils";
+import { getRandomQuote, getAudioMimeType, isAACFile } from "./audio-player/utils";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -42,6 +42,13 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const [randomQuote] = useState(getRandomQuote);
   const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
   const [audioKey, setAudioKey] = useState(0); // Add a key to force remounting
+  const [isAACFormat, setIsAACFormat] = useState(false);
+  
+  useEffect(() => {
+    if (audioUrl) {
+      setIsAACFormat(isAACFile(audioUrl));
+    }
+  }, [audioUrl]);
   
   // Initialize all hooks unconditionally
   const {
@@ -77,8 +84,9 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   // Log the audio URL for debugging
   useEffect(() => {
     console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
-    if (audioUrl?.includes('marco')) {
-      console.log('Marco audio detected:', audioUrl);
+    
+    if (isAACFile(audioUrl)) {
+      console.log('AAC audio format detected:', audioUrl);
     }
     
     // Reset player when URL changes
@@ -104,13 +112,30 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     );
   }
   
+  // Get the MIME type based on the file extension
+  const audioMimeType = getAudioMimeType(audioUrl);
+  
   return (
     <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
-      {nextAudioUrl && <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous" />}
+      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
+        <source src={audioUrl} type={audioMimeType} />
+        Your browser does not support the audio element.
+      </audio>
+      
+      {nextAudioUrl && (
+        <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous">
+          <source src={nextAudioUrl} type={getAudioMimeType(nextAudioUrl)} />
+        </audio>
+      )}
       
       {showTitle && title && (
         <h3 className="text-lg font-medium">{title}</h3>
+      )}
+      
+      {isAACFormat && (
+        <div className="text-xs text-blue-500 font-medium">
+          AAC audio format
+        </div>
       )}
       
       {loadError && (
