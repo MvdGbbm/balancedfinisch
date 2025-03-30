@@ -25,7 +25,7 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
     soundscape => soundscape.category === "Meditatie" || 
                  soundscape.category === "Ontspanning" || 
                  soundscape.category === "Persoonlijke Meditatie" ||
-                 soundscape.category === "Muziek"
+                 soundscape.category === "Soundscapes" // Updated from "Muziek" to "Soundscapes"
   );
   
   useEffect(() => {
@@ -42,10 +42,10 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
     }
   }, [musicVolume, onVolumeChange]);
   
-  // Set default soundscape from Muziek category if available
+  // Set default soundscape from Soundscapes category if available
   useEffect(() => {
     if (!selectedSoundscape && meditationMusic.length > 0) {
-      const musicTracks = meditationMusic.filter(track => track.category === "Muziek");
+      const musicTracks = meditationMusic.filter(track => track.category === "Soundscapes");
       if (musicTracks.length > 0) {
         setSelectedSoundscape(musicTracks[0]);
       } else {

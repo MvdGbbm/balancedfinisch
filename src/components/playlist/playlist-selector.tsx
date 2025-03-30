@@ -29,8 +29,8 @@ export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: P
   const [activeTab, setActiveTab] = useState<string>("playlists");
   const { soundscapes } = useApp();
   
-  // Filter for music tracks
-  const musicTracks = soundscapes.filter(track => track.category === "Muziek");
+  // Filter for music tracks - updated to look for "Soundscapes" category since we've swapped labels
+  const musicTracks = soundscapes.filter(track => track.category === "Soundscapes");
 
   return (
     <DropdownMenu>

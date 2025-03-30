@@ -36,7 +36,7 @@ export function MobileLayout({
     icon: Sunrise,
     label: "Ademhaling"
   }, {
-    path: "/music",
+    path: "/soundscapes",
     icon: Music,
     label: "Muziek"
   }, {
@@ -44,7 +44,7 @@ export function MobileLayout({
     icon: BookOpen,
     label: "Dagboek"
   }, {
-    path: "/soundscapes",
+    path: "/music",
     icon: Music,
     label: "Geluiden"
   }, {
@@ -53,8 +53,8 @@ export function MobileLayout({
     label: "Quote"
   }];
 
-  // Check if we're on the music page
-  const isMusicPage = location.pathname === "/music";
+  // Check if we're on the soundscapes page (previously music)
+  const isSoundscapesPage = location.pathname === "/soundscapes";
 
   return <div className={cn("flex flex-col min-h-screen w-full bg-background", className)}>
       <header className="sticky top-0 z-40 w-full glass-morphism border-b py-3 px-4 backdrop-blur-lg transition-all">
@@ -62,7 +62,7 @@ export function MobileLayout({
           <div className="flex items-center gap-2">
             <img src="/public/logo.svg" alt="Balanced Mind" className="h-8 w-8" onError={e => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjRDMTguNjI3NCAyNCAyNCAxOC42Mjc0IDI0IDEyQzI0IDUuMzcyNTggMTguNjI3NCAwIDEyIDBDNS4zNzI1OCAwIDAgNS4zNzI1OCAwIDEyQzAgMTguNjI3NCA1LjM3MjU4IDI0IDEyIDI0WiIgZmlsbD0iIzNBQTBGRiIvPjxwYXRoIGQ9Ik0xMiAxOEM4LjY4NjI5IDE4IDYgMTUuMzEzNyA2IDEyQzYgOC42ODYyOSA4LjY4NjI5IDYgMTIgNkMxNS4zMTM3IDYgMTggOC42ODYyOSAxOCAxMkMxOCAxNS4zMTM3IDE1LjMxMzcgMTggMTIgMThaTTEyIDE2QzE0LjIwOTEgMTYgMTYgMTQuMjA5MSAxNiAxMkMxNiA5Ljc5MDg2IDE0LjIwOTEgOCAxMiA4QzkuNzkwODYgOCA4IDkuNzkwODYgOCAxMkM4IDE0LjIwOTEgOS43OTA4NiAxNiAxMiAxNloiIGZpbGw9IndoaXRlIi8+PC9zdmc+";
+            e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjRDMTguNjI3NCAyNCAyNCAxOC42Mjc0IDI0IDEyQzI0IDUuMzcyNTggMTguNjI3NCAwIDEyIDBDNS4zNzI1OCAwIDAgNS4zNzI1OCAwIDEyQzAgMTguNjI3NCA1LjM3MjU4IDI0IDEyIDI0WiIgZmlsbD0iIzNBQTBGRiIvPjxwYXRoIGQ9Ik0xMiAxOEM4LjY4NjI5IDE4IDYgMTUuMzEzNyA2IDEyQzYgOC42ODYyOSA4LjY4NjI5IDYgMTIgNkMxNS4zMTM3IDYgMTggOC42ODYyOSAxOCAxMkMxOCAxNS4zMTM3IDE1LjMxMzcgMTggMTIgMThaTTEyIDE2QzE0LjIwOTEgMTYgMTYgMTQuMjA5MSAxNiAxMkMxNiA5Ljc5MDg2IDE0LjIwOTEgOCA4IEMxMiA4QzkuNzkwODYgOCA4IDkuNzkwODYgOCAxMkM4IDE0LjIwOTEgOS43OTA4NiAxNiAxMiAxNloiIGZpbGw9IndoaXRlIi8+PC9zdmc+";
           }} />
             <h1 className="text-lg font-medium">Balanced Mind Meditation</h1>
           </div>
@@ -77,8 +77,8 @@ export function MobileLayout({
       
       <main className={cn(
         "flex-1 px-4 py-4 overflow-auto animate-fade-in",
-        // Add more padding at the bottom when on the music page to account for fixed player
-        isMusicPage && "pb-40"
+        // Add more padding at the bottom when on the soundscapes page to account for fixed player
+        isSoundscapesPage && "pb-40"
       )}>
         {children}
       </main>

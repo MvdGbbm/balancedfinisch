@@ -41,9 +41,9 @@ const router = createBrowserRouter(
       <Route path="/" element={<Index />} errorElement={<ErrorBoundary />} />
       <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
       <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
+      <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/music" element={<Music />} errorElement={<ErrorBoundary />} />
       <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
-      <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
       <Route path="/admin" element={<Admin />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
