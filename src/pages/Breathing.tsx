@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { toast } from "sonner";
 import BreathingPatternSelector from "@/components/breathing/breathing-pattern-selector";
 import BreathingExerciseAnimation from "@/components/breathing/breathing-exercise-animation";
 import BreathingControls from "@/components/breathing/breathing-controls";
+import { BreathingPhase } from '@/components/breathing/types';
 
 const Breathing = () => {
   // Core breathing session state and hooks
@@ -96,7 +96,7 @@ function useBreathingSession() {
   const [selectedPattern, setSelectedPattern] = useState(null);
   const [isExerciseActive, setIsExerciseActive] = useState(false);
   const [activeVoice, setActiveVoice] = useState(null);
-  const [currentPhase, setCurrentPhase] = useState("inhale");
+  const [currentPhase, setCurrentPhase] = useState<BreathingPhase>("start");
   const [showAnimation, setShowAnimation] = useState(false);
   const [currentCycle, setCurrentCycle] = useState(1);
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
@@ -159,8 +159,8 @@ function useBreathingSession() {
     toast.info("Oefening gepauzeerd");
   };
   
-  const handlePhaseChange = (phase, cycle, completed) => {
-    setCurrentPhase(phase);
+  const handlePhaseChange = (newPhase: BreathingPhase, cycle: number, completed: boolean) => {
+    setCurrentPhase(newPhase);
     setCurrentCycle(cycle);
     setExerciseCompleted(completed);
     
