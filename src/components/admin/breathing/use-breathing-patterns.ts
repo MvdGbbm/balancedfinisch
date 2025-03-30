@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { BreathingPattern } from "./types";
 
@@ -14,12 +14,15 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 0,
     cycles: 5,
     animationEnabled: true,
-    animationStyle: "grow",
-    animationColor: "primary",
+    animationStyle: "glow",
+    animationColor: "cyan",
     inhaleText: "Adem in",
     exhaleText: "Adem uit",
     hold1Text: "Vasthouden",
-    hold2Text: "Vasthouden"
+    hold2Text: "Vasthouden",
+    circleSize: "medium",
+    textSize: "medium",
+    showCycleCount: true
   }, 
   {
     id: "2",
@@ -36,7 +39,10 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     inhaleText: "Adem in",
     exhaleText: "Adem uit",
     hold1Text: "Vasthouden",
-    hold2Text: "Vasthouden"
+    hold2Text: "Vasthouden",
+    circleSize: "medium",
+    textSize: "medium",
+    showCycleCount: true
   }, 
   {
     id: "3",
@@ -53,20 +59,28 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     inhaleText: "Adem in",
     exhaleText: "Adem uit",
     hold1Text: "Vasthouden",
-    hold2Text: "Vasthouden"
+    hold2Text: "Vasthouden",
+    circleSize: "medium",
+    textSize: "medium",
+    showCycleCount: true
   }
 ];
 
 export function useBreathingPatterns() {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load patterns from storage on init
   useEffect(() => {
     loadPatternsFromStorage();
   }, []);
 
-  const loadPatternsFromStorage = () => {
+  // Load patterns from localStorage
+  const loadPatternsFromStorage = useCallback(() => {
+    setIsLoading(true);
     const savedPatterns = localStorage.getItem('breathingPatterns');
+    
     if (savedPatterns) {
       try {
         const parsedPatterns = JSON.parse(savedPatterns);
@@ -79,13 +93,17 @@ export function useBreathingPatterns() {
     } else {
       localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
     }
-  };
+    
+    setIsLoading(false);
+  }, []);
 
-  const selectPattern = (pattern: BreathingPattern) => {
+  // Select a pattern
+  const selectPattern = useCallback((pattern: BreathingPattern) => {
     setSelectedPattern(pattern);
-  };
+  }, []);
 
-  const createNewPattern = () => {
+  // Create a new pattern
+  const createNewPattern = useCallback(() => {
     const newId = `temp_${Date.now()}`;
     const newPattern: BreathingPattern = {
       id: newId,
@@ -102,23 +120,30 @@ export function useBreathingPatterns() {
       inhaleText: "Adem in",
       exhaleText: "Adem uit",
       hold1Text: "Vasthouden",
-      hold2Text: "Vasthouden"
+      hold2Text: "Vasthouden",
+      circleSize: "medium",
+      textSize: "medium",
+      showCycleCount: true
     };
+    
     setSelectedPattern(newPattern);
     return newPattern;
-  };
+  }, []);
 
-  const savePattern = (pattern: BreathingPattern) => {
+  // Save a pattern
+  const savePattern = useCallback((pattern: BreathingPattern) => {
     const existingPatternIndex = breathingPatterns.findIndex(p => p.id === pattern.id);
     let updatedPatterns: BreathingPattern[];
     
     if (existingPatternIndex >= 0) {
+      // Update existing
       updatedPatterns = [...breathingPatterns];
       updatedPatterns[existingPatternIndex] = pattern;
       setBreathingPatterns(updatedPatterns);
       setSelectedPattern(pattern);
       toast.success("Ademhalingstechniek bijgewerkt");
     } else {
+      // Create new
       const newPattern = {
         ...pattern,
         id: `${Date.now()}`
@@ -129,25 +154,37 @@ export function useBreathingPatterns() {
       toast.success("Nieuwe ademhalingstechniek toegevoegd");
     }
     
+    // Save to localStorage
     localStorage.setItem('breathingPatterns', JSON.stringify(updatedPatterns));
     return updatedPatterns;
-  };
+  }, [breathingPatterns]);
 
-  const deletePattern = (id: string) => {
+  // Delete a pattern
+  const deletePattern = useCallback((id: string) => {
     const filteredPatterns = breathingPatterns.filter(p => p.id !== id);
     setBreathingPatterns(filteredPatterns);
     setSelectedPattern(null);
+    
+    // Save to localStorage
     localStorage.setItem('breathingPatterns', JSON.stringify(filteredPatterns));
     toast.success("Ademhalingstechniek verwijderd");
+    
     return filteredPatterns;
-  };
+  }, [breathingPatterns]);
 
   return {
     breathingPatterns,
     selectedPattern,
+    isLoading,
     selectPattern,
     createNewPattern,
     savePattern,
     deletePattern,
+    resetToDefaults: () => {
+      localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
+      setBreathingPatterns(defaultBreathingPatterns);
+      setSelectedPattern(null);
+      toast.success("Ademhalingstechnieken gereset naar standaardwaarden");
+    }
   };
 }

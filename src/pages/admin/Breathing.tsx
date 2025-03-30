@@ -14,6 +14,7 @@ import { BreathingPattern } from "@/components/admin/breathing/types";
 
 const AdminBreathing = () => {
   const [activeTab, setActiveTab] = useState<"patterns" | "voices">("patterns");
+  
   const { 
     breathingPatterns, 
     selectedPattern, 
