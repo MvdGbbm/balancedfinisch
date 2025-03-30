@@ -13,6 +13,7 @@ import Meditations from "./pages/Meditations";
 import Journal from "./pages/Journal";
 import Planner from "./pages/Planner";
 import DailyQuote from "./pages/DailyQuote";
+import Music from "./pages/Music";
 
 // Admin routes
 import Admin from "./pages/Admin";
@@ -39,6 +40,7 @@ const mainRoutes = [
   { path: "/breathing", element: <Breathing /> },
   { path: "/journal", element: <Journal /> },
   { path: "/daily-quote", element: <DailyQuote /> },
+  { path: "/music", element: <Music /> },
   { path: "/admin", element: <Admin /> },
   { path: "*", element: <NotFound /> },
 ];
