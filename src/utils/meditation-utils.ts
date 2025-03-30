@@ -1,4 +1,3 @@
-
 import { Meditation, Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -39,14 +38,10 @@ export const getPublicUrl = async (path: string, bucket = 'meditations'): Promis
   }
   
   try {
-    const { data, error } = await supabase.storage
+    // Hier is de fix: getPublicUrl() geeft geen error property terug, alleen data
+    const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(path);
-    
-    if (error) {
-      console.error(`Fout bij het ophalen van publieke URL voor ${path} van ${bucket}:`, error);
-      return '/placeholder.svg';
-    }
     
     if (data?.publicUrl) {
       // Cache URL voor later gebruik
