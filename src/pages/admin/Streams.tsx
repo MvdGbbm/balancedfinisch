@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link2, Edit, Trash2, ExternalLink, Check, X, Radio, Play, GripVertical, Save } from "lucide-react";
+import { Link2, Edit, Trash2, Radio, Play, Pause, GripVertical, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -44,6 +44,8 @@ const AdminStreams = () => {
   const [isActive, setIsActive] = useState(true);
   const [pendingOrderChanges, setPendingOrderChanges] = useState(false);
   const [reorderedStreams, setReorderedStreams] = useState<RadioStream[]>([]);
+  const [playingStreamId, setPlayingStreamId] = useState<string | null>(null);
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   
   const { data: streams = [], isLoading } = useQuery({
     queryKey: ['radioStreams'],
@@ -225,6 +227,11 @@ const AdminStreams = () => {
       return;
     }
     
+    if (!isValidUrl(url)) {
+      toast.error("De ingevoerde URL is niet geldig");
+      return;
+    }
+    
     if (currentStream) {
       updateStreamMutation.mutate({
         ...currentStream,
@@ -258,15 +265,28 @@ const AdminStreams = () => {
     }
   };
   
-  const isValidAudioUrl = (url: string) => {
+  const isValidStreamUrl = (url: string) => {
     if (!isValidUrl(url)) return false;
     
     const lowercaseUrl = url.toLowerCase();
-    const audioExtensions = ['.mp3', '.aac', '.ogg', '.m3u', '.m3u8', '.pls', '.xspf'];
-    const streamingServices = ['icecast', 'shoutcast', 'radio', 'stream', 'listen', 'audio'];
-    
-    return audioExtensions.some(ext => lowercaseUrl.includes(ext)) || 
-           streamingServices.some(service => lowercaseUrl.includes(service));
+    return lowercaseUrl.includes('stream') || 
+           lowercaseUrl.includes('radio') || 
+           lowercaseUrl.includes('mp3') || 
+           lowercaseUrl.includes('audio') ||
+           lowercaseUrl.includes('aac') ||
+           lowercaseUrl.includes('ogg');
+  };
+  
+  const handlePlayStream = (stream: RadioStream) => {
+    if (playingStreamId === stream.id) {
+      setPlayingStreamId(null);
+      setIframeUrl(null);
+      toast.info(`Gestopt met afspelen: ${stream.title}`);
+    } else {
+      setPlayingStreamId(stream.id);
+      setIframeUrl(stream.url);
+      toast.success(`Nu afspelen: ${stream.title}`);
+    }
   };
   
   const handleDragEnd = async (result: any) => {
@@ -321,7 +341,7 @@ const AdminStreams = () => {
         </div>
         
         <p className="text-muted-foreground">
-          Beheer streaming links die gebruikers kunnen afspelen vanuit de muziekspeler
+          Beheer en beluister streaming links die gebruikers kunnen afspelen vanuit de muziekspeler
         </p>
         
         <Tabs defaultValue="active" className="mt-6">
@@ -371,7 +391,44 @@ const AdminStreams = () => {
                                   onEdit={handleEdit} 
                                   onDelete={handleDelete}
                                   onToggleActive={handleToggleActive}
+                                  onPlay={handlePlayStream}
+                                  isPlaying={playingStreamId === stream.id}
                                 />
+                                {playingStreamId === stream.id && (
+                                  <div className="mt-2 px-2">
+                                    <div className="bg-background/30 p-3 rounded-md border border-border">
+                                      <div className="flex items-center mb-3">
+                                        <Radio className="h-4 w-4 text-primary mr-2" />
+                                        <p className="text-sm">Streaming in achtergrond</p>
+                                      </div>
+                                      
+                                      <div className="rounded-md overflow-hidden bg-muted p-2">
+                                        <p className="text-xs text-muted-foreground mb-1">
+                                          Als de stream niet afspeelt, probeer deze in een nieuwe tab te openen:
+                                        </p>
+                                        <div className="flex items-center space-x-2">
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            onClick={() => window.open(stream.url, '_blank')}
+                                            className="text-xs py-1 h-auto"
+                                          >
+                                            Open in nieuwe tab
+                                          </Button>
+                                          <p className="text-xs truncate">{stream.url}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {iframeUrl && (
+                                      <iframe 
+                                        src={iframeUrl} 
+                                        style={{ display: 'none' }}
+                                        title="Radio Stream"
+                                      />
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </Draggable>
@@ -400,13 +457,51 @@ const AdminStreams = () => {
             ) : inactiveStreams.length > 0 ? (
               <div className="space-y-2">
                 {inactiveStreams.map((stream) => (
-                  <StreamCard 
-                    key={stream.id} 
-                    stream={stream} 
-                    onEdit={handleEdit} 
-                    onDelete={handleDelete}
-                    onToggleActive={handleToggleActive}
-                  />
+                  <div key={stream.id}>
+                    <StreamCard 
+                      stream={stream} 
+                      onEdit={handleEdit} 
+                      onDelete={handleDelete}
+                      onToggleActive={handleToggleActive}
+                      onPlay={handlePlayStream}
+                      isPlaying={playingStreamId === stream.id}
+                    />
+                    {playingStreamId === stream.id && (
+                      <div className="mt-2 px-2">
+                        <div className="bg-background/30 p-3 rounded-md border border-border">
+                          <div className="flex items-center mb-3">
+                            <Radio className="h-4 w-4 text-primary mr-2" />
+                            <p className="text-sm">Streaming in achtergrond</p>
+                          </div>
+                          
+                          <div className="rounded-md overflow-hidden bg-muted p-2">
+                            <p className="text-xs text-muted-foreground mb-1">
+                              Als de stream niet afspeelt, probeer deze in een nieuwe tab te openen:
+                            </p>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => window.open(stream.url, '_blank')}
+                                className="text-xs py-1 h-auto"
+                              >
+                                Open in nieuwe tab
+                              </Button>
+                              <p className="text-xs truncate">{stream.url}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {iframeUrl && (
+                          <iframe 
+                            src={iframeUrl} 
+                            style={{ display: 'none' }}
+                            title="Radio Stream"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (
@@ -447,13 +542,18 @@ const AdminStreams = () => {
                 placeholder="URL naar de streaming link (bijv. https://voorbeeld.com/stream)"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+                type="url"
               />
               {isValidUrl(url) && (
-                <div className={`text-xs flex items-center mt-1 ${isValidAudioUrl(url) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  {isValidAudioUrl(url) 
+                <div className={`text-xs flex items-center mt-1 ${isValidStreamUrl(url) ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  {isValidStreamUrl(url) 
                     ? "Lijkt een geldige audio stream URL" 
                     : "Geldige URL, maar mogelijk geen audio stream"}
+                </div>
+              )}
+              {url && !isValidUrl(url) && (
+                <div className="text-xs text-destructive flex items-center mt-1">
+                  Deze URL lijkt ongeldig. Zorg dat deze begint met http:// of https://
                 </div>
               )}
             </div>
@@ -483,7 +583,7 @@ const AdminStreams = () => {
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
               Annuleren
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={!title || !isValidUrl(url)}>
               Opslaan
             </Button>
           </DialogFooter>
@@ -498,13 +598,22 @@ interface StreamCardProps {
   onEdit: (stream: RadioStream) => void;
   onDelete: (id: string) => void;
   onToggleActive: (stream: RadioStream) => void;
+  onPlay: (stream: RadioStream) => void;
+  isPlaying: boolean;
 }
 
-const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onToggleActive }) => {
+const StreamCard: React.FC<StreamCardProps> = ({ 
+  stream, 
+  onEdit, 
+  onDelete, 
+  onToggleActive,
+  onPlay,
+  isPlaying
+}) => {
   return (
     <Card className={stream.is_active ? "" : "opacity-70"}>
       <CardContent className="p-3">
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <div className="space-y-1 flex-1">
             <div className="flex items-center">
               <Radio className="h-4 w-4 mr-2 text-primary" />
@@ -514,15 +623,22 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
             {stream.description && (
               <p className="text-sm text-muted-foreground">{stream.description}</p>
             )}
-            <p className="text-xs text-blue-500 hover:underline break-all">
-              <a href={stream.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                <ExternalLink className="h-3 w-3 mr-1 inline-block flex-shrink-0" />
-                <span>{stream.url}</span>
-              </a>
-            </p>
           </div>
           
           <div className="flex gap-1 ml-2">
+            <Button 
+              variant={isPlaying ? "default" : "outline"} 
+              size="sm"
+              className={`h-8 ${isPlaying ? "bg-primary text-primary-foreground" : ""}`}
+              onClick={() => onPlay(stream)}
+            >
+              {isPlaying ? (
+                <><Pause className="h-4 w-4 mr-1" /> Pauzeren</>
+              ) : (
+                <><Play className="h-4 w-4 mr-1" /> Afspelen</>
+              )}
+            </Button>
+            
             <Button 
               variant="ghost" 
               size="icon"
@@ -530,8 +646,9 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
               onClick={() => onToggleActive(stream)}
               title={stream.is_active ? "Deactiveren" : "Activeren"}
             >
-              {stream.is_active ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+              {stream.is_active ? <Link2 className="h-4 w-4 text-green-500" /> : <Link2 className="h-4 w-4 text-gray-400" />}
             </Button>
+            
             <Button 
               variant="ghost" 
               size="icon"
@@ -540,6 +657,7 @@ const StreamCard: React.FC<StreamCardProps> = ({ stream, onEdit, onDelete, onTog
             >
               <Edit className="h-4 w-4" />
             </Button>
+            
             <Button 
               variant="ghost" 
               size="icon"

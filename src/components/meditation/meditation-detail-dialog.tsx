@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { AudioPlayer } from "@/components/audio-player";
 import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Music, ExternalLink, Quote } from "lucide-react";
+import { Music, ExternalLink, Quote, Sliders } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,10 +15,14 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { toast } from "sonner";
-import { validateAudioUrl } from "@/components/audio-player/utils";
+import { validateAudioUrl, getRandomQuote } from "@/components/audio-player/utils";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
-import { getRandomQuote } from "@/components/audio-player/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
@@ -45,7 +49,6 @@ export const MeditationDetailDialog = ({
   const [audioUrl, setAudioUrl] = useState<string>("");
   const [audioKey, setAudioKey] = useState<number>(0); 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [equalizerVisible, setEqualizerVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [randomQuote] = useState(getRandomQuote());
   
@@ -142,7 +145,7 @@ export const MeditationDetailDialog = ({
               type="button"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              Vera
+              Start Vera
             </Button>
             
             <Button
@@ -153,34 +156,54 @@ export const MeditationDetailDialog = ({
               type="button"
             >
               <ExternalLink className="h-4 w-4 mr-2" />
-              Marco
+              Start Marco
             </Button>
           </div>
           
           <div className="grid grid-cols-1 gap-3">
             {hasValidAudio ? (
-              <AudioPlayer 
-                key={audioKey} 
-                audioUrl={audioUrl}
-                className="w-full bg-transparent border-none"
-                showTitle={false}
-                showQuote={false}
-                ref={audioRef}
-                isPlayingExternal={isPlaying}
-                onPlayPauseChange={setIsPlaying}
-              />
+              <>
+                <AudioPlayer 
+                  key={audioKey} 
+                  audioUrl={audioUrl}
+                  className="w-full bg-transparent border-none"
+                  showTitle={false}
+                  showQuote={false}
+                  ref={audioRef}
+                  isPlayingExternal={isPlaying}
+                  onPlayPauseChange={setIsPlaying}
+                />
+                
+                {isPlaying && (
+                  <div className="flex justify-end mt-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex items-center gap-1.5 bg-blue-950/30 border-blue-800/50 hover:bg-blue-900/40"
+                        >
+                          <Sliders className="h-4 w-4" />
+                          Helende Frequenties
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent 
+                        align="end" 
+                        className="w-72 p-0 bg-background/95 backdrop-blur-sm border-blue-900/30"
+                      >
+                        <ToneEqualizer
+                          isActive={isPlaying}
+                          audioRef={audioRef}
+                        />
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-center py-4 text-gray-400 border border-gray-800 rounded-lg">
                 <p>Geen audio beschikbaar voor deze meditatie</p>
               </div>
-            )}
-            
-            {equalizerVisible && hasValidAudio && (
-              <ToneEqualizer 
-                isActive={true} 
-                audioRef={audioRef} 
-                className="mt-2 rounded-lg"
-              />
             )}
             
             <MixerPanel 

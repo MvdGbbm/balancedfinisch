@@ -9,153 +9,66 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      music_items: {
-        Row: {
-          artist: string
-          audio_url: string
-          category: string | null
-          cover_image_url: string | null
-          created_at: string | null
-          description: string | null
-          duration: number | null
-          id: string
-          tags: string[] | null
-          title: string
-          updated_at: string | null
-          waveform_data: Json | null
-        }
-        Insert: {
-          artist: string
-          audio_url: string
-          category?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          duration?: number | null
-          id?: string
-          tags?: string[] | null
-          title: string
-          updated_at?: string | null
-          waveform_data?: Json | null
-        }
-        Update: {
-          artist?: string
-          audio_url?: string
-          category?: string | null
-          cover_image_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          duration?: number | null
-          id?: string
-          tags?: string[] | null
-          title?: string
-          updated_at?: string | null
-          waveform_data?: Json | null
-        }
-        Relationships: []
-      }
-      playlist_items: {
-        Row: {
-          created_at: string | null
-          id: string
-          music_item_id: string
-          playlist_id: string
-          position: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          music_item_id: string
-          playlist_id: string
-          position: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          music_item_id?: string
-          playlist_id?: string
-          position?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "playlist_items_music_item_id_fkey"
-            columns: ["music_item_id"]
-            isOneToOne: false
-            referencedRelation: "music_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "playlist_items_playlist_id_fkey"
-            columns: ["playlist_id"]
-            isOneToOne: false
-            referencedRelation: "playlists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      playlists: {
-        Row: {
-          cover_image_url: string | null
-          created_at: string | null
-          description: string | null
-          id: string
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          cover_image_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          cover_image_url?: string | null
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       radio_streams: {
         Row: {
-          cover_image_url: string | null
-          created_at: string
           description: string | null
           id: string
           is_active: boolean
           position: number | null
           title: string
-          updated_at: string
           url: string
         }
         Insert: {
-          cover_image_url?: string | null
-          created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
           position?: number | null
           title: string
-          updated_at?: string
           url: string
         }
         Update: {
-          cover_image_url?: string | null
-          created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
           position?: number | null
           title?: string
-          updated_at?: string
           url?: string
+        }
+        Relationships: []
+      }
+      soundscapes: {
+        Row: {
+          audio_url: string
+          category: string
+          cover_image_url: string
+          created_at: string
+          description: string | null
+          id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          category: string
+          cover_image_url: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          category?: string
+          cover_image_url?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }

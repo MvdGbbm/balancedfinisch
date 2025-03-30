@@ -1,156 +1,202 @@
 
-import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Play, Pause, Volume2, Volume1, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAudioPlayer } from "@/hooks/use-audio-player";
-import { ProgressBar } from "./audio-player/progress-bar";
-import { AudioControls } from "./audio-player/audio-controls";
-import { ErrorMessage } from "./audio-player/error-message";
-import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote } from "./audio-player/utils";
+import { AudioPreview } from "./audio-player/audio-preview";
+import { validateAudioUrl, preloadAudio } from "./audio-player/utils";
 
-interface AudioPlayerProps {
+export interface AudioPlayerProps extends React.HTMLAttributes<HTMLDivElement> {
   audioUrl: string;
   showControls?: boolean;
-  showTitle?: boolean;
-  title?: string;
-  className?: string;
-  onEnded?: () => void;
-  onError?: () => void;
-  customSoundscapeSelector?: React.ReactNode;
-  showQuote?: boolean;
   isPlayingExternal?: boolean;
   onPlayPauseChange?: (isPlaying: boolean) => void;
+  onError?: () => void;
+  volume?: number;
+  title?: string;
+  showTitle?: boolean;
+  showQuote?: boolean;
   nextAudioUrl?: string;
+  onEnded?: () => void;
   onCrossfadeStart?: () => void;
 }
 
-export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
-  audioUrl, 
-  showControls = true, 
-  showTitle = false,
-  title,
-  className, 
-  onEnded,
-  onError,
-  customSoundscapeSelector,
-  showQuote = false,
-  isPlayingExternal,
-  onPlayPauseChange,
-  nextAudioUrl,
-  onCrossfadeStart
-}, ref) => {
-  const [randomQuote] = useState(getRandomQuote);
-  const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
-  const [audioKey, setAudioKey] = useState(0); // Add a key to force remounting
-  
-  // Initialize all hooks unconditionally
-  const {
-    audioRef,
-    nextAudioRef,
-    isPlaying,
-    duration,
-    currentTime,
-    volume,
-    isLooping,
-    isLoaded,
-    loadError,
-    isRetrying,
-    isCrossfading,
-    isLiveStream,
-    togglePlay,
-    handleRetry,
-    toggleLoop,
-    handleProgressChange,
-    handleVolumeChange,
-    skipTime
-  } = useAudioPlayer({
-    audioUrl: audioUrl || "",
-    onEnded,
-    onError,
+export const AudioPlayer = forwardRef<HTMLAudioElement | null, AudioPlayerProps>(
+  ({ 
+    audioUrl, 
+    showControls = true, 
+    className, 
     isPlayingExternal,
     onPlayPauseChange,
+    onError,
+    volume: externalVolume,
+    title,
+    showTitle = false,
+    showQuote = true,
     nextAudioUrl,
-    onCrossfadeStart,
-    title
-  });
-  
-  // Log the audio URL for debugging
-  useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${audioUrl || "no URL provided"}`);
-    if (audioUrl?.includes('marco')) {
-      console.log('Marco audio detected:', audioUrl);
+    onEnded,
+    onCrossfadeStart
+  }, ref) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [validatedUrl, setValidatedUrl] = useState("");
+    
+    // Process and validate the URL
+    useEffect(() => {
+      const processUrl = async () => {
+        setIsLoading(true);
+        setError(false);
+        
+        if (!audioUrl) {
+          setIsLoading(false);
+          setError(true);
+          return;
+        }
+        
+        // Validate and normalize the URL
+        const processed = validateAudioUrl(audioUrl);
+        if (!processed) {
+          setIsLoading(false);
+          setError(true);
+          if (onError) onError();
+          return;
+        }
+        
+        setValidatedUrl(processed);
+        console.log("AudioPlayer attempting to load:", processed);
+        
+        // Preload to check if audio is valid
+        const canPlay = await preloadAudio(processed);
+        if (!canPlay) {
+          setIsLoading(false);
+          setError(true);
+          if (onError) onError();
+        } else {
+          setIsLoading(false);
+          setError(false);
+        }
+      };
+      
+      processUrl();
+    }, [audioUrl, onError]);
+    
+    const {
+      audioRef,
+      isPlaying,
+      duration,
+      currentTime,
+      volume,
+      togglePlay,
+      handleVolumeChange,
+      loadError,
+      handleRetry
+    } = useAudioPlayer({
+      audioUrl: validatedUrl,
+      isPlayingExternal,
+      onPlayPauseChange,
+      onError,
+      volume: externalVolume,
+      nextAudioUrl,
+      onEnded,
+      onCrossfadeStart,
+      title
+    });
+    
+    // Expose the audio element ref
+    useImperativeHandle(ref, () => audioRef.current);
+    
+    // If we've identified an error, show better error UI
+    const finalError = error || loadError;
+    
+    // Don't show anything if URL is empty
+    if (!audioUrl) {
+      return null;
     }
     
-    // Reset player when URL changes
-    setAudioKey(prev => prev + 1);
-  }, [audioUrl]);
-  
-  // Expose the audio element ref to parent components
-  useImperativeHandle(ref, () => audioRef.current!, []);
-  
-  // Connect the nextAudioRef to its element
-  useEffect(() => {
-    nextAudioRef.current = nextAudioElementRef.current;
-  }, [nextAudioRef]);
-  
-  // Early return with placeholder if no audioUrl
-  if (!audioUrl) {
+    // If not showing controls, just render the hidden audio element
+    if (!showControls) {
+      return (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={togglePlay} 
+          className={cn("h-8 w-8 p-0 rounded-full", className)}
+          disabled={finalError}
+        >
+          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          <audio ref={audioRef} style={{ display: 'none' }} />
+        </Button>
+      );
+    }
+    
     return (
-      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-        <div className="text-center py-3 text-muted-foreground">
-          <p>Geen audio URL opgegeven</p>
-        </div>
+      <div className={cn("space-y-2", className)}>
+        {showTitle && title && (
+          <div className="text-sm font-medium mb-1">{title}</div>
+        )}
+        
+        {finalError ? (
+          <AudioPreview 
+            url={audioUrl} 
+            onError={onError}
+            label={audioUrl.split('/').pop() || audioUrl}
+          />
+        ) : (
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={togglePlay}
+              disabled={isLoading}
+              className="h-8 w-8 p-0"
+            >
+              {isLoading ? (
+                <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              ) : isPlaying ? (
+                <Pause className="h-4 w-4" />
+              ) : (
+                <Play className="h-4 w-4" />
+              )}
+            </Button>
+            <Slider
+              value={[currentTime]}
+              max={duration || 100}
+              step={0.01}
+              className="flex-1"
+              disabled={duration === 0 || isLoading}
+            />
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleVolumeChange([volume > 0 ? 0 : 0.7])}
+                className="h-8 w-8 p-0"
+              >
+                {volume === 0 ? (
+                  <VolumeX className="h-4 w-4" />
+                ) : volume < 0.5 ? (
+                  <Volume1 className="h-4 w-4" />
+                ) : (
+                  <Volume2 className="h-4 w-4" />
+                )}
+              </Button>
+              <div className="w-16 hidden sm:block">
+                <Slider
+                  value={[volume]}
+                  max={1}
+                  step={0.01}
+                  onValueChange={handleVolumeChange}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        <audio ref={audioRef} style={{ display: 'none' }} />
       </div>
     );
   }
-  
-  return (
-    <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous" />
-      {nextAudioUrl && <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous" />}
-      
-      {showTitle && title && (
-        <h3 className="text-lg font-medium">{title}</h3>
-      )}
-      
-      {loadError && (
-        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
-      )}
-      
-      {showQuote && (
-        <QuoteDisplay quote={randomQuote} />
-      )}
-      
-      {customSoundscapeSelector && !showQuote && (
-        <div className="mb-2">{customSoundscapeSelector}</div>
-      )}
-      
-      <ProgressBar
-        currentTime={currentTime}
-        duration={duration}
-        isLoaded={isLoaded}
-        isCrossfading={isCrossfading}
-        isLiveStream={isLiveStream}
-        handleProgressChange={handleProgressChange}
-      />
-      
-      {showControls && (
-        <AudioControls
-          isPlaying={isPlaying}
-          togglePlay={togglePlay}
-          skipTime={skipTime}
-          isLoaded={isLoaded}
-          isLooping={isLooping}
-          toggleLoop={toggleLoop}
-          isCrossfading={isCrossfading}
-          isLiveStream={isLiveStream}
-          volume={volume}
-          handleVolumeChange={handleVolumeChange}
-          loadError={loadError}
-        />
-      )}
-    </div>
-  );
-});
+);
 
 AudioPlayer.displayName = "AudioPlayer";
