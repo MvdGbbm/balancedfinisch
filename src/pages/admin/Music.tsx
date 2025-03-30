@@ -157,23 +157,33 @@ const AdminMusic = () => {
     },
   });
 
-  // Mutation to delete a music track
+  // Mutation to delete a music track - Updated to handle both UUID and string IDs
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("soundscapes")
-        .delete()
-        .eq("id", id);
-      
-      if (error) throw error;
-      return id;
+      // Check if the ID is a UUID format or a string format like "sound-7"
+      if (id.startsWith('sound-')) {
+        // If it's a sample ID (not from database), just delete from local state
+        return id;
+      } else {
+        // If it's a UUID, attempt to delete from database
+        const { error } = await supabase
+          .from("soundscapes")
+          .delete()
+          .eq("id", id);
+        
+        if (error) throw error;
+        return id;
+      }
     },
     onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: ["music"] });
-      
-      // Update local state
+      // Update local state regardless of ID type
       const updatedSoundscapes = soundscapes.filter(s => s.id !== id);
       setSoundscapes(updatedSoundscapes);
+      
+      // Only invalidate query for actual database records
+      if (!id.startsWith('sound-')) {
+        queryClient.invalidateQueries({ queryKey: ["music"] });
+      }
       
       toast.success("Muziek verwijderd");
       
