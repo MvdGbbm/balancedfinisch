@@ -1,4 +1,5 @@
-import { Meditation, Soundscape } from "@/lib/types";
+
+import { Meditation } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
@@ -124,60 +125,6 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
     console.error("Fout in processMeditationUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van meditaties");
     return meditations; // Retourneer originele meditaties in geval van fout
-  }
-};
-
-/**
- * Verwerkt soundscape URL's voor audio en afbeeldingen
- */
-export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<Soundscape[]> => {
-  try {
-    console.log("Soundscape URLs verwerken...");
-    
-    const processed = await Promise.all(
-      soundscapes.map(async (soundscape) => {
-        try {
-          let audioUrl = soundscape.audioUrl || '';
-          let coverImageUrl = soundscape.coverImageUrl || '';
-          
-          // Sla placeholder URLs over
-          if (audioUrl.includes('example.com')) {
-            console.warn("Placeholder audio URL overgeslagen voor soundscape:", soundscape.title);
-            audioUrl = '';
-          }
-          
-          // Verwerk audio URL
-          if (audioUrl && !audioUrl.startsWith('http')) {
-            audioUrl = await getPublicUrl(audioUrl, 'soundscapes');
-            // Valideer de audio URL
-            if (audioUrl) {
-              audioUrl = validateAudioUrl(audioUrl);
-            }
-          }
-          
-          // Verwerk afbeelding URL
-          if (coverImageUrl && !coverImageUrl.startsWith('http')) {
-            coverImageUrl = await getPublicUrl(coverImageUrl, 'soundscapes');
-          }
-          
-          return {
-            ...soundscape,
-            audioUrl,
-            coverImageUrl
-          };
-        } catch (err) {
-          console.error(`Fout bij het verwerken van soundscape ${soundscape.id}:`, err);
-          return soundscape;
-        }
-      })
-    );
-    
-    console.log("Verwerkte soundscapes:", processed);
-    return processed;
-  } catch (error) {
-    console.error("Fout in processSoundscapeUrls:", error);
-    toast.error("Er is een fout opgetreden bij het laden van soundscapes");
-    return soundscapes; // Retourneer originele soundscapes in geval van fout
   }
 };
 

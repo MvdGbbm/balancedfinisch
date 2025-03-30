@@ -14,7 +14,6 @@ const Meditations = () => {
   const [selectedCategory, setSelectedCategory] = useState("Alle");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
-  const [currentSoundscapeId, setCurrentSoundscapeId] = useState<string | null>(null);
   
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
@@ -110,10 +109,7 @@ const Meditations = () => {
             }
           }}
           meditation={selectedMeditation}
-          soundscapes={[]} 
           guidedMeditations={[]}
-          currentSoundscapeId={currentSoundscapeId}
-          onSoundscapeChange={setCurrentSoundscapeId}
           onGuidedMeditationSelect={handleMeditationClick}
         />
       )}

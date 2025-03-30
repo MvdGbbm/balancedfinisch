@@ -2,7 +2,6 @@
 import React, { createContext, useContext } from "react";
 import { AppContextType } from "./types";
 import { useMeditationState } from "./hooks/useMeditationState";
-import { useSoundscapeState } from "./hooks/useSoundscapeState";
 import { useQuoteState } from "./hooks/useQuoteState";
 import { useJournalState } from "./hooks/useJournalState";
 import { usePlannerState } from "./hooks/usePlannerState";
@@ -14,7 +13,6 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   // Use custom hooks for each domain
   const meditationState = useMeditationState();
-  const soundscapeState = useSoundscapeState();
   const quoteState = useQuoteState();
   const journalState = useJournalState();
   const plannerState = usePlannerState();
@@ -23,25 +21,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const value: AppContextType = {
     // Data
     meditations: meditationState.meditations,
-    soundscapes: soundscapeState.soundscapes,
     journalEntries: journalState.journalEntries,
     dailyQuotes: quoteState.dailyQuotes,
     plannerEvents: plannerState.plannerEvents,
     
     // Current states
     currentMeditation: meditationState.currentMeditation,
-    currentSoundscape: soundscapeState.currentSoundscape,
     currentQuote: quoteState.currentQuote,
     
     // Admin functions
     addMeditation: meditationState.addMeditation,
     updateMeditation: meditationState.updateMeditation,
     deleteMeditation: meditationState.deleteMeditation,
-    
-    addSoundscape: soundscapeState.addSoundscape,
-    updateSoundscape: soundscapeState.updateSoundscape,
-    deleteSoundscape: soundscapeState.deleteSoundscape,
-    setSoundscapes: soundscapeState.setSoundscapes,
     
     addQuote: quoteState.addQuote,
     updateQuote: quoteState.updateQuote,
@@ -60,7 +51,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     // App functions
     setCurrentMeditation: meditationState.setCurrentMeditation,
-    setCurrentSoundscape: soundscapeState.setCurrentSoundscape,
     getRandomQuote: quoteState.getRandomQuote,
     saveDailyQuoteToCalendar: journalState.saveDailyQuoteToCalendar,
   };
