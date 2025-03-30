@@ -1,21 +1,6 @@
 
 import { useEffect } from "react";
-import { RefObject, MutableRefObject } from "react";
-import { AudioPlayerState, CROSSFADE_DURATION } from "./types";
-
-interface UseAudioEffectsProps {
-  state: AudioPlayerState;
-  audioRef: RefObject<HTMLAudioElement>;
-  nextAudioRef: RefObject<HTMLAudioElement>;
-  audioUrl: string;
-  nextAudioUrl?: string;
-  crossfadeTimeoutRef: MutableRefObject<number | null>;
-  onCrossfadeStart?: () => void;
-  onEnded?: () => void;
-  setIsCrossfading: (value: boolean) => void;
-  setCurrentTime: (value: number) => void;
-  volume: number;
-}
+import { CROSSFADE_DURATION } from "./types";
 
 export const useAudioEffects = ({
   state,
@@ -29,110 +14,129 @@ export const useAudioEffects = ({
   setIsCrossfading,
   setCurrentTime,
   volume
-}: UseAudioEffectsProps) => {
-  const { isPlaying, currentTime, duration, isLoaded, isCrossfading, isLiveStream, isLooping } = state;
-
-  // Handle crossfading logic
+}) => {
+  // Effect: Initialize audio element
   useEffect(() => {
-    if (!nextAudioUrl || !isPlaying || isCrossfading || isLiveStream) return;
+    if (!audioRef.current) return;
     
+    // Set initial volume
+    audioRef.current.volume = volume;
+    
+    // Initialize next audio if available
+    if (nextAudioRef.current && nextAudioUrl) {
+      nextAudioRef.current.volume = 0;
+      nextAudioRef.current.loop = state.isLooping;
+    }
+  }, [audioRef, nextAudioRef, nextAudioUrl, state.isLooping, volume]);
+  
+  // Effect: Handle crossfade when current audio is about to end
+  useEffect(() => {
     const audio = audioRef.current;
-    const nextAudio = nextAudioRef.current;
+    if (!audio || !nextAudioUrl || !nextAudioRef.current) return;
     
-    if (!audio || !nextAudio || !isLoaded || duration === 0) return;
+    // Skip for live streams
+    if (state.isLiveStream) return;
     
-    if (duration - currentTime <= CROSSFADE_DURATION && duration > CROSSFADE_DURATION) {
-      if (crossfadeTimeoutRef.current) return;
+    // If audio is playing and has a duration 
+    if (state.isPlaying && state.duration > 0 && !state.isLooping) {
+      const timeRemaining = state.duration - state.currentTime;
       
-      setIsCrossfading(true);
-      console.info("Starting crossfade");
-      
-      nextAudio.volume = 0;
-      nextAudio.src = nextAudioUrl;
-      nextAudio.load();
-      
-      nextAudio.play()
-        .then(() => {
-          if (onCrossfadeStart) onCrossfadeStart();
+      // If we're close to the end and should start crossfade
+      if (timeRemaining <= CROSSFADE_DURATION && timeRemaining > 0) {
+        // Start crossfade
+        if (!state.isCrossfading) {
+          console.log("Starting crossfade to next audio");
+          setIsCrossfading(true);
           
-          const timeLeft = duration - currentTime;
+          if (onCrossfadeStart) {
+            onCrossfadeStart();
+          }
           
-          const fadeOutInterval = setInterval(() => {
-            if (!audio) {
-              clearInterval(fadeOutInterval);
-              return;
-            }
-            
-            const newVol = Math.max(0, audio.volume - (volume / (timeLeft * 10)));
-            audio.volume = newVol;
-            
-            if (newVol <= 0.05) {
-              clearInterval(fadeOutInterval);
-            }
-          }, 100);
+          // Start playing the next audio
+          const nextAudio = nextAudioRef.current;
+          nextAudio.src = nextAudioUrl;
+          nextAudio.volume = 0;
+          nextAudio.currentTime = 0;
+          nextAudio.loop = state.isLooping;
           
-          const fadeInInterval = setInterval(() => {
-            if (!nextAudio) {
-              clearInterval(fadeInInterval);
-              return;
-            }
-            
-            const newVol = Math.min(volume, nextAudio.volume + (volume / (timeLeft * 10)));
-            nextAudio.volume = newVol;
-            
-            if (newVol >= volume - 0.05) {
-              clearInterval(fadeInInterval);
-            }
-          }, 100);
-          
-          crossfadeTimeoutRef.current = window.setTimeout(() => {
-            if (onEnded) onEnded();
-            crossfadeTimeoutRef.current = null;
+          // Attempt to play the next audio
+          nextAudio.play().catch(error => {
+            console.error("Error playing next audio during crossfade:", error);
             setIsCrossfading(false);
-            setCurrentTime(0);
-          }, timeLeft * 1000);
-        })
-        .catch(error => {
-          console.error("Error starting crossfade:", error);
-          setIsCrossfading(false);
-        });
+          });
+          
+          // Gradually fade out current audio and fade in next audio
+          const startTime = performance.now();
+          const fadeDuration = timeRemaining * 1000;
+          
+          const fadeStep = () => {
+            const elapsed = performance.now() - startTime;
+            const progress = Math.min(elapsed / fadeDuration, 1);
+            
+            if (audio && !audio.paused) {
+              audio.volume = volume * (1 - progress);
+            }
+            
+            if (nextAudio && !nextAudio.paused) {
+              nextAudio.volume = volume * progress;
+            }
+            
+            if (progress < 1) {
+              // Continue fading
+              crossfadeTimeoutRef.current = window.setTimeout(fadeStep, 50);
+            } else {
+              // Fade complete
+              if (audio) {
+                audio.pause();
+                setCurrentTime(0);
+              }
+              
+              // Swap audio elements
+              if (nextAudio) {
+                nextAudio.volume = volume;
+              }
+              
+              setIsCrossfading(false);
+              
+              // Call onEnded handler if provided
+              if (onEnded) {
+                onEnded();
+              }
+            }
+          };
+          
+          // Start fadeStep
+          fadeStep();
+        }
+      }
     }
-  }, [currentTime, duration, isLoaded, isPlaying, nextAudioUrl, onCrossfadeStart, onEnded, volume, isCrossfading, isLiveStream, setIsCrossfading, setCurrentTime]);
-
-  // Handle looping logic
+  }, [
+    audioRef,
+    nextAudioRef,
+    state.isPlaying,
+    state.duration,
+    state.currentTime,
+    state.isLooping,
+    state.isCrossfading,
+    state.isLiveStream,
+    nextAudioUrl,
+    volume,
+    crossfadeTimeoutRef,
+    onCrossfadeStart,
+    onEnded,
+    setIsCrossfading,
+    setCurrentTime
+  ]);
+  
+  // Effect: Update audio src when URL changes
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || isLiveStream) return;
+    if (!audio) return;
     
-    audio.loop = isLooping;
-    
-    if (isLooping) {
-      const handleSeamlessLoop = () => {
-        if (audio.duration > 0 && audio.currentTime >= audio.duration - 0.2) {
-          const currentVolume = audio.volume;
-          const currentPlaybackRate = audio.playbackRate;
-          
-          audio.currentTime = 0;
-          audio.playbackRate = currentPlaybackRate;
-          audio.volume = currentVolume;
-        }
-      };
-      
-      const intervalId = setInterval(handleSeamlessLoop, 10);
-      
-      return () => {
-        clearInterval(intervalId);
-      };
+    if (audioUrl && audio.src !== audioUrl) {
+      console.log("Audio URL changed, updating src:", audioUrl);
+      audio.src = audioUrl;
+      audio.load();
     }
-  }, [isLooping, isLiveStream]);
-
-  // Cleanup crossfade on unmount
-  useEffect(() => {
-    return () => {
-      if (crossfadeTimeoutRef.current) {
-        clearTimeout(crossfadeTimeoutRef.current);
-        crossfadeTimeoutRef.current = null;
-      }
-    };
-  }, []);
+  }, [audioRef, audioUrl]);
 };

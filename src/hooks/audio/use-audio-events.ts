@@ -1,30 +1,7 @@
 
 import { useEffect } from "react";
-import { RefObject, MutableRefObject } from "react";
-import { Toast } from "@/hooks/use-toast";
-import { AudioPlayerState, MAX_RETRY_COUNT } from "./types";
-import { validateAudioUrl, checkIfLiveStream, playDirectly } from "./utils";
-
-interface UseAudioEventsProps {
-  state: AudioPlayerState;
-  audioRef: RefObject<HTMLAudioElement>;
-  setDuration: (value: number) => void;
-  setCurrentTime: (value: number) => void;
-  setIsLoaded: (value: boolean) => void;
-  setLoadError: (value: boolean) => void;
-  setIsPlaying: (value: boolean) => void;
-  setIsLiveStream: (value: boolean) => void;
-  retryCountRef: MutableRefObject<number>;
-  setIsRetrying: (value: boolean) => void;
-  toast: Toast;
-  onEnded?: () => void;
-  onError?: () => void;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
-  audioUrl: string;
-  isPlayingExternal?: boolean;
-  crossfadeTimeoutRef: MutableRefObject<number | null>;
-  isCrossfading: boolean;
-}
+import { toast } from "sonner";
+import { checkIfLiveStream } from "./utils";
 
 export const useAudioEvents = ({
   state,
@@ -37,7 +14,6 @@ export const useAudioEvents = ({
   setIsLiveStream,
   retryCountRef,
   setIsRetrying,
-  toast,
   onEnded,
   onError,
   onPlayPauseChange,
@@ -45,144 +21,164 @@ export const useAudioEvents = ({
   isPlayingExternal,
   crossfadeTimeoutRef,
   isCrossfading
-}: UseAudioEventsProps) => {
-  const { isLooping } = state;
-
-  // Set up audio event listeners
+}) => {
+  // Handle duration and current time updates
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
     
-    console.log("Setting up audio element for:", audioUrl);
-    
-    const setAudioData = () => {
-      console.log("Audio data loaded for:", audioUrl, "Duration:", audio.duration);
-      
-      if (audio.duration !== Infinity && !isNaN(audio.duration)) {
-        setDuration(audio.duration);
-        setIsLiveStream(false);
+    const handleDurationChange = () => {
+      // Handle both normal duration and infinite duration (live streams)
+      const newDuration = audio.duration;
+      if (isFinite(newDuration) && !isNaN(newDuration)) {
+        setDuration(newDuration);
       } else {
-        setIsLiveStream(true);
+        // Infinite duration usually indicates a live stream
         setDuration(0);
+        setIsLiveStream(true);
       }
-      
-      setIsLoaded(true);
-      setLoadError(false);
-      
-      if (isPlayingExternal) {
-        console.log("Auto-playing after load:", audioUrl);
-        audio.play()
-          .then(() => {
-            setIsPlaying(true);
-            if (onPlayPauseChange) onPlayPauseChange(true);
-            retryCountRef.current = 0;
-          })
-          .catch(error => {
-            console.error("Error auto-playing audio:", error);
-          });
-      }
-      
-      toast({
-        title: "Audio geladen",
-        description: "De audio is klaar om af te spelen."
-      });
     };
     
-    const setAudioTime = () => {
+    const handleTimeUpdate = () => {
       setCurrentTime(audio.currentTime);
     };
     
-    const handleEnded = () => {
-      console.log("Audio ended:", audioUrl);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    
+    return () => {
+      audio.removeEventListener('durationchange', handleDurationChange);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+    };
+  }, [audioRef, setDuration, setCurrentTime, setIsLiveStream]);
+  
+  // Handle load and error events
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    const handleLoadedData = () => {
+      console.log("Audio loaded:", audioUrl);
+      setIsLoaded(true);
+      setLoadError(false);
       
+      // Check if this is a live stream using both duration and URL pattern
+      const isInfiniteDuration = !isFinite(audio.duration) || isNaN(audio.duration);
+      const isLiveUrl = checkIfLiveStream(audioUrl);
+      
+      if (isInfiniteDuration || isLiveUrl) {
+        console.log("Detected live stream:", audioUrl);
+        setIsLiveStream(true);
+        
+        toast.info("Live stream gedetecteerd", {
+          description: "Deze audio is een live stream"
+        });
+      } else {
+        setIsLiveStream(false);
+      }
+    };
+    
+    const handleLoadError = (e: Event) => {
+      console.error("Audio load error:", e);
+      
+      // Only set error state if we're not crossfading (which can cause temporary errors)
       if (!isCrossfading) {
-        if (!isLooping) {
-          setIsPlaying(false);
-          if (onPlayPauseChange) onPlayPauseChange(false);
-          if (onEnded) onEnded();
+        setLoadError(true);
+        setIsPlaying(false);
+        
+        // Call error callback if provided
+        if (onError) onError();
+        
+        // Don't auto-retry if max retries reached
+        if (retryCountRef.current < 3) {
+          console.log(`Auto-retrying (${retryCountRef.current + 1}/3)...`);
+          retryCountRef.current++;
+          setIsRetrying(true);
+          
+          // Clean up and retry
+          setTimeout(() => {
+            if (audio) {
+              audio.load();
+              setIsRetrying(false);
+            }
+          }, 1500);
         } else {
-          audio.currentTime = 0;
-          audio.play().catch(error => {
-            console.error("Error restarting audio:", error);
-          });
+          console.log("Max retries reached, giving up");
+          toast.error("Kon audio niet laden na meerdere pogingen");
         }
       }
     };
-
-    const handleError = (e: Event) => {
-      console.error("Error loading audio:", e, "URL:", audioUrl);
-      setLoadError(true);
-      setIsLoaded(false);
-      
-      if (retryCountRef.current < MAX_RETRY_COUNT) {
-        retryCountRef.current++;
-        setIsRetrying(true);
-        
-        console.log(`Retrying (${retryCountRef.current}/${MAX_RETRY_COUNT})...`);
-        
-        setTimeout(() => {
-          try {
-            const adjustedUrl = validateAudioUrl(audioUrl);
-            console.log("Retrying with adjusted URL:", adjustedUrl);
-            
-            if (adjustedUrl) {
-              playDirectly(adjustedUrl, audio, retryCountRef, setLoadError, onError, setIsPlaying, onPlayPauseChange);
-            } else {
-              throw new Error("Invalid URL after adjustment");
-            }
-            setIsRetrying(false);
-          } catch (error) {
-            console.error("Error retrying direct playback:", error);
-            setIsRetrying(false);
-            
-            toast({
-              variant: "destructive",
-              title: "Fout bij laden",
-              description: "Kon de audio niet laden. Controleer of de URL correct is."
-            });
-            if (onError) onError();
-          }
-        }, 1000);
-      } else {
-        console.error("Maximum retry count reached");
-        setIsRetrying(false);
-        
-        toast({
-          variant: "destructive",
-          title: "Fout bij laden",
-          description: "Kon de audio niet laden na meerdere pogingen. Controleer of het bestand bestaat."
-        });
-        if (onError) onError();
+    
+    const handlePlayEvent = () => {
+      console.log("Audio play event triggered");
+      setIsPlaying(true);
+      if (onPlayPauseChange) onPlayPauseChange(true);
+    };
+    
+    const handlePauseEvent = () => {
+      console.log("Audio pause event triggered");
+      // Only update state if we're not in the middle of crossfading
+      if (!isCrossfading) {
+        setIsPlaying(false);
+        if (onPlayPauseChange) onPlayPauseChange(false);
       }
     };
     
-    audio.addEventListener("loadeddata", setAudioData);
-    audio.addEventListener("loadedmetadata", setAudioData);
-    audio.addEventListener("timeupdate", setAudioTime);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
-    
-    audio.volume = audio.volume; // Initialize with current volume
-    audio.loop = isLooping;
-    
-    audio.addEventListener("progress", () => {
-      if (audio.duration === Infinity || isNaN(audio.duration)) {
-        setIsLiveStream(true);
+    const handleEndedEvent = () => {
+      console.log("Audio ended");
+      
+      // If audio is not looping and we're not crossfading
+      if (!audio.loop && !isCrossfading) {
+        setIsPlaying(false);
+        if (onPlayPauseChange) onPlayPauseChange(false);
+        
+        // Call onEnded callback if provided
+        if (onEnded) {
+          onEnded();
+        }
       }
-    });
+      
+      // If audio is looping, it will automatically restart
+      if (audio.loop) {
+        console.log("Audio looping");
+      }
+    };
+    
+    audio.addEventListener('loadeddata', handleLoadedData);
+    audio.addEventListener('error', handleLoadError);
+    audio.addEventListener('play', handlePlayEvent);
+    audio.addEventListener('pause', handlePauseEvent);
+    audio.addEventListener('ended', handleEndedEvent);
     
     return () => {
-      audio.removeEventListener("loadeddata", setAudioData);
-      audio.removeEventListener("loadedmetadata", setAudioData);
-      audio.removeEventListener("timeupdate", setAudioTime);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-      audio.removeEventListener("progress", () => {});
-      
+      audio.removeEventListener('loadeddata', handleLoadedData);
+      audio.removeEventListener('error', handleLoadError);
+      audio.removeEventListener('play', handlePlayEvent);
+      audio.removeEventListener('pause', handlePauseEvent);
+      audio.removeEventListener('ended', handleEndedEvent);
+    };
+  }, [
+    audioRef, 
+    audioUrl, 
+    setIsLoaded, 
+    setLoadError, 
+    setIsPlaying, 
+    setIsLiveStream, 
+    isCrossfading,
+    onEnded, 
+    onError, 
+    onPlayPauseChange, 
+    retryCountRef,
+    setIsRetrying
+  ]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts
       if (crossfadeTimeoutRef.current) {
         clearTimeout(crossfadeTimeoutRef.current);
-        crossfadeTimeoutRef.current = null;
       }
     };
-  }, [audioUrl, isLooping, isPlayingExternal, onEnded, onError, onPlayPauseChange, isCrossfading, setCurrentTime, setDuration, setIsLoaded, setIsLiveStream, setIsPlaying, setLoadError, toast, retryCountRef, setIsRetrying]);
+  }, [crossfadeTimeoutRef]);
 };

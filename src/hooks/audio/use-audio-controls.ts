@@ -1,32 +1,12 @@
 
-import { RefObject, MutableRefObject } from "react";
-import { Toast } from "@/hooks/use-toast";
-import { AudioPlayerState, AudioPlayerControls, MAX_RETRY_COUNT } from "./types";
+import { toast } from "sonner";
 import { playDirectly } from "./utils";
-
-interface UseAudioControlsProps {
-  state: AudioPlayerState;
-  audioRef: RefObject<HTMLAudioElement>;
-  nextAudioRef: RefObject<HTMLAudioElement>;
-  audioUrl: string;
-  toast: Toast;
-  setIsPlaying: (value: boolean) => void;
-  setVolume: (value: number) => void;
-  setIsLooping: (value: boolean) => void;
-  setLoadError: (value: boolean) => void;
-  setIsRetrying: (value: boolean) => void;
-  retryCountRef: MutableRefObject<number>;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
-  title?: string;
-  isCrossfading: boolean;
-}
 
 export const useAudioControls = ({
   state,
   audioRef,
   nextAudioRef,
   audioUrl,
-  toast,
   setIsPlaying,
   setVolume,
   setIsLooping,
@@ -36,124 +16,131 @@ export const useAudioControls = ({
   onPlayPauseChange,
   title,
   isCrossfading
-}: UseAudioControlsProps): AudioPlayerControls => {
-  const { isPlaying, volume, isLoaded, isLiveStream, duration } = state;
-
+}) => {
   const togglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!audioRef.current) return;
     
-    console.log("Toggle play, current state:", isPlaying);
-    
-    if (isPlaying) {
-      audio.pause();
+    if (state.isPlaying) {
+      audioRef.current.pause();
       setIsPlaying(false);
       if (onPlayPauseChange) onPlayPauseChange(false);
-      
-      if (isCrossfading && nextAudioRef.current) {
-        nextAudioRef.current.pause();
-      }
-      
-      toast({
-        title: "Gepauzeerd",
-        description: "De audio is gepauzeerd."
-      });
     } else {
-      if (!isLoaded) {
-        console.log("Not loaded yet, using direct play");
-        playDirectly(audioUrl, audio, retryCountRef, setLoadError, undefined, setIsPlaying, onPlayPauseChange);
-      } else {
-        console.log("Already loaded, using regular play");
-        audio.play()
-          .then(() => {
-            setIsPlaying(true);
-            if (onPlayPauseChange) onPlayPauseChange(true);
-            
-            if (isCrossfading && nextAudioRef.current) {
-              nextAudioRef.current.play().catch(error => {
-                console.error("Error resuming next audio:", error);
-              });
-            }
-            
-            toast({
-              title: "Speelt nu",
-              description: title ? `"${title}" speelt nu` : "De audio speelt nu"
-            });
-          })
-          .catch(error => {
-            console.error("Error playing audio:", error);
-            toast({
-              variant: "destructive",
-              title: "Fout bij afspelen",
-              description: "Kon de audio niet afspelen. Probeer het later opnieuw."
-            });
-          });
+      if (state.loadError) {
+        handleRetry();
+        return;
       }
+      
+      if (isCrossfading) {
+        console.log("Cannot toggle play during crossfade");
+        return;
+      }
+      
+      audioRef.current.play()
+        .then(() => {
+          setIsPlaying(true);
+          if (onPlayPauseChange) onPlayPauseChange(true);
+        })
+        .catch(error => {
+          console.error("Error playing audio:", error);
+          setLoadError(true);
+          
+          // Show toast for playback errors
+          if (error.name === 'NotAllowedError') {
+            toast("Audio playback requires user interaction");
+          } else {
+            toast.error("Kon de audio niet afspelen. Probeer later opnieuw.");
+          }
+        });
     }
   };
-
+  
   const handleRetry = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!audioRef.current) return;
     
-    console.log("Manual retry requested for:", audioUrl);
+    // Don't retry if we're already retrying
+    if (state.isRetrying) return;
     
-    setLoadError(false);
     setIsRetrying(true);
-    retryCountRef.current = 0;
     
+    console.log("Retrying playback with URL:", audioUrl);
+    
+    // Reset error state
+    setLoadError(false);
+    
+    // If we've already tried too many times, show an error
+    if (retryCountRef.current >= 3) {
+      console.error("Too many retry attempts:", retryCountRef.current);
+      setLoadError(true);
+      setIsRetrying(false);
+      toast.error("Kon de audio niet laden na meerdere pogingen");
+      return;
+    }
+    
+    retryCountRef.current += 1;
+    
+    playDirectly(
+      audioUrl,
+      audioRef.current,
+      retryCountRef,
+      setLoadError,
+      () => {
+        setIsRetrying(false);
+        toast.error("Fout bij afspelen");
+      },
+      setIsPlaying,
+      onPlayPauseChange
+    );
+    
+    // Reset retry status after 3 seconds
     setTimeout(() => {
-      playDirectly(audioUrl, audio, retryCountRef, setLoadError, undefined, setIsPlaying, onPlayPauseChange);
-      
-      toast({
-        title: "Opnieuw laden",
-        description: "Probeert audio opnieuw te laden."
-      });
-    }, 100);
+      setIsRetrying(false);
+    }, 3000);
   };
-
+  
   const toggleLoop = () => {
-    setIsLooping(!state.isLooping);
-    toast({
-      title: !state.isLooping ? "Herhalen aan" : "Herhalen uit",
-      description: !state.isLooping ? "De audio zal blijven herhalen" : "De audio zal stoppen na afloop"
-    });
+    if (!audioRef.current) return;
+    
+    const newLoopState = !state.isLooping;
+    audioRef.current.loop = newLoopState;
+    setIsLooping(newLoopState);
+    
+    if (nextAudioRef.current) {
+      nextAudioRef.current.loop = newLoopState;
+    }
+    
+    // Show user feedback
+    toast(
+      newLoopState ? "Herhalen ingeschakeld" : "Herhalen uitgeschakeld",
+      { description: title }
+    );
   };
-
+  
   const handleProgressChange = (newValue: number[]) => {
-    const audio = audioRef.current;
-    if (!audio || isLiveStream) return;
+    if (!audioRef.current || !state.duration) return;
     
     const newTime = newValue[0];
-    audio.currentTime = newTime;
+    audioRef.current.currentTime = newTime;
   };
-
+  
   const handleVolumeChange = (newValue: number[]) => {
-    const audio = audioRef.current;
-    if (!audio) return;
+    if (!audioRef.current) return;
     
     const newVolume = newValue[0];
-    
-    if (isCrossfading && nextAudioRef.current) {
-      const currentRatio = audio.volume / volume;
-      const nextRatio = nextAudioRef.current.volume / volume;
-      
-      audio.volume = newVolume * currentRatio;
-      nextAudioRef.current.volume = newVolume * nextRatio;
-    } else {
-      audio.volume = newVolume;
-    }
-    
+    audioRef.current.volume = newVolume;
     setVolume(newVolume);
-  };
-
-  const skipTime = (amount: number) => {
-    const audio = audioRef.current;
-    if (!audio || isLiveStream) return;
     
-    audio.currentTime = Math.min(Math.max(audio.currentTime + amount, 0), duration);
+    if (nextAudioRef.current) {
+      nextAudioRef.current.volume = newVolume;
+    }
   };
-
+  
+  const skipTime = (amount: number) => {
+    if (!audioRef.current) return;
+    
+    const newTime = Math.max(0, Math.min(audioRef.current.currentTime + amount, state.duration));
+    audioRef.current.currentTime = newTime;
+  };
+  
   return {
     togglePlay,
     handleRetry,
