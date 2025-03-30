@@ -119,31 +119,46 @@ const AdminMeditations = () => {
       return;
     }
     
+    const processUrl = (url: string): string => {
+      if (!url) return "";
+      
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return 'https://' + url.replace(/^\/\//, '');
+      }
+      
+      return url;
+    };
+    
+    const processedAudioUrl = processUrl(audioUrl);
+    const processedCoverImageUrl = processUrl(coverImageUrl);
+    const processedVeraLink = processUrl(veraLink);
+    const processedMarcoLink = processUrl(marcoLink);
+    
     const meditationTags = category === "Geleide Meditaties" ? [] : tags;
     
     if (currentMeditation) {
       updateMeditation(currentMeditation.id, {
         title,
         description,
-        audioUrl,
+        audioUrl: processedAudioUrl,
         duration,
         category,
-        coverImageUrl,
+        coverImageUrl: processedCoverImageUrl,
         tags: meditationTags,
-        veraLink,
-        marcoLink,
+        veraLink: processedVeraLink,
+        marcoLink: processedMarcoLink,
       });
     } else {
       addMeditation({
         title,
         description,
-        audioUrl,
+        audioUrl: processedAudioUrl,
         duration,
         category,
-        coverImageUrl,
+        coverImageUrl: processedCoverImageUrl,
         tags: meditationTags,
-        veraLink,
-        marcoLink,
+        veraLink: processedVeraLink,
+        marcoLink: processedMarcoLink,
       });
     }
     

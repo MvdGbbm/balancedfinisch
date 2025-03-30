@@ -1,115 +1,134 @@
+
 import { Meditation, Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateAudioUrl } from "@/components/audio-player/utils";
 
-// Cache to avoid redundant processing
+// Cache om redundante verwerking te voorkomen
 const urlCache = new Map<string, string>();
 
 /**
- * Gets a public URL for a file in Supabase storage or uses fallback
+ * Haalt een publieke URL op voor een bestand in Supabase storage of gebruikt fallback
  */
 export const getPublicUrl = async (path: string, bucket = 'meditations'): Promise<string> => {
   if (!path) {
-    console.error('Empty path provided to getPublicUrl');
-    return '/placeholder.svg'; // Fallback to placeholder
+    console.error('Leeg pad opgegeven aan getPublicUrl');
+    return '/placeholder.svg'; // Fallback naar placeholder
   }
   
-  // If already a full URL, return it directly
+  // Als het al een volledige URL is, geef deze direct terug
   if (path.startsWith('http')) {
     return path;
   }
   
-  // If it's a local path (starts with /), use it directly
+  // Als het een lokaal pad is (begint met /), gebruik het direct
   if (path.startsWith('/')) {
     return path;
   }
   
-  // Detect and ignore placeholder URLs
+  // Detecteer en negeer placeholder URLs
   if (path.includes('example.com')) {
-    console.warn("Placeholder URL detected:", path);
+    console.warn("Placeholder URL gedetecteerd:", path);
     return '';
   }
   
-  // Check cache first
+  // Controleer eerst de cache
   const cacheKey = `${bucket}:${path}`;
   if (urlCache.has(cacheKey)) {
     return urlCache.get(cacheKey) as string;
   }
   
   try {
-    const { data } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from(bucket)
       .getPublicUrl(path);
     
+    if (error) {
+      console.error(`Fout bij het ophalen van publieke URL voor ${path} van ${bucket}:`, error);
+      return '/placeholder.svg';
+    }
+    
     if (data?.publicUrl) {
-      // Cache URL for later use
+      // Cache URL voor later gebruik
       urlCache.set(cacheKey, data.publicUrl);
-      console.log(`Loaded URL from ${bucket} for path: ${path}`, data.publicUrl);
+      console.log(`URL geladen van ${bucket} voor pad: ${path}`, data.publicUrl);
       return data.publicUrl;
     }
     
-    console.error(`No public URL returned for path: ${path} from bucket: ${bucket}`);
-    return '/placeholder.svg'; // Fallback to placeholder
+    console.error(`Geen publieke URL teruggegeven voor pad: ${path} van bucket: ${bucket}`);
+    return '/placeholder.svg'; // Fallback naar placeholder
   } catch (error) {
-    console.error(`Error getting public URL for ${path} from ${bucket}:`, error);
-    return '/placeholder.svg'; // Fallback to placeholder
+    console.error(`Fout bij het ophalen van publieke URL voor ${path} van ${bucket}:`, error);
+    return '/placeholder.svg'; // Fallback naar placeholder
   }
 };
 
 /**
- * Processes meditation URLs for audio and images
+ * Verwerkt meditatie URLs voor audio en afbeeldingen
  */
 export const processMeditationUrls = async (meditations: Meditation[]): Promise<Meditation[]> => {
   try {
-    console.log("Processing meditation URLs for", meditations.length, "meditations");
+    console.log("Meditatie URLs verwerken voor", meditations.length, "meditaties");
     
     const processed = await Promise.all(
       meditations.map(async (meditation) => {
         try {
           let audioUrl = meditation.audioUrl || '';
           let coverImageUrl = meditation.coverImageUrl || '/placeholder.svg';
+          let veraLink = meditation.veraLink || '';
+          let marcoLink = meditation.marcoLink || '';
           
-          // Skip placeholder URLs
+          // Sla placeholder URLs over
           if (audioUrl.includes('example.com')) {
-            console.warn("Skipping placeholder audio URL for meditation:", meditation.title);
+            console.warn("Placeholder audio URL overgeslagen voor meditatie:", meditation.title);
             audioUrl = '';
           }
           
-          // Process audio URL if it exists and isn't already processed
+          // Verwerk audio URL als deze bestaat en nog niet verwerkt is
           if (audioUrl && !audioUrl.startsWith('http') && !audioUrl.startsWith('/')) {
-            audioUrl = await getPublicUrl(audioUrl);
+            audioUrl = await getPublicUrl(audioUrl, 'meditations');
           }
           
-          // Validate the audio URL
+          // Valideer de audio URL
           if (audioUrl) {
             audioUrl = validateAudioUrl(audioUrl);
           }
           
-          // Process image URL
+          // Verwerk afbeelding URL
           if (coverImageUrl && !coverImageUrl.startsWith('http') && !coverImageUrl.startsWith('/')) {
             coverImageUrl = await getPublicUrl(coverImageUrl, 'meditations');
+          }
+          
+          // Verwerk Vera en Marco links
+          if (veraLink && !veraLink.startsWith('http')) {
+            veraLink = `https://${veraLink.replace(/^\/\//, '')}`;
+          }
+          
+          if (marcoLink && !marcoLink.startsWith('http')) {
+            marcoLink = `https://${marcoLink.replace(/^\/\//, '')}`;
           }
           
           return {
             ...meditation,
             audioUrl,
-            coverImageUrl
+            coverImageUrl,
+            veraLink,
+            marcoLink
           };
         } catch (err) {
-          console.error(`Error processing meditation ${meditation.id}:`, err);
-          // Return the meditation with unprocessed URLs if there's an error
+          console.error(`Fout bij het verwerken van meditatie ${meditation.id}:`, err);
+          // Retourneer de meditatie met onverwerkte URLs bij een fout
           return meditation;
         }
       })
     );
     
-    console.log("Processed meditations:", processed);
+    console.log("Verwerkte meditaties:", processed);
     return processed;
   } catch (error) {
-    console.error("Error in processMeditationUrls:", error);
+    console.error("Fout in processMeditationUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van meditaties");
-    return meditations; // Return original meditations in case of error
+    return meditations; // Retourneer originele meditaties in geval van fout
   }
 };
 
@@ -118,35 +137,50 @@ export const processMeditationUrls = async (meditations: Meditation[]): Promise<
  */
 export const processSoundscapeUrls = async (soundscapes: Soundscape[]): Promise<Soundscape[]> => {
   try {
-    console.log("Processing soundscape URLs...");
+    console.log("Soundscape URLs verwerken...");
     
     const processed = await Promise.all(
       soundscapes.map(async (soundscape) => {
-        let audioUrl = soundscape.audioUrl;
-        let coverImageUrl = soundscape.coverImageUrl;
-        
-        // Verwerk audio URL
-        if (audioUrl && !audioUrl.startsWith('http')) {
-          audioUrl = await getPublicUrl(audioUrl);
+        try {
+          let audioUrl = soundscape.audioUrl || '';
+          let coverImageUrl = soundscape.coverImageUrl || '';
+          
+          // Sla placeholder URLs over
+          if (audioUrl.includes('example.com')) {
+            console.warn("Placeholder audio URL overgeslagen voor soundscape:", soundscape.title);
+            audioUrl = '';
+          }
+          
+          // Verwerk audio URL
+          if (audioUrl && !audioUrl.startsWith('http')) {
+            audioUrl = await getPublicUrl(audioUrl, 'soundscapes');
+            // Valideer de audio URL
+            if (audioUrl) {
+              audioUrl = validateAudioUrl(audioUrl);
+            }
+          }
+          
+          // Verwerk afbeelding URL
+          if (coverImageUrl && !coverImageUrl.startsWith('http')) {
+            coverImageUrl = await getPublicUrl(coverImageUrl, 'soundscapes');
+          }
+          
+          return {
+            ...soundscape,
+            audioUrl,
+            coverImageUrl
+          };
+        } catch (err) {
+          console.error(`Fout bij het verwerken van soundscape ${soundscape.id}:`, err);
+          return soundscape;
         }
-        
-        // Verwerk afbeelding URL
-        if (coverImageUrl && !coverImageUrl.startsWith('http')) {
-          coverImageUrl = await getPublicUrl(coverImageUrl);
-        }
-        
-        return {
-          ...soundscape,
-          audioUrl,
-          coverImageUrl
-        };
       })
     );
     
-    console.log("Processed soundscapes:", processed);
+    console.log("Verwerkte soundscapes:", processed);
     return processed;
   } catch (error) {
-    console.error("Error in processSoundscapeUrls:", error);
+    console.error("Fout in processSoundscapeUrls:", error);
     toast.error("Er is een fout opgetreden bij het laden van soundscapes");
     return soundscapes; // Retourneer originele soundscapes in geval van fout
   }
@@ -170,4 +204,31 @@ export const filterMeditations = (meditations: Meditation[], searchQuery: string
       
     return matchesSearch && matchesCategory;
   });
+};
+
+/**
+ * Bereidt een meditatie voor op het opslaan
+ */
+export const prepareMeditationForSave = (meditation: Omit<Meditation, "id">): Omit<Meditation, "id"> => {
+  // Zorg ervoor dat alle URL's correct zijn
+  let processedMeditation = { ...meditation };
+  
+  // Voeg http toe aan URLs die dat nog niet hebben
+  if (processedMeditation.audioUrl && !processedMeditation.audioUrl.startsWith('http')) {
+    processedMeditation.audioUrl = `https://${processedMeditation.audioUrl.replace(/^\/\//, '')}`;
+  }
+  
+  if (processedMeditation.coverImageUrl && !processedMeditation.coverImageUrl.startsWith('http')) {
+    processedMeditation.coverImageUrl = `https://${processedMeditation.coverImageUrl.replace(/^\/\//, '')}`;
+  }
+  
+  if (processedMeditation.veraLink && !processedMeditation.veraLink.startsWith('http')) {
+    processedMeditation.veraLink = `https://${processedMeditation.veraLink.replace(/^\/\//, '')}`;
+  }
+  
+  if (processedMeditation.marcoLink && !processedMeditation.marcoLink.startsWith('http')) {
+    processedMeditation.marcoLink = `https://${processedMeditation.marcoLink.replace(/^\/\//, '')}`;
+  }
+  
+  return processedMeditation;
 };

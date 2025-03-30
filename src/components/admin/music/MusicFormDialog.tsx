@@ -10,7 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl } from "@/components/audio-player/utils";
+import { 
+  validateAudioUrl, 
+  preloadAudio, 
+  fixSupabaseStorageUrl, 
+  completeUrlValidation 
+} from "@/components/audio-player/utils";
 import { FormFields } from "./form/FormFields";
 import { AudioPreview } from "./form/AudioPreview";
 import { ImagePreview } from "./form/ImagePreview";
@@ -41,6 +46,11 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
       setAudioUrl(currentMusic.audioUrl);
       setCoverImageUrl(currentMusic.coverImageUrl);
       setTags([...currentMusic.tags]);
+      
+      // Valideer de URL direct wanneer een bestaand item wordt geladen
+      if (currentMusic.audioUrl) {
+        validateAndSetAudioUrl(currentMusic.audioUrl);
+      }
     } else {
       resetForm();
     }
@@ -48,29 +58,57 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
   
   useEffect(() => {
     if (audioUrl) {
-      setIsValidatingUrl(true);
-      
-      const fixedUrl = validateAudioUrl(audioUrl);
-      const supabaseUrl = fixedUrl.includes('supabase.co') ? fixSupabaseStorageUrl(fixedUrl) : fixedUrl;
-      
-      setValidatedUrl(supabaseUrl);
-      
-      preloadAudio(supabaseUrl).then(success => {
-        setIsUrlValid(success);
-        setIsValidatingUrl(false);
-        
-        if (success) {
-          console.log("Audio URL validated successfully:", supabaseUrl);
-        } else {
-          console.warn("Audio URL validation failed:", supabaseUrl);
-        }
-      });
+      validateAndSetAudioUrl(audioUrl);
     } else {
       setValidatedUrl("");
       setIsUrlValid(true);
       setIsValidatingUrl(false);
     }
   }, [audioUrl]);
+  
+  const validateAndSetAudioUrl = async (url: string) => {
+    setIsValidatingUrl(true);
+    
+    try {
+      // Eerste validatie van basis-URL
+      const fixedUrl = validateAudioUrl(url);
+      
+      // Extra validatie voor Supabase URLs
+      let finalUrl = fixedUrl;
+      if (fixedUrl.includes('supabase.co')) {
+        finalUrl = fixSupabaseStorageUrl(fixedUrl);
+      }
+      
+      setValidatedUrl(finalUrl);
+      
+      // Controleer of de URL daadwerkelijk werkt
+      const success = await preloadAudio(finalUrl);
+      setIsUrlValid(success);
+      
+      if (success) {
+        console.log("Audio URL succesvol gevalideerd:", finalUrl);
+      } else {
+        console.warn("Audio URL validatie mislukt:", finalUrl);
+        
+        // Probeer extra correcties voor Supabase URLs
+        if (finalUrl.includes('supabase.co')) {
+          // Laatste poging met uitgebreide validatie
+          const correctedUrl = await completeUrlValidation(url, true, 'soundscapes');
+          if (correctedUrl) {
+            setValidatedUrl(correctedUrl);
+            const retrySuccess = await preloadAudio(correctedUrl);
+            setIsUrlValid(retrySuccess);
+            console.log("Hervalidatie resultaat:", retrySuccess ? "Succesvol" : "Mislukt", correctedUrl);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Fout bij valideren audio URL:", error);
+      setIsUrlValid(false);
+    } finally {
+      setIsValidatingUrl(false);
+    }
+  };
   
   const resetForm = () => {
     setTitle("");
@@ -84,42 +122,58 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
   };
   
   const handleAudioPreview = () => {
-    if (audioUrl) {
+    if (audioUrl && isUrlValid) {
       setIsPreviewPlaying(!isPreviewPlaying);
     } else {
-      toast.error("Voer eerst een audio URL in om voor te luisteren");
+      toast.error("Voer eerst een geldige audio URL in om voor te luisteren");
     }
   };
   
   const handleAudioError = () => {
     toast.error("Kon de audio niet laden. Controleer of de URL correct is.");
     setIsPreviewPlaying(false);
+    setIsUrlValid(false);
   };
   
-  const handleSave = () => {
+  const processUrl = (url: string): string => {
+    if (!url) return "";
+    
+    // Voeg http toe indien nodig
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'https://' + url.replace(/^\/\//, '');
+    }
+    
+    return url;
+  };
+  
+  const handleSave = async () => {
     if (!title || !description || !audioUrl || !coverImageUrl) {
       toast.error("Vul alle verplichte velden in");
       return;
     }
     
-    const processedAudioUrl = validateAudioUrl(audioUrl);
-    const finalAudioUrl = processedAudioUrl.includes('supabase.co') 
-      ? fixSupabaseStorageUrl(processedAudioUrl) 
-      : processedAudioUrl;
-      
-    let processedCoverImageUrl = coverImageUrl;
-    
-    if (!coverImageUrl.startsWith('http://') && !coverImageUrl.startsWith('https://')) {
-      processedCoverImageUrl = 'https://' + coverImageUrl.replace(/^\/\//, '');
+    if (!isUrlValid) {
+      toast.error("De audio URL is ongeldig. Controleer of de URL correct is.");
+      return;
     }
     
-    console.log("Saving music with audioUrl:", finalAudioUrl);
+    // Gebruik de gevalideerde URL indien beschikbaar, anders probeer de URL te corrigeren
+    const finalAudioUrl = validatedUrl || await completeUrlValidation(audioUrl, true, 'soundscapes');
+    
+    if (!finalAudioUrl) {
+      toast.error("Kon de audio URL niet valideren. Controleer of de URL correct is.");
+      return;
+    }
+      
+    const processedCoverImageUrl = processUrl(coverImageUrl);
+    
+    console.log("Soundscape opslaan met audioUrl:", finalAudioUrl);
     
     onSave({
       title,
       description,
       audioUrl: finalAudioUrl,
-      category: "Muziek", // Default category
+      category: "Muziek", // Standaard categorie
       coverImageUrl: processedCoverImageUrl,
       tags,
     });
@@ -183,7 +237,7 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
           <Button 
             size="sm"
             onClick={handleSave}
-            disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid}
+            disabled={!title || !description || !audioUrl || !coverImageUrl || !isUrlValid || isValidatingUrl}
           >
             Opslaan
           </Button>
