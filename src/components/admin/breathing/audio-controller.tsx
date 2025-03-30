@@ -3,13 +3,12 @@ import { useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 interface AudioControllerProps {
+  isActive: boolean;
   currentAudioUrl: string;
   audioRef: React.RefObject<HTMLAudioElement>;
-  endAudioRef?: React.RefObject<HTMLAudioElement>;
-  isActive?: boolean;
 }
 
-export function AudioController({ currentAudioUrl, audioRef, endAudioRef, isActive = true }: AudioControllerProps) {
+export function AudioController({ isActive, currentAudioUrl, audioRef }: AudioControllerProps) {
   // Handle audio playback
   useEffect(() => {
     if (!audioRef.current) return;

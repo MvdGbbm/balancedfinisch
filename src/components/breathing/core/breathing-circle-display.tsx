@@ -12,9 +12,6 @@ interface BreathingCircleDisplayProps {
   inhaleDuration: number;
   holdDuration: number;
   exhaleDuration: number;
-  animationEnabled?: boolean;
-  animationStyle?: "grow" | "glow" | "pulse" | "fade" | "none";
-  animationColor?: string;
 }
 
 export const BreathingCircleDisplay: React.FC<BreathingCircleDisplayProps> = ({
@@ -24,10 +21,7 @@ export const BreathingCircleDisplay: React.FC<BreathingCircleDisplayProps> = ({
   className,
   inhaleDuration,
   holdDuration,
-  exhaleDuration,
-  animationEnabled = true,
-  animationStyle = "grow",
-  animationColor = "#00b8d9"
+  exhaleDuration
 }) => {
   const transitionDuration = getTransitionDuration(
     activePhase,
@@ -36,74 +30,16 @@ export const BreathingCircleDisplay: React.FC<BreathingCircleDisplayProps> = ({
     exhaleDuration
   );
 
-  const getCircleStyles = () => {
-    // Default styles if animation is disabled
-    if (!animationEnabled || animationStyle === "none") {
-      return {
-        backgroundColor: animationColor,
-        transform: "scale(1)",
-        transition: "none"
-      };
-    }
-
-    // Animation enabled - apply styles based on selected animation type
-    const baseStyles = {
-      backgroundColor: animationColor,
-      transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1), 
-                  background ${transitionDuration}ms ease-in-out, 
-                  box-shadow ${transitionDuration}ms ease-in-out,
-                  opacity ${transitionDuration}ms ease-in-out`
-    };
-
-    if (animationStyle === "grow") {
-      return {
-        ...baseStyles,
-        transform: `scale(${circleScale})`
-      };
-    } else if (animationStyle === "glow") {
-      return {
-        ...baseStyles,
-        transform: `scale(${circleScale * 0.9 + 0.1})`,
-        boxShadow: `0 0 ${30 * circleScale}px ${animationColor}`
-      };
-    } else if (animationStyle === "pulse") {
-      return {
-        ...baseStyles,
-        transform: `scale(${circleScale * 0.85 + 0.15})`,
-        animation: activePhase !== "rest" ? `pulse ${transitionDuration / 1000}s infinite alternate` : "none"
-      };
-    } else if (animationStyle === "fade") {
-      return {
-        ...baseStyles,
-        transform: "scale(1)",
-        opacity: activePhase === "inhale" ? 1 : activePhase === "exhale" ? 0.5 : 0.75
-      };
-    }
-
-    // Fallback
-    return baseStyles;
-  };
-
-  const getGlowStyles = () => {
-    if (!animationEnabled || animationStyle !== "glow") {
-      return { opacity: 0 };
-    }
-    
-    return {
-      opacity: 0.3 * circleScale,
-      transform: `scale(${circleScale * 1.2})`,
-      background: animationColor,
-      transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${transitionDuration}ms ease-in-out`
-    };
-  };
-
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
-        {/* Glow layer */}
+        {/* Simplified breathing circle - single layer with glow */}
         <div 
-          className="absolute inset-0 rounded-full opacity-20 blur-xl"
-          style={getGlowStyles()}
+          className="absolute inset-0 rounded-full bg-cyan-400 opacity-20 blur-xl"
+          style={{
+            transform: `scale(${circleScale * 1.2})`,
+            transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          }}
         />
         
         <div 
@@ -111,10 +47,17 @@ export const BreathingCircleDisplay: React.FC<BreathingCircleDisplayProps> = ({
             "absolute inset-0 flex items-center justify-center rounded-full", 
             className
           )}
+          style={{
+            transform: `scale(${circleScale})`,
+            transition: `transform ${transitionDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          }}
         >
           <div 
-            className="h-full w-full rounded-full flex items-center justify-center"
-            style={getCircleStyles()}
+            className="h-full w-full rounded-full flex items-center justify-center bg-cyan-400"
+            style={{
+              transition: `background ${transitionDuration}ms ease-in-out, 
+                          box-shadow ${transitionDuration}ms ease-in-out`
+            }}
           >
             <div className="text-center text-white">
               {activePhase === "rest" ? (

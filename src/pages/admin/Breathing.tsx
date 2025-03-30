@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import { PatternForm } from "@/components/admin/breathing/pattern-form";
 import { VoiceUrlForm } from "@/components/admin/breathing/voice-url-form";
 import { useBreathingPatterns } from "@/components/admin/breathing/use-breathing-patterns";
 import { useVoiceUrls } from "@/components/admin/breathing/use-voice-urls";
-import { BreathingPattern } from "@/components/admin/breathing/types";
 
 const AdminBreathing = () => {
   const [activeTab, setActiveTab] = useState<"patterns" | "voices">("patterns");

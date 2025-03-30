@@ -11,9 +11,6 @@ interface BreathingCircleContainerProps {
     inhale: number;
     hold1: number;
     exhale: number;
-    animationEnabled?: boolean;
-    animationStyle?: "grow" | "glow" | "pulse" | "fade" | "none";
-    animationColor?: string;
   };
   currentCycle: number;
   totalCycles: number;
@@ -47,9 +44,6 @@ export function BreathingCircleContainer({
         inhaleDuration={selectedPattern.inhale * 1000}
         holdDuration={selectedPattern.hold1 * 1000}
         exhaleDuration={selectedPattern.exhale * 1000}
-        animationEnabled={selectedPattern.animationEnabled}
-        animationStyle={selectedPattern.animationStyle}
-        animationColor={selectedPattern.animationColor}
       />
       
       <div className="text-center space-y-1 text-white mt-4">

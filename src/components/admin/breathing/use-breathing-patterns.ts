@@ -14,10 +14,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 0,
     cycles: 5,
     startUrl: "",
-    endUrl: "",
-    animationEnabled: true,
-    animationStyle: "grow",
-    animationColor: "#00b8d9"
+    endUrl: ""
   }, 
   {
     id: "2",
@@ -29,10 +26,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 4,
     cycles: 4,
     startUrl: "",
-    endUrl: "",
-    animationEnabled: true,
-    animationStyle: "glow",
-    animationColor: "#0ea5e9"
+    endUrl: ""
   }, 
   {
     id: "3",
@@ -44,10 +38,7 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold2: 0,
     cycles: 6,
     startUrl: "",
-    endUrl: "",
-    animationEnabled: true,
-    animationStyle: "pulse",
-    animationColor: "#10b981"
+    endUrl: ""
   }
 ];
 
@@ -81,7 +72,7 @@ export function useBreathingPatterns() {
 
   const createNewPattern = () => {
     const newId = `temp_${Date.now()}`;
-    const newPattern: BreathingPattern = {
+    const newPattern = {
       id: newId,
       name: "Nieuwe Techniek",
       description: "Beschrijving van de techniek",
@@ -91,10 +82,7 @@ export function useBreathingPatterns() {
       hold2: 0,
       cycles: 4,
       startUrl: "",
-      endUrl: "",
-      animationEnabled: true,
-      animationStyle: "grow", // Using a specific valid value from the union type
-      animationColor: "#00b8d9"
+      endUrl: ""
     };
     setSelectedPattern(newPattern);
     return newPattern;
