@@ -30,9 +30,7 @@ const AdminMeditations = () => {
   };
   
   const handleDelete = (id: string) => {
-    if (window.confirm("Weet je zeker dat je deze meditatie wilt verwijderen?")) {
-      deleteMeditation(id);
-    }
+    deleteMeditation(id);
   };
   
   const handleSaveMeditation = (meditationData: Partial<Meditation>) => {
@@ -176,6 +174,7 @@ const AdminMeditations = () => {
                   setIsCategoryDialogOpen(true);
                 }}
                 onDeleteCategory={handleDeleteCategory}
+                onDeleteMeditation={handleDelete}
               />
             ))
           ) : (
