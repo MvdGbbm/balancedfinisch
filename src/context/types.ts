@@ -1,6 +1,6 @@
 
 // Import required types
-import { Meditation, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
+import { Meditation, JournalEntry, DailyQuote, PlannerEvent, Soundscape } from "@/lib/types";
 
 export interface AppContextType {
   // Data
@@ -8,6 +8,7 @@ export interface AppContextType {
   journalEntries: JournalEntry[];
   dailyQuotes: DailyQuote[];
   plannerEvents: PlannerEvent[];
+  soundscapes: Soundscape[];
   
   // Current states
   currentMeditation: Meditation | null;
@@ -32,6 +33,13 @@ export interface AppContextType {
   updatePlannerEvent: (id: string, event: Partial<PlannerEvent>) => void;
   deletePlannerEvent: (id: string) => void;
   toggleEventCompletion: (id: string) => void;
+  
+  // Soundscape functions
+  addSoundscape: (soundscape: Omit<Soundscape, 'id'>) => void;
+  updateSoundscape: (id: string, soundscape: Partial<Soundscape>) => void;
+  deleteSoundscape: (id: string) => void;
+  setSoundscapes: (soundscapes: Soundscape[]) => void;
+  setCurrentSoundscape: (soundscape: Soundscape | null) => void;
   
   // App functions
   setCurrentMeditation: (meditation: Meditation | null) => void;

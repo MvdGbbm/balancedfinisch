@@ -69,3 +69,14 @@ export interface BreathingVoice {
   holdUrl: string;
   exhaleUrl: string;
 }
+
+export interface Soundscape {
+  id: string;
+  title: string;
+  description: string;
+  audioUrl: string;
+  coverImageUrl: string;
+  category: string;
+  tags: string[];
+  isFavorite?: boolean;
+}

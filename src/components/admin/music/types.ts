@@ -1,5 +1,5 @@
 
-// Empty types file to fix import errors
+// Types file for music admin components
 export interface MusicItemFormValues {
   title: string;
   description: string;
@@ -16,4 +16,9 @@ export interface CategoryDialogProps {
   onAddCategory: (category: string) => void;
   onUpdateCategory: (oldCategory: string, newCategory: string) => void;
   onDeleteCategory: (category: string) => void;
+}
+
+export interface FormFieldsProps {
+  categories: string[];
+  onOpenCategoryDialog: () => void;
 }
