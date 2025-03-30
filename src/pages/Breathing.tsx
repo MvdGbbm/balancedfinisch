@@ -1,34 +1,15 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import BreathingAnimation from "@/components/breathing/breathing-animation";
-import { BreathingVoicePlayer } from "@/components/breathing/breathing-voice-player";
 import { toast } from "sonner";
 import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { BreathingPhase } from "@/components/breathing/types";
-import { BreathingVolumeControls } from "@/components/breathing/breathing-volume-controls";
 import { useApp } from "@/context/AppContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Play, Pause, StopCircle, Volume2, Music as MusicIcon, ChevronDown } from "lucide-react";
-import { AudioPlayer } from "@/components/audio-player";
-import { Badge } from "@/components/ui/badge";
+import BreathingPatternSelector from "@/components/breathing/breathing-pattern-selector";
+import BreathingExerciseAnimation from "@/components/breathing/breathing-exercise-animation";
+import BreathingControls from "@/components/breathing/breathing-controls";
+import BreathingMusicSelector from "@/components/breathing/breathing-music-selector";
 import { Soundscape } from "@/lib/types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 type BreathingPattern = {
   id: string;
@@ -112,7 +93,6 @@ const Breathing = () => {
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
   const startAudioRef = useRef<HTMLAudioElement | null>(null);
   const endAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [activeTab, setActiveTab] = useState<"music">("music");
   
   const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
   const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
@@ -126,7 +106,7 @@ const Breathing = () => {
   const [currentTrack, setCurrentTrack] = useState<Soundscape | null>(null);
   const [isTrackPlaying, setIsTrackPlaying] = useState(false);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  
+
   useEffect(() => {
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
@@ -359,134 +339,56 @@ const Breathing = () => {
         <h1 className="text-2xl font-bold mb-4">Ademhalingsoefeningen</h1>
         
         <div className="space-y-6">
-          <div className="w-full">
-            <Select
-              value={selectedPattern?.id}
-              onValueChange={handleSelectPattern}
-              disabled={isExerciseActive}
-            >
-              <SelectTrigger className="w-full bg-tranquil-400 hover:bg-tranquil-500 text-black">
-                <SelectValue placeholder="Kies" />
-              </SelectTrigger>
-              <SelectContent>
-                {breathingPatterns.map((pattern) => (
-                  <SelectItem key={pattern.id} value={pattern.id} className="py-3">
-                    <div>
-                      <div className="font-medium">{pattern.name}</div>
-                      {pattern.description && (
-                        <div className="text-xs text-muted-foreground mt-0.5">{pattern.description}</div>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <BreathingPatternSelector 
+            breathingPatterns={breathingPatterns}
+            selectedPattern={selectedPattern}
+            isExerciseActive={isExerciseActive}
+            onSelectPattern={handleSelectPattern}
+          />
           
           {selectedPattern && showAnimation && (
-            <div className="mt-8">
-              <BreathingAnimation 
-                technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
-                voiceUrls={activeVoice === "vera" ? veraVoiceUrls : activeVoice === "marco" ? marcoVoiceUrls : null}
-                isVoiceActive={isExerciseActive && !!activeVoice}
-                currentPhase={currentPhase}
-                onPhaseChange={handlePhaseChange}
-                currentCycle={currentCycle}
-                totalCycles={selectedPattern.cycles}
-                exerciseCompleted={exerciseCompleted}
-                inhaleTime={selectedPattern.inhale}
-                holdTime={selectedPattern.hold1}
-                exhaleTime={selectedPattern.exhale}
-                pauseTime={selectedPattern.hold2}
-              />
-            </div>
-          )}
-          
-          <audio ref={startAudioRef} style={{ display: 'none' }} />
-          <audio ref={endAudioRef} style={{ display: 'none' }} />
-          
-          {selectedPattern && (
-            <BreathingVoicePlayer 
-              veraUrls={veraVoiceUrls}
-              marcoUrls={marcoVoiceUrls}
-              isActive={isExerciseActive}
-              onPause={handlePauseVoice}
-              onPlay={handleActivateVoice}
-              activeVoice={activeVoice}
-              headerText={voicePlayerHeaderText}
+            <BreathingExerciseAnimation 
+              technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
+              voiceUrls={activeVoice === "vera" ? veraVoiceUrls : activeVoice === "marco" ? marcoVoiceUrls : null}
+              isVoiceActive={isExerciseActive && !!activeVoice}
+              currentPhase={currentPhase}
+              onPhaseChange={handlePhaseChange}
+              currentCycle={currentCycle}
+              totalCycles={selectedPattern.cycles}
+              exerciseCompleted={exerciseCompleted}
+              inhaleTime={selectedPattern.inhale}
+              holdTime={selectedPattern.hold1}
+              exhaleTime={selectedPattern.exhale}
+              pauseTime={selectedPattern.hold2}
             />
           )}
           
-          <BreathingVolumeControls 
+          <BreathingControls 
+            veraVoiceUrls={veraVoiceUrls}
+            marcoVoiceUrls={marcoVoiceUrls}
+            isExerciseActive={isExerciseActive}
+            activeVoice={activeVoice}
             voiceVolume={voiceVolume}
             musicVolume={musicVolume}
+            onPauseVoice={handlePauseVoice}
+            onActivateVoice={handleActivateVoice}
             onVoiceVolumeChange={handleVoiceVolumeChange}
             onMusicVolumeChange={handleMusicVolumeChange}
-            className="mt-4"
+            headerText={voicePlayerHeaderText}
+            selectedPattern={selectedPattern}
+            startAudioRef={startAudioRef}
+            endAudioRef={endAudioRef}
           />
           
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3">Muziek op de achtergrond</h3>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full flex justify-between items-center">
-                  <div className="flex items-center">
-                    <MusicIcon className="mr-2 h-4 w-4" />
-                    <span>{currentTrack ? currentTrack.title : "Kies een muziekstuk"}</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-full min-w-[240px] max-h-[300px] overflow-y-auto bg-background/95 backdrop-blur-sm border-muted z-50">
-                <DropdownMenuLabel>Ontspannende Muziek</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  {musicTracks.length === 0 ? (
-                    <DropdownMenuItem disabled>Geen muziek gevonden</DropdownMenuItem>
-                  ) : (
-                    musicTracks.map((track) => (
-                      <DropdownMenuItem 
-                        key={track.id} 
-                        className={`flex justify-between items-center ${currentTrack?.id === track.id ? 'bg-primary/10' : ''}`}
-                        onClick={() => handlePlayTrack(track)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-6 h-6 rounded-sm bg-cover bg-center" 
-                            style={{ backgroundImage: `url(${track.coverImageUrl})` }}
-                          />
-                          <span>{track.title}</span>
-                        </div>
-                        {currentTrack?.id === track.id && isTrackPlaying && (
-                          <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                            Speelt
-                          </Badge>
-                        )}
-                      </DropdownMenuItem>
-                    ))
-                  )}
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-          
-          {currentTrack && isTrackPlaying && (
-            <div className="mt-4 p-3 border rounded-md bg-background/50">
-              <div className="flex items-center mb-2">
-                <Volume2 className="h-4 w-4 text-primary mr-2 animate-pulse" />
-                <h4 className="font-medium text-sm">Nu afspelend: {currentTrack.title}</h4>
-              </div>
-              <AudioPlayer 
-                audioUrl={currentTrack.audioUrl} 
-                className="w-full"
-                isPlayingExternal={isTrackPlaying}
-                onPlayPauseChange={setIsTrackPlaying}
-                volume={musicVolume}
-                ref={audioPlayerRef}
-              />
-            </div>
-          )}
+          <BreathingMusicSelector 
+            musicTracks={musicTracks}
+            currentTrack={currentTrack}
+            isTrackPlaying={isTrackPlaying}
+            musicVolume={musicVolume}
+            onPlayTrack={handlePlayTrack}
+            onPlayPauseChange={setIsTrackPlaying}
+            audioPlayerRef={audioPlayerRef}
+          />
         </div>
       </div>
     </MobileLayout>
