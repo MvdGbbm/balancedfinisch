@@ -11,8 +11,7 @@ import {
   Home, 
   RefreshCw,
   Waves,
-  Radio,
-  Music
+  Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -59,12 +58,6 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       icon: Waves, 
       label: "Soundscapes", 
       description: "/admin/soundscapes"
-    },
-    { 
-      path: "/admin/music", 
-      icon: Music, 
-      label: "Muziek", 
-      description: "/admin/muziek"
     },
     { 
       path: "/admin/streams", 
