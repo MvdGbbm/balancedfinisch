@@ -16,6 +16,7 @@ import NotFound from './pages/NotFound';
 import AdminMeditations from './pages/admin/Meditations';
 import AdminBreathing from './pages/admin/Breathing';
 import AdminQuotes from './pages/admin/Quotes';
+import AdminMusic from './pages/admin/Music';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/admin/meditations" element={<AdminMeditations />} />
                 <Route path="/admin/breathing" element={<AdminBreathing />} />
                 <Route path="/admin/quotes" element={<AdminQuotes />} />
+                <Route path="/admin/muziek" element={<AdminMusic />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
