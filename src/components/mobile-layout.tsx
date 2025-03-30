@@ -40,17 +40,10 @@ export function MobileLayout({
     icon: BookOpen,
     label: "Dagboek"
   }, {
-    path: "/soundscapes",
-    icon: Sunrise,
-    label: "Geluiden"
-  }, {
     path: "/daily-quote",
     icon: Quote,
     label: "Quote"
   }];
-
-  // Check if we're on the music page
-  const isMusicPage = location.pathname === "/music";
 
   return <div className={cn("flex flex-col min-h-screen w-full bg-background", className)}>
       <header className="sticky top-0 z-40 w-full glass-morphism border-b py-3 px-4 backdrop-blur-lg transition-all">
@@ -71,11 +64,7 @@ export function MobileLayout({
         </div>
       </header>
       
-      <main className={cn(
-        "flex-1 px-4 py-4 overflow-auto animate-fade-in",
-        // Add more padding at the bottom when on the music page to account for fixed player
-        isMusicPage && "pb-40"
-      )}>
+      <main className="flex-1 px-4 py-4 overflow-auto animate-fade-in">
         {children}
       </main>
       

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Sunrise, BookOpen, Music, Quote, Heart } from "lucide-react";
+import { Sunrise, BookOpen, Quote, Heart } from "lucide-react";
 import { useApp } from "@/context/AppContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -23,14 +23,6 @@ const features = [
     color: "bg-emerald-100 dark:bg-emerald-900/30",
     textColor: "text-emerald-600 dark:text-emerald-300",
     path: "/breathing"
-  },
-  {
-    title: "Muziek",
-    description: "Ontdek rustgevende muziek voor meditatie en ontspanning",
-    icon: Music,
-    color: "bg-amber-100 dark:bg-amber-900/30",
-    textColor: "text-amber-600 dark:text-amber-300",
-    path: "/music"
   },
   {
     title: "Dagboek",
