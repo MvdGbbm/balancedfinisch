@@ -43,15 +43,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     audioRef,
     nextAudioRef,
     isPlaying,
-    setIsPlaying,
     currentTime,
     duration,
     volume,
     handleVolumeChange,
-    handleTogglePlay,
-    handleSeek,
-    handlePrevious,
-    handleNext,
+    togglePlay,
+    seekTo,
+    skipTime,
     toggleLoop,
     isLooping,
     effectiveAudioUrl,
@@ -93,21 +91,21 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         isPlaying={isPlaying}
       >
         {loadError ? (
-          <ErrorMessage onRetry={handleRetry} isRetrying={isRetrying} />
+          <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
         ) : (
           <>
             <ProgressBar
               currentTime={currentTime}
               duration={duration}
-              onSeek={handleSeek}
+              onSeek={seekTo}
               isLiveStream={isLiveStream}
             />
 
             <AudioControls
               isPlaying={isPlaying}
-              onPlayPause={handleTogglePlay}
-              onPrevious={handlePrevious}
-              onNext={handleNext}
+              onPlayPause={togglePlay}
+              onPrevious={() => skipTime(-10)}
+              onNext={() => skipTime(10)}
               onToggleLoop={toggleLoop}
               isLooping={isLooping}
               volume={volume}

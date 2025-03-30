@@ -44,14 +44,14 @@ export const BreathingControls: React.FC<BreathingControlsProps> = ({
     switch (currentPhase) {
       case "inhale":
         return "Inademen";
-      case "hold1":
+      case "hold":
         return "Vasthouden";
       case "exhale":
         return "Uitademen";
-      case "hold2":
+      case "pause":
         return "Vasthouden";
-      case "completed":
-        return "Voltooid";
+      case "start":
+        return "Start";
       default:
         return "";
     }
@@ -103,7 +103,7 @@ export const BreathingControls: React.FC<BreathingControlsProps> = ({
           size="icon"
           onClick={onSkipToNextPhase}
           className="h-10 w-10 rounded-full"
-          disabled={currentPhase === "completed"}
+          disabled={currentPhase === "start"}
         >
           <SkipForward className="h-5 w-5" />
           <span className="sr-only">Volgende fase</span>

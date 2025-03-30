@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCw, Link2 } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 interface ErrorMessageProps {
   handleRetry: () => void;

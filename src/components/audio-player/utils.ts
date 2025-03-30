@@ -1,3 +1,4 @@
+
 // Format time in MM:SS format
 export const formatTime = (seconds: number): string => {
   const mins = Math.floor(seconds / 60);
@@ -24,6 +25,64 @@ export const getAudioMimeType = (url?: string): string => {
     default:
       return 'audio/mpeg';
   }
+};
+
+// Preload an audio file and check if it's valid
+export const preloadAudio = async (url: string): Promise<boolean> => {
+  if (!url) return false;
+  
+  return new Promise<boolean>((resolve) => {
+    const audio = new Audio();
+    
+    const onCanPlayThrough = () => {
+      cleanup();
+      resolve(true);
+    };
+    
+    const onError = () => {
+      cleanup();
+      console.error(`Error preloading audio: ${url}`);
+      resolve(false);
+    };
+    
+    const cleanup = () => {
+      audio.removeEventListener('canplaythrough', onCanPlayThrough);
+      audio.removeEventListener('error', onError);
+    };
+    
+    audio.addEventListener('canplaythrough', onCanPlayThrough);
+    audio.addEventListener('error', onError);
+    
+    // Set a timeout in case the audio loading hangs
+    const timeout = setTimeout(() => {
+      cleanup();
+      console.warn(`Timeout preloading audio: ${url}`);
+      resolve(false);
+    }, 5000);
+    
+    audio.src = url;
+    audio.load();
+    
+    return () => {
+      clearTimeout(timeout);
+      cleanup();
+    };
+  });
+};
+
+// Check if a URL is a live stream URL
+export const isStreamUrl = (url: string): boolean => {
+  if (!url) return false;
+  
+  // Common stream extensions and URL patterns
+  const streamPatterns = [
+    '.m3u8', '.pls', '.xspf', '.asx', 
+    'icecast', 'shoutcast', 'streaming', 'stream', 
+    'radio', 'live', '/listen/'
+  ];
+  
+  const lowerUrl = url.toLowerCase();
+  return streamPatterns.some(pattern => lowerUrl.includes(pattern));
 };
 
 // Remove a specific radio stream from local storage

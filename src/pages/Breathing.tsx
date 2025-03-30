@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { toast } from "sonner";
 import BreathingPatternSelector from "@/components/breathing/breathing-pattern-selector";
 import BreathingExerciseAnimation from "@/components/breathing/breathing-exercise-animation";
-import BreathingControls from "@/components/breathing/breathing-controls";
+import { BreathingControls } from "@/components/breathing/breathing-controls";
 import { BreathingPhase } from '@/components/breathing/types';
 
 const Breathing = () => {
@@ -52,7 +52,7 @@ const Breathing = () => {
               voiceUrls={activeVoice === "vera" ? veraVoiceUrls : activeVoice === "marco" ? marcoVoiceUrls : null}
               isVoiceActive={isExerciseActive && !!activeVoice}
               currentPhase={currentPhase}
-              onPhaseChange={handlePhaseChange}
+              onPhaseChange={(phase) => handlePhaseChange(phase)}
               currentCycle={currentCycle}
               totalCycles={selectedPattern.cycles}
               exerciseCompleted={exerciseCompleted}

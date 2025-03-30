@@ -44,7 +44,7 @@ export const validateAndProcessAudioUrl = async (
       // Try extra corrections for Supabase URLs
       if (finalUrl.includes('supabase.co')) {
         // Last attempt with extended validation
-        const correctedUrl = await completeUrlValidation(url, true, 'soundscapes');
+        const correctedUrl = completeUrlValidation(url);
         if (correctedUrl) {
           setValidatedUrl(correctedUrl);
           const retrySuccess = await preloadAudio(correctedUrl);
