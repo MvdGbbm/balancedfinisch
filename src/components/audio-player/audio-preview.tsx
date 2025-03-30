@@ -250,21 +250,14 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       audio.play()
         .then(() => {
           setIsPlaying(true);
-          toast({
-            title: "Audio hersteld",
-            description: "De audio speelt nu af."
-          });
+          toast("De audio speelt nu af");
         })
         .catch(err => {
           console.error("Error retrying audio play:", err);
           setError(true);
           setIsRetrying(false);
           if (onError) onError();
-          toast({
-            variant: "destructive",
-            title: "Fout bij afspelen",
-            description: "Audio kon niet worden afgespeeld. Controleer de URL."
-          });
+          toast("Audio kon niet worden afgespeeld. Controleer de URL.");
         });
     };
     
@@ -272,11 +265,7 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
       setError(true);
       setIsRetrying(false);
       if (onError) onError();
-      toast({
-        variant: "destructive",
-        title: "Fout bij laden",
-        description: "Audio kon niet worden geladen. Controleer de URL."
-      });
+      toast("Audio kon niet worden geladen. Controleer de URL.");
     };
   };
 

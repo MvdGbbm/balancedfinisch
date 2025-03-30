@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { useAudioPlayerCore } from "./hooks/audio/use-audio-player-core";
-import { useAudioControls } from "./hooks/audio/use-audio-controls";
-import { useAudioEvents } from "./hooks/audio/use-audio-events";
-import { useAudioEffects } from "./hooks/audio/use-audio-effects";
+import { useAudioPlayerCore } from "@/hooks/audio/use-audio-player-core";
+import { useAudioControls } from "@/hooks/audio/use-audio-controls";
+import { useAudioEvents } from "@/hooks/audio/use-audio-events";
+import { useAudioEffects } from "@/hooks/audio/use-audio-effects";
 
 /**
  * Custom hook that handles audio player functionality
@@ -33,13 +33,19 @@ export const useAudioPlayer = (options: {
     title: options.title,
   });
 
-  const crossfadeTimeoutRef = useRef(null);
+  const crossfadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Use the audio controls hook
   const audioControls = useAudioControls(audioCore.setupAudioHandlers());
 
   // Use the audio events hook
-  const audioEvents = useAudioEvents(audioCore.setupAudioEventHandlers());
+  const audioEvents = useAudioEvents({
+    ...audioCore.setupAudioEventHandlers(),
+    onError: options.onError,
+    audioUrl: options.audioUrl,
+    isPlayingExternal: options.isPlayingExternal,
+    crossfadeTimeoutRef
+  });
 
   // Use the audio effects hook
   const audioEffects = useAudioEffects({
@@ -50,13 +56,13 @@ export const useAudioPlayer = (options: {
     volume: audioCore.volume,
     isLooping: audioCore.isLooping,
     state: audioCore,
-    setVolume: (volume) => audioCore.setState(prev => ({ ...prev, volume })),
-    setIsLooping: (isLooping) => audioCore.setState(prev => ({ ...prev, isLooping })),
+    setVolume: (volume: number) => audioCore.setState(prev => ({ ...prev, volume })),
+    setIsLooping: (isLooping: boolean) => audioCore.setState(prev => ({ ...prev, isLooping })),
     crossfadeTimeoutRef,
     onCrossfadeStart: options.onCrossfadeStart,
     onEnded: options.onEnded,
-    setIsCrossfading: (isCrossfading) => audioCore.setState(prev => ({ ...prev, isCrossfading })),
-    setCurrentTime: (currentTime) => audioCore.setState(prev => ({ ...prev, currentTime })),
+    setIsCrossfading: (isCrossfading: boolean) => audioCore.setState(prev => ({ ...prev, isCrossfading })),
+    setCurrentTime: (currentTime: number) => audioCore.setState(prev => ({ ...prev, currentTime })),
   });
 
   useEffect(() => {

@@ -70,9 +70,7 @@ export const useAudioEvents = ({
         console.log("Detected live stream:", audioUrl);
         setIsLiveStream(true);
         
-        toast.info("Live stream gedetecteerd", {
-          description: "Deze audio is een live stream"
-        });
+        toast("Live stream gedetecteerd");
       } else {
         setIsLiveStream(false);
       }
@@ -104,7 +102,7 @@ export const useAudioEvents = ({
           }, 1500);
         } else {
           console.log("Max retries reached, giving up");
-          toast.error("Kon audio niet laden na meerdere pogingen");
+          toast("Kon audio niet laden na meerdere pogingen");
         }
       }
     };

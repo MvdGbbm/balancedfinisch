@@ -125,11 +125,7 @@ export const useAudioPlayerCore = ({
     const handleLoadError = () => {
       console.error("Error loading audio:", audioUrl);
       setState(prev => ({ ...prev, loadError: true }));
-      toast({
-        title: "Fout bij laden",
-        description: "Audio kon niet worden geladen. Controleer de URL.",
-        variant: "destructive",
-      });
+      toast("Audio kon niet worden geladen. Controleer de URL.");
     };
 
     // Set initial volume
@@ -155,11 +151,7 @@ export const useAudioPlayerCore = ({
           .catch(error => {
             console.error("Error playing audio:", error);
             setState(prev => ({ ...prev, loadError: true }));
-            toast({
-              title: "Fout bij afspelen",
-              description: "Audio kon niet worden afgespeeld.",
-              variant: "destructive",
-            });
+            toast("Audio kon niet worden afgespeeld.");
           });
       } else {
         audioRef.current?.pause();

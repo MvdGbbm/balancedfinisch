@@ -48,7 +48,7 @@ export const useAudioControls = ({
           if (error.name === 'NotAllowedError') {
             toast("Audio playback requires user interaction");
           } else {
-            toast.error("Kon de audio niet afspelen. Probeer later opnieuw.");
+            toast("Kon de audio niet afspelen. Probeer later opnieuw.");
           }
         });
     }
@@ -72,7 +72,7 @@ export const useAudioControls = ({
       console.error("Too many retry attempts:", retryCountRef.current);
       setLoadError(true);
       setIsRetrying(false);
-      toast.error("Kon de audio niet laden na meerdere pogingen");
+      toast("Kon de audio niet laden na meerdere pogingen");
       return;
     }
     
@@ -85,7 +85,7 @@ export const useAudioControls = ({
       setLoadError,
       () => {
         setIsRetrying(false);
-        toast.error("Fout bij afspelen");
+        toast("Fout bij afspelen");
       },
       setIsPlaying,
       onPlayPauseChange
@@ -109,10 +109,11 @@ export const useAudioControls = ({
     }
     
     // Show user feedback
-    toast(
-      newLoopState ? "Herhalen ingeschakeld" : "Herhalen uitgeschakeld",
-      { description: title }
-    );
+    if (newLoopState) {
+      toast("Herhalen ingeschakeld");
+    } else {
+      toast("Herhalen uitgeschakeld");
+    }
   };
   
   const handleProgressChange = (newValue: number[]) => {
