@@ -19,6 +19,23 @@ export interface CategoryDialogProps {
 }
 
 export interface FormFieldsProps {
+  title: string;
+  setTitle: (title: string) => void;
+  description: string;
+  setDescription: (description: string) => void;
+  audioUrl: string;
+  setAudioUrl: (url: string) => void;
+  coverImageUrl: string;
+  setCoverImageUrl: (url: string) => void;
+  tags: string[];
+  setTags: (tags: string[]) => void;
+  category: string;
+  setCategory: (category: string) => void;
   categories: string[];
+  isValidatingUrl: boolean;
+  isUrlValid: boolean;
+  validatedUrl: string;
+  handleAudioPreview: () => void;
+  isPreviewPlaying: boolean;
   onOpenCategoryDialog: () => void;
 }
