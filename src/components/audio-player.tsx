@@ -8,15 +8,10 @@ import { ErrorMessage } from "./audio-player/error-message";
 import { QuoteDisplay } from "./audio-player/quote-display";
 import { getRandomQuote, getAudioMimeType, isAACFile, validateAudioUrl } from "./audio-player/utils";
 import { Soundscape } from "@/lib/types";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue 
-} from "@/components/ui/select";
-import { Music, Volume2 } from "lucide-react";
 import { useApp } from "@/context/AppContext";
+import { PlayerContainer } from "./audio-player/player-container";
+import { AudioPlayerProvider } from "./audio-player/audio-player-context";
+import { MusicSelector } from "./audio-player/music-selector";
 
 interface AudioPlayerProps {
   audioUrl: string;
@@ -151,109 +146,67 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
     );
   }
   
-  // Get the MIME type based on the file extension
-  const audioMimeType = getAudioMimeType(effectiveAudioUrl);
-  
   return (
-    <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-      <audio ref={audioRef} preload="metadata" crossOrigin="anonymous">
-        <source src={effectiveAudioUrl} type={audioMimeType} />
-        Your browser does not support the audio element.
-      </audio>
-      
-      {nextAudioUrl && (
-        <audio ref={nextAudioElementRef} preload="metadata" crossOrigin="anonymous">
-          <source src={validateAudioUrl(nextAudioUrl)} type={getAudioMimeType(nextAudioUrl)} />
-        </audio>
-      )}
-      
-      {showMusicSelector && (
-        <div className="mb-4">
-          <h3 className="text-base font-semibold mb-2">Muziek op de achtergrond</h3>
-          <Select
-            value={selectedMusic || audioUrl}
-            onValueChange={handleMusicChange}
-          >
-            <SelectTrigger className="w-full bg-background border-muted">
-              <span className="flex items-center">
-                <Music className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Selecteer muziek">
-                  {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || "Selecteer muziek"}
-                </SelectValue>
-              </span>
-            </SelectTrigger>
-            <SelectContent>
-              {musicTracks.map(track => (
-                <SelectItem key={track.id} value={track.audioUrl}>
-                  <div className="flex items-center">
-                    {track.audioUrl === (selectedMusic || audioUrl) && (
-                      <Volume2 className="w-4 h-4 mr-2 text-primary animate-pulse" />
-                    )}
-                    <span>{track.title}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-      
-      {isPlaying && (
-        <div className="py-2 px-3 bg-background/30 border border-muted rounded-md flex items-center">
-          <Volume2 className="h-4 w-4 text-primary mr-2" />
-          <p className="text-sm">
-            Nu afspelend: {musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl))?.title || title}
-          </p>
-        </div>
-      )}
-      
-      {showTitle && title && !showMusicSelector && (
-        <h3 className="text-lg font-medium">{title}</h3>
-      )}
-      
-      {isAACFormat && (
-        <div className="text-xs text-blue-500 font-medium">
-          AAC audio format
-        </div>
-      )}
-      
-      {loadError && (
-        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
-      )}
-      
-      {showQuote && (
-        <QuoteDisplay quote={randomQuote} />
-      )}
-      
-      {customSoundscapeSelector && !showQuote && (
-        <div className="mb-2">{customSoundscapeSelector}</div>
-      )}
-      
-      <ProgressBar
-        currentTime={currentTime}
-        duration={duration}
-        isLoaded={isLoaded}
-        isCrossfading={isCrossfading}
-        isLiveStream={isLiveStream}
-        handleProgressChange={handleProgressChange}
-      />
-      
-      {showControls && (
-        <AudioControls
-          isPlaying={isPlaying}
-          togglePlay={togglePlay}
-          skipTime={skipTime}
+    <AudioPlayerProvider
+      currentTrack={musicTracks.find(track => track.audioUrl === (selectedMusic || audioUrl)) || null}
+      isTrackPlaying={isPlaying}
+      musicTracks={musicTracks}
+      selectedMusic={selectedMusic}
+      handleMusicChange={handleMusicChange}
+    >
+      <PlayerContainer 
+        audioRef={audioRef}
+        nextAudioElementRef={nextAudioElementRef}
+        effectiveAudioUrl={effectiveAudioUrl}
+        nextAudioUrl={nextAudioUrl ? validateAudioUrl(nextAudioUrl) : undefined}
+        showTitle={showTitle && !showMusicSelector}
+        title={title}
+        isAACFormat={isAACFormat}
+        loadError={loadError}
+        isPlaying={isPlaying}
+      >
+        {showMusicSelector && (
+          <MusicSelector audioUrl={audioUrl} />
+        )}
+        
+        {loadError && (
+          <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
+        )}
+        
+        {showQuote && (
+          <QuoteDisplay quote={randomQuote} />
+        )}
+        
+        {customSoundscapeSelector && !showQuote && (
+          <div className="mb-2">{customSoundscapeSelector}</div>
+        )}
+        
+        <ProgressBar
+          currentTime={currentTime}
+          duration={duration}
           isLoaded={isLoaded}
-          isLooping={isLooping}
-          toggleLoop={toggleLoop}
           isCrossfading={isCrossfading}
           isLiveStream={isLiveStream}
-          volume={audioVolume}
-          handleVolumeChange={handleVolumeChange}
-          loadError={loadError}
+          handleProgressChange={handleProgressChange}
         />
-      )}
-    </div>
+        
+        {showControls && (
+          <AudioControls
+            isPlaying={isPlaying}
+            togglePlay={togglePlay}
+            skipTime={skipTime}
+            isLoaded={isLoaded}
+            isLooping={isLooping}
+            toggleLoop={toggleLoop}
+            isCrossfading={isCrossfading}
+            isLiveStream={isLiveStream}
+            volume={audioVolume}
+            handleVolumeChange={handleVolumeChange}
+            loadError={loadError}
+          />
+        )}
+      </PlayerContainer>
+    </AudioPlayerProvider>
   );
 });
 
