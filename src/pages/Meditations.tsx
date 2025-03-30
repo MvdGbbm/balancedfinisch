@@ -9,9 +9,10 @@ import { MeditationCard } from "@/components/meditation/meditation-card";
 import { MeditationDetailDialog } from "@/components/meditation/meditation-detail-dialog";
 import { Meditation } from "@/lib/types";
 import { filterMeditations } from "@/utils/meditation-utils";
+import { toast } from "sonner";
 
 const Meditations = () => {
-  const { meditations, setCurrentMeditation } = useApp();
+  const { meditations, setCurrentMeditation, deleteMeditation } = useApp();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -41,6 +42,13 @@ const Meditations = () => {
     setCurrentMeditation(meditation);
     // Close dialog after selecting
     setDetailDialogOpen(false);
+  };
+
+  const handleDeleteMeditation = (id: string) => {
+    if (window.confirm("Weet je zeker dat je deze meditatie wilt verwijderen?")) {
+      deleteMeditation(id);
+      toast("Meditatie succesvol verwijderd");
+    }
   };
 
   return (
@@ -142,6 +150,7 @@ const Meditations = () => {
                         isSelected={false}
                         onClick={() => handleMeditationClick(meditation)}
                         showDeleteButton={true}
+                        onDelete={() => handleDeleteMeditation(meditation.id)}
                       />
                     ))}
                 </div>
@@ -162,9 +171,13 @@ const Meditations = () => {
       {selectedMeditation && (
         <MeditationDetailDialog
           meditation={selectedMeditation}
+          soundscapes={[]}
           isOpen={detailDialogOpen}
           onOpenChange={setDetailDialogOpen}
-          onPlay={() => handlePlayMeditation(selectedMeditation)}
+          currentSoundscapeId={null}
+          onSoundscapeChange={() => {}}
+          guidedMeditations={[]}
+          onGuidedMeditationSelect={() => {}}
         />
       )}
     </MobileLayout>
