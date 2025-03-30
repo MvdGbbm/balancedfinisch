@@ -33,10 +33,7 @@ export interface CircleAnimationProps {
   isActive: boolean;
   currentPhase: "inhale" | "hold1" | "exhale" | "hold2";
   secondsLeft: number;
-  pattern: {
-    inhale: number;
-    exhale: number;
-  } | null;
+  pattern: BreathingPattern | null;
   circleScale: number;
   setCircleScale: (scale: number) => void;
 }

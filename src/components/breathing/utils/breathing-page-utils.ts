@@ -1,5 +1,6 @@
 
 import { BreathingPattern } from "@/components/breathing/types/breathing-page-types";
+import { VoiceURLs } from "@/components/breathing/types/breathing-page-types";
 
 // Default breathing patterns for the application
 export const defaultBreathingPatterns: BreathingPattern[] = [
@@ -94,10 +95,26 @@ export const defaultVoiceUrls = {
   }
 };
 
+// Convert VoiceURLs to a simple string record for validation
+const voiceURLsToRecord = (urls: VoiceURLs): Record<string, string> => {
+  const record: Record<string, string> = {};
+  
+  if (urls.start) record.start = urls.start;
+  if (urls.inhale) record.inhale = urls.inhale;
+  if (urls.hold) record.hold = urls.hold;
+  if (urls.exhale) record.exhale = urls.exhale;
+  if (urls.end) record.end = urls.end;
+  
+  return record;
+};
+
 // Validate audio files
-export const validateAudioFiles = async (urls: { [key: string]: string }, voice: string): Promise<boolean> => {
+export const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
+  // Convert VoiceURLs to a record for validation
+  const urlsRecord = voiceURLsToRecord(urls);
+  
   // We'll check if each URL is valid by attempting to load it
-  const urlsToCheck = Object.values(urls).filter(url => url && url.trim() !== "");
+  const urlsToCheck = Object.values(urlsRecord).filter(url => url && url.trim() !== "");
   
   if (urlsToCheck.length === 0) {
     console.warn(`No valid URLs to check for ${voice}`);

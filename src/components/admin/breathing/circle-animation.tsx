@@ -21,7 +21,7 @@ export function CircleAnimation({
       const exhaleProgress = (pattern.exhale - secondsLeft) / pattern.exhale;
       setCircleScale(1.5 - exhaleProgress * 0.5);
     }
-  }, [currentPhase, secondsLeft, isActive, pattern]);
+  }, [currentPhase, secondsLeft, isActive, pattern, setCircleScale]);
 
   // Get text for the current phase
   const getPhaseText = () => {
