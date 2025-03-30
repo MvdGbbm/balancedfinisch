@@ -2,7 +2,7 @@
 import { Soundscape } from "@/lib/types";
 import { generateId } from "@/context/utils";
 import { processSoundscapeUrls } from "@/utils/meditation-utils";
-import { sampleSoundscapes } from "@/data/soundscapes";
+import { soundscapes } from "@/data/soundscapes";
 
 /**
  * Transforms Supabase soundscape data to app format
@@ -34,5 +34,5 @@ export const createLocalSoundscape = (soundscape: Omit<Soundscape, 'id'>): Sound
  * Processes and returns sample soundscapes when database fetch fails
  */
 export const getSampleSoundscapes = async (): Promise<Soundscape[]> => {
-  return await processSoundscapeUrls(sampleSoundscapes);
+  return await processSoundscapeUrls(soundscapes);
 };
