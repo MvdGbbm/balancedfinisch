@@ -1,10 +1,10 @@
+
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
-import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 import { PatternList } from "@/components/admin/breathing/pattern-list";
 import { PatternForm } from "@/components/admin/breathing/pattern-form";
 import { VoiceUrlForm } from "@/components/admin/breathing/voice-url-form";
@@ -97,10 +97,6 @@ const AdminBreathing = () => {
             </div>
           </TabsContent>
         </Tabs>
-        
-        <div className="mt-8">
-          <BreathingExerciseTest pattern={selectedPattern} />
-        </div>
       </div>
     </AdminLayout>
   );
