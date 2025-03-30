@@ -1,16 +1,17 @@
+
 import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface BreathingCircleProps {
   duration?: number;
-  inhaleDuration?: number;
-  holdDuration?: number;
-  exhaleDuration?: number;
   className?: string;
   onBreathComplete?: () => void;
   isActive: boolean;
   currentPhase?: "inhale" | "hold" | "exhale" | "rest";
   secondsLeft?: number;
+  inhaleDuration?: number;
+  holdDuration?: number;
+  exhaleDuration?: number;
 }
 
 export function BreathingCircle({
@@ -114,9 +115,16 @@ export function BreathingCircle({
         setProgress(0);
         
         if (currentPhaseLocal === "inhale") {
-          setPhase("hold");
-          currentPhaseLocal = "hold";
-          phaseDuration = holdDuration;
+          // Skip hold phase if holdDuration is 0
+          if (holdDuration <= 0) {
+            setPhase("exhale");
+            currentPhaseLocal = "exhale";
+            phaseDuration = exhaleDuration;
+          } else {
+            setPhase("hold");
+            currentPhaseLocal = "hold";
+            phaseDuration = holdDuration;
+          }
         } else if (currentPhaseLocal === "hold") {
           setPhase("exhale");
           currentPhaseLocal = "exhale";
@@ -146,6 +154,15 @@ export function BreathingCircle({
         return exhaleDuration;
       default:
         return 1000;
+    }
+  };
+
+  const getPhaseText = () => {
+    switch (activePhase) {
+      case "inhale": return "Adem in";
+      case "hold": return holdDuration > 0 ? "Houd vast" : "";
+      case "exhale": return "Adem uit";
+      case "rest": return "";
     }
   };
 
@@ -185,13 +202,17 @@ export function BreathingCircle({
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-2">
-                  <div className="text-xl font-semibold mb-1">
-                    {activePhase === "inhale" ? "Adem in" : activePhase === "hold" ? "Houd vast" : "Adem uit"}
-                  </div>
-                  <div className="flex items-center justify-center text-4xl font-bold">
-                    {secondsLeft || phaseTimeLeft}
-                    <span className="text-sm ml-1 mt-1">s</span>
-                  </div>
+                  {getPhaseText() && (
+                    <div className="text-xl font-semibold mb-1">
+                      {getPhaseText()}
+                    </div>
+                  )}
+                  {secondsLeft > 0 && (
+                    <div className="flex items-center justify-center text-4xl font-bold">
+                      {secondsLeft}
+                      <span className="text-sm ml-1 mt-1">s</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

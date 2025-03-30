@@ -21,3 +21,31 @@ export interface BreathingAnimationProps {
   exhaleTime: number;
   pauseTime: number;
 }
+
+export interface BreathingCircleProps {
+  phase: BreathingPhase;
+  count: number;
+  exerciseCompleted: boolean;
+  currentCycle: number;
+  totalCycles: number;
+  animationDuration: number;
+  onToggleActive: () => void;
+}
+
+export interface BreathingExerciseTestProps {
+  pattern: {
+    id: string;
+    name: string;
+    inhale: number;
+    hold1: number;
+    exhale: number;
+    hold2: number;
+    cycles: number;
+    description?: string;
+    inhaleUrl?: string;
+    exhaleUrl?: string;
+    hold1Url?: string;
+    hold2Url?: string;
+    endUrl?: string;
+  } | null;
+}

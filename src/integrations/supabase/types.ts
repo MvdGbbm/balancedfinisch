@@ -36,6 +36,42 @@ export type Database = {
         }
         Relationships: []
       }
+      soundscapes: {
+        Row: {
+          audio_url: string
+          category: string
+          cover_image_url: string
+          created_at: string
+          description: string | null
+          id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          category: string
+          cover_image_url: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          category?: string
+          cover_image_url?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
