@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
   Card, 
   CardContent, 
-  CardFooter,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
@@ -35,9 +35,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Play, Plus, Clock, FileAudio, Image, ListMusic, MoreVertical, ExternalLink } from "lucide-react";
+import { 
+  Edit, 
+  Trash2, 
+  Plus, 
+  Clock, 
+  FileAudio, 
+  Image, 
+  ListMusic, 
+  MoreVertical, 
+  ExternalLink,
+  Search
+} from "lucide-react";
 
 import { Meditation } from "@/lib/types";
+import { MeditationCard } from "@/components/meditation/meditation-card";
 
 const AdminMeditations = () => {
   const { meditations, addMeditation, updateMeditation, deleteMeditation } = useApp();
@@ -45,6 +57,7 @@ const AdminMeditations = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [currentMeditation, setCurrentMeditation] = useState<Meditation | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -176,10 +189,10 @@ const AdminMeditations = () => {
     addMeditation({
       title: `${newCategory} Meditatie`,
       description: `Een nieuwe meditatie in de ${newCategory} categorie.`,
-      audioUrl: "audio/sample.mp3",
+      audioUrl: "",
       duration: 10,
       category: newCategory,
-      coverImageUrl: "images/sample.jpg",
+      coverImageUrl: "/placeholder.svg",
       tags: newCategory === "Geleide Meditaties" ? [] : [newCategory.toLowerCase()],
     });
     
@@ -224,7 +237,15 @@ const AdminMeditations = () => {
     }
   };
   
-  const groupedMeditations = meditations.reduce((acc, meditation) => {
+  // Filter de meditaties op basis van de zoekterm
+  const filteredMeditations = meditations.filter(meditation => 
+    meditation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    meditation.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    meditation.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  // Groepeer de meditaties per categorie
+  const groupedMeditations = filteredMeditations.reduce((acc, meditation) => {
     const category = meditation.category;
     if (!acc[category]) {
       acc[category] = [];
@@ -250,101 +271,91 @@ const AdminMeditations = () => {
           </div>
         </div>
         
-        <p className="text-muted-foreground">
-          Voeg nieuwe meditaties toe of bewerk bestaande content
-        </p>
-        
-        <div className="space-y-8 pb-20">
-          {Object.entries(groupedMeditations).map(([category, meditationsList]) => (
-            <div key={category} className="space-y-3">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-medium">{category}</h2>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem 
-                      onClick={() => {
-                        setEditingCategory(category);
-                        setUpdatedCategoryName(category);
-                        setIsCategoryDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Bewerk categorie
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-destructive"
-                      onClick={() => handleDeleteCategory(category)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Verwijder categorie
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {meditationsList.map((meditation) => (
-                  <Card key={meditation.id} className="overflow-hidden">
-                    <div className="aspect-video bg-cover bg-center relative">
-                      <img 
-                        src={meditation.coverImageUrl} 
-                        alt={meditation.title}
-                        className="w-full h-full object-cover" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h3 className="text-white font-medium">{meditation.title}</h3>
-                        <div className="flex items-center text-white/80 text-sm gap-2">
-                          <Clock className="h-3 w-3" />
-                          <span>{meditation.duration} min</span>
-                        </div>
-                      </div>
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button 
-                          variant="secondary" 
-                          size="icon"
-                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                          onClick={() => handleEdit(meditation)}
-                        >
-                          <Edit className="h-4 w-4 text-white" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="icon"
-                          className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
-                          onClick={() => handleDelete(meditation.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-white" />
-                        </Button>
-                      </div>
-                    </div>
-                    <CardFooter className="p-3 bg-background">
-                      <AudioPlayer audioUrl={meditation.audioUrl} showControls={false} />
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="flex justify-between items-center">
+          <p className="text-muted-foreground">
+            Voeg nieuwe meditaties toe of bewerk bestaande content
+          </p>
           
-          {meditations.length === 0 && (
+          <div className="relative w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              type="search"
+              placeholder="Zoek meditaties..." 
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-6 pb-20">
+          {Object.entries(groupedMeditations).length > 0 ? (
+            Object.entries(groupedMeditations).map(([category, meditationsList]) => (
+              <Card key={category} className="overflow-hidden">
+                <CardHeader className="py-3 px-4 bg-muted/30">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-base font-medium">{category}</CardTitle>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            setEditingCategory(category);
+                            setUpdatedCategoryName(category);
+                            setIsCategoryDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Bewerk categorie
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeleteCategory(category)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Verwijder categorie
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {meditationsList.map((meditation) => (
+                      <MeditationCard
+                        key={meditation.id}
+                        meditation={meditation}
+                        isSelected={false}
+                        onClick={() => handleEdit(meditation)}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
             <div className="text-center py-10">
               <p className="text-muted-foreground mb-4">
-                Er zijn nog geen meditaties. Voeg je eerste meditatie toe!
+                {searchQuery 
+                  ? "Geen meditaties gevonden die aan je zoekopdracht voldoen." 
+                  : "Er zijn nog geen meditaties. Voeg je eerste meditatie toe!"}
               </p>
-              <Button onClick={handleOpenNew}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nieuwe Meditatie
-              </Button>
+              {!searchQuery && (
+                <Button onClick={handleOpenNew}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nieuwe Meditatie
+                </Button>
+              )}
             </div>
           )}
         </div>
       </div>
       
+      {/* Formulier dialoog voor nieuwe/bewerken meditatie */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -564,7 +575,7 @@ const AdminMeditations = () => {
                     alt="Preview" 
                     className="w-full h-full object-cover" 
                     onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      e.currentTarget.src = "/placeholder.svg";
                     }}
                   />
                 </div>
@@ -590,6 +601,7 @@ const AdminMeditations = () => {
         </DialogContent>
       </Dialog>
       
+      {/* Dialoog voor categoriebeheer */}
       <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
