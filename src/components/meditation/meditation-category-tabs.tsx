@@ -24,8 +24,8 @@ export function MeditationCategoryTabs({
     <div className="w-full h-auto flex flex-wrap justify-start mb-4 bg-background border overflow-x-auto">
       <button 
         key="all" 
-        className={`px-4 py-2 whitespace-nowrap ${selectedCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
-        onClick={() => onCategoryChange('all')}
+        className={`px-4 py-2 whitespace-nowrap ${selectedCategory === 'Alle' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+        onClick={() => onCategoryChange('Alle')}
       >
         Alle Meditaties
       </button>
