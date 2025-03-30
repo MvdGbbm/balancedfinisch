@@ -9,13 +9,15 @@ export const useMusicForm = (
   currentMusic: Soundscape | null,
   onSave: (music: Partial<Soundscape>) => void,
   onOpenChange: (open: boolean) => void,
-  isOpen: boolean
+  isOpen: boolean,
+  categories: string[]
 ) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [category, setCategory] = useState("Muziek"); // Default to "Muziek"
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [validatedUrl, setValidatedUrl] = useState("");
   const [isValidatingUrl, setIsValidatingUrl] = useState(false);
@@ -31,6 +33,7 @@ export const useMusicForm = (
       setAudioUrl(currentMusic.audioUrl);
       setCoverImageUrl(currentMusic.coverImageUrl);
       setTags([...currentMusic.tags]);
+      setCategory(currentMusic.category);
       
       // Validate URL directly when loading an existing item
       if (currentMusic.audioUrl) {
@@ -68,6 +71,7 @@ export const useMusicForm = (
     setAudioUrl("");
     setCoverImageUrl("");
     setTags([]);
+    setCategory("Muziek"); // Reset to default category
     setIsPreviewPlaying(false);
     setValidatedUrl("");
     setIsUrlValid(true);
@@ -126,6 +130,7 @@ export const useMusicForm = (
         audioUrl: finalAudioUrl || validatedUrl,
         coverImageUrl: processedCoverImageUrl,
         tags,
+        category, // Include the selected category
         currentMusic
       });
       
@@ -136,7 +141,7 @@ export const useMusicForm = (
           title,
           description,
           audioUrl: finalAudioUrl || validatedUrl,
-          category: "Muziek", // Default category
+          category, // Include the selected category
           coverImageUrl: processedCoverImageUrl,
           tags,
         });
@@ -166,6 +171,8 @@ export const useMusicForm = (
     setCoverImageUrl,
     tags,
     setTags,
+    category,
+    setCategory,
     isPreviewPlaying,
     setIsPreviewPlaying,
     validatedUrl,

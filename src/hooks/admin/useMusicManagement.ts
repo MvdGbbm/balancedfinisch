@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,40 @@ export const useMusicManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [categories, setCategories] = useState<string[]>(["Muziek"]);
+
+  // Fetch categories from Supabase
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('soundscapes')
+          .select('category')
+          .not('category', 'is', null);
+        
+        if (error) {
+          console.error("Error fetching categories:", error);
+          return;
+        }
+        
+        if (data) {
+          // Extract unique categories
+          const uniqueCategories = [...new Set(data.map(item => item.category))];
+          
+          // Make sure "Muziek" is always included
+          if (!uniqueCategories.includes("Muziek")) {
+            uniqueCategories.push("Muziek");
+          }
+          
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error("Error in fetchCategories:", error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   // Filter music tracks from soundscapes
   const musicTracks = soundscapes.filter(
@@ -37,8 +71,7 @@ export const useMusicManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("soundscapes")
-        .select("*")
-        .eq("category", "Muziek");
+        .select("*");
 
       if (error) {
         throw new Error(error.message);
@@ -56,11 +89,16 @@ export const useMusicManagement = () => {
           tags: item.tags || [],
         }));
 
-        // Merge with existing soundscapes, replacing music category items
-        const nonMusicTracks = soundscapes.filter(
-          (track) => track.category !== "Muziek"
-        );
-        setSoundscapes([...nonMusicTracks, ...formattedData]);
+        // Fetch unique categories from the data
+        const uniqueCategories = [...new Set(formattedData.map(item => item.category))];
+        
+        // Make sure "Muziek" is always included
+        if (!uniqueCategories.includes("Muziek")) {
+          uniqueCategories.push("Muziek");
+        }
+        
+        setCategories(uniqueCategories);
+        setSoundscapes(formattedData);
         return formattedData;
       }
 
@@ -106,6 +144,34 @@ export const useMusicManagement = () => {
 
   const handleEditMusic = (music: Soundscape) => {
     setCurrentMusic(music);
+  };
+
+  // Add category
+  const addCategory = async (category: string) => {
+    if (categories.includes(category)) {
+      toast.error("Deze categorie bestaat al");
+      return;
+    }
+    
+    setCategories(prev => [...prev, category]);
+  };
+
+  // Delete category
+  const deleteCategory = async (category: string) => {
+    // Don't allow deleting the default "Muziek" category
+    if (category === "Muziek") return;
+    
+    // Check if the category is in use
+    const categoriesInUse = soundscapes.some(s => s.category === category);
+    
+    if (categoriesInUse) {
+      toast.error(
+        "Deze categorie is in gebruik en kan niet worden verwijderd. Wijzig eerst de categorie van de betreffende items."
+      );
+      return;
+    }
+    
+    setCategories(prev => prev.filter(c => c !== category));
   };
 
   // Mutation to delete a music track - Handles both UUID and string IDs
@@ -179,6 +245,9 @@ export const useMusicManagement = () => {
     handleSaveMusic,
     handleEditMusic,
     handleDeleteMusic,
-    handlePreviewToggle
+    handlePreviewToggle,
+    categories,
+    addCategory,
+    deleteCategory
   };
 };

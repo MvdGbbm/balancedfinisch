@@ -12,9 +12,10 @@ export interface MusicFormData extends Omit<Soundscape, "id"> {
 
 export interface MusicFormProps {
   currentMusic: Soundscape | null;
-  onSave: (music: Omit<Soundscape, "id">) => void;
+  onSave: (music: Partial<Soundscape>) => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  categories: string[];
 }
 
 export interface AudioPreviewProps {
@@ -43,6 +44,9 @@ export interface FormFieldsProps {
   setCoverImageUrl: (url: string) => void;
   tags: string[];
   setTags: (tags: string[]) => void;
+  category: string;
+  setCategory: (category: string) => void;
+  categories: string[];
   isValidatingUrl: boolean;
   isUrlValid: boolean;
   validatedUrl: string;

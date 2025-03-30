@@ -9,6 +9,7 @@ export interface SaveOptions {
   audioUrl: string;
   coverImageUrl: string;
   tags: string[];
+  category: string; // Add category field
   currentMusic: Soundscape | null;
 }
 
@@ -18,6 +19,7 @@ export const saveSoundscapeToSupabase = async ({
   audioUrl,
   coverImageUrl,
   tags,
+  category,
   currentMusic
 }: SaveOptions): Promise<{ success: boolean; data?: any }> => {
   try {
@@ -30,7 +32,7 @@ export const saveSoundscapeToSupabase = async ({
           description: description,
           audio_url: audioUrl,
           cover_image_url: coverImageUrl,
-          category: "Muziek", // Default category
+          category: category, // Use the provided category
           tags: tags,
           updated_at: new Date().toISOString()
         })
@@ -53,7 +55,7 @@ export const saveSoundscapeToSupabase = async ({
           description: description,
           audio_url: audioUrl,
           cover_image_url: coverImageUrl,
-          category: "Muziek", // Default category
+          category: category, // Use the provided category
           tags: tags
         })
         .select();

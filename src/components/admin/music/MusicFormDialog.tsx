@@ -20,6 +20,7 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
   onOpenChange,
   onSave,
   currentMusic,
+  categories,
 }) => {
   const {
     title,
@@ -32,6 +33,8 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
     setCoverImageUrl,
     tags,
     setTags,
+    category,
+    setCategory,
     isPreviewPlaying,
     setIsPreviewPlaying,
     validatedUrl,
@@ -42,7 +45,7 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
     handleAudioPreview,
     handleAudioError,
     handleSave
-  } = useMusicForm(currentMusic, onSave, onOpenChange, isOpen);
+  } = useMusicForm(currentMusic, onSave, onOpenChange, isOpen, categories);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -68,6 +71,9 @@ export const MusicFormDialog: React.FC<MusicFormProps> = ({
             setCoverImageUrl={setCoverImageUrl}
             tags={tags}
             setTags={setTags}
+            category={category}
+            setCategory={setCategory}
+            categories={categories}
             isValidatingUrl={isValidatingUrl}
             isUrlValid={isUrlValid}
             validatedUrl={validatedUrl}

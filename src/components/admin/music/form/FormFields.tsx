@@ -5,8 +5,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { TagInput } from "../TagInput";
-import { AlertTriangle, ExternalLink, Image, Play, StopCircle } from "lucide-react";
+import { 
+  AlertTriangle, 
+  ExternalLink, 
+  Image, 
+  Play, 
+  StopCircle,
+  ListFilter
+} from "lucide-react";
 import { FormFieldsProps } from "../types";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const FormFields: React.FC<FormFieldsProps> = ({
   title,
@@ -19,6 +33,9 @@ export const FormFields: React.FC<FormFieldsProps> = ({
   setCoverImageUrl,
   tags,
   setTags,
+  category,
+  setCategory,
+  categories,
   isValidatingUrl,
   isUrlValid,
   validatedUrl,
@@ -49,6 +66,22 @@ export const FormFields: React.FC<FormFieldsProps> = ({
             rows={2}
             className="resize-none text-sm"
           />
+        </div>
+        
+        <div className="space-y-1">
+          <Label htmlFor="category" className="text-xs">Categorie</Label>
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="Selecteer een categorie" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="space-y-1">

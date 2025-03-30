@@ -8,6 +8,8 @@ import { MusicTable } from "@/components/admin/music/MusicTable";
 import { EmptyMusicState } from "@/components/admin/music/EmptyMusicState";
 import { MusicLoading } from "@/components/admin/music/MusicLoading";
 import { useMusicManagement } from "@/hooks/admin/useMusicManagement";
+import { Soundscape } from "@/lib/types";
+import { CategoryManagementDialog } from "@/components/admin/music/CategoryManagementDialog";
 
 const AdminMusic = () => {
   const {
@@ -23,15 +25,19 @@ const AdminMusic = () => {
     handleSaveMusic,
     handleEditMusic,
     handleDeleteMusic,
-    handlePreviewToggle
+    handlePreviewToggle,
+    categories,
+    addCategory,
+    deleteCategory
   } = useMusicManagement();
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Handle edit music request
-  const onEditMusic = (music: typeof currentMusic) => {
+  const onEditMusic = (music: Soundscape) => {
     if (music) {
       handleEditMusic(music);
       setIsEditDialogOpen(true);
@@ -65,10 +71,22 @@ const AdminMusic = () => {
     setIsEditDialogOpen(false);
   };
 
+  // Handle category management
+  const handleCategoryAdd = (category: string) => {
+    addCategory(category);
+  };
+
+  const handleCategoryDelete = (category: string) => {
+    deleteCategory(category);
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-4">
-        <MusicHeader onCreateClick={() => setIsCreateDialogOpen(true)} />
+        <MusicHeader 
+          onCreateClick={() => setIsCreateDialogOpen(true)}
+          onManageCategoriesClick={() => setIsCategoryDialogOpen(true)}
+        />
         
         <MusicSearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
 
@@ -94,6 +112,7 @@ const AdminMusic = () => {
         onOpenChange={setIsCreateDialogOpen}
         onSave={handleCreateDialogSave}
         currentMusic={null}
+        categories={categories}
       />
 
       {/* Edit Dialog */}
@@ -102,6 +121,16 @@ const AdminMusic = () => {
         onOpenChange={setIsEditDialogOpen}
         onSave={handleEditDialogSave}
         currentMusic={currentMusic}
+        categories={categories}
+      />
+
+      {/* Category Management Dialog */}
+      <CategoryManagementDialog
+        isOpen={isCategoryDialogOpen}
+        onOpenChange={setIsCategoryDialogOpen}
+        categories={categories}
+        onAddCategory={handleCategoryAdd}
+        onDeleteCategory={handleCategoryDelete}
       />
 
       {/* Hidden audio player for previews */}
