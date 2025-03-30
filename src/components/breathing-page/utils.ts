@@ -1,7 +1,7 @@
 
 import { BreathingPattern, BreathType, VoiceURLs } from "./types";
 import { BreathingPhase } from "@/components/breathing/types";
-import { validateAudioUrl, preloadAudio, checkUrlExists } from "@/components/audio-player/utils";
+import { validateAudioUrl, preloadAudio as preloadAudioUtils, checkUrlExists } from "@/components/audio-player/utils";
 
 export const calculateBreathDuration = (pattern: BreathingPattern): number => {
   const { inhale, hold1, exhale, hold2, cycles } = pattern;
@@ -169,7 +169,8 @@ export const handleActivateVoice = async (
   }
 };
 
-export const preloadAudio = async (url: string) => {
+// Use a different name for this function to avoid conflict
+export const preloadBreathingAudio = async (url: string) => {
   return new Promise<void>((resolve, reject) => {
     const audio = new Audio();
     audio.src = url;
