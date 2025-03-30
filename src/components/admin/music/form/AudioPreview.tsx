@@ -2,7 +2,6 @@
 import React from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Label } from "@/components/ui/label";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
 import { AudioPreviewProps } from "../types";
 
 export const AudioPreview: React.FC<AudioPreviewProps> = ({
@@ -22,7 +21,6 @@ export const AudioPreview: React.FC<AudioPreviewProps> = ({
   return (
     <div>
       <Label className="text-xs">Audio Preview</Label>
-      <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
       <AudioPlayer 
         audioUrl={validatedUrl || audioUrl} 
         isPlayingExternal={isPreviewPlaying}
