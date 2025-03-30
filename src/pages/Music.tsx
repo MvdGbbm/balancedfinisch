@@ -148,11 +148,14 @@ const Music: React.FC = () => {
 
   return (
     <MobileLayout
-      title="Muziek"
-      icon={<MusicIcon className="h-5 w-5" />}
       showNav={true}
     >
       <div className="container px-4 pb-20">
+        <div className="flex items-center gap-2 mb-4">
+          <MusicIcon className="h-5 w-5 text-primary" />
+          <h1 className="text-xl font-bold">Muziek</h1>
+        </div>
+        
         <Tabs 
           defaultValue="muziek" 
           value={activeTab} 
