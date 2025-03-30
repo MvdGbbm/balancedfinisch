@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Breathing from "./pages/Breathing";
 import Meditations from "./pages/Meditations";
-import Soundscapes from "./pages/Soundscapes";
+import Music from "./pages/Music";
 import Journal from "./pages/Journal";
 import Planner from "./pages/Planner";
 import DailyQuote from "./pages/DailyQuote";
@@ -40,7 +40,7 @@ const router = createBrowserRouter(
       <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
       <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
       <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
-      <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
+      <Route path="/music" element={<Music />} errorElement={<ErrorBoundary />} />
       <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
       <Route path="/admin" element={<Admin />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />

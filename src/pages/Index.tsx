@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { useNavigate } from "react-router-dom";
@@ -40,14 +39,6 @@ const features = [
     color: "bg-rose-100 dark:bg-rose-900/30",
     textColor: "text-rose-600 dark:text-rose-300",
     path: "/journal"
-  },
-  {
-    title: "Soundscapes",
-    description: "Ontspan met rustgevende natuurgeluiden en muziek",
-    icon: Music,
-    color: "bg-indigo-100 dark:bg-indigo-900/30",
-    textColor: "text-indigo-600 dark:text-indigo-300",
-    path: "/soundscapes"
   },
   {
     title: "Dagelijkse Quote",
