@@ -50,7 +50,14 @@ export const MeditationDetailDialog = ({
   const [audioKey, setAudioKey] = useState<number>(0); 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [randomQuote] = useState(getRandomQuote());
+  
+  const [randomQuote] = useState(() => {
+    const quote = getRandomQuote();
+    return {
+      ...quote,
+      id: quote.id || `quote-${Date.now()}`
+    };
+  });
   
   const filteredGuidedMeditations = guidedMeditations.filter(
     med => meditation && med.id !== meditation.id

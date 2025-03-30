@@ -24,7 +24,13 @@ export function MeditationPlayerContainer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playerKey, setPlayerKey] = useState(0);
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
-  const [randomQuote] = useState(getRandomQuote());
+  const [randomQuote] = useState(() => {
+    const quote = getRandomQuote();
+    return {
+      ...quote,
+      id: quote.id || `quote-${Date.now()}`
+    };
+  });
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);

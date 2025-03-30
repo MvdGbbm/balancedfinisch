@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 /**
@@ -203,17 +202,19 @@ export const preloadAudio = async (url: string): Promise<boolean> => {
 /**
  * Returns a random quote about sound, music or listening
  */
-export const getRandomQuote = (): { text: string; author: string; id?: string } => {
-  const quotes = [
-    { text: "Muziek geeft de ziel een stem.", author: "Plato", id: "1" },
-    { text: "Muziek is de universele taal van de mensheid.", author: "Henry Wadsworth Longfellow", id: "2" },
-    { text: "Waar woorden falen, spreekt muziek.", author: "Hans Christian Andersen", id: "3" },
-    { text: "Stilte is even belangrijk als geluid.", author: "Miles Davis", id: "4" },
-    { text: "Luister naar de stilte. Het heeft zoveel te zeggen.", author: "Rumi", id: "5" },
-    { text: "De muziek drukt uit wat niet gezegd kan worden en waarover het onmogelijk is om te zwijgen.", author: "Victor Hugo", id: "6" },
-    { text: "Zonder muziek zou het leven een vergissing zijn.", author: "Friedrich Nietzsche", id: "7" },
-    { text: "Muziek is de kortste weg naar het hart.", author: "Søren Kierkegaard", id: "8" }
-  ];
+export const getRandomQuote = (): { id: string; text: string; author: string; backgroundClass?: string } => {
+  // Import quotes from data
+  const { quotes, colorGradients } = require("@/data/quotes");
   
-  return quotes[Math.floor(Math.random() * quotes.length)];
+  const randomIndex = Math.floor(Math.random() * quotes.length);
+  const randomGradientIndex = Math.floor(Math.random() * colorGradients.length);
+  
+  const quote = quotes[randomIndex];
+  
+  // Ensure the quote has an id (use existing or generate)
+  return {
+    ...quote,
+    id: quote.id || `quote-random-${Date.now()}`,
+    backgroundClass: colorGradients[randomGradientIndex]
+  };
 };
