@@ -11,6 +11,7 @@ interface BreathingCircleProps {
   onBreathComplete?: () => void;
   isActive: boolean;
   currentPhase?: "inhale" | "hold" | "exhale" | "rest";
+  secondsLeft?: number;
 }
 
 export function BreathingCircle({
@@ -20,50 +21,73 @@ export function BreathingCircle({
   className,
   onBreathComplete,
   isActive = false,
-  currentPhase = "rest"
+  currentPhase = "rest",
+  secondsLeft = 0
 }: BreathingCircleProps) {
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
-  const [circleScale, setCircleScale] = useState(0.75); // Start at 75% size
+  const [circleScale, setCircleScale] = useState(0.5);
 
-  // Use the prop currentPhase if provided, otherwise use the internal state
   const activePhase = currentPhase || phase;
 
-  // Reset state when isActive changes
   useEffect(() => {
     if (isActive) {
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
-      setCircleScale(0.75); // Start small
+      setCircleScale(0.5); // Start at 50%
     } else {
       setPhase("rest");
       setProgress(0);
-      setCircleScale(0.85); // Rest size
+      setCircleScale(0.5); // Rest at 50%
     }
   }, [isActive, inhaleDuration]);
 
-  // Update scale based on current phase and progress
   useEffect(() => {
     if (!isActive) return;
 
-    if (activePhase === "inhale") {
-      // Gradually expand from 75% to 100% during inhale
-      setCircleScale(0.75 + (progress / 100) * 0.5);
-    } else if (activePhase === "hold") {
-      // Maintain full size during hold
-      setCircleScale(1.25);
-    } else if (activePhase === "exhale") {
-      // Gradually contract from 100% to 75% during exhale
-      setCircleScale(1.25 - (progress / 100) * 0.5);
-    } else {
-      // Rest state
-      setCircleScale(0.85);
+    let maxSeconds = 1;
+    switch (activePhase) {
+      case "inhale": maxSeconds = Math.ceil(inhaleDuration / 1000); break;
+      case "hold": maxSeconds = Math.ceil(holdDuration / 1000); break;
+      case "exhale": maxSeconds = Math.ceil(exhaleDuration / 1000); break;
     }
-  }, [activePhase, progress, isActive]);
 
-  // Main breathing cycle effect
+    // Handle circle scaling based on phase and progress
+    if (secondsLeft && maxSeconds > 0) {
+      const percentComplete = (maxSeconds - secondsLeft) / maxSeconds;
+      
+      if (activePhase === "inhale") {
+        // Expand from 50% to 100% during inhale (more dramatic expansion)
+        setCircleScale(0.5 + (percentComplete * 0.5));
+      } else if (activePhase === "hold") {
+        // Stay at 100% during hold
+        setCircleScale(1.0);
+      } else if (activePhase === "exhale") {
+        // Shrink from 100% back to 50% during exhale
+        setCircleScale(1.0 - (percentComplete * 0.5));
+      } else {
+        // Rest at 50%
+        setCircleScale(0.5);
+      }
+    } else {
+      if (activePhase === "inhale") {
+        // Expand from 50% to 100% during inhale
+        setCircleScale(0.5 + (progress / 100) * 0.5);
+      } else if (activePhase === "hold") {
+        // Stay at 100% during hold
+        setCircleScale(1.0);
+      } else if (activePhase === "exhale") {
+        // Shrink from 100% back to 50% during exhale
+        setCircleScale(1.0 - (progress / 100) * 0.5);
+      } else {
+        // Rest at 50%
+        setCircleScale(0.5);
+      }
+    }
+  }, [activePhase, progress, isActive, secondsLeft, inhaleDuration, holdDuration, exhaleDuration]);
+
   useEffect(() => {
     if (!isActive) {
       return;
@@ -82,14 +106,12 @@ export function BreathingCircle({
       return elapsed >= phaseDuration;
     };
 
-    // Initialize progress immediately
     calculateProgress();
 
     const interval = setInterval(() => {
       const phaseComplete = calculateProgress();
       
       if (phaseComplete) {
-        // Reset progress to 0 before changing phase to ensure smooth transition
         setProgress(0);
         
         if (currentPhaseLocal === "inhale") {
@@ -110,7 +132,7 @@ export function BreathingCircle({
         startTime = Date.now();
         setPhaseTimeLeft(Math.ceil(phaseDuration / 1000));
       }
-    }, 16); // ~60fps for smooth animation
+    }, 16);
 
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
@@ -130,12 +152,11 @@ export function BreathingCircle({
 
   return (
     <div className="flex flex-col items-center justify-center space-y-6">
-      {/* Fixed height container to prevent layout shifts */}
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
-        {/* Blurred outer glow effect - scales with breathing */}
+        {/* Outer glow */}
         <div 
           className={cn(
-            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all duration-1000", 
+            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all", 
             {
               "bg-blue-400/30": activePhase === "rest",
               "bg-cyan-400/40": activePhase === "inhale",
@@ -144,31 +165,31 @@ export function BreathingCircle({
             }
           )}
           style={{
-            transform: `scale(${circleScale * 1.2})`, // Glow is slightly larger than the circle
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+            transform: `scale(${circleScale * 1.2})`,
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1), 
                       background-color ${getTransitionDuration()}ms ease-in-out,
                       opacity ${getTransitionDuration()}ms ease-in-out`
           }}
         />
         
-        {/* Shadow backdrop layer */}
+        {/* Middle layer */}
         <div 
           className="absolute inset-0 rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.1)]"
           style={{
-            transform: `scale(${circleScale * 1.05})`, // Shadow is slightly larger than the circle
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1)`
+            transform: `scale(${circleScale * 1.05})`,
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1)`
           }}
         />
         
-        {/* Main breathing circle with dynamic sizing */}
+        {/* Main circle */}
         <div 
           className={cn(
             "absolute inset-0 flex items-center justify-center rounded-full", 
             className
           )}
           style={{
-            transform: `scale(${circleScale})`, // Dynamic scaling
-            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+            transform: `scale(${circleScale})`,
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.16, 1, 0.3, 1), 
                         box-shadow ${getTransitionDuration()}ms ease-in-out, 
                         background-color ${getTransitionDuration()}ms ease-in-out`
           }}
@@ -185,27 +206,27 @@ export function BreathingCircle({
                           box-shadow ${getTransitionDuration()}ms ease-in-out`
             }}
           >
-            {/* Small particle effects around the circle */}
-            <div className={cn(
-              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] rounded-full",
-              "opacity-0 dark:opacity-30",
-              {
-                "animate-pulse-gentle": isActive
-              }
-            )}>
+            {/* Decorative particles */}
+            <div 
+              className={cn(
+                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] rounded-full",
+                "opacity-0 dark:opacity-30",
+                {
+                  "animate-pulse-gentle": isActive
+                }
+              )}
+            >
               <div className="absolute top-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 blur-sm" />
               <div className="absolute bottom-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 blur-sm" />
               <div className="absolute left-0 top-1/2 w-2 h-2 rounded-full bg-white/60 -translate-y-1/2 blur-sm" />
               <div className="absolute right-0 top-1/2 w-2 h-2 rounded-full bg-white/60 -translate-y-1/2 blur-sm" />
               
-              {/* Additional subtle particles for more professional look */}
               <div className="absolute top-1/4 right-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
               <div className="absolute bottom-1/4 left-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
               <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
               <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
             </div>
             
-            {/* Text content with transitions */}
             <div 
               className="text-center text-white"
               style={{
@@ -222,7 +243,7 @@ export function BreathingCircle({
                     {activePhase === "inhale" ? "Adem in" : activePhase === "hold" ? "Houd vast" : "Adem uit"}
                   </div>
                   <div className="flex items-center justify-center text-4xl font-bold drop-shadow-lg">
-                    {phaseTimeLeft}
+                    {secondsLeft || phaseTimeLeft}
                     <span className="text-sm ml-1 mt-1">s</span>
                   </div>
                 </div>
