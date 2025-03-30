@@ -1,187 +1,180 @@
 
-import React, { useState } from "react";
+// This file should be fixed to avoid build errors
+
+import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
-import { useApp } from "@/context/AppContext";
-import { Button } from "@/components/ui/button";
 import { MeditationCard } from "@/components/meditation/meditation-card";
+import { Button } from "@/components/ui/button";
+import { useMediaQuery } from "@/hooks/use-mobile";
+import { MeditationPlayerContainer } from "@/components/meditation/meditation-player-container";
 import { MeditationDetailDialog } from "@/components/meditation/meditation-detail-dialog";
+import { useApp } from "@/context/AppContext";
+import { MeditationCategoryTabs } from "@/components/meditation/meditation-category-tabs";
+import { MeditationFilters } from "@/components/meditation/meditation-filters";
+import { useNavigate } from "react-router-dom";
+import { groupBy } from "lodash";
 import { Meditation } from "@/lib/types";
-import { filterMeditations } from "@/utils/meditation-utils";
-import { toast } from "sonner";
+import { MeditationSubcategory } from "@/components/meditation/meditation-subcategory";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
-const Meditations = () => {
-  const { meditations, setCurrentMeditation, deleteMeditation } = useApp();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedMeditation, setSelectedMeditation] = useState<Meditation | null>(null);
-  const [selectedDurations, setSelectedDurations] = useState<number[]>([]);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-
-  // Filter meditations based on search, category, and durations
-  const filteredMeditations = filterMeditations(
-    meditations,
-    searchQuery,
-    selectedCategory,
-    selectedDurations
-  );
-
+// Main component
+const MeditationsPage = () => {
+  const { meditations, currentMeditation, setCurrentMeditation, deleteMeditation } = useApp();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [durationFilter, setDurationFilter] = useState<number | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [meditationToDelete, setMeditationToDelete] = useState<string | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [detailMeditation, setDetailMeditation] = useState<Meditation | null>(null);
+  const navigate = useNavigate();
+  
+  // Filter meditations based on active tab and duration filter
+  const filteredMeditations = meditations.filter(meditation => {
+    const categoryMatch = activeTab === "all" || meditation.category === activeTab;
+    const durationMatch = durationFilter === null || meditation.duration <= durationFilter;
+    return categoryMatch && durationMatch;
+  });
+  
   // Group meditations by category
-  const categories = Array.from(
-    new Set(filteredMeditations.map((m) => m.category))
-  ).sort();
-
+  const groupedMeditations = groupBy(filteredMeditations, "category");
+  
+  // Handle meditation selection
   const handleMeditationClick = (meditation: Meditation) => {
-    setSelectedMeditation(meditation);
-    setDetailDialogOpen(true);
-  };
-
-  const handlePlayMeditation = (meditation: Meditation) => {
     setCurrentMeditation(meditation);
-    // Close dialog after selecting
-    setDetailDialogOpen(false);
   };
-
-  const handleDeleteMeditation = (id: string) => {
-    if (window.confirm("Weet je zeker dat je deze meditatie wilt verwijderen?")) {
-      deleteMeditation(id);
-      toast("Meditatie succesvol verwijderd");
+  
+  // Show detail dialog
+  const handleShowDetail = (meditation: Meditation) => {
+    setDetailMeditation(meditation);
+    setShowDetailDialog(true);
+  };
+  
+  // Handle delete meditation
+  const handleDeleteClick = (id: string) => {
+    setMeditationToDelete(id);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDelete = () => {
+    if (meditationToDelete) {
+      deleteMeditation(meditationToDelete);
+      if (currentMeditation?.id === meditationToDelete) {
+        setCurrentMeditation(null);
+      }
+      setShowDeleteDialog(false);
+      setMeditationToDelete(null);
     }
   };
-
+  
+  // Navigation to admin
+  const navigateToAdmin = () => {
+    navigate("/admin/meditations");
+  };
+  
+  // Check if we should render "all" meditations or groupBy category
+  const shouldShowGrouped = activeTab === "all" && Object.keys(groupedMeditations).length > 0;
+  
   return (
     <MobileLayout>
-      <div className="container px-4 py-4">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Meditaties</h1>
+      <div className="space-y-6 pb-32">
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Meditaties</h1>
+            <Button variant="outline" size="sm" onClick={navigateToAdmin}>
+              Beheren
+            </Button>
+          </div>
           <p className="text-muted-foreground">
-            Ontdek geleide meditaties voor elke stemming
+            Ontdek geleide meditaties voor rust en balans in je leven.
           </p>
         </div>
-
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Zoek meditaties..."
-            className="pl-9 pr-12"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2"
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {isFiltersOpen && (
-          <div className="mb-6">
-            {/* Simple duration selector */}
-            <div className="space-y-2">
-              <h3 className="font-medium">Duur</h3>
-              <div className="flex flex-wrap gap-2">
-                {[5, 10, 15, 20, 30].map((duration) => (
-                  <Button
-                    key={duration}
-                    variant={selectedDurations.includes(duration) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setSelectedDurations(prev =>
-                        prev.includes(duration)
-                          ? prev.filter(d => d !== duration)
-                          : [...prev, duration]
-                      );
-                    }}
-                  >
-                    {duration} min
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {categories.length > 0 && (
-          <div className="mb-4">
-            <div className="overflow-x-auto pb-2">
-              <div className="flex space-x-2">
-                <Button
-                  variant={selectedCategory === null ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  Alle
-                </Button>
-                {categories.map((category) => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(
-                      selectedCategory === category ? null : category
-                    )}
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
+        
+        <MeditationCategoryTabs 
+          categories={Object.keys(groupedMeditations)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+        
+        <MeditationFilters 
+          durationFilter={durationFilter}
+          onDurationChange={setDurationFilter}
+        />
+        
         <div className="space-y-6">
-          {categories.length > 0 ? (
-            categories.map((category) => (
-              <div key={category} className="space-y-4">
-                <h2 className="text-lg font-medium">{category}</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {filteredMeditations
-                    .filter((m) => m.category === category)
-                    .map((meditation) => (
-                      <MeditationCard
-                        key={meditation.id}
-                        meditation={meditation}
-                        isSelected={false}
-                        onClick={() => handleMeditationClick(meditation)}
-                        showDeleteButton={true}
-                        onDelete={() => handleDeleteMeditation(meditation.id)}
-                      />
-                    ))}
-                </div>
-              </div>
+          {shouldShowGrouped ? (
+            // Show grouped by category
+            Object.entries(groupedMeditations).map(([category, meditations]) => (
+              <MeditationSubcategory 
+                key={category}
+                title={category}
+                meditations={meditations}
+                onMeditationClick={handleMeditationClick}
+                onShowDetail={handleShowDetail}
+                selectedId={currentMeditation?.id}
+              />
             ))
           ) : (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground">
-                {searchQuery
-                  ? "Geen meditaties gevonden voor je zoekopdracht."
-                  : "Geen meditaties gevonden."}
-              </p>
+            // Show filtered list
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMeditations.map(meditation => (
+                <MeditationCard
+                  key={meditation.id}
+                  meditation={meditation}
+                  isSelected={currentMeditation?.id === meditation.id}
+                  onClick={() => handleMeditationClick(meditation)}
+                  showDeleteButton={true}
+                  onDeleteClick={() => handleDeleteClick(meditation.id)}
+                />
+              ))}
+            </div>
+          )}
+          
+          {filteredMeditations.length === 0 && (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground">Geen meditaties gevonden met deze filters.</p>
             </div>
           )}
         </div>
       </div>
-
-      {selectedMeditation && (
-        <MeditationDetailDialog
-          meditation={selectedMeditation}
-          soundscapes={[]}
-          isOpen={detailDialogOpen}
-          onOpenChange={setDetailDialogOpen}
-          currentSoundscapeId={null}
-          onSoundscapeChange={() => {}}
-          guidedMeditations={[]}
-          onGuidedMeditationSelect={() => {}}
+      
+      {currentMeditation && (
+        <MeditationPlayerContainer
+          meditation={currentMeditation}
+          onClose={() => setCurrentMeditation(null)}
         />
       )}
+      
+      {detailMeditation && (
+        <MeditationDetailDialog
+          meditation={detailMeditation}
+          open={showDetailDialog}
+          onOpenChange={setShowDetailDialog}
+          onPlay={() => {
+            setCurrentMeditation(detailMeditation);
+            setShowDetailDialog(false);
+          }}
+        />
+      )}
+      
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Meditatie verwijderen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Weet je zeker dat je deze meditatie wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground">
+              Verwijderen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MobileLayout>
   );
 };
 
-export default Meditations;
+export default MeditationsPage;

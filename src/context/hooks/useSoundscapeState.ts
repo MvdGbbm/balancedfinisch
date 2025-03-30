@@ -1,11 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { Soundscape } from "@/lib/types";
-import { soundscapes as sampleSoundscapes } from "@/data/soundscapes";
-import { supabase } from "@/integrations/supabase/client";
-import { generateId } from "../utils";
 import { toast } from "sonner";
-import { processSoundscapeUrls } from "@/utils/meditation-utils";
+import { 
+  fetchSoundscapesFromDb,
+  addSoundscapeToDb,
+  updateSoundscapeInDb,
+  deleteSoundscapeFromDb
+} from "@/services/soundscape-service";
+import { 
+  getSampleSoundscapes,
+  createLocalSoundscape
+} from "@/utils/soundscape-utils";
 
 export function useSoundscapeState() {
   // Changed variable name to avoid duplicate declaration
@@ -15,97 +21,46 @@ export function useSoundscapeState() {
   
   // Load soundscapes from Supabase
   useEffect(() => {
-    const fetchSoundscapes = async () => {
+    const loadSoundscapes = async () => {
       try {
         setIsLoading(true);
         
         // Try to fetch from Supabase first
-        const { data: dbSoundscapes, error } = await supabase
-          .from('soundscapes')
-          .select('*')
-          .order('title');
+        const dbSoundscapes = await fetchSoundscapesFromDb();
         
-        if (error) {
-          throw error;
-        }
-        
-        if (dbSoundscapes && dbSoundscapes.length > 0) {
-          console.log("Loaded soundscapes from Supabase:", dbSoundscapes.length);
-          
-          // Transform Supabase data to our app format
-          const transformedSoundscapes: Soundscape[] = dbSoundscapes.map(item => ({
-            id: item.id,
-            title: item.title,
-            description: item.description || '',
-            audioUrl: item.audio_url,
-            coverImageUrl: item.cover_image_url,
-            category: item.category,
-            tags: item.tags || []
-          }));
-          
-          // Process URLs to ensure they are valid
-          const processedSoundscapes = await processSoundscapeUrls(transformedSoundscapes);
-          setSoundscapesData(processedSoundscapes);
+        if (dbSoundscapes) {
+          setSoundscapesData(dbSoundscapes);
         } else {
           console.log("No soundscapes found in database, using sample data");
           
           // Use sample data as fallback
-          const processedSoundscapes = await processSoundscapeUrls(sampleSoundscapes);
-          setSoundscapesData(processedSoundscapes);
+          const sampleData = await getSampleSoundscapes();
+          setSoundscapesData(sampleData);
         }
       } catch (error) {
-        console.error("Error fetching soundscapes:", error);
+        console.error("Error loading soundscapes:", error);
         toast.error("Fout bij het laden van soundscapes");
         
         // Fallback to sample data on error
-        const processedSoundscapes = await processSoundscapeUrls(sampleSoundscapes);
-        setSoundscapesData(processedSoundscapes);
+        const sampleData = await getSampleSoundscapes();
+        setSoundscapesData(sampleData);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchSoundscapes();
+    loadSoundscapes();
   }, []);
   
   // CRUD functions for soundscapes
   async function addSoundscape(soundscape: Omit<Soundscape, 'id'>) {
     try {
       // Insert into Supabase
-      const { data, error } = await supabase
-        .from('soundscapes')
-        .insert({
-          title: soundscape.title,
-          description: soundscape.description,
-          audio_url: soundscape.audioUrl,
-          cover_image_url: soundscape.coverImageUrl,
-          category: soundscape.category,
-          tags: soundscape.tags || []
-        })
-        .select('*')
-        .single();
+      const newSoundscape = await addSoundscapeToDb(soundscape);
       
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        // Transform to app format
-        const newSoundscape: Soundscape = {
-          id: data.id,
-          title: data.title,
-          description: data.description || '',
-          audioUrl: data.audio_url,
-          coverImageUrl: data.cover_image_url,
-          category: data.category,
-          tags: data.tags || []
-        };
-        
-        // Process URLs
-        const processedSoundscape = await processSoundscapeUrls([newSoundscape]);
-        
+      if (newSoundscape) {
         // Update local state
-        setSoundscapesData(prev => [...prev, processedSoundscape[0]]);
+        setSoundscapesData(prev => [...prev, newSoundscape]);
         toast.success("Soundscape toegevoegd");
       }
     } catch (error) {
@@ -113,40 +68,21 @@ export function useSoundscapeState() {
       toast.error("Fout bij het toevoegen van soundscape");
       
       // Fallback to local-only if Supabase insert fails
-      const newSoundscape: Soundscape = {
-        ...soundscape,
-        id: generateId(),
-      };
-      setSoundscapesData(prev => [...prev, newSoundscape]);
+      const localSoundscape = createLocalSoundscape(soundscape);
+      setSoundscapesData(prev => [...prev, localSoundscape]);
     }
   }
   
   async function updateSoundscape(id: string, soundscape: Partial<Soundscape>) {
     try {
       // Update in Supabase
-      const { error } = await supabase
-        .from('soundscapes')
-        .update({
-          title: soundscape.title,
-          description: soundscape.description,
-          audio_url: soundscape.audioUrl,
-          cover_image_url: soundscape.coverImageUrl,
-          category: soundscape.category,
-          tags: soundscape.tags,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
+      await updateSoundscapeInDb(id, soundscape);
       
       // Update local state
       setSoundscapesData(prev => 
         prev.map(s => {
           if (s.id === id) {
-            const updated = { ...s, ...soundscape };
-            return updated;
+            return { ...s, ...soundscape };
           }
           return s;
         })
@@ -167,14 +103,7 @@ export function useSoundscapeState() {
   async function deleteSoundscape(id: string) {
     try {
       // Delete from Supabase
-      const { error } = await supabase
-        .from('soundscapes')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
+      await deleteSoundscapeFromDb(id);
       
       // Update local state
       setSoundscapesData(prev => prev.filter(s => s.id !== id));
@@ -188,7 +117,7 @@ export function useSoundscapeState() {
     }
   }
   
-  // Renamed from setSoundscapes to updateSoundscapesData to avoid duplication
+  // Method to update all soundscapes at once (for compatibility)
   function updateSoundscapesData(newSoundscapes: Soundscape[]) {
     setSoundscapesData(newSoundscapes);
   }
