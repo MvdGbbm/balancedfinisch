@@ -12,56 +12,44 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
-
-type BreathingPattern = {
-  id: string;
-  name: string;
-  inhale: number;
-  hold1: number;
-  exhale: number;
-  hold2: number;
-  cycles: number;
-  description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-};
-
-const defaultBreathingPatterns: BreathingPattern[] = [
-  {
-    id: "1",
-    name: "4-7-8 Techniek",
-    description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
-    inhale: 4,
-    hold1: 7,
-    exhale: 8,
-    hold2: 0,
-    cycles: 5,
-  },
-  {
-    id: "2",
-    name: "Box Breathing",
-    description: "Vierkante ademhaling voor focus en kalmte",
-    inhale: 4,
-    hold1: 4,
-    exhale: 4,
-    hold2: 4, 
-    cycles: 4,
-  },
-  {
-    id: "3",
-    name: "Relaxerende Ademhaling",
-    description: "Eenvoudige techniek voor diepe ontspanning",
-    inhale: 4,
-    hold1: 2,
-    exhale: 6,
-    hold2: 0,
-    cycles: 6,
-  },
-];
+import { BreathingPattern } from "@/lib/types";
 
 export function BreathExercise() {
+  // Default breathing patterns
+  const defaultBreathingPatterns: BreathingPattern[] = [
+    {
+      id: "1",
+      name: "4-7-8 Techniek",
+      description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
+      inhale: 4,
+      hold1: 7,
+      exhale: 8,
+      hold2: 0,
+      cycles: 5,
+    },
+    {
+      id: "2",
+      name: "Box Breathing",
+      description: "Vierkante ademhaling voor focus en kalmte",
+      inhale: 4,
+      hold1: 4,
+      exhale: 4,
+      hold2: 4, 
+      cycles: 4,
+    },
+    {
+      id: "3",
+      name: "Relaxerende Ademhaling",
+      description: "Eenvoudige techniek voor diepe ontspanning",
+      inhale: 4,
+      hold1: 2,
+      exhale: 6,
+      hold2: 0,
+      cycles: 6,
+    },
+  ];
+
+  // State
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [currentPattern, setCurrentPattern] = useState<BreathingPattern>(breathingPatterns[0]);
   const [isActive, setIsActive] = useState(false);
@@ -74,9 +62,23 @@ export function BreathExercise() {
   
   // Track currently selected voice
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
+  
+  // Voice URLs
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
+  
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
 
   // Load breathing patterns and voice URLs from localStorage
   useEffect(() => {
+    // Load breathing patterns
     const savedPatterns = localStorage.getItem('breathingPatterns');
     if (savedPatterns) {
       try {
@@ -97,7 +99,34 @@ export function BreathExercise() {
         console.error("Error loading breathing patterns:", error);
       }
     }
+    
+    // Load voice URLs
+    loadVoiceUrls();
   }, []);
+  
+  const loadVoiceUrls = () => {
+    // Load Vera voice URLs
+    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+    if (savedVeraUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedVeraUrls);
+        setVeraVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Vera voice URLs:", error);
+      }
+    }
+    
+    // Load Marco voice URLs
+    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+    if (savedMarcoUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedMarcoUrls);
+        setMarcoVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Marco voice URLs:", error);
+      }
+    }
+  };
 
   // Reset state when pattern changes
   useEffect(() => {
@@ -115,48 +144,32 @@ export function BreathExercise() {
     let url = "";
     
     if (activeVoice === "vera") {
-      // Get Vera URLs from localStorage
-      const veraUrls = localStorage.getItem('veraVoiceUrls');
-      if (veraUrls) {
-        try {
-          const parsedUrls = JSON.parse(veraUrls);
-          switch (currentPhase) {
-            case "inhale":
-              url = parsedUrls.inhale || "";
-              break;
-            case "hold1":
-            case "hold2":
-              url = parsedUrls.hold || "";
-              break;
-            case "exhale":
-              url = parsedUrls.exhale || "";
-              break;
-          }
-        } catch (error) {
-          console.error("Error parsing Vera URLs:", error);
-        }
+      // Use Vera voice URLs
+      switch (currentPhase) {
+        case "inhale":
+          url = veraVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = veraVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = veraVoiceUrls.exhale || "";
+          break;
       }
     } else if (activeVoice === "marco") {
-      // Get Marco URLs from localStorage
-      const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-      if (marcoUrls) {
-        try {
-          const parsedUrls = JSON.parse(marcoUrls);
-          switch (currentPhase) {
-            case "inhale":
-              url = parsedUrls.inhale || "";
-              break;
-            case "hold1":
-            case "hold2":
-              url = parsedUrls.hold || "";
-              break;
-            case "exhale":
-              url = parsedUrls.exhale || "";
-              break;
-          }
-        } catch (error) {
-          console.error("Error parsing Marco URLs:", error);
-        }
+      // Use Marco voice URLs
+      switch (currentPhase) {
+        case "inhale":
+          url = marcoVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = marcoVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = marcoVoiceUrls.exhale || "";
+          break;
       }
     } else {
       // Default to pattern URLs if no voice is selected
@@ -376,16 +389,6 @@ export function BreathExercise() {
     const selectedPattern = breathingPatterns.find(pattern => pattern.id === value);
     if (selectedPattern) {
       setCurrentPattern(selectedPattern);
-    }
-  };
-
-  const getCurrentPhaseLabel = () => {
-    switch (currentPhase) {
-      case "inhale": return "Inademen";
-      case "hold1": return "Vasthouden";
-      case "exhale": return "Uitademen";
-      case "hold2": return "Vasthouden";
-      default: return "";
     }
   };
 

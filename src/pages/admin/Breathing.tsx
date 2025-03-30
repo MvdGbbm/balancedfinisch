@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { Plus, Save, Trash2, Link, Mic } from "lucide-react";
+import { Plus, Save, Trash2, Link } from "lucide-react";
 import { toast } from "sonner";
 import { BreathingExerciseTest } from "@/components/admin/breathing-exercise-test";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Label } from "@/components/ui/label";
 
 // Define types for breathing patterns
 type BreathingPattern = {
@@ -28,7 +29,8 @@ type BreathingPattern = {
   hold2Url?: string;
 };
 
-type VoiceUrls = {
+// Define voice URL type
+type VoiceURLs = {
   inhale: string;
   hold: string;
   exhale: string;
@@ -68,40 +70,28 @@ const defaultBreathingPatterns: BreathingPattern[] = [
   },
 ];
 
+// Default voice URLs
+const defaultVoiceUrls: Record<string, VoiceURLs> = {
+  vera: {
+    inhale: "",
+    hold: "",
+    exhale: "",
+  },
+  marco: {
+    inhale: "",
+    hold: "",
+    exhale: "",
+  }
+};
+
 const AdminBreathing = () => {
   const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("techniques");
+  const [activeTab, setActiveTab] = useState<"patterns" | "voices">("patterns");
   
   // Voice URL states
-  const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceUrls>({
-    inhale: "",
-    hold: "",
-    exhale: ""
-  });
-  
-  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceUrls>({
-    inhale: "",
-    hold: "",
-    exhale: ""
-  });
-  
-  // Forms for voice URLs
-  const veraForm = useForm<VoiceUrls>({
-    defaultValues: {
-      inhale: "",
-      hold: "",
-      exhale: ""
-    }
-  });
-  
-  const marcoForm = useForm<VoiceUrls>({
-    defaultValues: {
-      inhale: "",
-      hold: "",
-      exhale: ""
-    }
-  });
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.vera);
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<VoiceURLs>(defaultVoiceUrls.marco);
   
   // Load breathing patterns from localStorage when component mounts
   useEffect(() => {
@@ -121,32 +111,38 @@ const AdminBreathing = () => {
       localStorage.setItem('breathingPatterns', JSON.stringify(defaultBreathingPatterns));
     }
     
-    // Load voice URLs
+    // Load voice URLs from localStorage
+    loadVoiceUrls();
+  }, []);
+  
+  const loadVoiceUrls = () => {
+    // Load Vera voice URLs
     const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
     if (savedVeraUrls) {
       try {
         const parsedUrls = JSON.parse(savedVeraUrls);
         setVeraVoiceUrls(parsedUrls);
-        veraForm.reset(parsedUrls);
       } catch (error) {
         console.error("Error loading Vera voice URLs:", error);
+        setVeraVoiceUrls(defaultVoiceUrls.vera);
       }
     }
     
+    // Load Marco voice URLs
     const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
     if (savedMarcoUrls) {
       try {
         const parsedUrls = JSON.parse(savedMarcoUrls);
         setMarcoVoiceUrls(parsedUrls);
-        marcoForm.reset(parsedUrls);
       } catch (error) {
         console.error("Error loading Marco voice URLs:", error);
+        setMarcoVoiceUrls(defaultVoiceUrls.marco);
       }
     }
-  }, []);
+  };
   
   // Form for editing patterns
-  const form = useForm<BreathingPattern>({
+  const patternForm = useForm<BreathingPattern>({
     defaultValues: {
       id: "",
       name: "",
@@ -163,9 +159,27 @@ const AdminBreathing = () => {
     }
   });
 
+  // Form for voice URLs
+  const veraForm = useForm<VoiceURLs>({
+    defaultValues: veraVoiceUrls
+  });
+
+  const marcoForm = useForm<VoiceURLs>({
+    defaultValues: marcoVoiceUrls
+  });
+
+  // Update form values when voice URLs change
+  useEffect(() => {
+    veraForm.reset(veraVoiceUrls);
+  }, [veraVoiceUrls]);
+
+  useEffect(() => {
+    marcoForm.reset(marcoVoiceUrls);
+  }, [marcoVoiceUrls]);
+
   const handleSelectPattern = (pattern: BreathingPattern) => {
     setSelectedPattern(pattern);
-    form.reset({
+    patternForm.reset({
       ...pattern
     });
   };
@@ -184,7 +198,7 @@ const AdminBreathing = () => {
       cycles: 4,
     };
     setSelectedPattern(newPattern);
-    form.reset(newPattern);
+    patternForm.reset(newPattern);
   };
 
   // Save breathing patterns to localStorage
@@ -224,7 +238,7 @@ const AdminBreathing = () => {
     const filtered = breathingPatterns.filter(p => p.id !== id);
     setBreathingPatterns(filtered);
     setSelectedPattern(null);
-    form.reset({
+    patternForm.reset({
       id: "",
       name: "",
       description: "",
@@ -238,17 +252,36 @@ const AdminBreathing = () => {
     toast.success("Ademhalingstechniek verwijderd");
   };
   
-  // Save voice URLs
-  const handleSaveVeraVoice = (data: VoiceUrls) => {
-    localStorage.setItem('veraVoiceUrls', JSON.stringify(data));
-    setVeraVoiceUrls(data);
-    toast.success("Vera stem-URLs opgeslagen");
+  // Handle voice URL changes
+  const handleVeraUrlChange = (field: keyof VoiceURLs, value: string) => {
+    const updatedUrls = { ...veraVoiceUrls, [field]: value };
+    setVeraVoiceUrls(updatedUrls);
   };
   
-  const handleSaveMarcoVoice = (data: VoiceUrls) => {
-    localStorage.setItem('marcoVoiceUrls', JSON.stringify(data));
+  const handleMarcoUrlChange = (field: keyof VoiceURLs, value: string) => {
+    const updatedUrls = { ...marcoVoiceUrls, [field]: value };
+    setMarcoVoiceUrls(updatedUrls);
+  };
+  
+  // Save voice URLs to localStorage
+  const saveVoiceUrls = () => {
+    localStorage.setItem('veraVoiceUrls', JSON.stringify(veraVoiceUrls));
+    localStorage.setItem('marcoVoiceUrls', JSON.stringify(marcoVoiceUrls));
+    toast.success("Stem audio URLs opgeslagen");
+  };
+
+  // Save Vera voice URLs form
+  const onVeraSubmit = (data: VoiceURLs) => {
+    setVeraVoiceUrls(data);
+    localStorage.setItem('veraVoiceUrls', JSON.stringify(data));
+    toast.success("Vera stem configuratie opgeslagen");
+  };
+
+  // Save Marco voice URLs form
+  const onMarcoSubmit = (data: VoiceURLs) => {
     setMarcoVoiceUrls(data);
-    toast.success("Marco stem-URLs opgeslagen");
+    localStorage.setItem('marcoVoiceUrls', JSON.stringify(data));
+    toast.success("Marco stem configuratie opgeslagen");
   };
 
   return (
@@ -267,13 +300,18 @@ const AdminBreathing = () => {
           </Button>
         </div>
         
-        <Tabs defaultValue="techniques" value={activeTab} onValueChange={setActiveTab}>
+        <Tabs 
+          defaultValue="patterns" 
+          value={activeTab} 
+          onValueChange={(value) => setActiveTab(value as "patterns" | "voices")}
+          className="w-full"
+        >
           <TabsList className="mb-4">
-            <TabsTrigger value="techniques">Ademhalingstechnieken</TabsTrigger>
-            <TabsTrigger value="voices">Steminstellingen</TabsTrigger>
+            <TabsTrigger value="patterns">Ademhalingstechnieken</TabsTrigger>
+            <TabsTrigger value="voices">Stem Configuratie</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="techniques">
+          <TabsContent value="patterns">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* List of breathing patterns */}
               <Card className="lg:col-span-1">
@@ -305,10 +343,10 @@ const AdminBreathing = () => {
                 </CardHeader>
                 <CardContent>
                   {selectedPattern ? (
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+                    <Form {...patternForm}>
+                      <form onSubmit={patternForm.handleSubmit(handleSave)} className="space-y-4">
                         <FormField
-                          control={form.control}
+                          control={patternForm.control}
                           name="name"
                           render={({ field }) => (
                             <FormItem>
@@ -321,7 +359,7 @@ const AdminBreathing = () => {
                         />
 
                         <FormField
-                          control={form.control}
+                          control={patternForm.control}
                           name="description"
                           render={({ field }) => (
                             <FormItem>
@@ -335,7 +373,7 @@ const AdminBreathing = () => {
 
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="inhale"
                             render={({ field }) => (
                               <FormItem>
@@ -348,7 +386,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="inhaleUrl"
                             render={({ field }) => (
                               <FormItem>
@@ -364,7 +402,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="hold1"
                             render={({ field }) => (
                               <FormItem>
@@ -377,7 +415,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="hold1Url"
                             render={({ field }) => (
                               <FormItem>
@@ -393,7 +431,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="exhale"
                             render={({ field }) => (
                               <FormItem>
@@ -406,7 +444,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="exhaleUrl"
                             render={({ field }) => (
                               <FormItem>
@@ -422,7 +460,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="hold2"
                             render={({ field }) => (
                               <FormItem>
@@ -435,7 +473,7 @@ const AdminBreathing = () => {
                           />
 
                           <FormField
-                            control={form.control}
+                            control={patternForm.control}
                             name="hold2Url"
                             render={({ field }) => (
                               <FormItem>
@@ -452,7 +490,7 @@ const AdminBreathing = () => {
                         </div>
 
                         <FormField
-                          control={form.control}
+                          control={patternForm.control}
                           name="cycles"
                           render={({ field }) => (
                             <FormItem>
@@ -492,26 +530,20 @@ const AdminBreathing = () => {
           
           <TabsContent value="voices">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Vera voice settings */}
+              {/* Vera Voice Config */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mic className="h-5 w-5" />
-                    Vera Steminstellingen
-                  </CardTitle>
+                  <CardTitle>Vera Stem Configuratie</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Form {...veraForm}>
-                    <form onSubmit={veraForm.handleSubmit(handleSaveVeraVoice)} className="space-y-4">
+                    <form onSubmit={veraForm.handleSubmit(onVeraSubmit)} className="space-y-4">
                       <FormField
                         control={veraForm.control}
                         name="inhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-1">
-                              <Link className="h-4 w-4" />
-                              <span>Audio URL voor inademen</span>
-                            </FormLabel>
+                            <FormLabel>Inademen Audio URL</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
                             </FormControl>
@@ -524,13 +556,11 @@ const AdminBreathing = () => {
                         name="hold"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-1">
-                              <Link className="h-4 w-4" />
-                              <span>Audio URL voor vasthouden</span>
-                            </FormLabel>
+                            <FormLabel>Vasthouden Audio URL</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
                             </FormControl>
+                            <p className="text-xs text-muted-foreground">Deze audio wordt gebruikt voor beide vasthoud-fases</p>
                           </FormItem>
                         )}
                       />
@@ -540,10 +570,7 @@ const AdminBreathing = () => {
                         name="exhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-1">
-                              <Link className="h-4 w-4" />
-                              <span>Audio URL voor uitademen</span>
-                            </FormLabel>
+                            <FormLabel>Uitademen Audio URL</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
                             </FormControl>
@@ -551,35 +578,31 @@ const AdminBreathing = () => {
                         )}
                       />
                       
-                      <Button type="submit">
-                        <Save className="mr-2 h-4 w-4" />
-                        Opslaan
-                      </Button>
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          <Save className="mr-2 h-4 w-4" />
+                          Opslaan
+                        </Button>
+                      </div>
                     </form>
                   </Form>
                 </CardContent>
               </Card>
               
-              {/* Marco voice settings */}
+              {/* Marco Voice Config */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mic className="h-5 w-5" />
-                    Marco Steminstellingen
-                  </CardTitle>
+                  <CardTitle>Marco Stem Configuratie</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Form {...marcoForm}>
-                    <form onSubmit={marcoForm.handleSubmit(handleSaveMarcoVoice)} className="space-y-4">
+                    <form onSubmit={marcoForm.handleSubmit(onMarcoSubmit)} className="space-y-4">
                       <FormField
                         control={marcoForm.control}
                         name="inhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-1">
-                              <Link className="h-4 w-4" />
-                              <span>Audio URL voor inademen</span>
-                            </FormLabel>
+                            <FormLabel>Inademen Audio URL</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
                             </FormControl>
@@ -592,13 +615,11 @@ const AdminBreathing = () => {
                         name="hold"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-1">
-                              <Link className="h-4 w-4" />
-                              <span>Audio URL voor vasthouden</span>
-                            </FormLabel>
+                            <FormLabel>Vasthouden Audio URL</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
                             </FormControl>
+                            <p className="text-xs text-muted-foreground">Deze audio wordt gebruikt voor beide vasthoud-fases</p>
                           </FormItem>
                         )}
                       />
@@ -608,10 +629,7 @@ const AdminBreathing = () => {
                         name="exhale"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="flex items-center gap-1">
-                              <Link className="h-4 w-4" />
-                              <span>Audio URL voor uitademen</span>
-                            </FormLabel>
+                            <FormLabel>Uitademen Audio URL</FormLabel>
                             <FormControl>
                               <Input {...field} placeholder="https://..." />
                             </FormControl>
@@ -619,10 +637,12 @@ const AdminBreathing = () => {
                         )}
                       />
                       
-                      <Button type="submit">
-                        <Save className="mr-2 h-4 w-4" />
-                        Opslaan
-                      </Button>
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          <Save className="mr-2 h-4 w-4" />
+                          Opslaan
+                        </Button>
+                      </div>
                     </form>
                   </Form>
                 </CardContent>
@@ -635,7 +655,7 @@ const AdminBreathing = () => {
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">Test Ademhalingsoefening</h2>
           <p className="text-muted-foreground mb-4">
-            Test de ademhalingsoefening met audio begeleiding hieronder. De audio url's worden automatisch afgespeeld bij elke fase.
+            Test de ademhalingsoefening met audio begeleiding hieronder. Selecteer Vera of Marco om hun stem te horen.
           </p>
           <BreathingExerciseTest pattern={selectedPattern} />
         </div>
