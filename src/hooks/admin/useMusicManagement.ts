@@ -1,259 +1,202 @@
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Soundscape } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
-import { useApp } from "@/context/AppContext";
+import { Soundscape } from "@/lib/types";
+import { saveSoundscapeToSupabase } from "@/components/admin/music/utils/saveSoundscape";
 import { toast } from "sonner";
 
 export const useMusicManagement = () => {
-  const { setSoundscapes, soundscapes } = useApp();
-  const queryClient = useQueryClient();
-  const [currentMusic, setCurrentMusic] = useState<Soundscape | null>(null);
+  const [tracks, setTracks] = useState<Soundscape[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentMusic, setCurrentMusic] = useState<Soundscape | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [categories, setCategories] = useState<string[]>(["Muziek"]);
+  const [categories, setCategories] = useState<string[]>(["Muziek", "Natuur", "Meditatie"]);
 
-  // Fetch categories from Supabase
+  // Fetch music data
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchMusic = async () => {
+      setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('soundscapes')
-          .select('category')
-          .not('category', 'is', null);
-        
+          .select('*')
+          .order('created_at', { ascending: false });
+
         if (error) {
-          console.error("Error fetching categories:", error);
-          return;
+          throw error;
         }
-        
-        if (data) {
-          // Extract unique categories
-          const uniqueCategories = [...new Set(data.map(item => item.category))];
-          
-          // Make sure "Muziek" is always included
-          if (!uniqueCategories.includes("Muziek")) {
-            uniqueCategories.push("Muziek");
-          }
-          
-          setCategories(uniqueCategories);
-        }
-      } catch (error) {
-        console.error("Error in fetchCategories:", error);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
 
-  // Filter music tracks from soundscapes
-  const musicTracks = soundscapes.filter(
-    (track) => track.category === "Muziek"
-  );
-
-  // Filter tracks based on search query
-  const filteredTracks = searchQuery
-    ? musicTracks.filter(
-        (track) =>
-          track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          track.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          track.tags.some((tag) =>
-            tag.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-      )
-    : musicTracks;
-
-  // Query to fetch music tracks from Supabase
-  const { isLoading } = useQuery({
-    queryKey: ["music"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("soundscapes")
-        .select("*");
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Update app context with fetched soundscapes
-      if (data) {
-        const formattedData: Soundscape[] = data.map((item) => ({
+        // Map database fields to Soundscape interface
+        const mappedData: Soundscape[] = data.map(item => ({
           id: item.id,
           title: item.title,
-          description: item.description || "",
+          description: item.description,
           audioUrl: item.audio_url,
-          category: item.category,
           coverImageUrl: item.cover_image_url,
           tags: item.tags || [],
-          isFavorite: item.is_favorite,
+          category: item.category || "Muziek",
+          isFavorite: item.is_favorite || false // Fix the type error here
         }));
 
-        // Fetch unique categories from the data
-        const uniqueCategories = [...new Set(formattedData.map(item => item.category))];
-        
-        // Make sure "Muziek" is always included
-        if (!uniqueCategories.includes("Muziek")) {
-          uniqueCategories.push("Muziek");
-        }
-        
+        setTracks(mappedData);
+
+        // Extract unique categories
+        const uniqueCategories = Array.from(
+          new Set([
+            "Muziek", 
+            ...mappedData.map(item => item.category || "Muziek").filter(Boolean)
+          ])
+        );
         setCategories(uniqueCategories);
-        setSoundscapes(formattedData);
-        return formattedData;
+      } catch (error) {
+        console.error("Error fetching music:", error);
+        toast.error("Er is een fout opgetreden bij het ophalen van de muziek.");
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      return [];
-    },
-  });
+    fetchMusic();
+  }, []);
 
-  // Optimized saveMusic function to prevent duplicates
-  const handleSaveMusic = (music: Partial<Soundscape>) => {
-    const isEdit = !!music.id;
-    
-    if (isEdit) {
-      // For edits, update in the local state directly
-      const updatedSoundscapes = soundscapes.map(s => {
-        if (s.id === music.id) {
-          return {
-            ...s,
-            ...music
-          };
-        }
-        return s;
-      });
-      setSoundscapes(updatedSoundscapes);
-      
-      // Invalidate query to ensure the UI is up to date with server
-      queryClient.invalidateQueries({ queryKey: ["music"] });
-      
-      // Reset current music
-      setCurrentMusic(null);
-    } else if (music.id) {
-      // For new music with server-generated ID, add directly to state
-      const newMusic = music as Soundscape;
-      // Only add if it doesn't already exist
-      if (!soundscapes.some(s => s.id === newMusic.id)) {
-        const updatedSoundscapes = [...soundscapes, newMusic];
-        setSoundscapes(updatedSoundscapes);
-      }
-      
-      // Reset current music
-      setCurrentMusic(null);
-    }
-  };
+  // Filter tracks based on search
+  const filteredTracks = tracks.filter(
+    (track) =>
+      track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      track.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      track.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (track.category && track.category.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
+  // Handle edit music
   const handleEditMusic = (music: Soundscape) => {
     setCurrentMusic(music);
+    // Additional edit handling logic
   };
 
-  // Add category
-  const addCategory = async (category: string) => {
-    if (categories.includes(category)) {
-      toast.error("Deze categorie bestaat al");
-      return;
-    }
-    
-    setCategories(prev => [...prev, category]);
-  };
+  // Handle save music
+  const handleSaveMusic = async (music: Partial<Soundscape>) => {
+    try {
+      const saveOptions = {
+        title: music.title || "",
+        description: music.description || "",
+        audioUrl: music.audioUrl || "",
+        coverImageUrl: music.coverImageUrl || "",
+        tags: music.tags || [],
+        category: music.category || "Muziek",
+        currentMusic: currentMusic,
+        isFavorite: music.isFavorite || false
+      };
 
-  // Delete category
-  const deleteCategory = async (category: string) => {
-    // Don't allow deleting the default "Muziek" category
-    if (category === "Muziek") return;
-    
-    // Check if the category is in use
-    const categoriesInUse = soundscapes.some(s => s.category === category);
-    
-    if (categoriesInUse) {
-      toast.error(
-        "Deze categorie is in gebruik en kan niet worden verwijderd. Wijzig eerst de categorie van de betreffende items."
-      );
-      return;
-    }
-    
-    setCategories(prev => prev.filter(c => c !== category));
-  };
+      const { success, data } = await saveSoundscapeToSupabase(saveOptions);
 
-  // Mutation to delete a music track - Handles both UUID and string IDs
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        // If we're currently playing the track being deleted, stop playback
-        const trackToDelete = soundscapes.find(s => s.id === id);
-        if (trackToDelete && previewUrl === trackToDelete.audioUrl && isPlaying) {
-          setIsPlaying(false);
-          setPreviewUrl(null);
-        }
-        
-        // Check if the ID is a UUID format or a string format like "sound-7"
-        if (id.startsWith('sound-')) {
-          // If it's a sample ID (not from database), just delete from local state
-          console.log(`Deleting sample soundscape with ID: ${id}`);
-          return id;
+      if (success && data) {
+        // Convert database fields to Soundscape interface
+        const savedMusic: Soundscape = {
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          audioUrl: data.audio_url,
+          coverImageUrl: data.cover_image_url,
+          tags: data.tags || [],
+          category: data.category || "Muziek",
+          isFavorite: data.is_favorite || false
+        };
+
+        // Update local state
+        if (currentMusic) {
+          // Update existing music
+          setTracks(prev => prev.map(track => 
+            track.id === savedMusic.id ? savedMusic : track
+          ));
+          toast.success("Muziek succesvol bijgewerkt!");
         } else {
-          // If it's a UUID, attempt to delete from database
-          console.log(`Deleting soundscape with ID: ${id} from database`);
-          const { error } = await supabase
-            .from("soundscapes")
-            .delete()
-            .eq("id", id);
-          
-          if (error) {
-            console.error("Error deleting from database:", error);
-            throw error;
-          }
-          
-          console.log(`Soundscape with ID ${id} deleted successfully`);
-          return id;
+          // Add new music
+          setTracks(prev => [savedMusic, ...prev]);
+          toast.success("Nieuwe muziek succesvol toegevoegd!");
         }
-      } catch (error) {
-        console.error("Error in delete mutation:", error);
+
+        // Reset current music
+        setCurrentMusic(null);
+      } else {
+        throw new Error("Opslaan mislukt");
+      }
+    } catch (error) {
+      console.error("Error saving music:", error);
+      toast.error("Er is een fout opgetreden bij het opslaan van de muziek.");
+    }
+  };
+
+  // Handle delete music
+  const handleDeleteMusic = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('soundscapes')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
         throw error;
       }
-    },
-    onSuccess: (id) => {
-      // Update local state regardless of ID type
-      const updatedSoundscapes = soundscapes.filter(s => s.id !== id);
-      setSoundscapes(updatedSoundscapes);
+
+      // Update local state
+      setTracks(prev => prev.filter(track => track.id !== id));
       
-      // Only invalidate query for actual database records
-      if (!id.startsWith('sound-')) {
-        queryClient.invalidateQueries({ queryKey: ["music"] });
-      }
-      
-      toast.success("Muziek verwijderd");
-      
-      // Reset current music if it was the one being deleted
-      if (currentMusic?.id === id) {
+      // If the deleted track was being previewed, stop the preview
+      if (previewUrl && currentMusic?.id === id) {
+        setPreviewUrl(null);
+        setIsPlaying(false);
         setCurrentMusic(null);
       }
-    },
-    onError: (error) => {
+      
+      toast.success("Muziek succesvol verwijderd!");
+    } catch (error) {
       console.error("Error deleting music:", error);
-      toast.error(`Fout bij verwijderen: ${error.message}`);
-    },
-  });
-
-  const handleDeleteMusic = (id: string) => {
-    console.log(`Initiating delete for soundscape ID: ${id}`);
-    deleteMutation.mutate(id);
+      toast.error("Er is een fout opgetreden bij het verwijderen van de muziek.");
+    }
   };
 
+  // Handle preview toggle
   const handlePreviewToggle = (track: Soundscape) => {
     if (previewUrl === track.audioUrl && isPlaying) {
-      // Stop current preview
       setIsPlaying(false);
-      setPreviewUrl(null);
     } else {
-      // Start new preview
       setPreviewUrl(track.audioUrl);
       setIsPlaying(true);
     }
   };
 
+  // Category management
+  const addCategory = (category: string) => {
+    if (!categories.includes(category)) {
+      setCategories(prev => [...prev, category]);
+      toast.success(`Categorie "${category}" toegevoegd`);
+    }
+  };
+
+  const deleteCategory = (category: string) => {
+    // Prevent deletion of default category
+    if (category === "Muziek") {
+      toast.error("De standaard categorie 'Muziek' kan niet worden verwijderd.");
+      return;
+    }
+    
+    setCategories(prev => prev.filter(cat => cat !== category));
+    // Update tracks with the deleted category to use the default
+    setTracks(prev => prev.map(track => 
+      track.category === category 
+        ? { ...track, category: "Muziek" } 
+        : track
+    ));
+    
+    toast.success(`Categorie "${category}" verwijderd`);
+  };
+
   return {
     isLoading,
+    tracks,
     filteredTracks,
     currentMusic,
     setCurrentMusic,

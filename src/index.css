@@ -41,19 +41,19 @@
   }
  
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 224 71% 4%;
     --foreground: 210 40% 98%;
  
-    --card: 222.2 84% 4.9%;
+    --card: 224 71% 6%;
     --card-foreground: 210 40% 98%;
  
-    --popover: 222.2 84% 4.9%;
+    --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
  
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
  
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 12%;
     --secondary-foreground: 210 40% 98%;
  
     --muted: 217.2 32.6% 17.5%;
@@ -68,6 +68,15 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    
+    --sidebar-background: 224 71% 3%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 216 34% 17%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-ring: 212.7 26.8% 83.9%;
   }
 }
  
@@ -111,4 +120,65 @@
   animation-name: shrink;
   animation-timing-function: ease-out;
   animation-fill-mode: forwards;
+}
+
+/* Modern UI Components */
+.glass-card {
+  @apply bg-opacity-10 backdrop-blur-md border border-white/10 shadow-lg;
+}
+
+.modern-card {
+  @apply bg-navy-950 rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-md;
+}
+
+.modern-card-blue {
+  @apply modern-card border-l-4 border-l-accent-blue;
+}
+
+.modern-card-orange {
+  @apply modern-card border-l-4 border-l-accent-orange;
+}
+
+.modern-card-cyan {
+  @apply modern-card border-l-4 border-l-accent-cyan;
+}
+
+.modern-card-pink {
+  @apply modern-card border-l-4 border-l-accent-pink;
+}
+
+.modern-card-purple {
+  @apply modern-card border-l-4 border-l-accent-purple;
+}
+
+.modern-card-green {
+  @apply modern-card border-l-4 border-l-accent-green;
+}
+
+.icon-container {
+  @apply flex items-center justify-center w-10 h-10 rounded-full;
+}
+
+.icon-container-blue {
+  @apply icon-container bg-accent-blue/10 text-accent-blue;
+}
+
+.icon-container-orange {
+  @apply icon-container bg-accent-orange/10 text-accent-orange;
+}
+
+.icon-container-cyan {
+  @apply icon-container bg-accent-cyan/10 text-accent-cyan;
+}
+
+.icon-container-pink {
+  @apply icon-container bg-accent-pink/10 text-accent-pink;
+}
+
+.icon-container-purple {
+  @apply icon-container bg-accent-purple/10 text-accent-purple;
+}
+
+.icon-container-green {
+  @apply icon-container bg-accent-green/10 text-accent-green;
 }

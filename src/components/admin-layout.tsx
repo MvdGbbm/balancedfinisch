@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -45,51 +46,63 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
       path: "/admin/meditations", 
       icon: Headphones, 
       label: "Meditaties", 
-      description: "/admin/meditaties"
+      description: "/admin/meditaties",
+      accentColor: "accent-blue",
+      iconBg: "icon-container-blue"
     },
     { 
       path: "/admin/quotes", 
       icon: Quote, 
-      label: "inspiratie quotes", 
-      description: "/admin/quotes"
+      label: "Inspiratie quotes", 
+      description: "/admin/quotes",
+      accentColor: "accent-orange",
+      iconBg: "icon-container-orange"
     },
     { 
       path: "/admin/soundscapes", 
       icon: Waves, 
       label: "Soundscapes", 
-      description: "/admin/soundscapes"
+      description: "/admin/soundscapes",
+      accentColor: "accent-cyan",
+      iconBg: "icon-container-cyan"
     },
     { 
       path: "/admin/muziek", 
       icon: Music, 
       label: "Muziek", 
-      description: "/admin/muziek"
+      description: "/admin/muziek",
+      accentColor: "accent-pink",
+      iconBg: "icon-container-pink"
     },
     { 
       path: "/admin/streams", 
       icon: Radio, 
       label: "Streaming Links", 
-      description: "/admin/streams"
+      description: "/admin/streams",
+      accentColor: "accent-purple",
+      iconBg: "icon-container-purple"
     },
     { 
       path: "/admin/breathing", 
       icon: RefreshCw, 
       label: "Ademhaling", 
-      description: "/admin/ademhaling"
+      description: "/admin/ademhaling",
+      accentColor: "accent-green",
+      iconBg: "icon-container-green"
     },
   ];
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex flex-col min-h-screen w-full bg-background">
-        <header className="sticky top-0 z-40 w-full glass-morphism border-b py-3 px-4 backdrop-blur-lg transition-all">
+      <div className="flex flex-col min-h-screen w-full bg-navy-950">
+        <header className="sticky top-0 z-40 w-full glass-morphism border-b py-3 px-4 backdrop-blur-lg transition-all bg-navy-950/90">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => navigate("/")}
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 bg-accent-blue/10 text-accent-blue border-accent-blue/30 hover:bg-accent-blue/20"
               >
                 <Home className="h-4 w-4" />
                 <span>Frontend</span>
@@ -115,11 +128,11 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
         </header>
         
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar side="left" variant="sidebar" collapsible="icon">
+          <Sidebar side="left" variant="sidebar" collapsible="icon" className="border-r border-white/10 bg-navy-950/90 backdrop-blur-lg">
             <SidebarHeader>
               <div className="flex items-center gap-2 px-2">
                 <Lock className="h-5 w-5" />
-                <span className="text-sm font-medium">Panel</span>
+                <span className="text-sm font-medium">Admin Panel</span>
               </div>
             </SidebarHeader>
             <SidebarContent>
@@ -131,6 +144,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
                       <SidebarMenuButton 
                         isActive={location.pathname === "/admin"} 
                         onClick={() => navigate("/admin")}
+                        className={location.pathname === "/admin" ? "bg-accent-blue/10 text-accent-blue" : ""}
                       >
                         <Home className="h-4 w-4" />
                         <span>Dashboard</span>
@@ -143,6 +157,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
                           isActive={location.pathname === item.path}
                           onClick={() => navigate(item.path)}
                           tooltip={item.description}
+                          className={location.pathname === item.path ? `bg-${item.accentColor}/10 text-${item.accentColor}` : ""}
                         >
                           <item.icon className="h-4 w-4" />
                           <span>{item.label}</span>
@@ -155,7 +170,7 @@ export function AdminLayout({ children, className }: AdminLayoutProps) {
             </SidebarContent>
           </Sidebar>
           
-          <main className="flex-1 overflow-auto p-4">
+          <main className="flex-1 overflow-auto p-4 bg-navy-950">
             <div className={cn("space-y-6 animate-fade-in", className)}>
               {children}
             </div>
