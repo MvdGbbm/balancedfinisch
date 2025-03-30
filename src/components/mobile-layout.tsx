@@ -2,7 +2,7 @@
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Home, Sunrise, BookOpen, Quote, Music } from "lucide-react";
+import { Moon, Sun, Home, Sunrise, BookOpen, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -43,10 +43,6 @@ export function MobileLayout({
     path: "/daily-quote",
     icon: Quote,
     label: "Quote"
-  }, {
-    path: "/music",
-    icon: Music,
-    label: "Muziek"
   }];
 
   return (

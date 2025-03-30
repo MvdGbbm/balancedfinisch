@@ -1,3 +1,4 @@
+
 export interface Meditation {
   id: string;
   title: string;
@@ -10,17 +11,6 @@ export interface Meditation {
   createdAt?: string;
   veraLink?: string;
   marcoLink?: string;
-}
-
-export interface Soundscape {
-  id: string;
-  title: string;
-  description: string;
-  audioUrl: string;
-  category: string;
-  coverImageUrl: string;
-  tags: string[];
-  isFavorite?: boolean;
 }
 
 export interface JournalEntry {

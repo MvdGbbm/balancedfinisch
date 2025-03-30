@@ -1,12 +1,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Meditation } from "@/lib/types";
-import { Soundscape } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AudioPlayer } from "@/components/audio-player";
-import { MixerPanel } from "@/components/mixer-panel";
 import { Button } from "@/components/ui/button";
-import { Music, ExternalLink, Quote } from "lucide-react";
+import { ExternalLink, Quote } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,22 +20,16 @@ import { getRandomQuote } from "@/components/audio-player/utils";
 
 interface MeditationDetailDialogProps {
   meditation: Meditation | null;
-  soundscapes: Soundscape[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  currentSoundscapeId: string | null;
-  onSoundscapeChange: (soundscapeId: string) => void;
   guidedMeditations: Meditation[];
   onGuidedMeditationSelect: (meditation: Meditation) => void;
 }
 
 export const MeditationDetailDialog = ({
   meditation,
-  soundscapes,
   isOpen,
   onOpenChange,
-  currentSoundscapeId,
-  onSoundscapeChange,
   guidedMeditations,
   onGuidedMeditationSelect
 }: MeditationDetailDialogProps) => {
@@ -173,14 +165,6 @@ export const MeditationDetailDialog = ({
                 <p>Geen audio beschikbaar voor deze meditatie</p>
               </div>
             )}
-            
-            <MixerPanel 
-              soundscapes={soundscapes} 
-              maxDisplayed={4}
-              resetVolumesOnChange={true}
-              externalSoundscapeId={currentSoundscapeId}
-              onSoundscapeChange={onSoundscapeChange}
-            />
           </div>
         </div>
       </DialogContent>

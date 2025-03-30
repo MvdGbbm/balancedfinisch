@@ -13,16 +13,13 @@ import Meditations from "./pages/Meditations";
 import Journal from "./pages/Journal";
 import Planner from "./pages/Planner";
 import DailyQuote from "./pages/DailyQuote";
-import Music from "./pages/Music";
 
 // Admin routes
 import Admin from "./pages/Admin";
 import AdminMeditations from "./pages/admin/Meditations";
 import AdminQuotes from "./pages/admin/Quotes";
-import AdminSoundscapes from "./pages/admin/Soundscapes";
 import AdminStreams from "./pages/admin/Streams";
 import AdminBreathing from "./pages/admin/Breathing";
-import AdminMusic from "./pages/admin/Music";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +38,6 @@ const mainRoutes = [
   { path: "/breathing", element: <Breathing /> },
   { path: "/journal", element: <Journal /> },
   { path: "/daily-quote", element: <DailyQuote /> },
-  { path: "/music", element: <Music /> },
   { path: "/admin", element: <Admin /> },
   { path: "*", element: <NotFound /> },
 ];
@@ -62,13 +58,8 @@ const router = createBrowserRouter(
       {/* Admin sub-routes - functional but not visible in navigation */}
       <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
-      
-      {/* Dutch version of the music admin page route */}
-      <Route path="/admin/muziek" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
     </>
   )
 );
