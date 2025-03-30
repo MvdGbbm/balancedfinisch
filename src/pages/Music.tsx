@@ -1,30 +1,16 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Volume2, Heart } from "lucide-react";
-import { AudioPlayer } from "@/components/audio-player";
+import { useQuery } from "@tanstack/react-query";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
-import { Soundscape } from "@/lib/types";
-import { Playlist, PlaylistTrack } from "@/components/playlist/types";
-import { PlaylistSelector } from "@/components/playlist/playlist-selector";
-import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import { Badge } from "@/components/ui/badge";
-import { MusicTrackCard } from "@/components/music/music-track-card";
-
-interface RadioStream {
-  id: string;
-  title: string;
-  url: string;
-  description: string | null;
-  is_active: boolean;
-  position: number | null;
-}
+import { Soundscape } from "@/lib/types";
+import { Playlist } from "@/components/playlist/types";
+import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dialog";
+import { MusicPageTabs } from "@/components/music/music-page-tabs";
+import { MusicPlayer } from "@/components/music/music-player";
+import { RadioStream } from "@/components/music/types";
 
 const Music = () => {
   const { soundscapes } = useApp();
@@ -336,14 +322,25 @@ const Music = () => {
     });
   };
 
-  const getPlaylistTracks = (playlist: Playlist): Soundscape[] => {
-    return playlist.tracks
-      .map(track => soundscapes.find(s => s.id === track.trackId))
-      .filter((track): track is Soundscape => track !== undefined);
+  const handleToggleFavorite = (track: Soundscape) => {
+    const updatedTrack = {
+      ...track,
+      isFavorite: !track.isFavorite
+    };
+    
+    const updatedTracks = musicTracks.map(t => 
+      t.id === track.id ? updatedTrack : t
+    );
+    
+    setMusicTracks(updatedTracks);
+    
+    toast({
+      title: track.isFavorite ? "Verwijderd uit favorieten" : "Toegevoegd aan favorieten",
+      description: track.isFavorite 
+        ? `${track.title} is verwijderd uit je favorieten.` 
+        : `${track.title} is toegevoegd aan je favorieten.`
+    });
   };
-
-  const shouldShowPlayer = isPlaying || isStreamPlaying || hiddenIframeUrl;
-  const currentPlayingTrack = previewTrack || currentTrack;
 
   return (
     <MobileLayout>
@@ -355,335 +352,48 @@ const Music = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="music" value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="grid grid-cols-3 mb-4 sticky top-0 z-30 bg-background">
-            <TabsTrigger value="music">Muziek</TabsTrigger>
-            <TabsTrigger value="playlists">Afspeellijsten</TabsTrigger>
-            <TabsTrigger value="radio">Streaming</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="music" className="space-y-4">
-            {musicTracks.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {musicTracks.map((track) => (
-                  <MusicTrackCard
-                    key={track.id}
-                    track={track}
-                    isPlaying={(previewTrack?.id === track.id || currentTrack?.id === track.id) && isPlaying}
-                    onPlayTrack={handlePreviewTrack}
-                    onAddToPlaylist={handleAddToPlaylist}
-                    onToggleFavorite={(track) => {
-                      const updatedTrack = {
-                        ...track,
-                        isFavorite: !track.isFavorite
-                      };
-                      
-                      const updatedTracks = musicTracks.map(t => 
-                        t.id === track.id ? updatedTrack : t
-                      );
-                      
-                      setMusicTracks(updatedTracks);
-                      
-                      toast({
-                        title: track.isFavorite ? "Verwijderd uit favorieten" : "Toegevoegd aan favorieten",
-                        description: track.isFavorite 
-                          ? `${track.title} is verwijderd uit je favorieten.` 
-                          : `${track.title} is toegevoegd aan je favorieten.`
-                      });
-                    }}
-                    playlists={playlists}
-                    onCreatePlaylist={() => setShowPlaylistCreator(true)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Geen muziek tracks gevonden</p>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="playlists" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => setShowPlaylistCreator(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nieuwe afspeellijst
-              </Button>
-            </div>
-            
-            {playlists.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {playlists.map((playlist) => {
-                  const trackCount = playlist.tracks.length;
-                  const isCurrentPlaylist = selectedPlaylist?.id === playlist.id && isPlaying;
-                  
-                  return (
-                    <Card 
-                      key={playlist.id}
-                      className={`transition-all ${
-                        isCurrentPlaylist 
-                          ? 'ring-2 ring-primary border-primary bg-primary/5' 
-                          : ''
-                      }`}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${
-                            isCurrentPlaylist ? 'bg-primary/20' : 'bg-primary/20'
-                          }`}>
-                            {isCurrentPlaylist 
-                              ? <Volume2 className="h-5 w-5 text-primary animate-pulse" />
-                              : <ListMusic className="h-5 w-5 text-primary" />
-                            }
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center">
-                              <h3 className="font-medium">{playlist.name}</h3>
-                              {isCurrentPlaylist && (
-                                <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                                  Speelt nu
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            {isCurrentPlaylist ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleStopPlaylist()}
-                              >
-                                <StopCircle className="h-4 w-4 mr-1" />
-                                Stoppen
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="default"
-                                size="sm"
-                                onClick={() => handlePlayPlaylist(playlist)}
-                                disabled={trackCount === 0}
-                              >
-                                <Play className="h-4 w-4 mr-1" />
-                                Lijst afspelen
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {playlist.tracks.length > 0 && (
-                          <div className="mt-3 space-y-2">
-                            <h4 className="text-sm font-medium">Nummers:</h4>
-                            <div className="pl-2 space-y-1">
-                              {getPlaylistTracks(playlist).map((track, index) => (
-                                <div 
-                                  key={track.id} 
-                                  className={`flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted ${
-                                    isCurrentPlaylist && currentTrack?.id === track.id 
-                                      ? 'bg-primary/10 font-medium' 
-                                      : ''
-                                  }`}
-                                >
-                                  <div className="flex items-center">
-                                    <span className="w-5 text-muted-foreground">{index + 1}.</span>
-                                    <span>{track.title}</span>
-                                    {isCurrentPlaylist && currentTrack?.id === track.id && (
-                                      <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary">
-                                        Speelt
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => handleRemoveFromPlaylist(track.id, playlist.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3 text-destructive" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Geen afspeellijsten gevonden</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => setShowPlaylistCreator(true)}
-                >
-                  Maak je eerste afspeellijst
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="radio" className="space-y-4">
-            {isLoadingStreams ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            ) : radioStreams.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2">
-                {radioStreams.map((stream) => {
-                  const isPlaying = hiddenIframeUrl === stream.url;
-                  
-                  return (
-                    <Card 
-                      key={stream.id} 
-                      className={`transition-all ${
-                        isPlaying 
-                          ? 'ring-2 ring-primary border-primary bg-primary/5' 
-                          : 'hover:border-primary/50'
-                      }`}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className={`p-2 rounded-full ${
-                              isPlaying 
-                                ? 'bg-primary/20' 
-                                : 'bg-green-100/10 dark:bg-green-900/20'
-                            }`}>
-                              {isPlaying 
-                                ? <Volume2 className="h-4 w-4 text-primary animate-pulse" />
-                                : <Link2 className="h-4 w-4 text-green-600 dark:text-green-300" />
-                              }
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center">
-                                <h3 className="font-medium text-sm">{stream.title}</h3>
-                                {isPlaying && (
-                                  <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                                    Actief
-                                  </Badge>
-                                )}
-                              </div>
-                              {stream.description && (
-                                <p className="text-xs text-muted-foreground">{stream.description}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            {!isPlaying ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleStreamPlay(stream)}
-                                className="px-3"
-                              >
-                                <Play className="h-3.5 w-3.5 mr-1.5" />
-                                Afspelen
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleStreamStop}
-                                className="px-3"
-                              >
-                                <StopCircle className="h-3.5 w-3.5 mr-1.5" />
-                                Stop
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Geen radiolinks gevonden</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+        <MusicPageTabs
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          musicTracks={musicTracks}
+          playlists={playlists}
+          radioStreams={radioStreams}
+          isLoadingStreams={isLoadingStreams}
+          isPlaying={isPlaying}
+          previewTrack={previewTrack}
+          currentTrack={currentTrack}
+          selectedPlaylist={selectedPlaylist}
+          hiddenIframeUrl={hiddenIframeUrl}
+          onPlayTrack={handlePreviewTrack}
+          onAddToPlaylist={handleAddToPlaylist}
+          onCreatePlaylist={() => setShowPlaylistCreator(true)}
+          onToggleFavorite={handleToggleFavorite}
+          onPlayPlaylist={handlePlayPlaylist}
+          onStopPlaylist={handleStopPlaylist}
+          onRemoveFromPlaylist={handleRemoveFromPlaylist}
+          onStreamPlay={handleStreamPlay}
+          onStreamStop={handleStreamStop}
+        />
       </div>
       
-      {shouldShowPlayer && currentPlayingTrack && (
-        <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-40 animate-slide-up">
-          <div className="mx-auto max-w-4xl px-4 py-2">
-            <div className="flex justify-between items-center mb-1">
-              <div className="flex items-center">
-                <h3 className="font-medium text-sm">
-                  {selectedPlaylist ? `${selectedPlaylist.name}: ${currentPlayingTrack.title}` : currentPlayingTrack.title}
-                </h3>
-                <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary animate-pulse">
-                  Nu Spelend
-                </Badge>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0 rounded-full" 
-                onClick={previewTrack ? handleStopPreview : () => {
-                  setIsPlaying(false);
-                  setCurrentTrack(null);
-                  setSelectedPlaylist(null);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <ToneEqualizer 
-              isActive={isAudioActive} 
-              className="mb-1" 
-              audioRef={audioPlayerRef} 
-            />
-            
-            <AudioPlayer 
-              audioUrl={currentPlayingTrack.audioUrl}
-              nextAudioUrl={nextTrack?.audioUrl}
-              showControls={true}
-              title={currentPlayingTrack.title}
-              className="mb-0"
-              onEnded={handleTrackEnded}
-              onCrossfadeStart={handleCrossfadeStart}
-              isPlayingExternal={isPlaying}
-              onPlayPauseChange={setIsPlaying}
-              ref={audioPlayerRef}
-            />
-          </div>
-        </div>
-      )}
-      
-      {hiddenIframeUrl && (
-        <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-40 animate-slide-up">
-          <div className="mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
-            <div className="flex items-center">
-              <Volume2 className="h-5 w-5 text-primary mr-2 animate-pulse" />
-              <div>
-                <h3 className="font-medium text-sm">Radio Stream</h3>
-                <p className="text-xs text-muted-foreground">Streaming actief in de achtergrond</p>
-              </div>
-              <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary animate-pulse">
-                Live
-              </Badge>
-            </div>
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={handleStreamStop}
-              className="flex items-center gap-1"
-            >
-              <StopCircle className="h-4 w-4" />
-              Stoppen
-            </Button>
-          </div>
-        </div>
-      )}
+      <MusicPlayer
+        currentTrack={currentTrack}
+        nextTrack={nextTrack}
+        isPlaying={isPlaying}
+        isStreamPlaying={isStreamPlaying}
+        hiddenIframeUrl={hiddenIframeUrl}
+        streamTitle={streamTitle}
+        isAudioActive={isAudioActive}
+        audioRef={audioPlayerRef}
+        selectedPlaylist={selectedPlaylist}
+        previewTrack={previewTrack}
+        onStopPreview={handleStopPreview}
+        onStopPlaylist={handleStopPlaylist}
+        onStopStream={handleStreamStop}
+        onTrackEnded={handleTrackEnded}
+        onCrossfadeStart={handleCrossfadeStart}
+        setIsPlaying={setIsPlaying}
+      />
       
       <iframe 
         ref={hiddenIframeRef}
