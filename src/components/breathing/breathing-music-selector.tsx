@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AudioPlayer } from "@/components/audio-player";
 import { Soundscape } from "@/lib/types";
-import { Volume2, Music as MusicIcon, ChevronDown } from "lucide-react";
+import { Volume2, Music as MusicIcon, ChevronDown, Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ interface BreathingMusicSelectorProps {
   onPlayTrack: (track: Soundscape) => void;
   onPlayPauseChange: (isPlaying: boolean) => void;
   audioPlayerRef: React.RefObject<HTMLAudioElement>;
+  onToggleFavorite?: (track: Soundscape) => void;
 }
 
 const BreathingMusicSelector: React.FC<BreathingMusicSelectorProps> = ({
@@ -33,6 +35,7 @@ const BreathingMusicSelector: React.FC<BreathingMusicSelectorProps> = ({
   onPlayTrack,
   onPlayPauseChange,
   audioPlayerRef,
+  onToggleFavorite,
 }) => {
   return (
     <div className="mt-6">
@@ -63,16 +66,21 @@ const BreathingMusicSelector: React.FC<BreathingMusicSelectorProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <div 
-                      className="w-6 h-6 rounded-sm bg-cover bg-center" 
+                      className="w-8 h-8 rounded-sm bg-cover bg-center" 
                       style={{ backgroundImage: `url(${track.coverImageUrl})` }}
                     />
-                    <span>{track.title}</span>
+                    <span className="truncate max-w-[150px]">{track.title}</span>
                   </div>
-                  {currentTrack?.id === track.id && isTrackPlaying && (
-                    <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
-                      Speelt
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {track.isFavorite && (
+                      <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 mr-1" />
+                    )}
+                    {currentTrack?.id === track.id && isTrackPlaying && (
+                      <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                        Speelt
+                      </Badge>
+                    )}
+                  </div>
                 </DropdownMenuItem>
               ))
             )}
