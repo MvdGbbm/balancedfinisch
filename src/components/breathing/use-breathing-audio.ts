@@ -104,3 +104,5 @@ export const useBreathingAudio = () => {
     validateVoiceUrls
   };
 };
+
+export default useBreathingAudio;

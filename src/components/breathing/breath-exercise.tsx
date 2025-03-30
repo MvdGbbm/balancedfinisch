@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BreathingPattern } from "@/lib/types";
-import { useBreathingAudio } from "./breathing-audio";
+import useBreathingAudio from "./use-breathing-audio";
 
 interface BreathExerciseProps {
   breathingPatterns: BreathingPattern[];
@@ -397,4 +396,3 @@ export function BreathExercise({
     </div>
   );
 }
-

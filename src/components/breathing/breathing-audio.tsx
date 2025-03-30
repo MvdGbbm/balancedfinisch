@@ -18,14 +18,14 @@ interface BreathingAudioProps {
   skipPauseAudio?: boolean;
 }
 
-const BreathingAudio: React.FC<BreathingAudioProps> = ({
+export const useBreathingAudio = ({
   voiceUrls,
   isVoiceActive,
   phase,
   isActive,
   skipHoldAudio = false,
   skipPauseAudio = false
-}) => {
+}: BreathingAudioProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
   const audioErrorCountRef = useRef<number>(0);
@@ -167,6 +167,15 @@ const BreathingAudio: React.FC<BreathingAudioProps> = ({
       validateVoiceUrls(voiceUrls);
     }
   }, [voiceUrls, isVoiceActive]);
+
+  return {
+    audioRef,
+    playAudio
+  };
+};
+
+const BreathingAudio: React.FC<BreathingAudioProps> = (props) => {
+  const { audioRef } = useBreathingAudio(props);
 
   return (
     <audio ref={audioRef} onError={() => {
