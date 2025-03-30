@@ -19,6 +19,7 @@ const AdminMusic = () => {
     setSearchQuery,
     previewUrl,
     isPlaying,
+    setIsPlaying,
     handleSaveMusic,
     handleEditMusic,
     handleDeleteMusic,

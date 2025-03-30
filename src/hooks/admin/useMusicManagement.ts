@@ -195,6 +195,7 @@ export const useMusicManagement = () => {
     setSearchQuery,
     previewUrl,
     isPlaying,
+    setIsPlaying,
     handleSaveMusic,
     handleEditMusic,
     handleDeleteMusic,
