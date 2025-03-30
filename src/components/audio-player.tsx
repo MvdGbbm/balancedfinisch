@@ -1,160 +1,133 @@
 
-import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { useAudioPlayer } from "@/hooks/use-audio-player";
-import { ProgressBar } from "./audio-player/progress-bar";
+import React, { useState } from "react";
+import { useAudioPlayer } from "@/hooks/audio-player";
 import { AudioControls } from "./audio-player/audio-controls";
+import { ProgressBar } from "./audio-player/progress-bar";
+import { PlayerContainer } from "./audio-player/player-container";
 import { ErrorMessage } from "./audio-player/error-message";
 import { QuoteDisplay } from "./audio-player/quote-display";
-import { getRandomQuote, validateAudioUrl } from "./audio-player/utils";
-import { PlayerContainer } from "./audio-player/player-container";
+import { DailyQuote } from "@/lib/types";
 
-interface AudioPlayerProps {
-  audioUrl: string;
-  showControls?: boolean;
-  showTitle?: boolean;
+export interface AudioPlayerProps {
+  audioUrl?: string;
   title?: string;
-  className?: string;
   onEnded?: () => void;
-  onError?: () => void;
-  showQuote?: boolean;
-  isPlayingExternal?: boolean;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
+  showTitle?: boolean;
+  autoPlay?: boolean;
   nextAudioUrl?: string;
-  onCrossfadeStart?: () => void;
-  volume?: number;
+  loop?: boolean;
+  quote?: DailyQuote; 
+  onPlay?: () => void;
+  onPause?: () => void;
+  initialVolume?: number;
+  className?: string;
 }
 
-export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({ 
-  audioUrl, 
-  showControls = true, 
-  showTitle = false,
+export const AudioPlayer: React.FC<AudioPlayerProps> = ({
+  audioUrl,
   title,
-  className, 
   onEnded,
-  onError,
-  showQuote = false,
-  isPlayingExternal,
-  onPlayPauseChange,
+  showTitle = true,
+  autoPlay = false,
   nextAudioUrl,
-  onCrossfadeStart,
-  volume
-}, ref) => {
-  const [randomQuote] = useState(getRandomQuote);
-  const nextAudioElementRef = useRef<HTMLAudioElement | null>(null);
-  const [audioKey, setAudioKey] = useState(0); 
-  
-  // Process and fix audio URL if needed
-  const processedAudioUrl = audioUrl ? validateAudioUrl(audioUrl) : "";
-  const effectiveAudioUrl = processedAudioUrl || "";
-  
-  // Initialize all hooks unconditionally
+  loop = false,
+  quote,
+  onPlay,
+  onPause,
+  initialVolume,
+  className
+}) => {
+  const [showQuote, setShowQuote] = useState(false);
+
   const {
     audioRef,
     nextAudioRef,
     isPlaying,
-    duration,
+    setIsPlaying,
     currentTime,
-    volume: audioVolume,
-    isLooping,
-    isLoaded,
-    loadError,
-    isRetrying,
-    isCrossfading,
-    isLiveStream,
-    togglePlay,
-    handleRetry,
-    toggleLoop,
-    handleProgressChange,
+    duration,
+    volume,
     handleVolumeChange,
-    skipTime
+    handleTogglePlay,
+    handleSeek,
+    handlePrevious,
+    handleNext,
+    toggleLoop,
+    isLooping,
+    effectiveAudioUrl,
+    isAACFormat,
+    loadError,
+    handleRetry,
+    isRetrying,
+    isLiveStream
   } = useAudioPlayer({
-    audioUrl: effectiveAudioUrl,
+    audioUrl,
+    nextAudioUrl,
     onEnded,
-    onError,
-    isPlayingExternal,
-    onPlayPauseChange,
-    nextAudioUrl: nextAudioUrl ? validateAudioUrl(nextAudioUrl) : undefined,
-    onCrossfadeStart,
-    title,
-    volume
+    autoPlay,
+    loop,
+    onPlay,
+    onPause,
+    initialVolume
   });
-  
-  // Log the audio URL for debugging
-  useEffect(() => {
-    console.log(`AudioPlayer attempting to load: ${effectiveAudioUrl || "no URL provided"}`);
-    
-    // Reset player when URL changes
-    setAudioKey(prev => prev + 1);
-  }, [effectiveAudioUrl]);
-  
-  // Expose the audio element ref to parent components
-  useImperativeHandle(ref, () => audioRef.current!, []);
-  
-  // Connect the nextAudioRef to its element
-  useEffect(() => {
-    nextAudioRef.current = nextAudioElementRef.current;
-  }, [nextAudioRef]);
-  
-  // Early return with placeholder if no audioUrl
-  if (!effectiveAudioUrl) {
-    return (
-      <div className={cn("w-full space-y-3 rounded-lg p-3 bg-card/50 shadow-sm", className)}>
-        <div className="text-center py-3 text-muted-foreground">
-          <p>Geen audio URL opgegeven</p>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <PlayerContainer 
-      audioRef={audioRef}
-      nextAudioElementRef={nextAudioElementRef}
-      effectiveAudioUrl={effectiveAudioUrl}
-      nextAudioUrl={nextAudioUrl ? validateAudioUrl(nextAudioUrl) : undefined}
-      showTitle={showTitle}
-      title={title}
-      isAACFormat={false}
-      loadError={loadError}
-      handleRetry={handleRetry}
-      isRetrying={isRetrying}
-      isPlaying={isPlaying}
-    >
-      {loadError && (
-        <ErrorMessage handleRetry={handleRetry} isRetrying={isRetrying} />
-      )}
-      
-      {showQuote && (
-        <QuoteDisplay quote={randomQuote} />
-      )}
-      
-      <ProgressBar
-        currentTime={currentTime}
-        duration={duration}
-        isLoaded={isLoaded}
-        isCrossfading={isCrossfading}
-        isLiveStream={isLiveStream}
-        handleProgressChange={handleProgressChange}
-      />
-      
-      {showControls && (
-        <AudioControls
-          isPlaying={isPlaying}
-          togglePlay={togglePlay}
-          skipTime={skipTime}
-          isLoaded={isLoaded}
-          isLooping={isLooping}
-          toggleLoop={toggleLoop}
-          isCrossfading={isCrossfading}
-          isLiveStream={isLiveStream}
-          volume={audioVolume}
-          handleVolumeChange={handleVolumeChange}
-          loadError={loadError}
-        />
-      )}
-    </PlayerContainer>
-  );
-});
 
-AudioPlayer.displayName = "AudioPlayer";
+  const defaultQuote: DailyQuote = {
+    id: "temp-id",
+    text: "Adem diep in, en voel je lichaam ontspannen.",
+    author: "ZenMind"
+  };
+
+  return (
+    <div className={className}>
+      <PlayerContainer
+        audioRef={audioRef}
+        nextAudioElementRef={nextAudioRef}
+        effectiveAudioUrl={effectiveAudioUrl}
+        nextAudioUrl={nextAudioUrl}
+        showTitle={showTitle}
+        title={title}
+        isAACFormat={isAACFormat}
+        loadError={loadError}
+        handleRetry={handleRetry}
+        isRetrying={isRetrying}
+        isPlaying={isPlaying}
+      >
+        {loadError ? (
+          <ErrorMessage onRetry={handleRetry} isRetrying={isRetrying} />
+        ) : (
+          <>
+            <ProgressBar
+              currentTime={currentTime}
+              duration={duration}
+              onSeek={handleSeek}
+              isLiveStream={isLiveStream}
+            />
+
+            <AudioControls
+              isPlaying={isPlaying}
+              onPlayPause={handleTogglePlay}
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+              onToggleLoop={toggleLoop}
+              isLooping={isLooping}
+              volume={volume}
+              onVolumeChange={handleVolumeChange}
+              hasNextTrack={Boolean(nextAudioUrl)}
+              isLiveStream={isLiveStream}
+              showQuote={showQuote}
+              onToggleQuote={() => setShowQuote(!showQuote)}
+              hasQuote={Boolean(quote)}
+            />
+
+            {showQuote && (quote || defaultQuote) && (
+              <QuoteDisplay
+                quote={quote || defaultQuote}
+                onClose={() => setShowQuote(false)}
+              />
+            )}
+          </>
+        )}
+      </PlayerContainer>
+    </div>
+  );
+};

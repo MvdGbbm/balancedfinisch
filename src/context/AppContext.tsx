@@ -5,7 +5,6 @@ import { useMeditationState } from "./hooks/useMeditationState";
 import { useQuoteState } from "./hooks/useQuoteState";
 import { useJournalState } from "./hooks/useJournalState";
 import { usePlannerState } from "./hooks/usePlannerState";
-import { useSoundscapeState } from "./hooks/useSoundscapeState";
 
 // Create the context
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -17,7 +16,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const quoteState = useQuoteState();
   const journalState = useJournalState();
   const plannerState = usePlannerState();
-  const soundscapeState = useSoundscapeState();
   
   // Context value combining all state
   const value: AppContextType = {
@@ -26,7 +24,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     journalEntries: journalState.journalEntries,
     dailyQuotes: quoteState.dailyQuotes,
     plannerEvents: plannerState.plannerEvents,
-    soundscapes: soundscapeState.soundscapes,
     
     // Current states
     currentMeditation: meditationState.currentMeditation,
@@ -51,13 +48,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     updatePlannerEvent: plannerState.updatePlannerEvent,
     deletePlannerEvent: plannerState.deletePlannerEvent,
     toggleEventCompletion: plannerState.toggleEventCompletion,
-    
-    // Soundscape functions
-    addSoundscape: soundscapeState.addSoundscape,
-    updateSoundscape: soundscapeState.updateSoundscape,
-    deleteSoundscape: soundscapeState.deleteSoundscape,
-    setSoundscapes: soundscapeState.setSoundscapes,
-    setCurrentSoundscape: soundscapeState.setCurrentSoundscape,
     
     // App functions
     setCurrentMeditation: meditationState.setCurrentMeditation,

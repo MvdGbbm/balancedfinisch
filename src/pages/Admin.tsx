@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   Headphones, 
   Quote, 
-  Waves, 
   Radio, 
   RefreshCw, 
   LayoutGrid,
@@ -66,13 +65,6 @@ const Admin: React.FC = () => {
       icon: <Quote className="h-5 w-5" style={{ color: "#F97316" }} />,
       path: "/admin/quotes",
       color: "#F97316" // Orange
-    },
-    {
-      title: "Soundscapes",
-      description: "Beheer achtergrondgeluiden",
-      icon: <Waves className="h-5 w-5" style={{ color: "#0EA5E9" }} />,
-      path: "/admin/soundscapes",
-      color: "#0EA5E9" // Blue
     },
     {
       title: "Muziek",

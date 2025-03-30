@@ -1,187 +1,112 @@
 
-import { useEffect } from "react";
-import { isStreamUrl } from "@/components/audio-player/utils";
-import { useToast } from "@/hooks/use-toast";
+import { useCallback, useEffect, RefObject } from "react";
 
 interface UseAudioEventsProps {
-  audioRef: React.RefObject<HTMLAudioElement>;
-  audioUrl: string;
-  volume: number;
-  isLooping: boolean;
+  audioRef: RefObject<HTMLAudioElement>;
+  nextAudioRef: RefObject<HTMLAudioElement>;
   setDuration: (duration: number) => void;
   setCurrentTime: (time: number) => void;
   setIsLoaded: (loaded: boolean) => void;
   setLoadError: (error: boolean) => void;
-  setIsLiveStream: (isStream: boolean) => void;
-  setIsPlaying: (playing: boolean) => void;
-  retryCountRef: React.MutableRefObject<number>;
   setIsRetrying: (retrying: boolean) => void;
-  crossfadeTimeoutRef: React.MutableRefObject<number | null>;
-  playDirectly: (url: string, audioElement: HTMLAudioElement | null) => void;
+  setIsCrossfading: (crossfading: boolean) => void;
   isPlaying: boolean;
-  onEnded?: () => void;
-  onError?: () => void;
-  isLooping?: boolean;
-  title?: string;
-  onPlayPauseChange?: (isPlaying: boolean) => void;
+  setIsPlaying: (playing: boolean) => void;
+  isLiveStream: boolean;
+  retryCountRef: RefObject<number>;
+  crossfadeTimeoutRef: RefObject<number | null>;
+  volume: number;
 }
 
 export const useAudioEvents = ({
   audioRef,
-  audioUrl,
-  volume,
-  isLooping,
+  nextAudioRef,
   setDuration,
   setCurrentTime,
   setIsLoaded,
   setLoadError,
-  setIsLiveStream,
-  setIsPlaying,
-  retryCountRef,
   setIsRetrying,
-  crossfadeTimeoutRef,
-  playDirectly,
+  setIsCrossfading,
   isPlaying,
-  onEnded,
-  onError,
-  title,
-  onPlayPauseChange
+  setIsPlaying,
+  isLiveStream,
+  retryCountRef,
+  crossfadeTimeoutRef,
+  volume
 }: UseAudioEventsProps) => {
-  const { toast } = useToast();
-  const MAX_RETRY_COUNT = 3;
-
-  useEffect(() => {
+  const handleLoadedMetadata = useCallback(() => {
+    console.log("Audio loaded metadata");
     const audio = audioRef.current;
-    if (!audio) return;
-    
-    console.log("Setting up audio element for:", audioUrl);
-    
-    const setAudioData = () => {
-      console.log("Audio data loaded for:", audioUrl, "Duration:", audio.duration);
-      
-      if (audio.duration !== Infinity && !isNaN(audio.duration)) {
-        setDuration(audio.duration);
-        setIsLiveStream(false);
-      } else {
-        setIsLiveStream(true);
-        setDuration(0);
-      }
-      
+    if (audio) {
+      // Round to nearest second for consistency
+      const durationValue = Math.round(isNaN(audio.duration) ? 0 : audio.duration);
+      setDuration(durationValue);
       setIsLoaded(true);
       setLoadError(false);
-      
-      if (isPlaying) {
-        console.log("Auto-playing after load:", audioUrl);
-        audio.play()
-          .then(() => {
-            setIsPlaying(true);
-            if (onPlayPauseChange) onPlayPauseChange(true);
-            retryCountRef.current = 0;
-          })
-          .catch(error => {
-            console.error("Error auto-playing audio:", error);
-          });
-      }
-      
-      toast({
-        title: "Audio geladen",
-        description: isStreamUrl(audioUrl) ? "Stream is klaar om af te spelen." : "De audio is klaar om af te spelen."
-      });
-    };
-    
-    const setAudioTime = () => {
+    }
+  }, [audioRef, setDuration, setIsLoaded, setLoadError]);
+
+  const handleLoadError = useCallback(() => {
+    console.error("Error loading audio");
+    setLoadError(true);
+    setIsLoaded(false);
+    setIsRetrying(false);
+    if (isPlaying) {
+      setIsPlaying(false);
+    }
+  }, [setLoadError, setIsLoaded, setIsRetrying, isPlaying, setIsPlaying]);
+
+  const handleTimeUpdate = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio) {
       setCurrentTime(audio.currentTime);
-    };
-    
-    const handleEnded = () => {
-      console.log("Audio ended:", audioUrl);
-      
-      if (!isLooping) {
-        setIsPlaying(false);
-        if (onPlayPauseChange) onPlayPauseChange(false);
-        if (onEnded) onEnded();
-      } else {
-        audio.currentTime = 0;
-        audio.play().catch(error => {
-          console.error("Error restarting audio:", error);
-        });
-      }
-    };
+    }
+  }, [audioRef, setCurrentTime]);
 
-    const handleError = (e: Event) => {
-      console.error("Error loading audio:", e, "URL:", audioUrl);
-      setLoadError(true);
-      setIsLoaded(false);
+  const handleEnded = useCallback(() => {
+    console.log("Audio ended");
+    setCurrentTime(0);
+    setIsPlaying(false);
+    
+    // If a crossfade is in progress, we should not stop playing
+    if (crossfadeTimeoutRef.current !== null) {
+      console.log("Crossfade in progress, not stopping playback");
+      setIsCrossfading(false);
+      return;
+    }
+  }, [setCurrentTime, setIsPlaying, crossfadeTimeoutRef, setIsCrossfading]);
+
+  // Set up event listeners
+  useEffect(() => {
+    const audio = audioRef.current;
+    const nextAudio = nextAudioRef.current;
+    
+    if (audio) {
+      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.addEventListener('error', handleLoadError);
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+      audio.addEventListener('ended', handleEnded);
       
-      if (retryCountRef.current < MAX_RETRY_COUNT) {
-        retryCountRef.current++;
-        setIsRetrying(true);
-        
-        console.log(`Retrying (${retryCountRef.current}/${MAX_RETRY_COUNT})...`);
-        
-        setTimeout(() => {
-          try {
-            playDirectly(audioUrl, audio);
-            setIsRetrying(false);
-          } catch (error) {
-            console.error("Error retrying direct playback:", error);
-            setIsRetrying(false);
-            
-            toast({
-              variant: "destructive",
-              title: "Fout bij laden",
-              description: "Kon de audio niet laden. Controleer of de URL correct is."
-            });
-            if (onError) onError();
-          }
-        }, 1000);
-      } else {
-        console.error("Maximum retry count reached");
-        setIsRetrying(false);
-        
-        toast({
-          variant: "destructive",
-          title: "Fout bij laden",
-          description: "Kon de audio niet laden na meerdere pogingen. Controleer of het bestand bestaat."
-        });
-        if (onError) onError();
-      }
-    };
-    
-    audio.addEventListener("loadeddata", setAudioData);
-    audio.addEventListener("loadedmetadata", setAudioData);
-    audio.addEventListener("timeupdate", setAudioTime);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
-    
-    audio.volume = volume;
-    audio.loop = isLooping;
-    
-    audio.addEventListener("progress", () => {
-      if (audio.duration === Infinity || isNaN(audio.duration)) {
-        setIsLiveStream(true);
-      }
-    });
-    
-    return () => {
-      audio.removeEventListener("loadeddata", setAudioData);
-      audio.removeEventListener("loadedmetadata", setAudioData);
-      audio.removeEventListener("timeupdate", setAudioTime);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-      audio.removeEventListener("progress", () => {});
-      
-      if (crossfadeTimeoutRef.current) {
-        clearTimeout(crossfadeTimeoutRef.current);
-        crossfadeTimeoutRef.current = null;
-      }
-    };
+      return () => {
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.removeEventListener('error', handleLoadError);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('ended', handleEnded);
+      };
+    }
   }, [
-    audioUrl, volume, isLooping, setDuration, setCurrentTime, 
-    setIsLoaded, setLoadError, setIsLiveStream, setIsPlaying, 
-    retryCountRef, setIsRetrying, crossfadeTimeoutRef, onEnded, 
-    onError, onPlayPauseChange, toast, isPlaying, title, playDirectly, MAX_RETRY_COUNT
+    audioRef, 
+    nextAudioRef,
+    handleLoadedMetadata, 
+    handleLoadError, 
+    handleTimeUpdate, 
+    handleEnded
   ]);
-
-  return {};
+  
+  return {
+    handleLoadedMetadata,
+    handleLoadError,
+    handleTimeUpdate,
+    handleEnded
+  };
 };

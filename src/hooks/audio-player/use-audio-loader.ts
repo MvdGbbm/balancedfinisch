@@ -1,112 +1,116 @@
 
-import { useEffect } from "react";
-import { validateAudioUrl } from "@/components/audio-player/utils";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useCallback, RefObject } from "react";
+import { useFormatSupport } from "./use-format-support";
 
 interface UseAudioLoaderProps {
-  audioUrl: string;
-  audioRef: React.RefObject<HTMLAudioElement>;
+  audioRef: RefObject<HTMLAudioElement>;
+  nextAudioRef: RefObject<HTMLAudioElement>;
+  audioUrl: string | undefined;
+  nextAudioUrl: string | undefined;
   setIsLoaded: (loaded: boolean) => void;
   setLoadError: (error: boolean) => void;
-  setDuration: (duration: number) => void;
-  setCurrentTime: (time: number) => void;
-  setIsLiveStream: (isStream: boolean) => void;
-  retryCountRef: React.MutableRefObject<number>;
   setIsRetrying: (retrying: boolean) => void;
+  setIsLiveStream: (isLiveStream: boolean) => void;
+  retryCountRef: RefObject<number>;
   isPlaying: boolean;
-  onError?: () => void;
+  setIsPlaying: (playing: boolean) => void;
 }
 
 export const useAudioLoader = ({
-  audioUrl,
   audioRef,
+  nextAudioRef,
+  audioUrl,
+  nextAudioUrl,
   setIsLoaded,
   setLoadError,
-  setDuration,
-  setCurrentTime,
+  setIsRetrying,
   setIsLiveStream,
   retryCountRef,
-  setIsRetrying,
   isPlaying,
-  onError
+  setIsPlaying
 }: UseAudioLoaderProps) => {
-  const { toast } = useToast();
-  const MAX_RETRY_COUNT = 3;
-
-  const playDirectly = (url: string, audioElement: HTMLAudioElement | null) => {
-    if (!audioElement) {
-      console.error("Audio element not available");
-      return;
-    }
-    
-    url = validateAudioUrl(url);
-    if (!url) {
-      console.error("Invalid audio URL");
-      setLoadError(true);
-      if (onError) onError();
-      return;
-    }
-    
-    console.log("Playing directly:", url);
-    
-    setLoadError(false);
-    
-    audioElement.src = url;
-    audioElement.load();
-    
-    const onCanPlay = () => {
-      console.log("Audio can play now:", url);
-      
-      audioElement.play()
-        .then(() => {
-          console.log("Audio playing successfully:", url);
-          setIsPlaying(true);
-          setIsLoaded(true);
-          setLoadError(false);
-          retryCountRef.current = 0;
-        })
-        .catch(error => {
-          console.error("Error playing direct URL:", error);
-          setLoadError(true);
-          if (onError) onError();
-        });
-      audioElement.removeEventListener('canplay', onCanPlay);
-    };
-    
-    audioElement.addEventListener('canplay', onCanPlay);
-    
-    const handleDirectError = (e: Event) => {
-      console.error("Direct play error:", e);
-      setLoadError(true);
-      if (onError) onError();
-      audioElement.removeEventListener('error', handleDirectError);
-    };
-    
-    audioElement.addEventListener('error', handleDirectError);
-  };
-
-  const handleRetry = () => {
+  const { checkIfLiveStream } = useFormatSupport();
+  
+  const handleRetry = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (audio && audioUrl) {
+      console.log("Retrying audio load, count:", retryCountRef.current);
+      
+      setIsRetrying(true);
+      setIsLoaded(false);
+      
+      // Max retry of 3 times
+      if (retryCountRef.current < 3) {
+        retryCountRef.current += 1;
+        
+        // Force reload the audio
+        audio.src = audioUrl;
+        audio.load();
+        
+        // If it was playing before, resume
+        if (isPlaying) {
+          setTimeout(() => {
+            if (audio) {
+              audio.play()
+                .catch(err => {
+                  console.error("Error during retry play:", err);
+                  setIsPlaying(false);
+                });
+            }
+          }, 500);
+        }
+      } else {
+        console.error("Max retry count reached");
+        setLoadError(true);
+        setIsRetrying(false);
+      }
+    }
+  }, [audioRef, audioUrl, isPlaying, retryCountRef, setIsLoaded, setLoadError, setIsRetrying, setIsPlaying]);
+  
+  // Reset state when URL changes
+  useEffect(() => {
+    if (!audioUrl) return;
     
-    console.log("Manual retry requested for:", audioUrl);
+    console.log("Audio URL changed to:", audioUrl);
     
+    // Reset states
+    setIsLoaded(false);
     setLoadError(false);
-    setIsRetrying(true);
+    setIsRetrying(false);
     retryCountRef.current = 0;
     
-    setTimeout(() => {
-      playDirectly(audioUrl, audio);
-      
-      toast({
-        title: "Opnieuw laden",
-        description: "Probeert audio opnieuw te laden."
-      });
-    }, 100);
-  };
-
+    // Check if this is a live stream
+    const isLive = checkIfLiveStream(audioUrl);
+    setIsLiveStream(isLive);
+    console.log("Is live stream:", isLive);
+    
+    // Load the new audio
+    const audio = audioRef.current;
+    if (audio) {
+      audio.src = audioUrl;
+      audio.load();
+    }
+    
+    // Preload the next audio if available
+    if (nextAudioUrl && nextAudioRef.current) {
+      console.log("Preloading next audio:", nextAudioUrl);
+      nextAudioRef.current.src = nextAudioUrl;
+      nextAudioRef.current.load();
+    }
+  }, [
+    audioUrl, 
+    nextAudioUrl, 
+    audioRef, 
+    nextAudioRef, 
+    setIsLoaded, 
+    setLoadError, 
+    setIsRetrying, 
+    retryCountRef,
+    checkIfLiveStream,
+    setIsLiveStream
+  ]);
+  
   return {
-    playDirectly,
     handleRetry
   };
 };

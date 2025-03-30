@@ -1,3 +1,4 @@
+
 export interface Meditation {
   id: string;
   title: string;
@@ -67,17 +68,4 @@ export interface BreathingVoice {
   inhaleUrl: string;
   holdUrl: string;
   exhaleUrl: string;
-}
-
-// Placeholder type om import fouten te voorkomen
-// Deze functionaliteit is verwijderd
-export interface Soundscape {
-  id: string;
-  title: string;
-  description?: string;
-  category: string;
-  audioUrl: string;
-  coverImageUrl: string;
-  tags?: string[];
-  isFavorite?: boolean;
 }
