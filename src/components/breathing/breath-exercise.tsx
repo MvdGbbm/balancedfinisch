@@ -147,11 +147,20 @@ export function BreathExercise({
     // Skip playing hold audio if duration is 0
     if ((currentPhase === "hold1" && selectedPattern.hold1 <= 0) || 
         (currentPhase === "hold2" && selectedPattern.hold2 <= 0)) {
+      console.log(`Skipping ${currentPhase} audio because duration is 0`);
       return;
     }
     
     if (audioUrl && isActive) {
-      playAudio(audioUrl);
+      // Get the hold duration based on the current phase
+      const holdDuration = currentPhase === "hold1" ? selectedPattern.hold1 : 
+                          currentPhase === "hold2" ? selectedPattern.hold2 : 0;
+                          
+      // Pass the phase type and hold duration to the playAudio function
+      const phaseType = currentPhase === "hold1" || currentPhase === "hold2" ? "hold" : 
+                       currentPhase === "inhale" ? "inhale" : "exhale";
+                       
+      playAudio(audioUrl, phaseType, holdDuration);
     }
   }, [currentPhase, selectedPattern, isActive, activeVoice, veraVoiceUrls, marcoVoiceUrls]);
 

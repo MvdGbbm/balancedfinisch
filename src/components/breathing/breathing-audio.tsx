@@ -16,6 +16,7 @@ interface BreathingAudioProps {
   isActive: boolean;
   skipHoldAudio?: boolean;
   skipPauseAudio?: boolean;
+  holdDuration?: number;
 }
 
 export const useBreathingAudio = ({
@@ -24,7 +25,8 @@ export const useBreathingAudio = ({
   phase,
   isActive,
   skipHoldAudio = false,
-  skipPauseAudio = false
+  skipPauseAudio = false,
+  holdDuration = 0
 }: BreathingAudioProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousPhaseRef = useRef<BreathingPhase | null>(null);
@@ -69,9 +71,9 @@ export const useBreathingAudio = ({
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
     
-    // Skip playing audio for 'hold' phase if skipHoldAudio is true
-    if (skipHoldAudio && phaseType === 'hold') {
-      console.log("Skipping hold audio as configured");
+    // Skip playing audio for 'hold' phase if skipHoldAudio is true or holdDuration is 0
+    if ((skipHoldAudio || holdDuration === 0) && phaseType === 'hold') {
+      console.log("Skipping hold audio - duration is 0 or skipHoldAudio is true");
       return;
     }
     
@@ -151,7 +153,7 @@ export const useBreathingAudio = ({
       }
       previousPhaseRef.current = phase;
     }
-  }, [phase, voiceUrls, isVoiceActive, isActive, skipHoldAudio, skipPauseAudio]);
+  }, [phase, voiceUrls, isVoiceActive, isActive, skipHoldAudio, skipPauseAudio, holdDuration]);
 
   useEffect(() => {
     if (!isVoiceActive && audioRef.current) {
@@ -160,7 +162,7 @@ export const useBreathingAudio = ({
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
       playAudio(phase);
     }
-  }, [isVoiceActive, voiceUrls, isActive, phase, skipHoldAudio, skipPauseAudio]);
+  }, [isVoiceActive, voiceUrls, isActive, phase, skipHoldAudio, skipPauseAudio, holdDuration]);
 
   useEffect(() => {
     if (voiceUrls && isVoiceActive) {

@@ -132,6 +132,7 @@ export function BreathingExerciseTest({
       // Skip playing audio for hold phases if their duration is 0
       if ((currentPhase === "hold1" && pattern.hold1 <= 0) || 
           (currentPhase === "hold2" && pattern.hold2 <= 0)) {
+        console.log(`Skipping ${currentPhase} audio because duration is 0`);
         return;
       }
       

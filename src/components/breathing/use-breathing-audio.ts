@@ -1,4 +1,3 @@
-
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { preloadAudio } from "@/components/audio-player/utils";
@@ -23,7 +22,6 @@ export const useBreathingAudio = () => {
       }
     };
 
-    // Check if either voice has all required URLs
     const veraComplete = urls.vera.inhale && urls.vera.hold && urls.vera.exhale;
     const marcoComplete = urls.marco.inhale && urls.marco.hold && urls.marco.exhale;
 
@@ -31,7 +29,6 @@ export const useBreathingAudio = () => {
       return false;
     }
 
-    // Try to preload some audio to verify it works
     try {
       let testUrl;
       if (veraComplete) {
@@ -51,7 +48,12 @@ export const useBreathingAudio = () => {
     return false;
   };
 
-  const playAudio = async (audioUrl: string) => {
+  const playAudio = async (audioUrl: string, phaseType?: BreathingPhase, holdDuration?: number) => {
+    if (phaseType === 'hold' && holdDuration === 0) {
+      console.log('Skipping hold audio because duration is 0');
+      return false;
+    }
+    
     if (!audioUrl || !audioRef.current || isLoading) {
       return false;
     }
@@ -60,17 +62,14 @@ export const useBreathingAudio = () => {
     setAudioError(false);
 
     try {
-      // Pause any current audio
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
 
-      // Set new audio source
       audioRef.current.src = audioUrl;
       audioRef.current.load();
 
-      // Try to play
       await audioRef.current.play();
       console.log(`Playing audio successfully: ${audioUrl}`);
       return true;
@@ -78,7 +77,6 @@ export const useBreathingAudio = () => {
       console.error("Error playing audio:", error);
       setAudioError(true);
       
-      // Only show toast for real errors, not user interaction issues
       if (error.name !== 'NotAllowedError') {
         toast.error("Fout bij afspelen van audio. Controleer de URL.");
       }
