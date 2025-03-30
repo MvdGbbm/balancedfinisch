@@ -10,6 +10,7 @@ interface BreathingCircleProps {
   className?: string;
   onBreathComplete?: () => void;
   isActive: boolean;
+  currentPhase?: "inhale" | "hold" | "exhale" | "rest";
 }
 
 export function BreathingCircle({
@@ -18,11 +19,16 @@ export function BreathingCircle({
   exhaleDuration = 6000,
   className,
   onBreathComplete,
-  isActive = false
+  isActive = false,
+  currentPhase = "rest"
 }: BreathingCircleProps) {
   const [phase, setPhase] = useState<"inhale" | "hold" | "exhale" | "rest">("rest");
   const [progress, setProgress] = useState(0);
   const [phaseTimeLeft, setPhaseTimeLeft] = useState(0);
+  const [circleScale, setCircleScale] = useState(0.75); // Start at 75% size
+
+  // Use the prop currentPhase if provided, otherwise use the internal state
+  const activePhase = currentPhase || phase;
 
   // Reset state when isActive changes
   useEffect(() => {
@@ -30,11 +36,32 @@ export function BreathingCircle({
       setPhase("inhale");
       setProgress(0);
       setPhaseTimeLeft(Math.ceil(inhaleDuration / 1000));
+      setCircleScale(0.75); // Start small
     } else {
       setPhase("rest");
       setProgress(0);
+      setCircleScale(0.85); // Rest size
     }
   }, [isActive, inhaleDuration]);
+
+  // Update scale based on current phase and progress
+  useEffect(() => {
+    if (!isActive) return;
+
+    if (activePhase === "inhale") {
+      // Gradually expand from 75% to 100% during inhale
+      setCircleScale(0.75 + (progress / 100) * 0.5);
+    } else if (activePhase === "hold") {
+      // Maintain full size during hold
+      setCircleScale(1.25);
+    } else if (activePhase === "exhale") {
+      // Gradually contract from 100% to 75% during exhale
+      setCircleScale(1.25 - (progress / 100) * 0.5);
+    } else {
+      // Rest state
+      setCircleScale(0.85);
+    }
+  }, [activePhase, progress, isActive]);
 
   // Main breathing cycle effect
   useEffect(() => {
@@ -43,8 +70,8 @@ export function BreathingCircle({
     }
     
     let startTime = Date.now();
-    let currentPhase = phase;
-    let phaseDuration = currentPhase === "inhale" ? inhaleDuration : currentPhase === "hold" ? holdDuration : exhaleDuration;
+    let currentPhaseLocal = phase;
+    let phaseDuration = currentPhaseLocal === "inhale" ? inhaleDuration : currentPhaseLocal === "hold" ? holdDuration : exhaleDuration;
     
     const calculateProgress = () => {
       const elapsed = Date.now() - startTime;
@@ -65,18 +92,18 @@ export function BreathingCircle({
         // Reset progress to 0 before changing phase to ensure smooth transition
         setProgress(0);
         
-        if (currentPhase === "inhale") {
+        if (currentPhaseLocal === "inhale") {
           setPhase("hold");
-          currentPhase = "hold";
+          currentPhaseLocal = "hold";
           phaseDuration = holdDuration;
-        } else if (currentPhase === "hold") {
+        } else if (currentPhaseLocal === "hold") {
           setPhase("exhale");
-          currentPhase = "exhale";
+          currentPhaseLocal = "exhale";
           phaseDuration = exhaleDuration;
         } else {
           if (onBreathComplete) onBreathComplete();
           setPhase("inhale");
-          currentPhase = "inhale";
+          currentPhaseLocal = "inhale";
           phaseDuration = inhaleDuration;
         }
         
@@ -88,17 +115,16 @@ export function BreathingCircle({
     return () => clearInterval(interval);
   }, [isActive, inhaleDuration, holdDuration, exhaleDuration, onBreathComplete, phase]);
 
-  const getScaleForPhase = () => {
-    switch (phase) {
+  const getTransitionDuration = () => {
+    switch (activePhase) {
       case "inhale":
-        return "scale-[1.5]"; // Larger scale for inhale
+        return inhaleDuration;
       case "hold":
-        return "scale-[1.5]"; // Stay expanded during hold
+        return holdDuration;
       case "exhale":
-        return "scale-[1]"; // Contract to normal size during exhale
-      case "rest":
+        return exhaleDuration;
       default:
-        return "scale-[1]"; // Default resting state
+        return 1000;
     }
   };
 
@@ -106,34 +132,96 @@ export function BreathingCircle({
     <div className="flex flex-col items-center justify-center space-y-6">
       {/* Fixed height container to prevent layout shifts */}
       <div className="relative h-[280px] w-[280px] flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-gray-900 shadow-[0_0_40px_rgba(0,0,0,0.6)]" />
-        
+        {/* Blurred outer glow effect - scales with breathing */}
         <div 
           className={cn(
-            "absolute inset-0 flex items-center justify-center rounded-full transition-all duration-1000 ease-in-out", 
-            getScaleForPhase(),
+            "absolute inset-0 rounded-full opacity-70 blur-xl transition-all duration-1000", 
+            {
+              "bg-blue-400/30": activePhase === "rest",
+              "bg-cyan-400/40": activePhase === "inhale",
+              "bg-violet-400/40": activePhase === "hold",
+              "bg-indigo-400/30": activePhase === "exhale"
+            }
+          )}
+          style={{
+            transform: `scale(${circleScale * 1.2})`, // Glow is slightly larger than the circle
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+                      background-color ${getTransitionDuration()}ms ease-in-out,
+                      opacity ${getTransitionDuration()}ms ease-in-out`
+          }}
+        />
+        
+        {/* Shadow backdrop layer */}
+        <div 
+          className="absolute inset-0 rounded-full bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-[0_0_40px_rgba(0,0,0,0.1)]"
+          style={{
+            transform: `scale(${circleScale * 1.05})`, // Shadow is slightly larger than the circle
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1)`
+          }}
+        />
+        
+        {/* Main breathing circle with dynamic sizing */}
+        <div 
+          className={cn(
+            "absolute inset-0 flex items-center justify-center rounded-full", 
             className
           )}
+          style={{
+            transform: `scale(${circleScale})`, // Dynamic scaling
+            transition: `transform ${getTransitionDuration()}ms cubic-bezier(0.4, 0, 0.2, 1), 
+                        box-shadow ${getTransitionDuration()}ms ease-in-out, 
+                        background-color ${getTransitionDuration()}ms ease-in-out`
+          }}
         >
           <div 
-            className={cn("h-full w-full rounded-full flex items-center justify-center transition-all shadow-[0_0_30px_rgba(0,100,255,0.4)]", {
-              "bg-gradient-to-r from-blue-600 to-blue-500": phase === "rest",
-              "bg-gradient-to-r from-blue-600 to-cyan-500": phase === "inhale",
-              "bg-gradient-to-r from-purple-500 to-amber-400": phase === "hold",
-              "bg-gradient-to-r from-indigo-600 to-blue-500": phase === "exhale"
+            className={cn("h-full w-full rounded-full flex items-center justify-center", {
+              "bg-gradient-to-r from-blue-600/90 to-blue-400/90 shadow-[0_0_30px_rgba(59,130,246,0.5)]": activePhase === "rest",
+              "bg-gradient-to-br from-cyan-500/90 to-teal-400/90 shadow-[0_0_30px_rgba(20,184,166,0.6)]": activePhase === "inhale",
+              "bg-gradient-to-br from-violet-500/90 to-purple-400/90 shadow-[0_0_30px_rgba(139,92,246,0.6)]": activePhase === "hold",
+              "bg-gradient-to-br from-indigo-600/90 to-blue-500/90 shadow-[0_0_30px_rgba(99,102,241,0.5)]": activePhase === "exhale"
             })}
+            style={{
+              transition: `background ${getTransitionDuration()}ms ease-in-out, 
+                          box-shadow ${getTransitionDuration()}ms ease-in-out`
+            }}
           >
-            <div className="text-center text-white">
-              {phase === "rest" ? (
+            {/* Small particle effects around the circle */}
+            <div className={cn(
+              "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] rounded-full",
+              "opacity-0 dark:opacity-30",
+              {
+                "animate-pulse-gentle": isActive
+              }
+            )}>
+              <div className="absolute top-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 blur-sm" />
+              <div className="absolute bottom-0 left-1/2 w-2 h-2 rounded-full bg-white/60 -translate-x-1/2 blur-sm" />
+              <div className="absolute left-0 top-1/2 w-2 h-2 rounded-full bg-white/60 -translate-y-1/2 blur-sm" />
+              <div className="absolute right-0 top-1/2 w-2 h-2 rounded-full bg-white/60 -translate-y-1/2 blur-sm" />
+              
+              {/* Additional subtle particles for more professional look */}
+              <div className="absolute top-1/4 right-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
+              <div className="absolute bottom-1/4 left-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
+              <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
+              <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 rounded-full bg-white/50 blur-sm" />
+            </div>
+            
+            {/* Text content with transitions */}
+            <div 
+              className="text-center text-white"
+              style={{
+                transition: `opacity ${getTransitionDuration() / 2}ms ease-in-out`
+              }}
+            >
+              {activePhase === "rest" ? (
                 <div className="flex flex-col items-center justify-center space-y-2 px-6 py-4">
                   <span className="text-lg font-medium">Klaar</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-2">
-                  <div className="text-2xl font-semibold mb-1">
-                    {phase === "inhale" ? "Adem in" : phase === "hold" ? "Houd vast" : "Adem uit"}
+                  <div className="text-2xl font-semibold mb-1 drop-shadow-lg">
+                    {activePhase === "inhale" ? "Adem in" : activePhase === "hold" ? "Houd vast" : "Adem uit"}
                   </div>
-                  <div className="flex items-center justify-center text-4xl font-bold">
+                  <div className="flex items-center justify-center text-4xl font-bold drop-shadow-lg">
                     {phaseTimeLeft}
                     <span className="text-sm ml-1 mt-1">s</span>
                   </div>

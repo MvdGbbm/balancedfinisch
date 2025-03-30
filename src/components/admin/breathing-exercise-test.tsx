@@ -1,26 +1,16 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-type BreathingPattern = {
-  id: string;
-  name: string;
-  inhale: number;
-  hold1: number;
-  exhale: number;
-  hold2: number;
-  cycles: number;
-  description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-};
+import { BreathingPattern } from "@/lib/types/breathing";
+
 interface BreathingExerciseTestProps {
   pattern: BreathingPattern | null;
 }
+
 export function BreathingExerciseTest({
   pattern
 }: BreathingExerciseTestProps) {
@@ -42,7 +32,7 @@ export function BreathingExerciseTest({
     setProgress(0);
     if (pattern) {
       setSecondsLeft(pattern.inhale);
-      setCurrentAudioUrl(pattern.inhaleUrl || "");
+      setCurrentAudioUrl(pattern.inhale_url || "");
     }
   }, [pattern]);
 
@@ -54,16 +44,16 @@ export function BreathingExerciseTest({
     let url = "";
     switch (currentPhase) {
       case "inhale":
-        url = pattern.inhaleUrl || "";
+        url = pattern.inhale_url || "";
         break;
       case "hold1":
-        url = pattern.hold1Url || "";
+        url = pattern.hold1_url || "";
         break;
       case "exhale":
-        url = pattern.exhaleUrl || "";
+        url = pattern.exhale_url || "";
         break;
       case "hold2":
-        url = pattern.hold2Url || "";
+        url = pattern.hold2_url || "";
         break;
     }
 
@@ -211,6 +201,7 @@ export function BreathingExerciseTest({
       if (progressTimer) clearInterval(progressTimer);
     };
   }, [isActive, currentPhase, secondsLeft, currentCycle, pattern]);
+  
   const getInstructions = () => {
     switch (currentPhase) {
       case "inhale":
@@ -225,6 +216,7 @@ export function BreathingExerciseTest({
         return "";
     }
   };
+  
   const resetExercise = () => {
     if (!pattern) return;
     setIsActive(false);
@@ -241,8 +233,9 @@ export function BreathingExerciseTest({
     }
 
     // Set initial audio URL for the inhale phase
-    setCurrentAudioUrl(pattern.inhaleUrl || "");
+    setCurrentAudioUrl(pattern.inhale_url || "");
   };
+  
   const toggleExercise = () => {
     setIsActive(!isActive);
 
@@ -259,6 +252,7 @@ export function BreathingExerciseTest({
       }, 100);
     }
   };
+  
   if (!pattern) {
     return <Card>
         <CardContent className="p-8 text-center text-muted-foreground">
@@ -266,6 +260,7 @@ export function BreathingExerciseTest({
         </CardContent>
       </Card>;
   }
+  
   return <Card>
       <CardHeader>
         <CardTitle>Testen: {pattern.name}</CardTitle>
@@ -278,7 +273,13 @@ export function BreathingExerciseTest({
           {/* Visual representation of breathing phase with simple animated circle */}
           
           
-          
+          <div className="relative h-40 w-40 flex items-center justify-center">
+            <div className={`absolute inset-0 rounded-full transition-all duration-500 ease-in-out
+              ${currentPhase === "inhale" ? "bg-gradient-to-r from-blue-600 to-cyan-500" : currentPhase === "hold1" ? "bg-gradient-to-r from-purple-500 to-amber-400" : currentPhase === "exhale" ? "bg-gradient-to-r from-indigo-600 to-blue-500" : "bg-gradient-to-r from-blue-500 to-indigo-500"}`} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <p className="text-white text-5xl font-bold">{secondsLeft}</p>
+            </div>
+          </div>
           
           <div className="text-center space-y-2">
             <p className="text-2xl font-medium">{getInstructions()}</p>
