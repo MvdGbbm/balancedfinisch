@@ -9,26 +9,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { FileAudio, Image, Play, StopCircle, ExternalLink, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { AudioPlayer } from "@/components/audio-player";
-import { ToneEqualizer } from "@/components/music/tone-equalizer";
-import { TagInput } from "./TagInput";
+import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl } from "@/components/audio-player/utils";
+import { FormFields } from "./form/FormFields";
+import { AudioPreview } from "./form/AudioPreview";
+import { ImagePreview } from "./form/ImagePreview";
+import { MusicFormProps } from "./types";
 import { Soundscape } from "@/lib/types";
-import { validateAudioUrl, preloadAudio, fixSupabaseStorageUrl, getAudioMimeType } from "@/components/audio-player/utils";
 
-interface MusicFormDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSave: (music: Omit<Soundscape, "id">) => void;
-  currentMusic: Soundscape | null;
-}
-
-export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
+export const MusicFormDialog: React.FC<MusicFormProps> = ({
   isOpen,
   onOpenChange,
   onSave,
@@ -153,134 +142,37 @@ export const MusicFormDialog: React.FC<MusicFormDialogProps> = ({
         </DialogHeader>
         
         <div className="grid grid-cols-1 gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="title" className="text-xs">Titel</Label>
-                <Input
-                  id="title"
-                  placeholder="Titel van de soundscape"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="h-8 text-sm"
-                />
-              </div>
-              
-              <div className="space-y-1">
-                <Label htmlFor="description" className="text-xs">Beschrijving</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Beschrijving van de soundscape"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                  className="resize-none text-sm"
-                />
-              </div>
-              
-              <div className="space-y-1">
-                <Label htmlFor="tags" className="text-xs">Tags</Label>
-                <TagInput tags={tags} setTags={setTags} />
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="audioUrl" className="text-xs">Audio URL <span className="text-red-500">*</span></Label>
-                <div className="flex gap-1">
-                  <Input
-                    id="audioUrl"
-                    placeholder="URL naar audio bestand"
-                    value={audioUrl}
-                    onChange={(e) => setAudioUrl(e.target.value)}
-                    required
-                    className={`h-8 text-sm ${!isUrlValid && audioUrl ? "border-red-500" : ""}`}
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 h-8"
-                    onClick={handleAudioPreview}
-                    disabled={isValidatingUrl || !isUrlValid}
-                  >
-                    {isValidatingUrl ? (
-                      <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                    ) : isPreviewPlaying ? (
-                      <StopCircle className="h-3 w-3" />
-                    ) : (
-                      <Play className="h-3 w-3" />
-                    )}
-                  </Button>
-                </div>
-                {validatedUrl && validatedUrl !== audioUrl && (
-                  <div className="text-xs text-amber-500 flex items-center mt-1">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    URL wordt aangepast naar: {validatedUrl}
-                  </div>
-                )}
-                {!isUrlValid && audioUrl && (
-                  <div className="text-xs text-red-500 flex items-center mt-1">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Kon audio niet laden. Controleer of de URL juist is.
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-1">
-                <Label htmlFor="coverImageUrl" className="text-xs">Cover Afbeelding URL <span className="text-red-500">*</span></Label>
-                <div className="flex gap-1">
-                  <Input
-                    id="coverImageUrl"
-                    placeholder="URL naar afbeelding"
-                    value={coverImageUrl}
-                    onChange={(e) => setCoverImageUrl(e.target.value)}
-                    required
-                    className="h-8 text-sm"
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 h-8"
-                  >
-                    <Image className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <FormFields 
+            title={title}
+            setTitle={setTitle}
+            description={description}
+            setDescription={setDescription}
+            audioUrl={audioUrl}
+            setAudioUrl={setAudioUrl}
+            coverImageUrl={coverImageUrl}
+            setCoverImageUrl={setCoverImageUrl}
+            tags={tags}
+            setTags={setTags}
+            isValidatingUrl={isValidatingUrl}
+            isUrlValid={isUrlValid}
+            validatedUrl={validatedUrl}
+            handleAudioPreview={handleAudioPreview}
+            isPreviewPlaying={isPreviewPlaying}
+          />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {coverImageUrl && (
-              <div className="rounded-md overflow-hidden relative border">
-                <AspectRatio ratio={1/1}>
-                  <img 
-                    src={coverImageUrl} 
-                    alt="Preview" 
-                    className="w-full h-full object-cover" 
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/400x400?text=Invalid+Image+URL";
-                      toast.error("Kon de afbeelding niet laden. Controleer de URL.");
-                    }}
-                  />
-                </AspectRatio>
-              </div>
-            )}
+            <ImagePreview coverImageUrl={coverImageUrl} />
             
-            {audioUrl && isPreviewPlaying && isUrlValid && (
-              <div>
-                <Label className="text-xs">Audio Preview</Label>
-                <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
-                <AudioPlayer 
-                  audioUrl={validatedUrl || audioUrl} 
-                  isPlayingExternal={isPreviewPlaying}
-                  onPlayPauseChange={setIsPreviewPlaying}
-                  onError={handleAudioError}
-                  ref={audioRef}
-                />
-              </div>
-            )}
+            <AudioPreview 
+              audioUrl={audioUrl}
+              isPreviewPlaying={isPreviewPlaying}
+              setIsPreviewPlaying={setIsPreviewPlaying}
+              isValidatingUrl={isValidatingUrl}
+              isUrlValid={isUrlValid}
+              validatedUrl={validatedUrl}
+              audioRef={audioRef}
+              handleAudioError={handleAudioError}
+            />
           </div>
         </div>
         

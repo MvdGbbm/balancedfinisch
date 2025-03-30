@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
 import { 
@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { AudioPlayer } from "@/components/audio-player";
 import { 
   Edit, 
   Trash2, 
@@ -21,6 +20,7 @@ import {
 
 import { MusicFormDialog } from "@/components/admin/music/MusicFormDialog";
 import { Soundscape } from "@/lib/types";
+import { AudioPlayer } from "@/components/audio-player";
 
 const AdminSoundscapes = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
@@ -130,11 +130,7 @@ const AdminSoundscapes = () => {
                 <AudioPlayer 
                   audioUrl={soundscape.audioUrl} 
                   showControls={false}
-                >
-                  <Button variant="ghost" size="icon" className="h-6 w-6">
-                    <Volume2 className="h-3 w-3" />
-                  </Button>
-                </AudioPlayer>
+                />
               </CardContent>
             </Card>
           ))}
