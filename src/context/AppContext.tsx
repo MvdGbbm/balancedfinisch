@@ -28,6 +28,7 @@ interface AppContextType {
   addSoundscape: (soundscape: Omit<Soundscape, 'id'>) => void;
   updateSoundscape: (id: string, soundscape: Partial<Soundscape>) => void;
   deleteSoundscape: (id: string) => void;
+  setSoundscapes: (soundscapes: Soundscape[]) => void;
   
   addQuote: (quote: Omit<DailyQuote, 'id'>) => void;
   updateQuote: (id: string, quote: Partial<DailyQuote>) => void;
@@ -438,6 +439,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     addSoundscape,
     updateSoundscape,
     deleteSoundscape,
+    setSoundscapes,
     
     addQuote,
     updateQuote,

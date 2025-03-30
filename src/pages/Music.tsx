@@ -3,7 +3,7 @@ import { MobileLayout } from "@/components/mobile-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle } from "lucide-react";
+import { Music as MusicIcon, Play, Pause, Plus, ListMusic, Trash2, X, Radio, ExternalLink, Link2, StopCircle, Volume2 } from "lucide-react";
 import { AudioPlayer } from "@/components/audio-player";
 import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import { CreatePlaylistDialog } from "@/components/playlist/create-playlist-dial
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ToneEqualizer } from "@/components/music/tone-equalizer";
+import { Badge } from "@/components/ui/badge";
 
 interface RadioStream {
   id: string;
@@ -366,15 +367,33 @@ const Music = () => {
                 {musicTracks.map((track) => (
                   <Card 
                     key={track.id} 
-                    className={`transition-all ${currentTrack?.id === track.id ? 'ring-2 ring-primary' : ''} bg-background/30 backdrop-blur-sm border-muted`}
+                    className={`transition-all ${
+                      (currentTrack?.id === track.id || previewTrack?.id === track.id) && isPlaying 
+                        ? 'ring-2 ring-primary border-primary bg-primary/5' 
+                        : 'bg-background/30 backdrop-blur-sm border-muted'
+                    }`}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-full bg-blue-100/10 dark:bg-blue-900/20">
-                          <MusicIcon className="h-5 w-5 text-blue-500 dark:text-blue-300" />
+                        <div className={`p-2 rounded-full ${
+                          (previewTrack?.id === track.id || currentTrack?.id === track.id) && isPlaying
+                            ? 'bg-primary/20' 
+                            : 'bg-blue-100/10 dark:bg-blue-900/20'
+                        }`}>
+                          {(previewTrack?.id === track.id || currentTrack?.id === track.id) && isPlaying 
+                            ? <Volume2 className="h-5 w-5 text-primary animate-pulse" /> 
+                            : <MusicIcon className="h-5 w-5 text-blue-500 dark:text-blue-300" />
+                          }
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-medium">{track.title}</h3>
+                          <div className="flex items-center">
+                            <h3 className="font-medium">{track.title}</h3>
+                            {(previewTrack?.id === track.id || currentTrack?.id === track.id) && isPlaying && (
+                              <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                                Speelt nu
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm text-muted-foreground">{track.description}</p>
                         </div>
                       </div>
@@ -385,7 +404,11 @@ const Music = () => {
                             variant={previewTrack?.id === track.id && isPlaying ? "destructive" : "outline"}
                             size="sm" 
                             onClick={() => handlePreviewTrack(track)}
-                            className="flex items-center gap-1 bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20"
+                            className={`flex items-center gap-1 ${
+                              previewTrack?.id === track.id && isPlaying
+                                ? 'bg-destructive text-destructive-foreground'
+                                : 'bg-background/10 backdrop-blur-sm border-muted hover:bg-background/20'
+                            }`}
                           >
                             {previewTrack?.id === track.id && isPlaying ? (
                               <>
@@ -433,14 +456,33 @@ const Music = () => {
                   const isCurrentPlaylist = selectedPlaylist?.id === playlist.id && isPlaying;
                   
                   return (
-                    <Card key={playlist.id}>
+                    <Card 
+                      key={playlist.id}
+                      className={`transition-all ${
+                        isCurrentPlaylist 
+                          ? 'ring-2 ring-primary border-primary bg-primary/5' 
+                          : ''
+                      }`}
+                    >
                       <CardContent className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-primary/20">
-                            <ListMusic className="h-5 w-5 text-primary" />
+                          <div className={`p-2 rounded-full ${
+                            isCurrentPlaylist ? 'bg-primary/20' : 'bg-primary/20'
+                          }`}>
+                            {isCurrentPlaylist 
+                              ? <Volume2 className="h-5 w-5 text-primary animate-pulse" />
+                              : <ListMusic className="h-5 w-5 text-primary" />
+                            }
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium">{playlist.name}</h3>
+                            <div className="flex items-center">
+                              <h3 className="font-medium">{playlist.name}</h3>
+                              {isCurrentPlaylist && (
+                                <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                                  Speelt nu
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-muted-foreground">
                               {trackCount} {trackCount === 1 ? 'nummer' : 'nummers'}
                             </p>
@@ -476,11 +518,20 @@ const Music = () => {
                               {getPlaylistTracks(playlist).map((track, index) => (
                                 <div 
                                   key={track.id} 
-                                  className="flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted"
+                                  className={`flex items-center justify-between text-sm group py-1 px-2 rounded-md hover:bg-muted ${
+                                    isCurrentPlaylist && currentTrack?.id === track.id 
+                                      ? 'bg-primary/10 font-medium' 
+                                      : ''
+                                  }`}
                                 >
                                   <div className="flex items-center">
                                     <span className="w-5 text-muted-foreground">{index + 1}.</span>
                                     <span>{track.title}</span>
+                                    {isCurrentPlaylist && currentTrack?.id === track.id && (
+                                      <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary">
+                                        Speelt
+                                      </Badge>
+                                    )}
                                   </div>
                                   <Button
                                     variant="ghost"
@@ -521,46 +572,73 @@ const Music = () => {
               </div>
             ) : radioStreams.length > 0 ? (
               <div className="grid grid-cols-1 gap-2">
-                {radioStreams.map((stream) => (
-                  <Card key={stream.id} className="hover:border-primary/50 transition-colors">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="p-2 rounded-full bg-green-100/10 dark:bg-green-900/20 text-green-600 dark:text-green-300">
-                            <Link2 className="h-4 w-4" />
+                {radioStreams.map((stream) => {
+                  const isPlaying = hiddenIframeUrl === stream.url;
+                  
+                  return (
+                    <Card 
+                      key={stream.id} 
+                      className={`transition-all ${
+                        isPlaying 
+                          ? 'ring-2 ring-primary border-primary bg-primary/5' 
+                          : 'hover:border-primary/50'
+                      }`}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className={`p-2 rounded-full ${
+                              isPlaying 
+                                ? 'bg-primary/20' 
+                                : 'bg-green-100/10 dark:bg-green-900/20'
+                            }`}>
+                              {isPlaying 
+                                ? <Volume2 className="h-4 w-4 text-primary animate-pulse" />
+                                : <Link2 className="h-4 w-4 text-green-600 dark:text-green-300" />
+                              }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center">
+                                <h3 className="font-medium text-sm">{stream.title}</h3>
+                                {isPlaying && (
+                                  <Badge variant="secondary" className="ml-2 bg-primary/20 text-primary text-xs">
+                                    Actief
+                                  </Badge>
+                                )}
+                              </div>
+                              {stream.description && (
+                                <p className="text-xs text-muted-foreground">{stream.description}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-medium text-sm">{stream.title}</h3>
-                            {stream.description && (
-                              <p className="text-xs text-muted-foreground">{stream.description}</p>
+                          <div className="flex gap-2">
+                            {!isPlaying ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleStreamPlay(stream)}
+                                className="px-3"
+                              >
+                                <Play className="h-3.5 w-3.5 mr-1.5" />
+                                Afspelen
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleStreamStop}
+                                className="px-3"
+                              >
+                                <StopCircle className="h-3.5 w-3.5 mr-1.5" />
+                                Stop
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStreamPlay(stream)}
-                            className="px-3"
-                          >
-                            <Play className="h-3.5 w-3.5 mr-1.5" />
-                            Afspelen
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleStreamStop}
-                            className="px-3"
-                            disabled={!hiddenIframeUrl}
-                          >
-                            <StopCircle className="h-3.5 w-3.5 mr-1.5" />
-                            Stop
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -575,9 +653,14 @@ const Music = () => {
         <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-40 animate-slide-up">
           <div className="mx-auto max-w-4xl px-4 py-2">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="font-medium text-sm">
-                {selectedPlaylist ? `${selectedPlaylist.name}: ${currentPlayingTrack.title}` : currentPlayingTrack.title}
-              </h3>
+              <div className="flex items-center">
+                <h3 className="font-medium text-sm">
+                  {selectedPlaylist ? `${selectedPlaylist.name}: ${currentPlayingTrack.title}` : currentPlayingTrack.title}
+                </h3>
+                <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary animate-pulse">
+                  Nu Spelend
+                </Badge>
+              </div>
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -615,13 +698,37 @@ const Music = () => {
       )}
       
       {hiddenIframeUrl && (
-        <iframe 
-          ref={hiddenIframeRef}
-          src={hiddenIframeUrl}
-          style={{ display: 'none' }} 
-          title="Radio Stream"
-        />
+        <div className="fixed bottom-16 left-0 right-0 bg-background border-t shadow-lg z-40 animate-slide-up">
+          <div className="mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
+            <div className="flex items-center">
+              <Volume2 className="h-5 w-5 text-primary mr-2 animate-pulse" />
+              <div>
+                <h3 className="font-medium text-sm">Radio Stream</h3>
+                <p className="text-xs text-muted-foreground">Streaming actief in de achtergrond</p>
+              </div>
+              <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary animate-pulse">
+                Live
+              </Badge>
+            </div>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleStreamStop}
+              className="flex items-center gap-1"
+            >
+              <StopCircle className="h-4 w-4" />
+              Stoppen
+            </Button>
+          </div>
+        </div>
       )}
+      
+      <iframe 
+        ref={hiddenIframeRef}
+        src={hiddenIframeUrl || ""}
+        style={{ display: 'none' }} 
+        title="Radio Stream"
+      />
       
       <CreatePlaylistDialog
         open={showPlaylistCreator}

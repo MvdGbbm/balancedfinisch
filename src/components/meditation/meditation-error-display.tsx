@@ -7,11 +7,13 @@ import { RefreshCw } from "lucide-react";
 interface MeditationErrorDisplayProps {
   message: string;
   onRetry: () => void;
+  isRetrying?: boolean;
 }
 
 export const MeditationErrorDisplay: React.FC<MeditationErrorDisplayProps> = ({
   message,
-  onRetry
+  onRetry,
+  isRetrying = false
 }) => {
   return (
     <div className="p-4 rounded-md bg-black border border-destructive/20">
@@ -24,9 +26,10 @@ export const MeditationErrorDisplay: React.FC<MeditationErrorDisplayProps> = ({
         onClick={onRetry} 
         variant="outline"
         className="w-full"
+        disabled={isRetrying}
       >
-        <RefreshCw className="h-4 w-4 mr-2" />
-        Opnieuw proberen
+        <RefreshCw className={`h-4 w-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+        {isRetrying ? 'Opnieuw laden...' : 'Opnieuw proberen'}
       </Button>
     </div>
   );

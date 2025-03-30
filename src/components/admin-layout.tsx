@@ -7,12 +7,12 @@ import {
   Sun, 
   Lock, 
   Headphones, 
-  Music, 
   Quote, 
   Home, 
   RefreshCw,
   Waves,
-  Radio
+  Radio,
+  Music
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

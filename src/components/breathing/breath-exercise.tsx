@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -12,58 +11,20 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { BreathingPattern } from "@/lib/types";
 
-type BreathingPattern = {
-  id: string;
-  name: string;
-  inhale: number;
-  hold1: number;
-  exhale: number;
-  hold2: number;
-  cycles: number;
-  description?: string;
-  inhaleUrl?: string;
-  exhaleUrl?: string;
-  hold1Url?: string;
-  hold2Url?: string;
-};
+interface BreathExerciseProps {
+  breathingPatterns: BreathingPattern[];
+  selectedPattern: BreathingPattern | null;
+  onPatternChange: (patternId: string) => void;
+}
 
-const defaultBreathingPatterns: BreathingPattern[] = [
-  {
-    id: "1",
-    name: "4-7-8 Techniek",
-    description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
-    inhale: 4,
-    hold1: 7,
-    exhale: 8,
-    hold2: 0,
-    cycles: 5,
-  },
-  {
-    id: "2",
-    name: "Box Breathing",
-    description: "Vierkante ademhaling voor focus en kalmte",
-    inhale: 4,
-    hold1: 4,
-    exhale: 4,
-    hold2: 4, 
-    cycles: 4,
-  },
-  {
-    id: "3",
-    name: "Relaxerende Ademhaling",
-    description: "Eenvoudige techniek voor diepe ontspanning",
-    inhale: 4,
-    hold1: 2,
-    exhale: 6,
-    hold2: 0,
-    cycles: 6,
-  },
-];
-
-export function BreathExercise() {
-  const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
-  const [currentPattern, setCurrentPattern] = useState<BreathingPattern>(breathingPatterns[0]);
+export function BreathExercise({ 
+  breathingPatterns, 
+  selectedPattern, 
+  onPatternChange 
+}: BreathExerciseProps) {
+  // State
   const [isActive, setIsActive] = useState(false);
   const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
   const [currentCycle, setCurrentCycle] = useState(1);
@@ -74,104 +35,110 @@ export function BreathExercise() {
   
   // Track currently selected voice
   const [activeVoice, setActiveVoice] = useState<"none" | "vera" | "marco">("none");
+  
+  // Voice URLs
+  const [veraVoiceUrls, setVeraVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
+  
+  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState<{inhale: string, hold: string, exhale: string}>({
+    inhale: "",
+    hold: "",
+    exhale: ""
+  });
 
-  // Load breathing patterns and voice URLs from localStorage
+  // Load voice URLs from localStorage
   useEffect(() => {
-    const savedPatterns = localStorage.getItem('breathingPatterns');
-    if (savedPatterns) {
+    loadVoiceUrls();
+  }, []);
+  
+  const loadVoiceUrls = () => {
+    // Load Vera voice URLs
+    const savedVeraUrls = localStorage.getItem('veraVoiceUrls');
+    if (savedVeraUrls) {
       try {
-        const parsedPatterns = JSON.parse(savedPatterns);
-        const mergedPatterns = [...defaultBreathingPatterns];
-        
-        parsedPatterns.forEach((pattern: BreathingPattern) => {
-          if (!mergedPatterns.some(p => p.id === pattern.id)) {
-            mergedPatterns.push(pattern);
-          }
-        });
-        
-        setBreathingPatterns(mergedPatterns);
-        if (mergedPatterns.length > 0) {
-          setCurrentPattern(mergedPatterns[0]);
-        }
+        const parsedUrls = JSON.parse(savedVeraUrls);
+        setVeraVoiceUrls(parsedUrls);
       } catch (error) {
-        console.error("Error loading breathing patterns:", error);
+        console.error("Error loading Vera voice URLs:", error);
       }
     }
-  }, []);
+    
+    // Load Marco voice URLs
+    const savedMarcoUrls = localStorage.getItem('marcoVoiceUrls');
+    if (savedMarcoUrls) {
+      try {
+        const parsedUrls = JSON.parse(savedMarcoUrls);
+        setMarcoVoiceUrls(parsedUrls);
+      } catch (error) {
+        console.error("Error loading Marco voice URLs:", error);
+      }
+    }
+  };
 
   // Reset state when pattern changes
   useEffect(() => {
+    if (!selectedPattern) return;
+    
     setIsActive(false);
     setCurrentPhase("inhale");
     setCurrentCycle(1);
-    setSecondsLeft(currentPattern.inhale);
+    setSecondsLeft(selectedPattern.inhale);
     setAudioError(false);
     
     updateCurrentAudioUrl();
-  }, [currentPattern]);
+  }, [selectedPattern]);
   
   // Update audio URL based on current phase and active voice
   const updateCurrentAudioUrl = () => {
+    if (!selectedPattern) return;
+    
     let url = "";
     
     if (activeVoice === "vera") {
-      // Get Vera URLs from localStorage
-      const veraUrls = localStorage.getItem('veraVoiceUrls');
-      if (veraUrls) {
-        try {
-          const parsedUrls = JSON.parse(veraUrls);
-          switch (currentPhase) {
-            case "inhale":
-              url = parsedUrls.inhale || "";
-              break;
-            case "hold1":
-            case "hold2":
-              url = parsedUrls.hold || "";
-              break;
-            case "exhale":
-              url = parsedUrls.exhale || "";
-              break;
-          }
-        } catch (error) {
-          console.error("Error parsing Vera URLs:", error);
-        }
+      // Use Vera voice URLs
+      switch (currentPhase) {
+        case "inhale":
+          url = veraVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = veraVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = veraVoiceUrls.exhale || "";
+          break;
       }
     } else if (activeVoice === "marco") {
-      // Get Marco URLs from localStorage
-      const marcoUrls = localStorage.getItem('marcoVoiceUrls');
-      if (marcoUrls) {
-        try {
-          const parsedUrls = JSON.parse(marcoUrls);
-          switch (currentPhase) {
-            case "inhale":
-              url = parsedUrls.inhale || "";
-              break;
-            case "hold1":
-            case "hold2":
-              url = parsedUrls.hold || "";
-              break;
-            case "exhale":
-              url = parsedUrls.exhale || "";
-              break;
-          }
-        } catch (error) {
-          console.error("Error parsing Marco URLs:", error);
-        }
+      // Use Marco voice URLs
+      switch (currentPhase) {
+        case "inhale":
+          url = marcoVoiceUrls.inhale || "";
+          break;
+        case "hold1":
+        case "hold2":
+          url = marcoVoiceUrls.hold || "";
+          break;
+        case "exhale":
+          url = marcoVoiceUrls.exhale || "";
+          break;
       }
     } else {
       // Default to pattern URLs if no voice is selected
       switch (currentPhase) {
         case "inhale":
-          url = currentPattern.inhaleUrl || "";
+          url = selectedPattern.inhaleUrl || "";
           break;
         case "hold1":
-          url = currentPattern.hold1Url || "";
+          url = selectedPattern.hold1Url || "";
           break;
         case "exhale":
-          url = currentPattern.exhaleUrl || "";
+          url = selectedPattern.exhaleUrl || "";
           break;
         case "hold2":
-          url = currentPattern.hold2Url || "";
+          url = selectedPattern.hold2Url || "";
           break;
       }
     }
@@ -182,7 +149,7 @@ export function BreathExercise() {
 
   // Update and play audio when phase changes
   useEffect(() => {
-    if (!audioRef.current) return;
+    if (!selectedPattern || !audioRef.current) return;
     
     updateCurrentAudioUrl();
     
@@ -206,10 +173,12 @@ export function BreathExercise() {
       
       setTimeout(playAudio, 100);
     }
-  }, [currentPhase, currentPattern, isActive, currentAudioUrl, activeVoice]);
+  }, [currentPhase, selectedPattern, isActive, currentAudioUrl, activeVoice]);
 
   // Breathing timer effect
   useEffect(() => {
+    if (!selectedPattern) return;
+    
     let timer: number | null = null;
     
     if (isActive) {
@@ -224,24 +193,24 @@ export function BreathExercise() {
           
           if (currentPhase === "inhale") {
             setCurrentPhase("hold1");
-            setSecondsLeft(currentPattern.hold1 || 1);
+            setSecondsLeft(selectedPattern.hold1 || 1);
           } else if (currentPhase === "hold1") {
             setCurrentPhase("exhale");
-            setSecondsLeft(currentPattern.exhale);
+            setSecondsLeft(selectedPattern.exhale);
           } else if (currentPhase === "exhale") {
-            if (currentPattern.hold2) {
+            if (selectedPattern.hold2) {
               setCurrentPhase("hold2");
-              setSecondsLeft(currentPattern.hold2);
+              setSecondsLeft(selectedPattern.hold2);
             } else {
-              if (currentCycle < currentPattern.cycles) {
+              if (currentCycle < selectedPattern.cycles) {
                 setCurrentCycle(cycle => cycle + 1);
                 setCurrentPhase("inhale");
-                setSecondsLeft(currentPattern.inhale);
+                setSecondsLeft(selectedPattern.inhale);
               } else {
                 setIsActive(false);
                 setCurrentCycle(1);
                 setCurrentPhase("inhale");
-                setSecondsLeft(currentPattern.inhale);
+                setSecondsLeft(selectedPattern.inhale);
                 if (audioRef.current) {
                   audioRef.current.pause();
                   audioRef.current.currentTime = 0;
@@ -250,15 +219,15 @@ export function BreathExercise() {
               }
             }
           } else if (currentPhase === "hold2") {
-            if (currentCycle < currentPattern.cycles) {
+            if (currentCycle < selectedPattern.cycles) {
               setCurrentCycle(cycle => cycle + 1);
               setCurrentPhase("inhale");
-              setSecondsLeft(currentPattern.inhale);
+              setSecondsLeft(selectedPattern.inhale);
             } else {
               setIsActive(false);
               setCurrentCycle(1);
               setCurrentPhase("inhale");
-              setSecondsLeft(currentPattern.inhale);
+              setSecondsLeft(selectedPattern.inhale);
               if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -273,7 +242,7 @@ export function BreathExercise() {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [isActive, currentPhase, secondsLeft, currentCycle, currentPattern]);
+  }, [isActive, currentPhase, secondsLeft, currentCycle, selectedPattern]);
 
   // Stop audio when exercise is paused
   useEffect(() => {
@@ -309,10 +278,12 @@ export function BreathExercise() {
   };
 
   const resetExercise = () => {
+    if (!selectedPattern) return;
+    
     setIsActive(false);
     setCurrentPhase("inhale");
     setCurrentCycle(1);
-    setSecondsLeft(currentPattern.inhale);
+    setSecondsLeft(selectedPattern.inhale);
     setAudioError(false);
     setActiveVoice("none");
     
@@ -372,30 +343,16 @@ export function BreathExercise() {
     }
   };
 
-  const handlePatternChange = (value: string) => {
-    const selectedPattern = breathingPatterns.find(pattern => pattern.id === value);
-    if (selectedPattern) {
-      setCurrentPattern(selectedPattern);
-    }
-  };
-
-  const getCurrentPhaseLabel = () => {
-    switch (currentPhase) {
-      case "inhale": return "Inademen";
-      case "hold1": return "Vasthouden";
-      case "exhale": return "Uitademen";
-      case "hold2": return "Vasthouden";
-      default: return "";
-    }
-  };
+  if (!selectedPattern || breathingPatterns.length === 0) {
+    return (
+      <div className="text-center p-4 text-muted-foreground">
+        Geen ademhalingstechnieken beschikbaar.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center gap-2 mb-2">
-        <RefreshCw className="text-primary h-5 w-5" />
-        <h2 className="text-lg font-medium">Ademhalingsoefening</h2>
-      </div>
-      
       <audio 
         ref={audioRef} 
         src={currentAudioUrl} 
@@ -403,15 +360,15 @@ export function BreathExercise() {
         onError={() => setAudioError(true)} 
       />
       
-      <Card className="overflow-hidden bg-gradient-to-br from-blue-950 via-indigo-950 to-purple-950 border-none shadow-xl">
+      <Card className="overflow-hidden bg-navy-900 border-none shadow-xl">
         <CardContent className="p-6">
           <div className="mb-4">
             <Select
-              value={currentPattern.id}
-              onValueChange={handlePatternChange}
+              value={selectedPattern.id}
+              onValueChange={onPatternChange}
               disabled={isActive}
             >
-              <SelectTrigger className="w-full bg-black/20 border-white/10">
+              <SelectTrigger className="w-full bg-black/20 border-white/10 text-white">
                 <SelectValue placeholder="Selecteer een ademhalingstechniek" />
               </SelectTrigger>
               <SelectContent>
@@ -428,18 +385,15 @@ export function BreathExercise() {
             isActive={isActive}
             currentPhase={mapPhaseToCirclePhase(currentPhase)}
             secondsLeft={secondsLeft}
-            inhaleDuration={currentPattern.inhale * 1000}
-            holdDuration={currentPattern.hold1 * 1000}
-            exhaleDuration={currentPattern.exhale * 1000}
+            inhaleDuration={selectedPattern.inhale * 1000}
+            holdDuration={selectedPattern.hold1 * 1000}
+            exhaleDuration={selectedPattern.exhale * 1000}
           />
           
           <div className="text-center space-y-1 text-white mt-4">
             <p className="text-sm text-white/70">
-              Cyclus {currentCycle} van {currentPattern.cycles}
+              Cyclus {currentCycle} van {selectedPattern.cycles}
             </p>
-            {currentAudioUrl && !audioError ? (
-              <p className="text-blue-200">Audio speelt af</p>
-            ) : null}
           </div>
           
           <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto mt-6">
