@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import Breathing from "./pages/Breathing";
 import Meditations from "./pages/Meditations";
 import Soundscapes from "./pages/Soundscapes";
+import Music from "./pages/Music";
 import Journal from "./pages/Journal";
 import Planner from "./pages/Planner";
 import DailyQuote from "./pages/DailyQuote";
@@ -20,6 +21,7 @@ import Admin from "./pages/Admin";
 import AdminMeditations from "./pages/admin/Meditations";
 import AdminQuotes from "./pages/admin/Quotes";
 import AdminSoundscapes from "./pages/admin/Soundscapes";
+import AdminMusic from "./pages/admin/Music";
 import AdminStreams from "./pages/admin/Streams";
 import AdminBreathing from "./pages/admin/Breathing";
 
@@ -39,6 +41,7 @@ const router = createBrowserRouter(
       <Route path="/" element={<Index />} errorElement={<ErrorBoundary />} />
       <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
       <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
+      <Route path="/music" element={<Music />} errorElement={<ErrorBoundary />} />
       <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
       <Route path="/soundscapes" element={<Soundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
@@ -46,6 +49,7 @@ const router = createBrowserRouter(
       <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
+      <Route path="/admin/music" element={<AdminMusic />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
       <Route path="*" element={<NotFound />} />

@@ -5,7 +5,7 @@ import { Soundscape } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AudioPlayer } from "@/components/audio-player";
-import { Heart, Music, Edit, Play, Volume2 } from "lucide-react";
+import { Heart, Music, Edit, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -76,10 +76,7 @@ export const PersonalMeditationMusic = () => {
                     style={{ backgroundImage: `url(${soundscape.coverImageUrl})` }}
                   />
                   <div className="flex-1">
-                    <div className="flex items-center">
-                      <h4 className="font-medium truncate">{soundscape.title}</h4>
-                      <Heart className="h-4 w-4 ml-2 text-red-500 fill-red-500" />
-                    </div>
+                    <h4 className="font-medium truncate">{soundscape.title}</h4>
                     <p className="text-sm text-muted-foreground truncate">{soundscape.description}</p>
                   </div>
                   <div className="flex gap-2">
@@ -136,12 +133,7 @@ export const PersonalMeditationMusic = () => {
                   style={{ backgroundImage: `url(${soundscape.coverImageUrl})` }}
                 />
                 <div className="flex-1">
-                  <div className="flex items-center">
-                    <h4 className="font-medium truncate">{soundscape.title}</h4>
-                    {soundscape.isFavorite && (
-                      <Heart className="h-4 w-4 ml-2 text-red-500 fill-red-500" />
-                    )}
-                  </div>
+                  <h4 className="font-medium truncate">{soundscape.title}</h4>
                   <p className="text-sm text-muted-foreground truncate">{soundscape.description}</p>
                 </div>
                 <div className="flex gap-2">

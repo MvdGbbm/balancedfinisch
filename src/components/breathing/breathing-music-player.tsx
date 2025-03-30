@@ -6,9 +6,7 @@ import { Card } from "@/components/ui/card";
 import { AudioPlayer } from "@/components/audio-player";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Music, Heart } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Music } from "lucide-react";
 
 interface BreathingMusicPlayerProps {
   onVolumeChange?: (volume: number) => void;
@@ -16,7 +14,7 @@ interface BreathingMusicPlayerProps {
 }
 
 export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: BreathingMusicPlayerProps) => {
-  const { soundscapes, updateSoundscape } = useApp();
+  const { soundscapes } = useApp();
   const [selectedSoundscape, setSelectedSoundscape] = useState<Soundscape | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [musicVolume, setMusicVolume] = useState(volume);
@@ -68,13 +66,6 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
     setSelectedSoundscape(soundscape);
     setIsPlaying(true);
   };
-
-  const handleToggleFavorite = (soundscape: Soundscape) => {
-    updateSoundscape(soundscape.id, {
-      ...soundscape,
-      isFavorite: !soundscape.isFavorite
-    });
-  };
   
   return (
     <div className="space-y-4">
@@ -113,35 +104,14 @@ export const BreathingMusicPlayer = ({ onVolumeChange, volume = 0.8 }: Breathing
                   style={{ backgroundImage: `url(${soundscape.coverImageUrl})` }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1">
-                    <p className="font-medium text-sm truncate">{soundscape.title}</p>
-                    {soundscape.isFavorite && (
-                      <Heart className="h-3 w-3 text-red-500 fill-red-500" />
-                    )}
-                  </div>
+                  <p className="font-medium text-sm truncate">{soundscape.title}</p>
                   <p className="text-xs text-muted-foreground truncate">{soundscape.category}</p>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleToggleFavorite(soundscape);
-                    }}
-                  >
-                    <Heart 
-                      className={cn("h-4 w-4", soundscape.isFavorite && "text-red-500")} 
-                      fill={soundscape.isFavorite ? "currentColor" : "none"} 
-                    />
-                  </Button>
-                  {selectedSoundscape?.id === soundscape.id && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                      Actief
-                    </span>
-                  )}
-                </div>
+                {selectedSoundscape?.id === soundscape.id && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                    Actief
+                  </span>
+                )}
               </div>
             ))}
           </div>

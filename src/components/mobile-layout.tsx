@@ -2,7 +2,7 @@
 import React from "react";
 import { useTheme } from "./theme-provider";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Moon, Sun, Home, Sunrise, BookOpen, Quote } from "lucide-react";
+import { Moon, Sun, Home, Sunrise, BookOpen, Music, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -36,12 +36,16 @@ export function MobileLayout({
     icon: Sunrise,
     label: "Ademhaling"
   }, {
+    path: "/music",
+    icon: Music,
+    label: "Muziek"
+  }, {
     path: "/journal",
     icon: BookOpen,
     label: "Dagboek"
   }, {
     path: "/soundscapes",
-    icon: Sunrise,
+    icon: Music,
     label: "Geluiden"
   }, {
     path: "/daily-quote",
@@ -58,7 +62,7 @@ export function MobileLayout({
           <div className="flex items-center gap-2">
             <img src="/public/logo.svg" alt="Balanced Mind" className="h-8 w-8" onError={e => {
             e.currentTarget.onerror = null;
-            e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjRDMTguNjI3NCAyNCAyNCAxOC42Mjc0IDI0IDEyQzI0IDUuMzcyNTggMTguNjI3NCAwIDEyIDBDNS4zNzI1OCAwIDAgNS4zNzI1OCAwIDEyQzAgMTguNjI3NCA1LjM3MjU4IDI0IDEyIDI0WiIgZmlsbD0iIzNBQTBGRiIvPjxwYXRoIGQ9Ik0xMiAxOEM4LjY4NjI5IDE4IDYgMTUuMzEzNyA2IDEyQzYgOC42ODYyOSA4LjY4NjI5IDYgMTIgNkMxNS4zMTM3IDYgMTggOC42ODYyOSAxOCAxMkMxOCAxNS4zMTM3IDE1LjMxMzcgMTggMTIgMThaTTEyIDE2QzE0LjIwOTEgMTYgMTYgMTQuMjA5MSAxNiAxMkMxNiA5Ljc5MDg2IDE0LjIwOTEgOCA4IDhDOS43OTA4NiA4IDE0LjIwOTEgMTYgMTIgMTZaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==";
+            e.currentTarget.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMjRDMTguNjI3NCAyNCAyNCAxOC42Mjc0IDI0IDEyQzI0IDUuMzcyNTggMTguNjI3NCAwIDEyIDBDNS4zNzI1OCAwIDAgNS4zNzI1OCAwIDEyQzAgMTguNjI3NCA1LjM3MjU4IDI0IDEyIDI0WiIgZmlsbD0iIzNBQTBGRiIvPjxwYXRoIGQ9Ik0xMiAxOEM4LjY4NjI5IDE4IDYgMTUuMzEzNyA2IDEyQzYgOC42ODYyOSA4LjY4NjI5IDYgMTIgNkMxNS4zMTM3IDYgMTggOC42ODYyOSAxOCAxMkMxOCAxNS4zMTM3IDE1LjMxMzcgMTggMTIgMThaTTEyIDE2QzE0LjIwOTEgMTYgMTYgMTQuMjA5MSAxNiAxMkMxNiA5Ljc5MDg2IDE0LjIwOTEgOCAxMiA4QzkuNzkwODYgOCA4IDkuNzkwODYgOCAxMkM4IDE0LjIwOTEgOS43OTA4NiAxNiAxMiAxNloiIGZpbGw9IndoaXRlIi8+PC9zdmc+";
           }} />
             <h1 className="text-lg font-medium">Balanced Mind Meditation</h1>
           </div>
