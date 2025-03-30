@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { BreathingCircle } from "@/components/breathing-circle";
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { BreathingPattern } from "@/lib/types";
-import useBreathingAudio from "./use-breathing-audio";
+import { useBreathingAudio } from "./breathing-audio";
 
 interface BreathExerciseProps {
   breathingPatterns: BreathingPattern[];
@@ -147,20 +148,11 @@ export function BreathExercise({
     // Skip playing hold audio if duration is 0
     if ((currentPhase === "hold1" && selectedPattern.hold1 <= 0) || 
         (currentPhase === "hold2" && selectedPattern.hold2 <= 0)) {
-      console.log(`Skipping ${currentPhase} audio because duration is 0`);
       return;
     }
     
     if (audioUrl && isActive) {
-      // Get the hold duration based on the current phase
-      const holdDuration = currentPhase === "hold1" ? selectedPattern.hold1 : 
-                          currentPhase === "hold2" ? selectedPattern.hold2 : 0;
-                          
-      // Pass the phase type and hold duration to the playAudio function
-      const phaseType = currentPhase === "hold1" || currentPhase === "hold2" ? "hold" : 
-                       currentPhase === "inhale" ? "inhale" : "exhale";
-                       
-      playAudio(audioUrl, phaseType, holdDuration);
+      playAudio(audioUrl);
     }
   }, [currentPhase, selectedPattern, isActive, activeVoice, veraVoiceUrls, marcoVoiceUrls]);
 
@@ -405,3 +397,4 @@ export function BreathExercise({
     </div>
   );
 }
+
