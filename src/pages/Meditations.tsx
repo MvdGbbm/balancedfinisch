@@ -109,8 +109,6 @@ const Meditations = () => {
             }
           }}
           meditation={selectedMeditation}
-          guidedMeditations={[]}
-          onGuidedMeditationSelect={handleMeditationClick}
         />
       )}
     </MobileLayout>

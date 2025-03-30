@@ -77,6 +77,14 @@ export const FavoritesTab = () => {
       description: "De track is verwijderd uit je favorieten"
     });
   };
+  
+  const handleCreatePlaylist = (name: string) => {
+    toast({
+      title: "Afspeellijst aangemaakt",
+      description: `"${name}" is aangemaakt en track is toegevoegd`
+    });
+    setIsCreatePlaylistOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -159,6 +167,7 @@ export const FavoritesTab = () => {
       <CreatePlaylistDialog
         open={isCreatePlaylistOpen}
         onOpenChange={setIsCreatePlaylistOpen}
+        onSubmit={handleCreatePlaylist}
       />
     </div>
   );

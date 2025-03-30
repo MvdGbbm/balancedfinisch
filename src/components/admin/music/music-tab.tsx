@@ -73,6 +73,7 @@ export const MusicTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Alle");
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Filter tracks based on search and category
@@ -94,6 +95,7 @@ export const MusicTab = () => {
   };
 
   const handleAddToPlaylist = (trackId: string) => {
+    setSelectedTrackId(trackId);
     setIsCreatePlaylistOpen(true);
   };
 
@@ -102,6 +104,14 @@ export const MusicTab = () => {
       title: "Track verwijderd",
       description: "De muziektrack is succesvol verwijderd"
     });
+  };
+  
+  const handleCreatePlaylist = (name: string) => {
+    toast({
+      title: "Afspeellijst aangemaakt",
+      description: `"${name}" is aangemaakt en track is toegevoegd`
+    });
+    setIsCreatePlaylistOpen(false);
   };
 
   return (
@@ -201,6 +211,7 @@ export const MusicTab = () => {
       <CreatePlaylistDialog
         open={isCreatePlaylistOpen}
         onOpenChange={setIsCreatePlaylistOpen}
+        onSubmit={handleCreatePlaylist}
       />
     </div>
   );

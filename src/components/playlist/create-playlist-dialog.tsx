@@ -15,13 +15,13 @@ import {
 interface CreatePlaylistDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string) => void;
+  onSubmit?: (name: string) => void;
 }
 
 export function CreatePlaylistDialog({
   open,
   onOpenChange,
-  onSubmit,
+  onSubmit = () => {},
 }: CreatePlaylistDialogProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -37,6 +37,7 @@ export function CreatePlaylistDialog({
     onSubmit(name.trim());
     setName("");
     setError("");
+    onOpenChange(false);
   };
 
   return (

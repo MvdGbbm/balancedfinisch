@@ -9,15 +9,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuTabs,
-  DropdownMenuTabsList,
-  DropdownMenuTabsTrigger,
-  DropdownMenuTabsContent,
 } from "@/components/ui/dropdown-menu";
 import { Playlist } from "./types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApp } from "@/context/AppContext";
-import { Soundscape } from "@/lib/types";
+import { Soundscape } from "@/components/admin/music/types";
 
 interface PlaylistSelectorProps {
   playlists: Playlist[];
@@ -27,7 +23,7 @@ interface PlaylistSelectorProps {
 
 export function PlaylistSelector({ playlists, onSelectPlaylist, onCreateNew }: PlaylistSelectorProps) {
   const [activeTab, setActiveTab] = useState<string>("playlists");
-  const { soundscapes } = useApp();
+  const { soundscapes = [] } = useApp();
   
   // Filter for music tracks
   const musicTracks = soundscapes.filter(track => track.category === "Muziek");

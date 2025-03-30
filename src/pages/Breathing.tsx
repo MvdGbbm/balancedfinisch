@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { toast } from "sonner";
@@ -17,8 +18,6 @@ const Breathing = () => {
     showAnimation,
     currentCycle,
     exerciseCompleted,
-    veraVoiceUrls,
-    marcoVoiceUrls,
     voiceVolume,
     musicVolume,
     handleSelectPattern,
@@ -49,7 +48,15 @@ const Breathing = () => {
           {selectedPattern && showAnimation && (
             <BreathingExerciseAnimation 
               technique={selectedPattern.id === "1" ? "4-7-8" : selectedPattern.id === "2" ? "box-breathing" : "diaphragmatic"}
-              voiceUrls={activeVoice === "vera" ? veraVoiceUrls : activeVoice === "marco" ? marcoVoiceUrls : null}
+              voiceUrls={activeVoice === "vera" ? {
+                inhale: "https://example.com/vera/inhale.mp3",
+                hold: "https://example.com/vera/hold.mp3",
+                exhale: "https://example.com/vera/exhale.mp3",
+              } : activeVoice === "marco" ? {
+                inhale: "https://example.com/marco/inhale.mp3",
+                hold: "https://example.com/marco/hold.mp3",
+                exhale: "https://example.com/marco/exhale.mp3",
+              } : null}
               isVoiceActive={isExerciseActive && !!activeVoice}
               currentPhase={currentPhase}
               onPhaseChange={(phase) => handlePhaseChange(phase)}
@@ -64,20 +71,18 @@ const Breathing = () => {
           )}
           
           <BreathingControls 
-            veraVoiceUrls={veraVoiceUrls}
-            marcoVoiceUrls={marcoVoiceUrls}
-            isExerciseActive={isExerciseActive}
-            activeVoice={activeVoice}
-            voiceVolume={voiceVolume}
-            musicVolume={musicVolume}
-            onPauseVoice={handlePauseVoice}
-            onActivateVoice={handleActivateVoice}
-            onVoiceVolumeChange={handleVoiceVolumeChange}
-            onMusicVolumeChange={handleMusicVolumeChange}
-            headerText="Kies een stem voor begeleiding"
-            selectedPattern={selectedPattern}
-            startAudioRef={startAudioRef}
-            endAudioRef={endAudioRef}
+            isPlaying={isExerciseActive}
+            onTogglePlay={isExerciseActive ? handlePauseVoice : () => handleActivateVoice("vera")}
+            onSkipToNextPhase={() => console.log("Skip to next phase")}
+            currentPhase={currentPhase}
+            currentCycle={currentCycle}
+            totalCycles={selectedPattern?.cycles || 0}
+            completionPercentage={(currentCycle / (selectedPattern?.cycles || 1)) * 100}
+            breathsCompleted={currentCycle - 1}
+            volume={voiceVolume * 100}
+            onVolumeChange={(values) => handleVoiceVolumeChange(values[0] / 100)}
+            isMuted={voiceVolume <= 0}
+            onToggleMute={() => handleVoiceVolumeChange(voiceVolume > 0 ? 0 : 0.8)}
           />
         </div>
       </div>
@@ -102,27 +107,6 @@ function useBreathingSession() {
   const [exerciseCompleted, setExerciseCompleted] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(0.8);
   const [musicVolume, setMusicVolume] = useState(0.5);
-  
-  // Voice audio URLs
-  const [veraVoiceUrls, setVeraVoiceUrls] = useState({
-    intro: "https://example.com/vera/intro.mp3",
-    inhale: "https://example.com/vera/inhale.mp3",
-    hold: "https://example.com/vera/hold.mp3",
-    exhale: "https://example.com/vera/exhale.mp3",
-    cycle: "https://example.com/vera/cycle.mp3",
-    complete: "https://example.com/vera/complete.mp3"
-  });
-  
-  const [marcoVoiceUrls, setMarcoVoiceUrls] = useState({
-    intro: "https://example.com/marco/intro.mp3",
-    inhale: "https://example.com/marco/inhale.mp3",
-    hold: "https://example.com/marco/hold.mp3",
-    exhale: "https://example.com/marco/exhale.mp3",
-    cycle: "https://example.com/marco/cycle.mp3",
-    complete: "https://example.com/marco/complete.mp3"
-  });
-  
-  const [voiceUrlsValidated, setVoiceUrlsValidated] = useState(false);
   
   const handleSelectPattern = (pattern) => {
     setSelectedPattern(pattern);
@@ -159,14 +143,18 @@ function useBreathingSession() {
     toast.info("Oefening gepauzeerd");
   };
   
-  const handlePhaseChange = (newPhase: BreathingPhase, cycle: number, completed: boolean) => {
+  const handlePhaseChange = (newPhase: BreathingPhase) => {
     setCurrentPhase(newPhase);
-    setCurrentCycle(cycle);
-    setExerciseCompleted(completed);
     
-    if (completed) {
-      setIsExerciseActive(false);
-      toast.success("Oefening voltooid!");
+    if (newPhase === "inhale" && currentPhase === "pause") {
+      if (selectedPattern && currentCycle < selectedPattern.cycles) {
+        setCurrentCycle(prevCycle => prevCycle + 1);
+      } else if (selectedPattern && currentCycle >= selectedPattern.cycles) {
+        setIsExerciseActive(false);
+        setExerciseCompleted(true);
+        
+        toast.success("Oefening voltooid!");
+      }
     }
   };
   
@@ -187,9 +175,6 @@ function useBreathingSession() {
     showAnimation,
     currentCycle,
     exerciseCompleted,
-    veraVoiceUrls,
-    marcoVoiceUrls,
-    voiceUrlsValidated,
     voiceVolume,
     musicVolume,
     handleSelectPattern,

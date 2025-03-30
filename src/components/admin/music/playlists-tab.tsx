@@ -103,6 +103,24 @@ export const PlaylistsTab = () => {
       day: 'numeric' 
     });
   };
+  
+  const handleSubmitPlaylist = (name: string) => {
+    const newPlaylist: Playlist = {
+      id: `playlist-${playlists.length + 1}`,
+      name,
+      tracks: [],
+      createdAt: new Date().toISOString()
+    };
+    
+    setPlaylists([...playlists, newPlaylist]);
+    
+    toast({
+      title: "Afspeellijst aangemaakt",
+      description: `De afspeellijst "${name}" is succesvol aangemaakt`
+    });
+    
+    setIsCreatePlaylistOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -192,6 +210,7 @@ export const PlaylistsTab = () => {
       <CreatePlaylistDialog
         open={isCreatePlaylistOpen}
         onOpenChange={setIsCreatePlaylistOpen}
+        onSubmit={handleSubmitPlaylist}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 
 // Import required types
 import { Meditation, JournalEntry, DailyQuote, PlannerEvent } from "@/lib/types";
+import { Soundscape } from "@/components/admin/music/types";
 
 export interface AppContextType {
   // Data
@@ -8,6 +9,7 @@ export interface AppContextType {
   journalEntries: JournalEntry[];
   dailyQuotes: DailyQuote[];
   plannerEvents: PlannerEvent[];
+  soundscapes: Soundscape[];
   
   // Current states
   currentMeditation: Meditation | null;
