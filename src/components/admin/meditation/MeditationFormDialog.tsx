@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Meditation } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,6 @@ export function MeditationFormDialog({
   const [veraLink, setVeraLink] = useState("");
   const [marcoLink, setMarcoLink] = useState("");
 
-  // Reset form when dialog opens/closes or meditation changes
   React.useEffect(() => {
     if (meditation) {
       setTitle(meditation.title);

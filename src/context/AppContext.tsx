@@ -25,15 +25,6 @@ interface AppContextType {
   updateMeditation: (id: string, meditation: Partial<Meditation>) => void;
   deleteMeditation: (id: string) => void;
   
-  addSoundscape: (soundscape: Omit<Soundscape, 'id'>) => void;
-  updateSoundscape: (id: string, soundscape: Partial<Soundscape>) => void;
-  deleteSoundscape: (id: string) => void;
-  setSoundscapes: (soundscapes: Soundscape[]) => void;
-  
-  addQuote: (quote: Omit<DailyQuote, 'id'>) => void;
-  updateQuote: (id: string, quote: Partial<DailyQuote>) => void;
-  deleteQuote: (id: string) => void;
-  
   // Journal functions
   addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => void;
   updateJournalEntry: (id: string, entry: Partial<JournalEntry>) => void;
@@ -295,25 +286,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     
     const updatedMeditations = [...meditationsData, newMeditation];
-    setMeditations(updatedMeditations);
-    
-    // Update the cached processed meditations
-    localStorage.setItem('processedMeditations', JSON.stringify(updatedMeditations));
-  }
-  
-  function updateMeditation(id: string, meditation: Partial<Meditation>) {
-    const updatedMeditations = meditationsData.map((m) => 
-      (m.id === id ? { ...m, ...meditation } : m)
-    );
-    
-    setMeditations(updatedMeditations);
-    
-    // Update the cached processed meditations
-    localStorage.setItem('processedMeditations', JSON.stringify(updatedMeditations));
-  }
-  
-  function deleteMeditation(id: string) {
-    const updatedMeditations = meditationsData.filter((m) => m.id !== id);
     setMeditations(updatedMeditations);
     
     // Update the cached processed meditations

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -40,7 +39,22 @@ const AdminMeditations = () => {
     if (currentMeditation) {
       updateMeditation(currentMeditation.id, meditationData);
     } else {
-      addMeditation(meditationData);
+      if (!meditationData.title || !meditationData.description || !meditationData.category || !meditationData.coverImageUrl) {
+        console.error("Missing required fields for new meditation");
+        return;
+      }
+      
+      addMeditation({
+        title: meditationData.title,
+        description: meditationData.description,
+        duration: meditationData.duration || 10,
+        category: meditationData.category,
+        coverImageUrl: meditationData.coverImageUrl,
+        tags: meditationData.tags || [],
+        audioUrl: meditationData.audioUrl || "",
+        veraLink: meditationData.veraLink,
+        marcoLink: meditationData.marcoLink
+      });
     }
   };
   
@@ -95,19 +109,16 @@ const AdminMeditations = () => {
     }
   };
   
-  // Get unique categories
   const categories = Array.from(
     new Set(meditations.map((meditation) => meditation.category))
   ).sort();
   
-  // Filter meditations based on search query
   const filteredMeditations = meditations.filter(meditation => 
     meditation.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     meditation.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
     meditation.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Group meditations by category
   const groupedMeditations = filteredMeditations.reduce((acc, meditation) => {
     const category = meditation.category;
     if (!acc[category]) {
@@ -185,7 +196,6 @@ const AdminMeditations = () => {
         </div>
       </div>
       
-      {/* Form Dialogs */}
       <MeditationFormDialog
         meditation={currentMeditation}
         categories={categories}
