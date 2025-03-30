@@ -72,9 +72,10 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
 
   // Update audio URL based on phase and voice
   useEffect(() => {
-    if (!pattern) return;
+    if (!pattern || !activeVoice) return;
     
     let url = "";
+    // Skip setting URL for hold phases if the duration is 0
     if (activeVoice === "vera") {
       switch (currentPhase) {
         case "inhale":
@@ -82,7 +83,11 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
           break;
         case "hold1":
         case "hold2":
-          url = veraVoiceUrls.hold || "";
+          // Only set URL if the hold duration is greater than 0
+          if ((currentPhase === "hold1" && pattern.hold1 > 0) || 
+              (currentPhase === "hold2" && pattern.hold2 > 0)) {
+            url = veraVoiceUrls.hold || "";
+          }
           break;
         case "exhale":
           url = veraVoiceUrls.exhale || "";
@@ -95,7 +100,11 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
           break;
         case "hold1":
         case "hold2":
-          url = marcoVoiceUrls.hold || "";
+          // Only set URL if the hold duration is greater than 0
+          if ((currentPhase === "hold1" && pattern.hold1 > 0) || 
+              (currentPhase === "hold2" && pattern.hold2 > 0)) {
+            url = marcoVoiceUrls.hold || "";
+          }
           break;
         case "exhale":
           url = marcoVoiceUrls.exhale || "";

@@ -31,11 +31,13 @@ export function CircleAnimation({
       case "inhale":
         return pattern.inhaleText || "Adem in";
       case "hold1":
-        return pattern.hold1Text || "Vasthouden";
+        // Only show hold text if hold duration is greater than 0
+        return (pattern.hold1 > 0) ? (pattern.hold1Text || "Vasthouden") : "";
       case "exhale":
         return pattern.exhaleText || "Adem uit";
       case "hold2":
-        return pattern.hold2Text || "Vasthouden";
+        // Only show hold text if hold duration is greater than 0
+        return (pattern.hold2 > 0) ? (pattern.hold2Text || "Vasthouden") : "";
       default:
         return "";
     }
@@ -76,7 +78,7 @@ export function CircleAnimation({
       >
         <div className="text-xl font-bold text-center">
           <div>{getPhaseText()}</div>
-          <div className="text-2xl mt-1">{secondsLeft}</div>
+          {getPhaseText() && <div className="text-2xl mt-1">{secondsLeft}</div>}
         </div>
       </div>
     </div>

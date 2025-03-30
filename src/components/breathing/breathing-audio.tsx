@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';
@@ -65,6 +64,7 @@ export const useBreathingAudio = ({
   const playAudio = async (phaseType: BreathingPhase) => {
     if (!voiceUrls || !isVoiceActive || !audioRef.current || audioLoadingRef.current) return;
     let audioUrl = '';
+    
     switch (phaseType) {
       case 'start':
         audioUrl = voiceUrls.start || '';
@@ -81,10 +81,12 @@ export const useBreathingAudio = ({
       default:
         audioUrl = '';
     }
+    
     if (!audioUrl) {
       console.log(`No audio URL for ${phaseType} phase`);
       return;
     }
+    
     audioLoadingRef.current = true;
     try {
       console.log(`Attempting to play ${phaseType} audio: ${audioUrl}`);
