@@ -32,21 +32,7 @@ export const validateAudioUrl = (url: string | undefined): string => {
     }
   }
   
-  // Handle URL encoding for special characters
-  try {
-    // Only encode parts of the URL that need encoding
-    const urlObj = new URL(url, window.location.origin);
-    // Make sure pathname is properly encoded (file names with spaces, etc.)
-    urlObj.pathname = urlObj.pathname.split('/')
-      .map(segment => segment.includes(' ') ? encodeURIComponent(segment) : segment)
-      .join('/');
-    
-    return urlObj.toString();
-  } catch (error) {
-    console.error("Error encoding URL:", error, url);
-    // If URL parsing fails, try a simpler approach
-    return url;
-  }
+  return url;
 };
 
 export const isStreamUrl = (url: string): boolean => {
@@ -56,74 +42,4 @@ export const isStreamUrl = (url: string): boolean => {
          url.endsWith('.m3u8') || 
          url.includes('icecast') || 
          url.includes('shoutcast');
-};
-
-// Check if file is likely an AAC audio file
-export const isAACFile = (url: string): boolean => {
-  const lowercaseUrl = url.toLowerCase();
-  return lowercaseUrl.endsWith('.aac') || 
-         lowercaseUrl.endsWith('.m4a') || 
-         lowercaseUrl.includes('audio/aac') || 
-         lowercaseUrl.includes('audio/mp4a');
-};
-
-// Check if browser supports AAC playback
-export const checkAACSupport = (): boolean => {
-  const audio = document.createElement('audio');
-  return audio.canPlayType('audio/aac') !== '' || 
-         audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
-};
-
-// Get appropriate MIME type based on file extension
-export const getAudioMimeType = (url: string): string => {
-  const lowercaseUrl = url.toLowerCase();
-  
-  if (lowercaseUrl.endsWith('.aac')) return 'audio/aac';
-  if (lowercaseUrl.endsWith('.m4a') || lowercaseUrl.endsWith('.mp4a')) return 'audio/mp4';
-  if (lowercaseUrl.endsWith('.mp3')) return 'audio/mpeg';
-  if (lowercaseUrl.endsWith('.wav')) return 'audio/wav';
-  if (lowercaseUrl.endsWith('.ogg')) return 'audio/ogg';
-  if (lowercaseUrl.endsWith('.flac')) return 'audio/flac';
-  
-  // Default to general audio type
-  return 'audio/mpeg';
-};
-
-// Preload and test an audio URL
-export const preloadAudio = async (url: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (!url) {
-      resolve(false);
-      return;
-    }
-    
-    const validatedUrl = validateAudioUrl(url);
-    if (!validatedUrl) {
-      resolve(false);
-      return;
-    }
-    
-    const audio = new Audio();
-    
-    // Set a timeout for loading
-    const timeout = setTimeout(() => {
-      console.warn("Audio preload timed out:", validatedUrl);
-      resolve(false);
-    }, 5000);
-    
-    // Event listeners for success/failure
-    audio.oncanplaythrough = () => {
-      clearTimeout(timeout);
-      resolve(true);
-    };
-    
-    audio.onerror = (error) => {
-      clearTimeout(timeout);
-      console.error("Error preloading audio:", error, validatedUrl);
-      resolve(false);
-    };
-    
-    audio.src = validatedUrl;
-    audio.load();
-  });
 };

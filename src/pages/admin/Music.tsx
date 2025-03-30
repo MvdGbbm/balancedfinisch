@@ -1,13 +1,37 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
+import { 
+  Card, 
+  CardContent, 
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Music } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { AudioPlayer } from "@/components/audio-player";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Edit, Trash2, FileAudio, Image, Tag, Music, ExternalLink, Play, Pause, StopCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ToneEqualizer } from "@/components/music/tone-equalizer";
+
 import { Soundscape } from "@/lib/types";
-import { MusicList } from "@/components/admin/music/MusicList";
-import { MusicFormDialog } from "@/components/admin/music/MusicFormDialog";
 
 const AdminMusic = () => {
   const { soundscapes, addSoundscape, updateSoundscape, deleteSoundscape } = useApp();
@@ -16,14 +40,39 @@ const AdminMusic = () => {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentMusicItem, setCurrentMusicItem] = useState<Soundscape | null>(null);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [audioUrl, setAudioUrl] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setAudioUrl("");
+    setCoverImageUrl("");
+    setTags([]);
+    setTagInput("");
+    setIsPreviewPlaying(false);
+  };
   
   const handleOpenNew = () => {
     setCurrentMusicItem(null);
+    resetForm();
     setIsDialogOpen(true);
   };
   
   const handleEdit = (musicItem: Soundscape) => {
     setCurrentMusicItem(musicItem);
+    setTitle(musicItem.title);
+    setDescription(musicItem.description);
+    setAudioUrl(musicItem.audioUrl);
+    setCoverImageUrl(musicItem.coverImageUrl);
+    setTags([...musicItem.tags]);
     setIsDialogOpen(true);
   };
   
@@ -33,30 +82,69 @@ const AdminMusic = () => {
     }
   };
   
-  const handleSave = (musicData: Partial<Soundscape>) => {
+  const handleAddTag = () => {
+    if (tagInput && !tags.includes(tagInput)) {
+      setTags([...tags, tagInput]);
+      setTagInput("");
+    }
+  };
+  
+  const handleRemoveTag = (tag: string) => {
+    setTags(tags.filter((t) => t !== tag));
+  };
+  
+  const handleAudioPreview = () => {
+    if (audioUrl) {
+      setIsPreviewPlaying(!isPreviewPlaying);
+    } else {
+      toast.error("Voer eerst een audio URL in om voor te luisteren");
+    }
+  };
+  
+  const handleAudioError = () => {
+    toast.error("Kon de audio niet laden. Controleer of de URL correct is.");
+    setIsPreviewPlaying(false);
+  };
+  
+  const handleSave = () => {
+    if (!title || !description || !audioUrl || !coverImageUrl) {
+      toast.error("Vul alle verplichte velden in");
+      return;
+    }
+    
     if (currentMusicItem) {
-      updateSoundscape(currentMusicItem.id, musicData);
+      updateSoundscape(currentMusicItem.id, {
+        title,
+        description,
+        audioUrl,
+        category: "Muziek",
+        coverImageUrl,
+        tags,
+      });
       toast.success("Muziek bijgewerkt");
     } else {
-      // Make sure we have all required properties for a new Soundscape
-      if (!musicData.title || !musicData.description || !musicData.audioUrl || 
-          !musicData.coverImageUrl || !musicData.category) {
-        toast.error("Alle verplichte velden moeten ingevuld zijn");
-        return;
-      }
-      
-      // Cast to required type with all necessary fields
-      const newMusic: Omit<Soundscape, "id"> = {
-        title: musicData.title,
-        description: musicData.description,
-        audioUrl: musicData.audioUrl,
-        category: musicData.category || "Muziek",
-        coverImageUrl: musicData.coverImageUrl,
-        tags: musicData.tags || [],
-      };
-      
-      addSoundscape(newMusic);
+      addSoundscape({
+        title,
+        description,
+        audioUrl,
+        category: "Muziek",
+        coverImageUrl,
+        tags,
+      });
       toast.success("Nieuwe muziek toegevoegd");
+    }
+    
+    setIsDialogOpen(false);
+    resetForm();
+  };
+
+  const isValidUrl = (url: string) => {
+    if (!url) return false;
+    try {
+      new URL(url);
+      return true;
+    } catch (e) {
+      return false;
     }
   };
   
@@ -76,21 +164,230 @@ const AdminMusic = () => {
         </p>
         
         <div className="space-y-8 pb-20">
-          <MusicList 
-            musicItems={musicItems}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onNew={handleOpenNew}
-          />
+          {musicItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {musicItems.map((musicItem) => (
+                <Card key={musicItem.id} className="overflow-hidden border-muted bg-background/30 backdrop-blur-sm">
+                  <div className="aspect-video bg-cover bg-center relative">
+                    <img 
+                      src={musicItem.coverImageUrl} 
+                      alt={musicItem.title}
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <h3 className="text-white font-medium">{musicItem.title}</h3>
+                      <p className="text-white/80 text-sm truncate">
+                        {musicItem.description}
+                      </p>
+                    </div>
+                    <div className="absolute top-2 right-2 flex gap-1">
+                      <Button 
+                        variant="secondary" 
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                        onClick={() => handleEdit(musicItem)}
+                      >
+                        <Edit className="h-4 w-4 text-white" />
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30"
+                        onClick={() => handleDelete(musicItem.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
+                  </div>
+                  <CardFooter className="p-3 bg-background/50 backdrop-blur-sm">
+                    <AudioPlayer audioUrl={musicItem.audioUrl} showControls={false} />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <p className="text-muted-foreground mb-4">
+                Er zijn nog geen muziekstukken. Voeg je eerste muziekstuk toe!
+              </p>
+              <Button onClick={handleOpenNew}>
+                <Music className="h-4 w-4 mr-2" />
+                Nieuwe Muziek
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       
-      <MusicFormDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onSave={handleSave}
-        currentMusic={currentMusicItem}
-      />
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {currentMusicItem ? "Muziek Bewerken" : "Nieuwe Muziek"}
+            </DialogTitle>
+            <DialogDescription>
+              Vul de details in voor de muziek
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Titel</Label>
+                <Input
+                  id="title"
+                  placeholder="Titel van de muziek"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Beschrijving</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Beschrijving van de muziek"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="tags"
+                    placeholder="Voeg een tag toe"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button" 
+                    onClick={handleAddTag}
+                  >
+                    <Tag className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-1 text-muted-foreground hover:text-foreground"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="audioUrl">Audio URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="audioUrl"
+                    placeholder="URL naar audio bestand"
+                    value={audioUrl}
+                    onChange={(e) => setAudioUrl(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={handleAudioPreview}
+                  >
+                    {isPreviewPlaying ? <StopCircle className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {isValidUrl(audioUrl) && (
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Directe URL naar een online audio bestand
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="coverImageUrl">Cover Afbeelding URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="coverImageUrl"
+                    placeholder="URL naar afbeelding"
+                    value={coverImageUrl}
+                    onChange={(e) => setCoverImageUrl(e.target.value)}
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    className="shrink-0"
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                </div>
+                {isValidUrl(coverImageUrl) && (
+                  <div className="text-xs text-muted-foreground flex items-center mt-1">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Directe URL naar een online afbeelding
+                  </div>
+                )}
+              </div>
+              
+              {coverImageUrl && (
+                <div className="mt-4 aspect-video bg-cover bg-center rounded-md overflow-hidden relative">
+                  <img 
+                    src={coverImageUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      e.currentTarget.src = "https://via.placeholder.com/400x225?text=Invalid+Image+URL";
+                      toast.error("Kon de afbeelding niet laden. Controleer de URL.");
+                    }}
+                  />
+                </div>
+              )}
+              
+              {audioUrl && isPreviewPlaying && (
+                <div className="mt-4">
+                  <Label>Audio Preview</Label>
+                  <ToneEqualizer isActive={isPreviewPlaying} className="mb-2" audioRef={audioRef} />
+                  <AudioPlayer 
+                    audioUrl={audioUrl} 
+                    isPlayingExternal={isPreviewPlaying}
+                    onPlayPauseChange={setIsPreviewPlaying}
+                    onError={handleAudioError}
+                    ref={audioRef}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Annuleren
+            </Button>
+            <Button onClick={handleSave}>
+              Opslaan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };

@@ -1,6 +1,6 @@
+
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { validateAudioUrl, isStreamUrl } from "@/components/audio-player/utils";
 
 interface UseAudioPlayerProps {
   audioUrl: string;
@@ -11,7 +11,6 @@ interface UseAudioPlayerProps {
   nextAudioUrl?: string;
   onCrossfadeStart?: () => void;
   title?: string;
-  volume?: number;
 }
 
 export const useAudioPlayer = ({
@@ -22,13 +21,12 @@ export const useAudioPlayer = ({
   onPlayPauseChange,
   nextAudioUrl,
   onCrossfadeStart,
-  title,
-  volume: initialVolume
+  title
 }: UseAudioPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [volume, setVolume] = useState(initialVolume !== undefined ? initialVolume : 0.8);
+  const [volume, setVolume] = useState(0.8);
   const [isLooping, setIsLooping] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -42,39 +40,38 @@ export const useAudioPlayer = ({
   const crossfadeTimeoutRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
 
-  // Update volume when initialVolume changes
-  useEffect(() => {
-    if (initialVolume !== undefined) {
-      setVolume(initialVolume);
-      if (audioRef.current) {
-        audioRef.current.volume = initialVolume;
-      }
-    }
-  }, [initialVolume]);
-
   // Constants for crossfade
   const CROSSFADE_DURATION = 5; // Duration of crossfade in seconds
   const MAX_RETRY_COUNT = 3;
-  
-  // Added support for additional audio formats including AAC
-  const SUPPORTED_FORMATS = [
-    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 
-    'audio/aac', 'audio/mp4', 'audio/m4a', 'audio/x-m4a'
-  ];
-  
-  // Check if browser supports AAC format
-  const checkAACSupport = () => {
-    const audio = document.createElement('audio');
-    return audio.canPlayType('audio/aac') !== '' || 
-           audio.canPlayType('audio/mp4; codecs="mp4a.40.2"') !== '';
-  };
-  
-  // Store AAC support status
-  const aacSupported = useRef(checkAACSupport());
 
   // Check if URL is potentially a live stream
   const checkIfLiveStream = (url: string) => {
-    return isStreamUrl(url);
+    // Common live stream indicators
+    return url.includes('radio') || 
+           url.includes('stream') || 
+           url.includes('live') || 
+           url.endsWith('.m3u8') || 
+           url.includes('icecast') || 
+           url.includes('shoutcast');
+  };
+  
+  // Validate and clean up the audioUrl
+  const validateAudioUrl = (url: string): string => {
+    if (!url) return '';
+    
+    // Remove any trailing or leading whitespace
+    url = url.trim();
+    
+    // Ensure URL has valid protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+      // If it's a relative path, add leading slash
+      if (!url.startsWith('/')) {
+        url = '/' + url;
+      }
+    }
+    
+    console.log("Validated audio URL:", url);
+    return url;
   };
 
   // Play audio directly without preloading for external URLs
@@ -95,14 +92,6 @@ export const useAudioPlayer = ({
     
     console.log("Playing directly:", url);
     
-    // Check AAC support for AAC files
-    const isAAC = url.toLowerCase().endsWith('.aac') || 
-                  url.toLowerCase().endsWith('.m4a');
-    
-    if (isAAC && !aacSupported.current) {
-      console.warn("This browser might not support AAC format natively. Attempting to play anyway.");
-    }
-    
     // Check if potentially a live stream
     const potentialLiveStream = checkIfLiveStream(url);
     if (potentialLiveStream) {
@@ -116,26 +105,8 @@ export const useAudioPlayer = ({
     // Reset error state
     setLoadError(false);
     
-    // Set source and load with appropriate MIME type for AAC if needed
+    // Set source and load
     audioElement.src = url;
-    
-    // For AAC files, explicitly set the type if possible
-    if (isAAC) {
-      try {
-        const source = document.createElement('source');
-        source.src = url;
-        source.type = url.toLowerCase().endsWith('.aac') ? 'audio/aac' : 'audio/mp4';
-        
-        audioElement.innerHTML = ''; // Clear any existing sources
-        audioElement.appendChild(source);
-        console.log("Added source element with type:", source.type);
-      } catch (e) {
-        console.warn("Couldn't add source element, falling back to basic src attribute", e);
-        // Fallback to just setting src attribute
-        audioElement.src = url;
-      }
-    }
-    
     audioElement.load();
     
     // Set up event listeners for this direct play
