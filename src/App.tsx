@@ -32,21 +32,36 @@ const queryClient = new QueryClient({
   },
 });
 
+// Define the visible routes for navigation
+const mainRoutes = [
+  { path: "/", element: <Index /> },
+  { path: "/meditations", element: <Meditations /> },
+  { path: "/breathing", element: <Breathing /> },
+  { path: "/journal", element: <Journal /> },
+  { path: "/daily-quote", element: <DailyQuote /> },
+  { path: "/admin", element: <Admin /> },
+  { path: "*", element: <NotFound /> },
+];
+
+// Create the router with all routes including admin sub-routes (accessible but not shown in navigation)
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      <Route path="/" element={<Index />} errorElement={<ErrorBoundary />} />
-      <Route path="/meditations" element={<Meditations />} errorElement={<ErrorBoundary />} />
-      <Route path="/breathing" element={<Breathing />} errorElement={<ErrorBoundary />} />
-      <Route path="/journal" element={<Journal />} errorElement={<ErrorBoundary />} />
-      <Route path="/daily-quote" element={<DailyQuote />} errorElement={<ErrorBoundary />} />
-      <Route path="/admin" element={<Admin />} errorElement={<ErrorBoundary />} />
+      {mainRoutes.map((route) => (
+        <Route 
+          key={route.path} 
+          path={route.path} 
+          element={route.element} 
+          errorElement={<ErrorBoundary />} 
+        />
+      ))}
+      
+      {/* Admin sub-routes - functional but not visible in navigation */}
       <Route path="/admin/meditations" element={<AdminMeditations />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/quotes" element={<AdminQuotes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/soundscapes" element={<AdminSoundscapes />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/streams" element={<AdminStreams />} errorElement={<ErrorBoundary />} />
       <Route path="/admin/breathing" element={<AdminBreathing />} errorElement={<ErrorBoundary />} />
-      <Route path="*" element={<NotFound />} />
     </>
   )
 );
