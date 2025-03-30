@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { AudioPlayer } from "@/components/audio-player";
 import { Meditation } from "@/lib/types";
-import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote, Heart } from "lucide-react";
+import { AlertCircle, StopCircle, PlayCircle, ExternalLink, Quote } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { QuoteDisplay } from "@/components/audio-player/quote-display";
@@ -10,7 +10,6 @@ import { getRandomQuote, validateAudioUrl, checkUrlExists } from "@/components/a
 import MeditationErrorDisplay from "@/components/meditation/meditation-error-display";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useApp } from "@/context/AppContext";
 
 interface MeditationPlayerContainerProps {
   isVisible: boolean;
@@ -21,7 +20,6 @@ export function MeditationPlayerContainer({
   isVisible, 
   selectedMeditation 
 }: MeditationPlayerContainerProps) {
-  const { updateMeditation } = useApp();
   const [audioError, setAudioError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -44,46 +42,33 @@ export function MeditationPlayerContainer({
         const url = selectedMeditation.audioUrl || "";
         const validatedUrl = validateAudioUrl(url);
         
-        console.log("Loading meditation:", selectedMeditation.title);
-        console.log("Original URL:", url);
-        console.log("Validated URL:", validatedUrl);
-        
         if (validatedUrl) {
-          try {
-            // Check if URL is accessible
-            const isAccessible = await checkUrlExists(validatedUrl);
-            
-            if (!isAccessible) {
-              console.error("Audio URL is not accessible:", validatedUrl);
-              setAudioError(true);
-              setIsLoadingAudio(false);
-              toast.error(`Kon de audio niet laden voor "${selectedMeditation.title}". URL is niet toegankelijk.`);
-              return;
-            }
-            
-            setCurrentAudioUrl(validatedUrl);
-            setPlayerKey(prevKey => prevKey + 1);
-            
-            console.log("Selected meditation:", selectedMeditation);
-            console.log("Audio URL:", validatedUrl);
-            console.log("Marco link:", selectedMeditation.marcoLink);
-            console.log("Vera link:", selectedMeditation.veraLink);
-            
-            setTimeout(() => {
-              setIsPlaying(true);
-              setIsLoadingAudio(false);
-            }, 500);
-          } catch (error) {
-            console.error("Error checking audio URL:", error);
+          // Check if URL is accessible
+          const isAccessible = await checkUrlExists(validatedUrl);
+          
+          if (!isAccessible) {
+            console.error("Audio URL is not accessible:", validatedUrl);
             setAudioError(true);
             setIsLoadingAudio(false);
-            toast.error(`Fout bij het laden van audio voor "${selectedMeditation.title}".`);
+            return;
           }
+          
+          setCurrentAudioUrl(validatedUrl);
+          setPlayerKey(prevKey => prevKey + 1);
+          
+          console.log("Selected meditation:", selectedMeditation);
+          console.log("Audio URL:", validatedUrl);
+          console.log("Marco link:", selectedMeditation.marcoLink);
+          console.log("Vera link:", selectedMeditation.veraLink);
+          
+          setTimeout(() => {
+            setIsPlaying(true);
+            setIsLoadingAudio(false);
+          }, 500);
         } else {
           setAudioError(true);
           setIsLoadingAudio(false);
           console.error("Invalid audio URL:", url);
-          toast.error(`Ongeldige audio URL voor "${selectedMeditation.title}".`);
         }
       };
       
@@ -105,7 +90,7 @@ export function MeditationPlayerContainer({
     setAudioError(true);
     setIsPlaying(false);
     console.error("Audio error for:", currentAudioUrl);
-    toast.error(`Kon de audio niet laden voor "${selectedMeditation.title}". Controleer de URL.`);
+    toast.error("Kon de audio niet laden. Controleer de URL.");
   };
   
   const handleImageError = () => {
@@ -125,22 +110,6 @@ export function MeditationPlayerContainer({
     toast("De meditatie wordt afgespeeld", {
       description: "Start"
     });
-  };
-  
-  const toggleFavorite = () => {
-    if (selectedMeditation) {
-      const updatedFavoriteStatus = !selectedMeditation.isFavorite;
-      updateMeditation(selectedMeditation.id, {
-        ...selectedMeditation,
-        isFavorite: updatedFavoriteStatus
-      });
-      
-      toast(updatedFavoriteStatus 
-        ? "Meditatie toegevoegd aan favorieten" 
-        : "Meditatie verwijderd uit favorieten", {
-        description: selectedMeditation.title
-      });
-    }
   };
   
   const handleRetryAudio = async () => {
@@ -286,39 +255,27 @@ export function MeditationPlayerContainer({
     <div className="mt-4">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-medium">Nu speelt: {selectedMeditation.title}</h3>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
+        {isPlaying ? (
+          <Button 
+            variant="destructive"
             size="sm"
-            onClick={toggleFavorite}
+            onClick={handleStopPlaying}
             className="flex items-center gap-1"
-            title={selectedMeditation.isFavorite ? "Verwijder uit favorieten" : "Voeg toe aan favorieten"}
           >
-            <Heart className={`h-4 w-4 ${selectedMeditation.isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+            <StopCircle className="h-4 w-4" />
+            Stoppen
           </Button>
-          
-          {isPlaying ? (
-            <Button 
-              variant="destructive"
-              size="sm"
-              onClick={handleStopPlaying}
-              className="flex items-center gap-1"
-            >
-              <StopCircle className="h-4 w-4" />
-              Stoppen
-            </Button>
-          ) : (
-            <Button 
-              variant="default"
-              size="sm"
-              onClick={handleStartPlaying}
-              className="flex items-center gap-1"
-            >
-              <PlayCircle className="h-4 w-4" />
-              Start
-            </Button>
-          )}
-        </div>
+        ) : (
+          <Button 
+            variant="default"
+            size="sm"
+            onClick={handleStartPlaying}
+            className="flex items-center gap-1"
+          >
+            <PlayCircle className="h-4 w-4" />
+            Start
+          </Button>
+        )}
       </div>
 
       {hasValidImage && !imageError && (

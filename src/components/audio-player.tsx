@@ -60,7 +60,7 @@ export const AudioPlayer = forwardRef<HTMLAudioElement, AudioPlayerProps>(({
   const [isAACFormat, setIsAACFormat] = useState(false);
   const [selectedMusic, setSelectedMusic] = useState<string>("");
   
-  // Filter to only get music tracks from the "Muziek" category
+  // Filter music tracks to only include those from the Music category
   const musicTracks = soundscapes.filter(track => track.category === "Muziek");
   
   // Process and fix audio URL if needed

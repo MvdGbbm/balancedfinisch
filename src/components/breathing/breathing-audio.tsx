@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import { BreathingPhase } from './types';
 import { toast } from 'sonner';
@@ -9,6 +10,7 @@ interface BreathingAudioProps {
     inhale: string;
     hold: string;
     exhale: string;
+    end?: string;
   } | null;
   isVoiceActive: boolean;
   phase: BreathingPhase;
@@ -31,15 +33,27 @@ export const useBreathingAudio = ({
     inhale: string;
     hold: string;
     exhale: string;
+    end?: string;
   }) => {
-    if (!urls.inhale || !urls.hold || !urls.exhale) {
+    if (!urls.inhale || !urls.exhale) {
       console.log("Voice URLs are incomplete, skipping validation");
       return false;
     }
     try {
-      const urlsToValidate = [urls.inhale, urls.hold, urls.exhale];
+      // Only validate URLs that are actually provided and will be used
+      const urlsToValidate = [urls.inhale, urls.exhale].filter(Boolean);
+      
+      // Only add the hold URL to validation if it exists and is not empty
+      if (urls.hold && urls.hold.trim() !== '') {
+        urlsToValidate.push(urls.hold);
+      }
+      
       if (urls.start) {
         urlsToValidate.push(urls.start);
+      }
+      
+      if (urls.end) {
+        urlsToValidate.push(urls.end);
       }
       
       const validationPromises = urlsToValidate.map(url => preloadAudio(url));
@@ -73,17 +87,22 @@ export const useBreathingAudio = ({
         audioUrl = voiceUrls.inhale;
         break;
       case 'hold':
-        audioUrl = voiceUrls.hold;
+        // Skip if no hold URL is provided or if it's empty
+        audioUrl = voiceUrls.hold && voiceUrls.hold.trim() !== '' ? voiceUrls.hold : '';
         break;
       case 'exhale':
         audioUrl = voiceUrls.exhale;
+        break;
+      case 'end':
+        audioUrl = voiceUrls.end || '';
         break;
       default:
         audioUrl = '';
     }
     
+    // If no URL for this phase (particularly for hold), just skip playing audio
     if (!audioUrl) {
-      console.log(`No audio URL for ${phaseType} phase`);
+      console.log(`No audio URL for ${phaseType} phase, skipping audio playback`);
       return;
     }
     
@@ -129,7 +148,12 @@ export const useBreathingAudio = ({
     if (previousPhaseRef.current !== phase) {
       console.log(`Phase changed from ${previousPhaseRef.current} to ${phase}`);
       if (phase !== 'pause' && isVoiceActive && voiceUrls) {
-        playAudio(phase);
+        // If it's the hold phase and there's no URL for it, just skip
+        if (phase === 'hold' && !voiceUrls.hold) {
+          console.log('Skipping hold audio because no URL is provided');
+        } else {
+          playAudio(phase);
+        }
       }
       previousPhaseRef.current = phase;
     }
@@ -140,7 +164,12 @@ export const useBreathingAudio = ({
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     } else if (isVoiceActive && voiceUrls && audioRef.current && isActive) {
-      playAudio(phase);
+      // Don't try to play audio for hold phase if no URL exists
+      if (phase === 'hold' && !voiceUrls.hold) {
+        console.log('Skipping initial hold audio because no URL is provided');
+      } else {
+        playAudio(phase);
+      }
     }
   }, [isVoiceActive, voiceUrls, isActive, phase]);
 
