@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/mobile-layout";
 import { MeditationCard } from "@/components/meditation/meditation-card";
 import { Button } from "@/components/ui/button";
-import { useMediaQuery } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { MeditationPlayerContainer } from "@/components/meditation/meditation-player-container";
 import { MeditationDetailDialog } from "@/components/meditation/meditation-detail-dialog";
 import { useApp } from "@/context/AppContext";
@@ -20,7 +20,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 // Main component
 const MeditationsPage = () => {
   const { meditations, currentMeditation, setCurrentMeditation, deleteMeditation } = useApp();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [durationFilter, setDurationFilter] = useState<number | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -90,16 +90,24 @@ const MeditationsPage = () => {
           </p>
         </div>
         
-        <MeditationCategoryTabs 
-          categories={Object.keys(groupedMeditations)}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-        
-        <MeditationFilters 
-          durationFilter={durationFilter}
-          onDurationChange={setDurationFilter}
-        />
+        <div className="space-y-4">
+          <MeditationCategoryTabs 
+            categories={Object.keys(groupedMeditations)}
+            selectedCategory={activeTab}
+            onCategoryChange={setActiveTab}
+          />
+          
+          <MeditationFilters 
+            categories={Object.keys(groupedMeditations)}
+            selectedCategory={activeTab}
+            searchQuery=""
+            showFilters={true}
+            onCategoryChange={setActiveTab}
+            onSearchChange={() => {}}
+            onToggleFilters={() => {}}
+            onClearFilters={() => {}}
+          />
+        </div>
         
         <div className="space-y-6">
           {shouldShowGrouped ? (
@@ -107,11 +115,10 @@ const MeditationsPage = () => {
             Object.entries(groupedMeditations).map(([category, meditations]) => (
               <MeditationSubcategory 
                 key={category}
-                title={category}
+                tag={category}
                 meditations={meditations}
-                onMeditationClick={handleMeditationClick}
-                onShowDetail={handleShowDetail}
-                selectedId={currentMeditation?.id}
+                selectedMeditationId={currentMeditation?.id || null}
+                onSelectMeditation={handleMeditationClick}
               />
             ))
           ) : (
@@ -124,7 +131,6 @@ const MeditationsPage = () => {
                   isSelected={currentMeditation?.id === meditation.id}
                   onClick={() => handleMeditationClick(meditation)}
                   showDeleteButton={true}
-                  onDeleteClick={() => handleDeleteClick(meditation.id)}
                 />
               ))}
             </div>
@@ -140,20 +146,21 @@ const MeditationsPage = () => {
       
       {currentMeditation && (
         <MeditationPlayerContainer
-          meditation={currentMeditation}
-          onClose={() => setCurrentMeditation(null)}
+          isVisible={!!currentMeditation}
+          selectedMeditation={currentMeditation}
         />
       )}
       
       {detailMeditation && (
         <MeditationDetailDialog
           meditation={detailMeditation}
-          open={showDetailDialog}
+          isOpen={showDetailDialog}
           onOpenChange={setShowDetailDialog}
-          onPlay={() => {
-            setCurrentMeditation(detailMeditation);
-            setShowDetailDialog(false);
-          }}
+          soundscapes={[]}
+          currentSoundscapeId={null}
+          onSoundscapeChange={() => {}}
+          guidedMeditations={[]}
+          onGuidedMeditationSelect={() => {}}
         />
       )}
       
