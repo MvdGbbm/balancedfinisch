@@ -1,192 +1,375 @@
-
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { BreathingCircle } from "@/components/breathing-circle";
+import { Button } from "@/components/ui/button";
+import { Pause, Play, RefreshCw, Link } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { BreathExerciseProps } from "./types/exercise-types";
-import { useBreathingCycle } from "./hooks/use-breathing-cycle";
-import { useBreathingAudio } from "./hooks/use-breathing-audio";
-import { useVoiceUrls } from "./hooks/use-voice-urls";
-import { PatternSelector } from "./exercise/pattern-selector";
-import { VoiceControls } from "./exercise/voice-controls";
-import { ResetButton } from "./exercise/reset-button";
-import { BreathingCircleContainer } from "./exercise/breathing-circle-container";
-import { AudioHandler } from "./exercise/audio-handler";
-import { ActiveVoice } from "@/lib/types";
 
-export function BreathExercise({ 
-  breathingPatterns, 
-  selectedPattern, 
-  onPatternChange 
-}: BreathExerciseProps) {
-  // Custom hooks
-  const { 
-    isActive, setIsActive, 
-    currentPhase, setCurrentPhase, 
-    currentCycle, setCurrentCycle, 
-    secondsLeft, setSecondsLeft, 
-    resetCycle 
-  } = useBreathingCycle(selectedPattern);
-  
-  const { 
-    audioRef, 
-    currentAudioUrl, setCurrentAudioUrl, 
-    updateCurrentAudioUrl, 
-    playAudio, 
-    resetAudio 
-  } = useBreathingAudio();
-  
-  const {
-    veraVoiceUrls,
-    marcoVoiceUrls,
-    forceReloadVoiceUrls
-  } = useVoiceUrls();
-  
-  // Local state
-  const [activeVoice, setActiveVoice] = React.useState<ActiveVoice>("none");
-  const [audioError, setAudioError] = React.useState(false);
+type BreathingPattern = {
+  id: string;
+  name: string;
+  inhale: number;
+  hold1: number;
+  exhale: number;
+  hold2: number;
+  cycles: number;
+  description?: string;
+  inhaleUrl?: string;
+  exhaleUrl?: string;
+  hold1Url?: string;
+  hold2Url?: string;
+};
 
-  // Handle visibility changes
-  React.useEffect(() => {
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-  
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === "visible") {
-      // If the page becomes visible again and was active, force reload
-      if (isActive) {
-        setIsActive(false);
-        updateAudioForPhase();
+const defaultBreathingPatterns: BreathingPattern[] = [
+  {
+    id: "1",
+    name: "4-7-8 Techniek",
+    description: "Een kalmerende ademhalingstechniek die helpt bij ontspanning",
+    inhale: 4,
+    hold1: 7,
+    exhale: 8,
+    hold2: 0,
+    cycles: 5,
+  },
+  {
+    id: "2",
+    name: "Box Breathing",
+    description: "Vierkante ademhaling voor focus en kalmte",
+    inhale: 4,
+    hold1: 4,
+    exhale: 4,
+    hold2: 4, 
+    cycles: 4,
+  },
+  {
+    id: "3",
+    name: "Relaxerende Ademhaling",
+    description: "Eenvoudige techniek voor diepe ontspanning",
+    inhale: 4,
+    hold1: 2,
+    exhale: 6,
+    hold2: 0,
+    cycles: 6,
+  },
+];
+
+export function BreathExercise() {
+  const [breathingPatterns, setBreathingPatterns] = useState<BreathingPattern[]>(defaultBreathingPatterns);
+  const [currentPattern, setCurrentPattern] = useState<BreathingPattern>(breathingPatterns[0]);
+  const [isActive, setIsActive] = useState(false);
+  const [currentPhase, setCurrentPhase] = useState<"inhale" | "hold1" | "exhale" | "hold2">("inhale");
+  const [currentCycle, setCurrentCycle] = useState(1);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>("");
+  const [audioError, setAudioError] = useState(false);
+
+  useEffect(() => {
+    const savedPatterns = localStorage.getItem('breathingPatterns');
+    if (savedPatterns) {
+      try {
+        const parsedPatterns = JSON.parse(savedPatterns);
+        const mergedPatterns = [...defaultBreathingPatterns];
+        
+        parsedPatterns.forEach((pattern: BreathingPattern) => {
+          if (!mergedPatterns.some(p => p.id === pattern.id)) {
+            mergedPatterns.push(pattern);
+          }
+        });
+        
+        setBreathingPatterns(mergedPatterns);
+        if (mergedPatterns.length > 0) {
+          setCurrentPattern(mergedPatterns[0]);
+        }
+      } catch (error) {
+        console.error("Error loading breathing patterns:", error);
       }
     }
-  };
+  }, []);
 
-  // Update audio URL when phase changes
-  React.useEffect(() => {
-    if (!selectedPattern) return;
-    updateAudioForPhase();
-  }, [currentPhase, selectedPattern, activeVoice]);
+  useEffect(() => {
+    setIsActive(false);
+    setCurrentPhase("inhale");
+    setCurrentCycle(1);
+    setSecondsLeft(currentPattern.inhale);
+    setAudioError(false);
+    
+    setCurrentAudioUrl(currentPattern.inhaleUrl || "");
+  }, [currentPattern]);
 
-  // Play audio when active
-  React.useEffect(() => {
-    if (currentAudioUrl && isActive) {
-      playAudio(isActive, currentAudioUrl);
+  useEffect(() => {
+    if (!audioRef.current) return;
+    
+    let url = "";
+    switch (currentPhase) {
+      case "inhale":
+        url = currentPattern.inhaleUrl || "";
+        break;
+      case "hold1":
+        url = currentPattern.hold1Url || "";
+        break;
+      case "exhale":
+        url = currentPattern.exhaleUrl || "";
+        break;
+      case "hold2":
+        url = currentPattern.hold2Url || "";
+        break;
     }
-  }, [currentAudioUrl, isActive]);
+    
+    setCurrentAudioUrl(url);
+    setAudioError(false);
+    
+    if (url && isActive) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      
+      audioRef.current.src = url;
+      audioRef.current.load();
+      
+      const playAudio = () => {
+        if (audioRef.current && isActive) {
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio:", error);
+            setAudioError(true);
+          });
+        }
+      };
+      
+      setTimeout(playAudio, 100);
+    }
+  }, [currentPhase, currentPattern, isActive]);
 
-  // Stop audio when exercise is paused
-  React.useEffect(() => {
+  useEffect(() => {
+    let timer: number | null = null;
+    
+    if (isActive) {
+      timer = window.setInterval(() => {
+        if (secondsLeft > 1) {
+          setSecondsLeft(seconds => seconds - 1);
+        } else {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          
+          if (currentPhase === "inhale") {
+            setCurrentPhase("hold1");
+            setSecondsLeft(currentPattern.hold1 || 1);
+          } else if (currentPhase === "hold1") {
+            setCurrentPhase("exhale");
+            setSecondsLeft(currentPattern.exhale);
+          } else if (currentPhase === "exhale") {
+            if (currentPattern.hold2) {
+              setCurrentPhase("hold2");
+              setSecondsLeft(currentPattern.hold2);
+            } else {
+              if (currentCycle < currentPattern.cycles) {
+                setCurrentCycle(cycle => cycle + 1);
+                setCurrentPhase("inhale");
+                setSecondsLeft(currentPattern.inhale);
+              } else {
+                setIsActive(false);
+                setCurrentCycle(1);
+                setCurrentPhase("inhale");
+                setSecondsLeft(currentPattern.inhale);
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                }
+                toast.success("Ademhalingsoefening voltooid!");
+              }
+            }
+          } else if (currentPhase === "hold2") {
+            if (currentCycle < currentPattern.cycles) {
+              setCurrentCycle(cycle => cycle + 1);
+              setCurrentPhase("inhale");
+              setSecondsLeft(currentPattern.inhale);
+            } else {
+              setIsActive(false);
+              setCurrentCycle(1);
+              setCurrentPhase("inhale");
+              setSecondsLeft(currentPattern.inhale);
+              if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+              }
+              toast.success("Ademhalingsoefening voltooid!");
+            }
+          }
+        }
+      }, 1000);
+    }
+    
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isActive, currentPhase, secondsLeft, currentCycle, currentPattern]);
+
+  useEffect(() => {
     if (!isActive && audioRef.current) {
-      resetAudio();
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
     }
   }, [isActive]);
 
-  // Update audio URL based on current phase
-  const updateAudioForPhase = () => {
-    if (!selectedPattern) return;
-    
-    const url = updateCurrentAudioUrl(
-      activeVoice,
-      currentPhase,
-      veraVoiceUrls,
-      marcoVoiceUrls,
-      selectedPattern
-    );
-    
-    return url;
+  const getInstructions = () => {
+    switch (currentPhase) {
+      case "inhale":
+        return "Inademen";
+      case "hold1":
+        return "Vasthouden";
+      case "exhale":
+        return "Uitademen";
+      case "hold2":
+        return "Vasthouden";
+      default:
+        return "";
+    }
   };
 
-  // Reset the exercise completely
   const resetExercise = () => {
-    if (!selectedPattern) return;
-    
-    forceReload();
-  };
-
-  // Force reload all state and audio
-  const forceReload = () => {
-    resetCycle();
-    resetAudio();
-    forceReloadVoiceUrls();
-    setActiveVoice("none");
+    setIsActive(false);
+    setCurrentPhase("inhale");
+    setCurrentCycle(1);
+    setSecondsLeft(currentPattern.inhale);
     setAudioError(false);
     
-    toast.success("Ademhalingsoefening opnieuw geladen", {
-      description: "Audio en instellingen zijn ververst."
-    });
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
+    setCurrentAudioUrl(currentPattern.inhaleUrl || "");
   };
 
-  // Handle starting with voice guides
-  const startWithVoice = (voice: ActiveVoice) => {
-    if (isActive && activeVoice === voice) {
-      setIsActive(false);
-      setActiveVoice("none");
-      resetAudio();
-    } else {
-      setActiveVoice(voice);
-      setIsActive(true);
-      
+  const toggleExercise = () => {
+    setIsActive(!isActive);
+    
+    if (!isActive && audioRef.current && currentAudioUrl) {
       setTimeout(() => {
-        const url = updateAudioForPhase();
-        if (url) {
-          playAudio(true, url);
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(error => {
+            console.error("Error playing audio on start:", error);
+            setAudioError(true);
+          });
         }
       }, 100);
     }
   };
 
-  // Specific handlers for each voice
-  const startWithVera = () => startWithVoice("vera");
-  const startWithMarco = () => startWithVoice("marco");
+  const handlePatternChange = (value: string) => {
+    const selectedPattern = breathingPatterns.find(pattern => pattern.id === value);
+    if (selectedPattern) {
+      setCurrentPattern(selectedPattern);
+    }
+  };
 
-  if (!selectedPattern || breathingPatterns.length === 0) {
-    return (
-      <div className="text-center p-4 text-muted-foreground">
-        Geen ademhalingstechnieken beschikbaar.
-      </div>
-    );
-  }
+  const hasAudioForCurrentPhase = () => {
+    switch (currentPhase) {
+      case "inhale":
+        return !!currentPattern.inhaleUrl;
+      case "hold1":
+        return !!currentPattern.hold1Url;
+      case "exhale":
+        return !!currentPattern.exhaleUrl;
+      case "hold2":
+        return !!currentPattern.hold2Url;
+      default:
+        return false;
+    }
+  };
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <AudioHandler 
-        audioRef={audioRef}
-        currentAudioUrl={currentAudioUrl}
-        isActive={isActive}
-        onError={() => setAudioError(true)}
+      <div className="flex items-center gap-2 mb-2">
+        <RefreshCw className="text-primary h-5 w-5" />
+        <h2 className="text-lg font-medium">Ademhalingsoefening</h2>
+      </div>
+      
+      <audio 
+        ref={audioRef} 
+        src={currentAudioUrl} 
+        preload="auto" 
+        onError={() => setAudioError(true)} 
       />
       
-      <Card className="overflow-hidden bg-navy-900 border-none shadow-xl">
-        <CardContent className="p-6">
-          <PatternSelector
-            patterns={breathingPatterns}
-            selectedPatternId={selectedPattern.id}
-            onPatternChange={onPatternChange}
-            disabled={isActive}
-          />
+      <Card className="bg-card/60 backdrop-blur-sm">
+        <CardContent className="p-4">
+          <div className="mb-4">
+            <Select
+              value={currentPattern.id}
+              onValueChange={handlePatternChange}
+              disabled={isActive}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecteer een ademhalingstechniek" />
+              </SelectTrigger>
+              <SelectContent>
+                {breathingPatterns.map((pattern) => (
+                  <SelectItem key={pattern.id} value={pattern.id}>
+                    {pattern.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           
-          <BreathingCircleContainer
-            isActive={isActive}
-            currentPhase={currentPhase}
-            secondsLeft={secondsLeft}
-            selectedPattern={selectedPattern}
-            currentCycle={currentCycle}
-            totalCycles={selectedPattern.cycles}
-          />
-          
-          <VoiceControls
-            activeVoice={activeVoice}
-            isActive={isActive}
-            veraVoiceUrls={veraVoiceUrls}
-            marcoVoiceUrls={marcoVoiceUrls}
-            onStartWithVera={startWithVera}
-            onStartWithMarco={startWithMarco}
-          />
-          
-          <ResetButton onReset={resetExercise} />
+          <div className="flex flex-col items-center justify-center space-y-6 py-4">
+            <BreathingCircle 
+              inhaleDuration={currentPattern.inhale * 1000}
+              holdDuration={currentPattern.hold1 * 1000}
+              exhaleDuration={currentPattern.exhale * 1000}
+              onBreathComplete={() => {}}
+              isActive={isActive}
+            />
+            
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-2xl font-medium">{getInstructions()}</p>
+                {hasAudioForCurrentPhase() && (
+                  <span className={`${audioError ? "text-red-500" : "text-primary"}`}>
+                    <Link className="h-4 w-4" />
+                  </span>
+                )}
+              </div>
+              <p className="text-xl">{secondsLeft}</p>
+              <p className="text-sm text-muted-foreground">
+                Cyclus {currentCycle} van {currentPattern.cycles}
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                onClick={toggleExercise} 
+                variant="default"
+                size="lg"
+                className="w-32"
+              >
+                {isActive ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+                {isActive ? "Pauze" : "Start"}
+              </Button>
+              
+              <Button 
+                onClick={resetExercise} 
+                variant="outline"
+                size="lg"
+                className="w-32"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reset
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

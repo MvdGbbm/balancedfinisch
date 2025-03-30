@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { useApp } from "@/context/AppContext";
@@ -36,6 +37,7 @@ const AdminSoundscapes = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentSoundscape, setCurrentSoundscape] = useState<Soundscape | null>(null);
   
+  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [audioUrl, setAudioUrl] = useState("");
@@ -44,9 +46,11 @@ const AdminSoundscapes = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   
+  // Extract unique categories from existing soundscapes
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   
   useEffect(() => {
+    // Get unique categories from all soundscapes
     const categories = [...new Set(soundscapes.map(s => s.category))];
     setAvailableCategories(categories);
   }, [soundscapes]);
@@ -211,6 +215,7 @@ const AdminSoundscapes = () => {
         </div>
       </div>
       
+      {/* Add/Edit Soundscape Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
