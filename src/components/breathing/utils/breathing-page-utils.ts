@@ -1,7 +1,7 @@
-import { toast } from "sonner";
-import { validateAudioUrl, preloadAudio } from "@/components/audio-player/utils";
-import { BreathingPattern, VoiceURLs } from "../types/breathing-page-types";
 
+import { BreathingPattern } from "@/components/breathing/types/breathing-page-types";
+
+// Default breathing patterns for the application
 export const defaultBreathingPatterns: BreathingPattern[] = [
   {
     id: "1",
@@ -11,9 +11,8 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 7,
     exhale: 8,
     hold2: 0,
-    cycles: 5,
-    startUrl: "",
-  },
+    cycles: 5
+  }, 
   {
     id: "2",
     name: "Box Breathing",
@@ -21,10 +20,9 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
     inhale: 4,
     hold1: 4,
     exhale: 4,
-    hold2: 4, 
-    cycles: 4,
-    startUrl: "",
-  },
+    hold2: 4,
+    cycles: 4
+  }, 
   {
     id: "3",
     name: "Relaxerende Ademhaling",
@@ -33,70 +31,19 @@ export const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 2,
     exhale: 6,
     hold2: 0,
-    cycles: 6,
-    startUrl: "",
-  },
+    cycles: 6
+  }
 ];
 
-export const defaultVoiceUrls: Record<string, VoiceURLs> = {
-  vera: {
-    start: "",
-    inhale: "",
-    hold: "",
-    exhale: "",
-    end: "",
-  },
-  marco: {
-    start: "",
-    inhale: "",
-    hold: "",
-    exhale: "",
-    end: "",
-  }
-};
-
-export const validateAudioFiles = async (urls: VoiceURLs, voice: string): Promise<boolean> => {
-  const urlsToValidate = [urls.inhale, urls.hold, urls.exhale].filter(Boolean);
-  
-  if (urls.start) {
-    urlsToValidate.push(urls.start);
-  }
-  
-  if (urlsToValidate.length === 0) {
-    console.log(`${voice} URLs are not complete, skipping validation`);
-    return false;
-  }
-  
-  console.log(`Validating ${voice} audio URLs...`);
-  
-  try {
-    const validationPromises = urlsToValidate.map(url => preloadAudio(url));
-    const validationResults = await Promise.all(validationPromises);
-    
-    const allValid = validationResults.every(result => result === true);
-    
-    if (allValid) {
-      console.log(`All ${voice} audio files validated successfully`);
-      return true;
-    } else {
-      console.error(`One or more ${voice} audio files failed validation`);
-      return false;
-    }
-  } catch (error) {
-    console.error(`Error validating ${voice} audio files:`, error);
-    return false;
-  }
-};
-
-export const handleVisibilityChange = (lastTimestamp: number, forcePageReload: () => void) => {
-  if (document.visibilityState === "visible") {
-    const now = Date.now();
-    const fiveMinutesMs = 5 * 60 * 1000;
-    
-    if (now - lastTimestamp > fiveMinutesMs) {
-      forcePageReload();
-    } else {
-      localStorage.setItem('breathing_cache_timestamp', now.toString());
-    }
-  }
+// Get a default breathing pattern
+export const getDefaultBreathingPattern = (): BreathingPattern => {
+  return {
+    id: "default",
+    name: "Standaard Ademhalingstechniek",
+    inhale: 4,
+    hold1: 2,
+    exhale: 6,
+    hold2: 0,
+    cycles: 5
+  };
 };

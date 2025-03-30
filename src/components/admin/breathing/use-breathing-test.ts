@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { BreathingPattern, VoiceURLs } from "./types";
@@ -220,8 +221,6 @@ export function useBreathingTest(pattern: BreathingPattern | null) {
         return veraVoiceUrls.end;
       } else if (activeVoice === "marco" && marcoVoiceUrls.end) {
         return marcoVoiceUrls.end;
-      } else if (pattern.startUrl) {
-        return pattern.startUrl; // Fallback to pattern start URL if no end URL is set
       }
       return "";
     };

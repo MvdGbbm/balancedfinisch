@@ -12,7 +12,14 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 7,
     exhale: 8,
     hold2: 0,
-    cycles: 5
+    cycles: 5,
+    animationEnabled: true,
+    animationStyle: "grow",
+    animationColor: "primary",
+    inhaleText: "Adem in",
+    exhaleText: "Adem uit",
+    hold1Text: "Vasthouden",
+    hold2Text: "Vasthouden"
   }, 
   {
     id: "2",
@@ -22,7 +29,14 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 4,
     exhale: 4,
     hold2: 4,
-    cycles: 4
+    cycles: 4,
+    animationEnabled: true,
+    animationStyle: "glow",
+    animationColor: "cyan",
+    inhaleText: "Adem in",
+    exhaleText: "Adem uit",
+    hold1Text: "Vasthouden",
+    hold2Text: "Vasthouden"
   }, 
   {
     id: "3",
@@ -32,7 +46,14 @@ const defaultBreathingPatterns: BreathingPattern[] = [
     hold1: 2,
     exhale: 6,
     hold2: 0,
-    cycles: 6
+    cycles: 6,
+    animationEnabled: true,
+    animationStyle: "pulse",
+    animationColor: "blue",
+    inhaleText: "Adem in",
+    exhaleText: "Adem uit",
+    hold1Text: "Vasthouden",
+    hold2Text: "Vasthouden"
   }
 ];
 
@@ -66,7 +87,7 @@ export function useBreathingPatterns() {
 
   const createNewPattern = () => {
     const newId = `temp_${Date.now()}`;
-    const newPattern = {
+    const newPattern: BreathingPattern = {
       id: newId,
       name: "Nieuwe Techniek",
       description: "Beschrijving van de techniek",
@@ -74,7 +95,14 @@ export function useBreathingPatterns() {
       hold1: 0,
       exhale: 4,
       hold2: 0,
-      cycles: 4
+      cycles: 4,
+      animationEnabled: true,
+      animationStyle: "grow",
+      animationColor: "primary",
+      inhaleText: "Adem in",
+      exhaleText: "Adem uit",
+      hold1Text: "Vasthouden",
+      hold2Text: "Vasthouden"
     };
     setSelectedPattern(newPattern);
     return newPattern;

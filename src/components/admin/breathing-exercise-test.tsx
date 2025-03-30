@@ -56,6 +56,8 @@ export function BreathingExerciseTest({
             setCircleScale={setCircleScale}
             currentPhase={currentPhase}
             isActive={isActive}
+            secondsLeft={secondsLeft}
+            pattern={pattern}
           />
           
           <PhaseTimer
@@ -63,6 +65,8 @@ export function BreathingExerciseTest({
             secondsLeft={secondsLeft}
             totalCycles={totalCycles}
             currentCycle={currentCycle}
+            progress={progress}
+            pattern={pattern}
           />
           
           <ControlButtons 

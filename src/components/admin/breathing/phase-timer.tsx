@@ -2,30 +2,28 @@
 import React from "react";
 import { Progress } from "@/components/ui/progress";
 import { CycleProgress } from "@/components/cycle-progress";
-
-interface PhaseTimerProps {
-  progress: number;
-  currentPhase: "inhale" | "hold1" | "exhale" | "hold2";
-  currentCycle: number;
-  totalCycles: number;
-}
+import { PhaseTimerProps } from "./types";
 
 export function PhaseTimer({
   progress,
   currentPhase,
   currentCycle,
-  totalCycles
+  totalCycles,
+  secondsLeft,
+  pattern
 }: PhaseTimerProps) {
   const getInstructions = () => {
+    if (!pattern) return "";
+    
     switch (currentPhase) {
       case "inhale":
-        return "Inademen";
+        return pattern.inhaleText || "Inademen";
       case "hold1":
-        return "Vasthouden";
+        return pattern.hold1Text || "Vasthouden";
       case "exhale":
-        return "Uitademen";
+        return pattern.exhaleText || "Uitademen";
       case "hold2":
-        return "Vasthouden";
+        return pattern.hold2Text || "Vasthouden";
       default:
         return "";
     }
